@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useButtonSound } from "@/hooks/useButtonSound";
+import cfLogo from "@/assets/cf-logo.png";
 
 const Hero = () => {
   const { playClickSound } = useButtonSound();
@@ -55,12 +56,16 @@ const Hero = () => {
                     <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.1)_50%,transparent_75%)] bg-[length:250%_250%] animate-gradient rounded-full" />
                   </div>
                   
-                  {/* Inner logo text */}
+                  {/* Inner logo */}
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="text-center text-white z-10">
-                      <div className="text-4xl font-bold mb-1 drop-shadow-lg">AP</div>
-                      <div className="text-xs font-semibold tracking-wider opacity-90">PRODUCTION</div>
-                    </div>
+                    <img 
+                      src={cfLogo} 
+                      alt="CF Logo" 
+                      className="w-24 h-24 z-10 drop-shadow-2xl"
+                      style={{
+                        filter: 'brightness(0) saturate(100%) invert(100%) drop-shadow(0 0 20px hsl(var(--primary)))'
+                      }}
+                    />
                   </div>
                 </div>
               </div>
