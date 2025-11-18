@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 
 const Sidebar = () => {
   const [activeTheme, setActiveTheme] = useState(0);
+  const [direction, setDirection] = useState<'next' | 'prev'>('next');
 
   const themes = [
     {
@@ -52,6 +53,21 @@ const Sidebar = () => {
     { text: "Telegram‑группа", url: "https://t.me/MenuOnly4Friends" }
   ];
 
+  const handleThemeChange = (newTheme: number) => {
+    setDirection(newTheme > activeTheme ? 'next' : 'prev');
+    setActiveTheme(newTheme);
+  };
+
+  const handlePrev = () => {
+    setDirection('prev');
+    setActiveTheme((prev) => (prev === 0 ? themes.length - 1 : prev - 1));
+  };
+
+  const handleNext = () => {
+    setDirection('next');
+    setActiveTheme((prev) => (prev === themes.length - 1 ? 0 : prev + 1));
+  };
+
   return (
     <aside className="fixed left-0 top-[92px] bottom-0 w-80 bg-card border-r border-border overflow-y-auto p-6 hidden lg:block">
       <div className="space-y-6">
@@ -63,23 +79,38 @@ const Sidebar = () => {
               {[0, 1, 2, 3].map((i) => (
                 <button
                   key={i}
-                  onClick={() => setActiveTheme(i)}
-                  className={`w-2 h-2 rounded-full transition-colors ${
-                    activeTheme === i ? 'bg-primary' : 'bg-muted'
+                  onClick={() => handleThemeChange(i)}
+                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                    activeTheme === i ? 'bg-primary scale-125' : 'bg-muted hover:bg-muted-foreground'
                   }`}
                 />
               ))}
             </div>
             <div className="flex gap-2">
-              <button className="text-muted-foreground hover:text-foreground">‹</button>
-              <button className="text-muted-foreground hover:text-foreground">›</button>
+              <button 
+                onClick={handlePrev}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                ‹
+              </button>
+              <button 
+                onClick={handleNext}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                ›
+              </button>
             </div>
           </div>
         </div>
 
         {/* Active Theme Content */}
-        <div className="space-y-4">
-          <div>
+        <div className="space-y-4 overflow-hidden">
+          <div
+            key={activeTheme}
+            className={`animate-fade-in ${
+              direction === 'next' ? 'animate-slide-in-right' : 'animate-slide-in-left'
+            }`}
+          >
             <p className="text-xs text-muted-foreground mb-2">{themes[activeTheme].title}</p>
             <h3 className="text-lg font-semibold mb-2">{themes[activeTheme].subtitle}</h3>
             <p className="text-sm text-muted-foreground leading-relaxed mb-4">
