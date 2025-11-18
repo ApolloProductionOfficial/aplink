@@ -64,7 +64,8 @@ const Hero = () => {
                       className="w-36 h-36 z-10"
                       style={{
                         filter: 'drop-shadow(0 0 40px hsl(var(--primary))) drop-shadow(0 0 20px hsl(var(--primary))) drop-shadow(0 0 10px rgba(0,255,255,0.8))',
-                        imageRendering: 'crisp-edges'
+                        imageRendering: 'crisp-edges',
+                        mixBlendMode: 'screen'
                       }}
                     />
                   </div>
