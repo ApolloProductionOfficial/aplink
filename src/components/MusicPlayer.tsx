@@ -43,12 +43,7 @@ const MusicPlayer = () => {
 
   return (
     <div className="fixed bottom-6 left-6 z-50">
-      <div className="bg-card/95 backdrop-blur-lg border border-border rounded-lg transition-all duration-300 w-64 p-4">
-        <div className="mb-2">
-          <p className="text-xs text-muted-foreground italic">
-            Изучай сайт под хорошее настроение 🎵
-          </p>
-        </div>
+      <div className="bg-card/95 backdrop-blur-lg border border-border rounded-lg transition-all duration-300 w-64 p-4 animate-pulse-glow">
         <audio
           ref={audioRef}
           src="https://abs.zaycev.fm/kpop128k"
