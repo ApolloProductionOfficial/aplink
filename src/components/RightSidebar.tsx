@@ -1,15 +1,18 @@
 import { Button } from "@/components/ui/button";
 import { useButtonSound } from "@/hooks/useButtonSound";
+import { useNavigate } from "react-router-dom";
 
 const RightSidebar = () => {
   const { playClickSound } = useButtonSound();
+  const navigate = useNavigate();
+  
   const quickLinks = [
-    { text: "Разблокировка крипты (Fansly)", url: "/#/onlyfans", highlight: true },
-    { text: "Telegram", url: "https://t.me/Apollo_Production" },
-    { text: "Консалтинг", url: "https://t.me/Apollo_Production" },
-    { text: "Запуск", url: "https://t.me/Apollo_Production" },
-    { text: "Анкета для новых моделей", url: "https://docs.google.com/forms/d/e/1FAIpQLSdImReNAMa_AQ74PYbBosGLMbm7FJnSaGkuq-QIJDlDNdnW5Q/viewform", highlight: true },
-    { text: "Telegram‑группа", url: "https://t.me/MenuOnly4Friends", highlight: true }
+    { text: "Разблокировка крипты (Fansly)", url: "/crypto-unlock", highlight: true, internal: true },
+    { text: "Telegram", url: "https://t.me/Apollo_Production", internal: false },
+    { text: "Консалтинг", url: "https://t.me/Apollo_Production", internal: false },
+    { text: "Запуск", url: "https://t.me/Apollo_Production", internal: false },
+    { text: "Анкета для новых моделей", url: "https://docs.google.com/forms/d/e/1FAIpQLSdImReNAMa_AQ74PYbBosGLMbm7FJnSaGkuq-QIJDlDNdnW5Q/viewform", highlight: true, internal: false },
+    { text: "Telegram‑группа", url: "https://t.me/MenuOnly4Friends", highlight: true, internal: false }
   ];
 
   return (
@@ -23,20 +26,37 @@ const RightSidebar = () => {
         {/* Links List */}
         <div className="space-y-3">
           {quickLinks.map((link, i) => (
-            <a
-              key={i}
-              href={link.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={playClickSound}
-              className={`block text-sm transition-colors ${
-                link.highlight 
-                  ? 'text-primary hover:text-primary/80 font-medium' 
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {link.text}
-            </a>
+            link.internal ? (
+              <button
+                key={i}
+                onClick={() => {
+                  playClickSound();
+                  navigate(link.url);
+                }}
+                className={`block text-sm transition-colors text-left w-full ${
+                  link.highlight 
+                    ? 'text-primary hover:text-primary/80 font-medium' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {link.text}
+              </button>
+            ) : (
+              <a
+                key={i}
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={playClickSound}
+                className={`block text-sm transition-colors ${
+                  link.highlight 
+                    ? 'text-primary hover:text-primary/80 font-medium' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {link.text}
+              </a>
+            )
           ))}
         </div>
 
