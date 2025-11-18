@@ -22,15 +22,6 @@ const VideoPromo = () => {
               }}
             />
           </div>
-          
-          {/* Optional overlay text */}
-          <div className="absolute bottom-8 left-8 right-8 text-center">
-            <div className="bg-background/80 backdrop-blur-md border border-primary/30 rounded-xl p-4 inline-block">
-              <p className="text-lg font-semibold text-foreground">
-                Профессиональное продвижение на OnlyFans
-              </p>
-            </div>
-          </div>
         </div>
       </div>
     </section>
