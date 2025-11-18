@@ -52,7 +52,7 @@ const Hero = () => {
               </div>
               
               {/* Logo */}
-              <div className="absolute inset-0 flex items-center justify-center">
+              <div className="absolute inset-0 flex items-center justify-center" style={{ perspective: '1000px' }}>
                 <img 
                   src={cfLogo} 
                   alt="CF Logo" 
@@ -60,7 +60,8 @@ const Hero = () => {
                   style={{
                     filter: 'drop-shadow(0 0 50px hsl(var(--primary))) drop-shadow(0 0 30px hsl(var(--primary))) drop-shadow(0 0 15px rgba(0,255,255,0.9))',
                     imageRendering: 'crisp-edges',
-                    animation: 'float 8s ease-in-out infinite'
+                    animation: 'float 8s ease-in-out infinite, rotate3d 20s linear infinite',
+                    transformStyle: 'preserve-3d'
                   }}
                 />
               </div>
