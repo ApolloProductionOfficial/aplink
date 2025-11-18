@@ -78,16 +78,18 @@ All colors MUST be HSL.
     background: linear-gradient(
       90deg,
       hsl(var(--foreground)) 0%,
-      hsl(var(--primary)) 25%,
-      hsl(190 100% 60%) 50%,
-      hsl(var(--primary)) 75%,
+      hsl(var(--foreground)) 20%,
+      hsl(var(--primary)) 40%,
+      hsl(190 100% 65%) 50%,
+      hsl(var(--primary)) 60%,
+      hsl(var(--foreground)) 80%,
       hsl(var(--foreground)) 100%
     );
     background-size: 200% auto;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    animation: text-shimmer 4s ease-in-out infinite;
+    animation: text-shimmer 8s ease-in-out infinite;
   }
 }
 
