@@ -3,6 +3,7 @@ import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
 import RightSidebar from "@/components/RightSidebar";
 import Hero from "@/components/Hero";
+import VideoPromo from "@/components/VideoPromo";
 import TrafficSources from "@/components/TrafficSources";
 import CTA from "@/components/CTA";
 import Footer from "@/components/Footer";
@@ -20,6 +21,7 @@ const Index = () => {
       <RightSidebar />
       <div className="lg:pl-80 xl:pr-80 pt-[92px]">
         <Hero />
+        <VideoPromo />
         <TrafficSources />
         <CTA />
         <Footer />
