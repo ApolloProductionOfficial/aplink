@@ -3,6 +3,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { Calendar } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import ManualNewsFetch from "./ManualNewsFetch";
 
 interface NewsItem {
   id: string;
@@ -76,7 +77,10 @@ const NewsWidget = () => {
       <div className="space-y-6">
         {/* Header */}
         <div>
-          <h3 className="text-lg font-semibold text-foreground mb-2">{newsTitle}</h3>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-lg font-semibold text-foreground">{newsTitle}</h3>
+            <ManualNewsFetch />
+          </div>
           <p className="text-xs text-muted-foreground">
             {language === 'ru' ? 'Обновляется автоматически 2 раза в день' : language === 'uk' ? 'Оновлюється автоматично 2 рази на день' : 'Auto-updates twice daily'}
           </p>
