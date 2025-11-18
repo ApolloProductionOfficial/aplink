@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useButtonSound } from "@/hooks/useButtonSound";
-import cfLogo from "@/assets/cf-logo.png";
+import onlyfansLogo from "@/assets/onlyfans-logo.png";
 
 const Hero = () => {
   const { playClickSound } = useButtonSound();
@@ -59,11 +59,11 @@ const Hero = () => {
                   {/* Inner logo */}
                   <div className="absolute inset-0 flex items-center justify-center">
                     <img 
-                      src={cfLogo} 
-                      alt="CF Logo" 
-                      className="w-32 h-32 z-10"
+                      src={onlyfansLogo} 
+                      alt="OnlyFans Logo" 
+                      className="w-40 h-40 z-10"
                       style={{
-                        filter: 'brightness(0) saturate(100%) invert(100%) contrast(1.2) drop-shadow(0 0 30px hsl(var(--primary))) drop-shadow(0 0 10px rgba(255,255,255,0.8))',
+                        filter: 'brightness(0) saturate(100%) invert(100%) contrast(1.3) drop-shadow(0 0 35px hsl(var(--primary))) drop-shadow(0 0 15px rgba(255,255,255,0.9))',
                         imageRendering: 'crisp-edges'
                       }}
                     />
