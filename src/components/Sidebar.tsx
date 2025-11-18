@@ -9,14 +9,14 @@ const Sidebar = () => {
 
   const themes = [
     {
-      title: "Источники трафика",
-      description: "Полный спектр источников трафика для OnlyFans: TikTok, Instagram, X/Twitter, Telegram, Dating, PPC, SEO и другие.",
-      route: "/traffic-sources"
-    },
-    {
       title: "Разблокировка крипты",
       description: "Разблокировка криптовалютных платежей на Fansly. 70+ успешных кейсов. Разблокировка за 24 часа с гарантией.",
       route: "/crypto-unlock"
+    },
+    {
+      title: "Источники трафика",
+      description: "Полный спектр источников трафика для OnlyFans: TikTok, Instagram, X/Twitter, Telegram, Dating, PPC, SEO и другие.",
+      route: "/traffic-sources"
     }
   ];
 
