@@ -39,7 +39,7 @@ const Sidebar = () => {
   };
 
   return (
-    <aside className="fixed left-0 top-[92px] bottom-0 w-80 bg-card border-r border-border overflow-y-auto p-6 hidden lg:block">
+    <aside className="fixed left-0 top-[120px] bottom-0 w-80 bg-card border-r border-border overflow-y-auto p-6 hidden lg:block">
       <div className="space-y-6">
         {/* Theme Selector */}
         <div>

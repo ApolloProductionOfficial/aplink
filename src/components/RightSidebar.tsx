@@ -16,7 +16,7 @@ const RightSidebar = () => {
   ];
 
   return (
-    <aside className="fixed right-0 top-[92px] bottom-0 w-80 bg-card border-l border-border overflow-y-auto p-6 hidden xl:block">
+    <aside className="fixed right-0 top-[120px] bottom-0 w-80 bg-card border-l border-border overflow-y-auto p-6 hidden xl:block">
       <div className="space-y-6">
         {/* Quick Links Header */}
         <div>

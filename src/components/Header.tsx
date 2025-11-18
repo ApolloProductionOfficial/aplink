@@ -20,8 +20,8 @@ const Header = () => {
                 className="w-full h-full object-cover"
               />
             </div>
-            <span className="text-sm font-bold">
-              Apollo Production — OnlyFans Management Agency
+            <span className="text-base font-bold">
+              APOLLO PRODUCTION — OnlyFans Management Agency
             </span>
           </div>
           
