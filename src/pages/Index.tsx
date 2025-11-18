@@ -2,7 +2,8 @@ import TopBanner from "@/components/TopBanner";
 import Header from "@/components/Header";
 import VideoBanner from "@/components/VideoBanner";
 import Sidebar from "@/components/Sidebar";
-import RightSidebar from "@/components/RightSidebar";
+import NewsWidget from "@/components/NewsWidget";
+import AIChatBot from "@/components/AIChatBot";
 import Hero from "@/components/Hero";
 import EarningsChart from "@/components/EarningsChart";
 import TrafficSources from "@/components/TrafficSources";
@@ -19,7 +20,8 @@ const Index = () => {
       <TopBanner />
       <Header />
       <Sidebar />
-      <RightSidebar />
+      <NewsWidget />
+      <AIChatBot />
       <div className="lg:pl-80 xl:pr-80 pt-[92px]">
         <VideoBanner />
         <Hero />
