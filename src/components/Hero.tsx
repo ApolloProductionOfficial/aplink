@@ -1,9 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { useButtonSound } from "@/hooks/useButtonSound";
+import { useTranslation } from "@/hooks/useTranslation";
 import cfLogo from "@/assets/cf-logo-final.png";
 
 const Hero = () => {
   const { playClickSound } = useButtonSound();
+  const { t } = useTranslation();
   
   return (
     <section id="about" className="min-h-[85vh] flex items-center justify-center px-4 pt-0 -mt-8 relative overflow-hidden">
@@ -11,13 +13,13 @@ const Hero = () => {
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div className="space-y-6 animate-slide-up">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              OnlyFans Management Agency
+              {t.hero.badge}
             </span>
             <h1 className="text-5xl md:text-6xl font-bold leading-tight">
-              Управляем ростом моделей на OnlyFans
+              {t.hero.title}
             </h1>
             <p className="text-lg text-muted-foreground leading-relaxed">
-              5 лет на рынке. Помогали открывать агентства, сейчас строим своё — на лучшем из опыта и ошибок. Вы — создаёте, мы — масштабируем.
+              {t.hero.description}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
               <Button 
@@ -28,7 +30,7 @@ const Hero = () => {
                   window.open('https://t.me/Apollo_Production', '_blank');
                 }}
               >
-                Начать работу
+                {t.hero.startButton}
               </Button>
               <Button 
                 size="lg"
@@ -39,7 +41,7 @@ const Hero = () => {
                   window.open('https://docs.google.com/forms/d/e/1FAIpQLSdImReNAMa_AQ74PYbBosGLMbm7FJnSaGkuq-QIJDlDNdnW5Q/viewform', '_blank');
                 }}
               >
-                Заполнить анкету
+                {t.hero.formButton}
               </Button>
             </div>
           </div>

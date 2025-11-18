@@ -1,21 +1,23 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useButtonSound } from "@/hooks/useButtonSound";
+import { useTranslation } from "@/hooks/useTranslation";
 
 const Sidebar = () => {
   const { playClickSound } = useButtonSound();
+  const { t } = useTranslation();
   const [activeTheme, setActiveTheme] = useState(0);
   const [direction, setDirection] = useState<'next' | 'prev'>('next');
 
   const themes = [
     {
-      title: "Разблокировка крипты",
-      description: "Разблокировка криптовалютных платежей на Fansly. 70+ успешных кейсов. Разблокировка за 24 часа с гарантией.",
+      title: t.sidebar.cryptoUnlock.title,
+      description: t.sidebar.cryptoUnlock.description,
       route: "/crypto-unlock"
     },
     {
-      title: "Источники трафика",
-      description: "Полный спектр источников трафика для OnlyFans: TikTok, Instagram, X/Twitter, Telegram, Dating, PPC, SEO и другие.",
+      title: t.sidebar.trafficSources.title,
+      description: t.sidebar.trafficSources.description,
       route: "/traffic-sources"
     }
   ];
@@ -44,7 +46,7 @@ const Sidebar = () => {
         {/* Theme Selector */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <span className="text-sm text-muted-foreground">Темы</span>
+            <span className="text-sm text-muted-foreground">{t.sidebar.themes}</span>
             <div className="flex gap-2">
               {themes.map((_, i) => (
                 <button
@@ -92,7 +94,7 @@ const Sidebar = () => {
               }}
               className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
             >
-              Подробнее
+              {t.sidebar.more}
             </Button>
           </div>
         </div>

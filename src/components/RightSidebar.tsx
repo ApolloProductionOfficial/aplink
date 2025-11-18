@@ -1,18 +1,20 @@
 import { Button } from "@/components/ui/button";
 import { useButtonSound } from "@/hooks/useButtonSound";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "@/hooks/useTranslation";
 
 const RightSidebar = () => {
   const { playClickSound } = useButtonSound();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   
   const quickLinks = [
-    { text: "Разблокировка крипты (Fansly)", url: "/crypto-unlock", highlight: true, internal: true },
-    { text: "Telegram", url: "https://t.me/Apollo_Production", internal: false },
-    { text: "Консалтинг", url: "https://t.me/Apollo_Production", internal: false },
-    { text: "Запуск", url: "https://t.me/Apollo_Production", internal: false },
-    { text: "Анкета для новых моделей", url: "https://docs.google.com/forms/d/e/1FAIpQLSdImReNAMa_AQ74PYbBosGLMbm7FJnSaGkuq-QIJDlDNdnW5Q/viewform", highlight: true, internal: false },
-    { text: "Telegram‑группа", url: "https://t.me/MenuOnly4Friends", highlight: true, internal: false }
+    { text: t.rightSidebar.cryptoUnlock, url: "/crypto-unlock", highlight: true, internal: true },
+    { text: t.rightSidebar.telegram, url: "https://t.me/Apollo_Production", internal: false },
+    { text: t.rightSidebar.consulting, url: "https://t.me/Apollo_Production", internal: false },
+    { text: t.rightSidebar.launch, url: "https://t.me/Apollo_Production", internal: false },
+    { text: t.rightSidebar.modelForm, url: "https://docs.google.com/forms/d/e/1FAIpQLSdImReNAMa_AQ74PYbBosGLMbm7FJnSaGkuq-QIJDlDNdnW5Q/viewform", highlight: true, internal: false },
+    { text: t.rightSidebar.telegramGroup, url: "https://t.me/MenuOnly4Friends", highlight: true, internal: false }
   ];
 
   return (
@@ -20,7 +22,7 @@ const RightSidebar = () => {
       <div className="space-y-6">
         {/* Quick Links Header */}
         <div>
-          <h3 className="text-sm font-semibold text-foreground mb-4">Быстрые ссылки</h3>
+          <h3 className="text-sm font-semibold text-foreground mb-4">{t.rightSidebar.title}</h3>
         </div>
 
         {/* Links List */}
@@ -63,7 +65,7 @@ const RightSidebar = () => {
         {/* Recruitment CTA Box */}
         <div className="bg-card/50 border border-border rounded-lg p-4 mt-8">
           <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
-            Заполни анкету и начни зарабатывать с нами
+            {t.rightSidebar.ctaText}
           </p>
           <Button
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
@@ -72,7 +74,7 @@ const RightSidebar = () => {
               window.open('https://docs.google.com/forms/d/e/1FAIpQLSdImReNAMa_AQ74PYbBosGLMbm7FJnSaGkuq-QIJDlDNdnW5Q/viewform', '_blank');
             }}
           >
-            Заполнить анкету
+            {t.rightSidebar.ctaButton}
           </Button>
         </div>
       </div>

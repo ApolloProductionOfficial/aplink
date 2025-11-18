@@ -1,20 +1,23 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
 import { TrendingUp } from 'lucide-react';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const EarningsChart = () => {
+  const { t } = useTranslation();
+  
   const data = [
-    { month: 'Месяц 1', earnings: 2500, label: '2-3k+' },
-    { month: 'Месяц 2', earnings: 4000, label: '3-5k+' },
-    { month: 'Месяц 3', earnings: 6000, label: '5-7k+' },
-    { month: 'Месяц 4', earnings: 8000, label: '7-9k+' },
-    { month: 'Месяц 5', earnings: 10000, label: '9-11k+' },
-    { month: 'Месяц 6', earnings: 12000, label: '11-13k+' },
-    { month: 'Месяц 7', earnings: 14000, label: '13-15k+' },
-    { month: 'Месяц 8', earnings: 16000, label: '15-17k+' },
-    { month: 'Месяц 9', earnings: 18000, label: '17-19k+' },
-    { month: 'Месяц 10', earnings: 19500, label: '18-20k+' },
-    { month: 'Месяц 11', earnings: 21000, label: '19-22k+' },
-    { month: 'Месяц 12', earnings: 23000, label: '20k++' },
+    { month: `${t.earnings.month} 1`, earnings: 2500, label: '2-3k+' },
+    { month: `${t.earnings.month} 2`, earnings: 4000, label: '3-5k+' },
+    { month: `${t.earnings.month} 3`, earnings: 6000, label: '5-7k+' },
+    { month: `${t.earnings.month} 4`, earnings: 8000, label: '7-9k+' },
+    { month: `${t.earnings.month} 5`, earnings: 10000, label: '9-11k+' },
+    { month: `${t.earnings.month} 6`, earnings: 12000, label: '11-13k+' },
+    { month: `${t.earnings.month} 7`, earnings: 14000, label: '13-15k+' },
+    { month: `${t.earnings.month} 8`, earnings: 16000, label: '15-17k+' },
+    { month: `${t.earnings.month} 9`, earnings: 18000, label: '17-19k+' },
+    { month: `${t.earnings.month} 10`, earnings: 19500, label: '18-20k+' },
+    { month: `${t.earnings.month} 11`, earnings: 21000, label: '19-22k+' },
+    { month: `${t.earnings.month} 12`, earnings: 23000, label: '20k++' },
   ];
 
   const CustomTooltip = ({ active, payload }: any) => {
@@ -39,14 +42,14 @@ const EarningsChart = () => {
               <TrendingUp className="h-5 w-5 text-primary" />
             </div>
             <span className="text-sm font-semibold text-primary uppercase tracking-wider">
-              Рост дохода моделей
+              {t.earnings.badge}
             </span>
           </div>
           <h2 className="text-4xl md:text-5xl font-bold mb-4">
-            Твой путь к <span className="text-primary">$20,000+</span>
+            {t.earnings.title} <span className="text-primary">{t.earnings.titleAmount}</span>
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Средний рост дохода наших моделей за первый год работы
+            {t.earnings.description}
           </p>
         </div>
 
@@ -94,15 +97,15 @@ const EarningsChart = () => {
             <div className="grid grid-cols-3 gap-4 mt-8 pt-6 border-t border-border/50">
               <div className="text-center">
                 <p className="text-2xl md:text-3xl font-bold text-primary">$2.5k</p>
-                <p className="text-sm text-muted-foreground mt-1">Старт</p>
+                <p className="text-sm text-muted-foreground mt-1">{t.earnings.start}</p>
               </div>
               <div className="text-center">
                 <p className="text-2xl md:text-3xl font-bold text-primary">$12k</p>
-                <p className="text-sm text-muted-foreground mt-1">6 месяцев</p>
+                <p className="text-sm text-muted-foreground mt-1">{t.earnings.months6}</p>
               </div>
               <div className="text-center">
                 <p className="text-2xl md:text-3xl font-bold text-primary">$23k+</p>
-                <p className="text-sm text-muted-foreground mt-1">12 месяцев</p>
+                <p className="text-sm text-muted-foreground mt-1">{t.earnings.months12}</p>
               </div>
             </div>
           </div>

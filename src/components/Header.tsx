@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useButtonSound } from "@/hooks/useButtonSound";
+import { useTranslation } from "@/hooks/useTranslation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Globe } from "lucide-react";
 import {
@@ -13,6 +14,7 @@ import logoVideo from "@/assets/logo-video.mov";
 const Header = () => {
   const { playClickSound } = useButtonSound();
   const { language, setLanguage } = useLanguage();
+  const { t } = useTranslation();
 
   const languages = {
     ru: { label: 'Русский', flag: '🇷🇺' },
@@ -36,7 +38,7 @@ const Header = () => {
               />
             </div>
             <span className="text-base font-bold animate-text-shimmer">
-              APOLLO PRODUCTION — OnlyFans Management Agency
+              {t.header.title}
             </span>
           </div>
           
@@ -46,28 +48,28 @@ const Header = () => {
               className="text-sm text-foreground/80 hover:text-primary transition-colors"
               onClick={playClickSound}
             >
-              О нас
+              {t.header.about}
             </a>
             <a 
               href="#traffic" 
               className="text-sm text-foreground/80 hover:text-primary transition-colors"
               onClick={playClickSound}
             >
-              Источники трафика
+              {t.header.traffic}
             </a>
             <a 
               href="#services" 
               className="text-sm text-foreground/80 hover:text-primary transition-colors"
               onClick={playClickSound}
             >
-              Услуги
+              {t.header.services}
             </a>
             <a 
               href="#infrastructure" 
               className="text-sm text-foreground/80 hover:text-primary transition-colors"
               onClick={playClickSound}
             >
-              Инфраструктура
+              {t.header.infrastructure}
             </a>
             <Button 
               size="sm"
@@ -77,7 +79,7 @@ const Header = () => {
                 window.open('https://onlyreddit.com', '_blank');
               }}
             >
-              Reddit сайт
+              {t.header.redditSite}
             </Button>
             
             {/* Language Selector - Desktop */}
