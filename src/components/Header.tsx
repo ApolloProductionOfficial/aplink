@@ -9,8 +9,8 @@ const Header = () => {
     <header className="fixed top-[40px] left-0 right-0 z-40 bg-card/95 backdrop-blur-lg border-b border-border">
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-primary">
+          <div className="flex items-center gap-3">
+            <div className="w-14 h-14 rounded-full overflow-hidden">
               <video 
                 src={logoVideo} 
                 autoPlay 
