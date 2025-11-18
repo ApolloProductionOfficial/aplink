@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useButtonSound } from "@/hooks/useButtonSound";
-import cfLogo from "@/assets/cf-logo-transparent.png";
+import cfLogo from "@/assets/cf-logo-final.png";
 
 const Hero = () => {
   const { playClickSound } = useButtonSound();
@@ -64,8 +64,7 @@ const Hero = () => {
                       className="w-36 h-36 z-10"
                       style={{
                         filter: 'drop-shadow(0 0 40px hsl(var(--primary))) drop-shadow(0 0 20px hsl(var(--primary))) drop-shadow(0 0 10px rgba(0,255,255,0.8))',
-                        imageRendering: 'crisp-edges',
-                        mixBlendMode: 'screen'
+                        imageRendering: 'crisp-edges'
                       }}
                     />
                   </div>
