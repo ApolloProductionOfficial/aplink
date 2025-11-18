@@ -13,6 +13,33 @@ const Sidebar = () => {
         { text: "Связаться в Telegram", url: "https://t.me/Apollo_Production" },
         { text: "Анкета для моделей", url: "https://docs.google.com/forms/d/e/1FAIpQLSdImReNAMa_AQ74PYbBosGLMbm7FJnSaGkuq-QIJDlDNdnW5Q/viewform" }
       ]
+    },
+    {
+      title: "5 лет на рынке",
+      subtitle: "О нас",
+      description: "Помогали открывать агентства, собрали лучший опыт и ошибки — строим своё OnlyFans‑агентство полного цикла. Вы — создаёте, мы — масштабируем.",
+      links: [
+        { text: "Связаться в Telegram", url: "https://t.me/Apollo_Production" },
+        { text: "Анкета для моделей", url: "https://docs.google.com/forms/d/e/1FAIpQLSdImReNAMa_AQ74PYbBosGLMbm7FJnSaGkuq-QIJDlDNdnW5Q/viewform" }
+      ]
+    },
+    {
+      title: "5 лет на рынке",
+      subtitle: "О нас",
+      description: "Помогали открывать агентства, собрали лучший опыт и ошибки — строим своё OnlyFans‑агентство полного цикла. Вы — создаёте, мы — масштабируем.",
+      links: [
+        { text: "Связаться в Telegram", url: "https://t.me/Apollo_Production" },
+        { text: "Анкета для моделей", url: "https://docs.google.com/forms/d/e/1FAIpQLSdImReNAMa_AQ74PYbBosGLMbm7FJnSaGkuq-QIJDlDNdnW5Q/viewform" }
+      ]
+    },
+    {
+      title: "5 лет на рынке",
+      subtitle: "О нас",
+      description: "Помогали открывать агентства, собрали лучший опыт и ошибки — строим своё OnlyFans‑агентство полного цикла. Вы — создаёте, мы — масштабируем.",
+      links: [
+        { text: "Связаться в Telegram", url: "https://t.me/Apollo_Production" },
+        { text: "Анкета для моделей", url: "https://docs.google.com/forms/d/e/1FAIpQLSdImReNAMa_AQ74PYbBosGLMbm7FJnSaGkuq-QIJDlDNdnW5Q/viewform" }
+      ]
     }
   ];
 
