@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useButtonSound } from "@/hooks/useButtonSound";
+import logoVideo from "@/assets/logo-video.mov";
 
 const Header = () => {
   const { playClickSound } = useButtonSound();
@@ -9,8 +10,15 @@ const Header = () => {
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full border-2 border-primary flex items-center justify-center bg-background/50 backdrop-blur">
-              <span className="text-sm font-bold text-primary">A</span>
+            <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-primary">
+              <video 
+                src={logoVideo} 
+                autoPlay 
+                loop 
+                muted 
+                playsInline
+                className="w-full h-full object-cover"
+              />
             </div>
             <span className="text-sm font-bold">
               Apollo Production — OnlyFans Management Agency
