@@ -179,13 +179,13 @@ All colors MUST be HSL.
 
 @keyframes rotate3d {
   0% {
-    transform: rotateY(-25deg) rotateX(5deg);
+    transform: rotateY(-35deg) rotateX(8deg);
   }
   50% {
-    transform: rotateY(25deg) rotateX(-5deg);
+    transform: rotateY(35deg) rotateX(-8deg);
   }
   100% {
-    transform: rotateY(-25deg) rotateX(5deg);
+    transform: rotateY(-35deg) rotateX(8deg);
   }
 }
 

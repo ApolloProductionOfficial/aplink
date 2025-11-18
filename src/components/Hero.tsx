@@ -58,12 +58,12 @@ const Hero = () => {
               </div>
               
               {/* Logo */}
-              <div className="absolute inset-0 flex items-center justify-center" style={{ perspective: '1000px' }}>
+              <div className="absolute inset-0 flex items-center justify-center z-50" style={{ perspective: '1000px' }}>
                 <div style={{ transformStyle: 'preserve-3d', animation: 'rotate3d 20s linear infinite' }}>
                   <img 
                     src={cfLogo} 
                     alt="CF Logo" 
-                    className="w-56 h-56 z-20 object-contain"
+                    className="w-56 h-56 object-contain"
                     style={{
                       filter: 'brightness(1.1) contrast(1.2) drop-shadow(2px 2px 0px rgba(0,0,0,0.9)) drop-shadow(4px 4px 0px rgba(0,0,0,0.7)) drop-shadow(6px 6px 0px rgba(0,0,0,0.5)) drop-shadow(8px 8px 0px rgba(0,0,0,0.3))',
                       imageRendering: 'crisp-edges',
