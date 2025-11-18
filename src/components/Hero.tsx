@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useButtonSound } from "@/hooks/useButtonSound";
+import customLogo from "@/assets/custom-logo.jpg";
 
 const Hero = () => {
   const { playClickSound } = useButtonSound();
@@ -44,42 +45,44 @@ const Hero = () => {
           </div>
           
           <div className="animate-slide-in-right relative hidden lg:block">
-            <div className="relative bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl rounded-2xl p-8 border border-border overflow-hidden">
-              <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(0,188,212,0.05)_50%,transparent_75%)] bg-[length:250%_250%] animate-gradient" />
-              <div className="relative aspect-video bg-gradient-to-br from-primary/10 via-transparent to-accent/10 rounded-xl flex items-center justify-center overflow-hidden">
-                <div className="absolute inset-0">
-                  {[...Array(20)].map((_, i) => (
-                    <div
-                      key={i}
-                      className="absolute h-px bg-primary/20"
-                      style={{
-                        top: `${Math.random() * 100}%`,
-                        left: `${Math.random() * 100}%`,
-                        width: `${Math.random() * 200 + 50}px`,
-                        transform: `rotate(${Math.random() * 360}deg)`,
-                        animation: `float ${Math.random() * 3 + 2}s ease-in-out infinite`,
-                        animationDelay: `${Math.random() * 2}s`
-                      }}
-                    />
-                  ))}
+            <div className="relative group">
+              {/* Background glow effects */}
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent rounded-full blur-3xl animate-pulse-glow" />
+              
+              {/* Rotating ring */}
+              <div className="absolute inset-0 rounded-full border-2 border-primary/30 animate-spin" style={{ animationDuration: '20s' }} />
+              
+              {/* Main logo container */}
+              <div className="relative aspect-square w-full max-w-md mx-auto">
+                <div className="absolute inset-0 bg-gradient-to-br from-card to-card/50 backdrop-blur-xl rounded-full border-2 border-primary/40 animate-float overflow-hidden shadow-2xl shadow-primary/20">
+                  {/* Animated gradient overlay */}
+                  <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(0,188,212,0.1)_50%,transparent_75%)] bg-[length:250%_250%] animate-gradient" />
+                  
+                  {/* Logo image */}
+                  <img 
+                    src={customLogo} 
+                    alt="Apollo Production Logo" 
+                    className="w-full h-full object-cover rounded-full relative z-10 transition-transform duration-700 group-hover:scale-110"
+                  />
+                  
+                  {/* Overlay glow on hover */}
+                  <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/10 transition-colors duration-500 rounded-full" />
                 </div>
-                <div className="relative z-10 text-center space-y-4">
-                  <div className="flex items-center justify-center gap-4">
-                    <div className="w-16 h-16 rounded-full border-2 border-primary flex items-center justify-center bg-background/50 backdrop-blur">
-                      <span className="text-2xl font-bold text-primary">A</span>
-                    </div>
-                    <div className="text-left">
-                      <div className="text-xl font-bold">APOLLO</div>
-                      <div className="text-xs text-muted-foreground">PRODUCTION</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 text-primary">
-                    <svg className="w-8 h-8" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                    </svg>
-                    <span className="text-2xl font-bold">OnlyFans</span>
-                  </div>
-                </div>
+                
+                {/* Orbiting particles */}
+                {[...Array(8)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="absolute w-2 h-2 bg-primary rounded-full animate-pulse-glow"
+                    style={{
+                      top: '50%',
+                      left: '50%',
+                      transform: `rotate(${i * 45}deg) translateY(-200px)`,
+                      animation: `float ${3 + i * 0.5}s ease-in-out infinite`,
+                      animationDelay: `${i * 0.2}s`
+                    }}
+                  />
+                ))}
               </div>
             </div>
           </div>
