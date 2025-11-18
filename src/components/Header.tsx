@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Rocket, Menu } from "lucide-react";
+import { Rocket, Menu, X } from "lucide-react";
 import { useState } from "react";
 
 const Header = () => {
@@ -11,50 +11,59 @@ const Header = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 group cursor-pointer">
             <Rocket className="h-6 w-6 text-primary transition-transform group-hover:rotate-12 group-hover:scale-110" />
-            <span className="text-xl font-bold bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent">
-              Apollo Production
+            <span className="text-lg md:text-xl font-bold">
+              Apollo Production — OnlyFans Management Agency
             </span>
           </div>
           
-          <nav className="hidden md:flex items-center gap-8">
-            <a href="#about" className="text-foreground/80 hover:text-primary transition-all hover:scale-110 relative after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-primary after:transition-all hover:after:w-full">
+          <nav className="hidden lg:flex items-center gap-6">
+            <a href="#about" className="text-foreground/80 hover:text-primary transition-all">
               О нас
             </a>
-            <a href="#services" className="text-foreground/80 hover:text-primary transition-all hover:scale-110 relative after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-primary after:transition-all hover:after:w-full">
+            <a href="#traffic" className="text-foreground/80 hover:text-primary transition-all">
+              Источники трафика
+            </a>
+            <a href="#services" className="text-foreground/80 hover:text-primary transition-all">
               Услуги
             </a>
-            <a href="#stats" className="text-foreground/80 hover:text-primary transition-all hover:scale-110 relative after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-primary after:transition-all hover:after:w-full">
-              Статистика
+            <a href="#infrastructure" className="text-foreground/80 hover:text-primary transition-all">
+              Инфраструктура
             </a>
+            <Button 
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+              onClick={() => window.open('https://onlyreddit.com', '_blank')}
+            >
+              Reddit сайт
+            </Button>
           </nav>
           
-          <div className="flex items-center gap-4">
-            <Button className="hidden md:flex bg-primary text-primary-foreground hover:bg-primary/90 shadow-glow animate-pulse-glow transition-transform hover:scale-105">
-              Начать работу
-            </Button>
-            
-            <button 
-              className="md:hidden text-foreground"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-            >
-              <Menu className="h-6 w-6" />
-            </button>
-          </div>
+          <button 
+            className="lg:hidden text-foreground"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+          >
+            {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </button>
         </div>
         
         {isMenuOpen && (
-          <div className="md:hidden mt-4 pb-4 space-y-4 animate-slide-up">
-            <a href="#about" className="block text-foreground/80 hover:text-primary transition-colors">
+          <div className="lg:hidden mt-4 pb-4 space-y-4 animate-slide-up">
+            <a href="#about" className="block text-foreground/80 hover:text-primary transition-colors" onClick={() => setIsMenuOpen(false)}>
               О нас
             </a>
-            <a href="#services" className="block text-foreground/80 hover:text-primary transition-colors">
+            <a href="#traffic" className="block text-foreground/80 hover:text-primary transition-colors" onClick={() => setIsMenuOpen(false)}>
+              Источники трафика
+            </a>
+            <a href="#services" className="block text-foreground/80 hover:text-primary transition-colors" onClick={() => setIsMenuOpen(false)}>
               Услуги
             </a>
-            <a href="#stats" className="block text-foreground/80 hover:text-primary transition-colors">
-              Статистика
+            <a href="#infrastructure" className="block text-foreground/80 hover:text-primary transition-colors" onClick={() => setIsMenuOpen(false)}>
+              Инфраструктура
             </a>
-            <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-              Начать работу
+            <Button 
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+              onClick={() => window.open('https://onlyreddit.com', '_blank')}
+            >
+              Reddit сайт
             </Button>
           </div>
         )}
