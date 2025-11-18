@@ -58,9 +58,11 @@ const NewsWidget = () => {
       setNews(data || []);
     } catch (error) {
       console.error('Error fetching news:', error);
+      const errorTitle = language === 'ru' ? "Ошибка" : language === 'uk' ? "Помилка" : "Error";
+      const errorDesc = language === 'ru' ? "Не удалось загрузить новости" : language === 'uk' ? "Не вдалося завантажити новини" : "Failed to load news";
       toast({
-        title: "Ошибка",
-        description: "Не удалось загрузить новости",
+        title: errorTitle,
+        description: errorDesc,
         variant: "destructive"
       });
     } finally {
@@ -97,43 +99,41 @@ const NewsWidget = () => {
           </div>
         ) : (
           <div className="space-y-4">
-            {news.map((item) => (
-              <div 
-                key={item.id} 
-                className="bg-card/50 border border-border rounded-lg p-4 hover:border-primary/30 transition-all duration-300 group"
-              >
-                {/* Date */}
-                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-                  <Calendar className="h-3 w-3" />
-                  <span>{new Date(item.published_at).toLocaleDateString(language)}</span>
-                  {item.source && (
-                    <span className="ml-auto text-primary/70">{item.source}</span>
-                  )}
-                </div>
+            {news.map((item) => {
+              const NewsCard = item.url ? 'a' : 'div';
+              const linkProps = item.url ? {
+                href: item.url,
+                target: "_blank",
+                rel: "noopener noreferrer"
+              } : {};
+              
+              return (
+                <NewsCard
+                  key={item.id}
+                  {...linkProps}
+                  className="bg-card/50 border border-border rounded-lg p-4 hover:border-primary/30 transition-all duration-300 group cursor-pointer block no-underline"
+                >
+                  {/* Date */}
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+                    <Calendar className="h-3 w-3" />
+                    <span>{new Date(item.published_at).toLocaleDateString(language)}</span>
+                    {item.source && (
+                      <span className="ml-auto text-primary/70">{item.source}</span>
+                    )}
+                  </div>
 
-                {/* Title */}
-                <h4 className="font-semibold text-sm mb-2 group-hover:text-primary transition-colors">
-                  {item.title}
-                </h4>
+                  {/* Title */}
+                  <h4 className="font-semibold text-sm mb-2 group-hover:text-primary transition-colors">
+                    {item.title}
+                  </h4>
 
-                {/* Description */}
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  {item.description}
-                </p>
-
-                {/* Link (if available) */}
-                {item.url && (
-                  <a 
-                    href={item.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-primary hover:underline inline-block mt-2"
-                  >
-                    {language === 'ru' ? 'Читать далее →' : language === 'uk' ? 'Читати далі →' : 'Read more →'}
-                  </a>
-                )}
-              </div>
-            ))}
+                  {/* Description */}
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    {item.description}
+                  </p>
+                </NewsCard>
+              );
+            })}
           </div>
         )}
       </div>

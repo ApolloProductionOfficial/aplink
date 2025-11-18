@@ -26,15 +26,36 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Search for adult industry news using web search
-    const searchQueries = [
-      'OnlyFans news updates',
-      'adult content industry news',
-      'content creator platform updates',
-      'OnlyFans creator earnings news'
-    ];
+    // Get language from request body
+    const body = req.method === 'POST' ? await req.json() : {};
+    const language = body.language || 'en';
+    
+    console.log('Fetching news for language:', language);
 
-    const randomQuery = searchQueries[Math.floor(Math.random() * searchQueries.length)];
+    // Search queries based on language
+    const searchQueriesByLang: Record<string, string[]> = {
+      ru: [
+        'OnlyFans новости',
+        'новости индустрии контента для взрослых',
+        'заработок создателей контента новости',
+        'OnlyFans обновления платформы'
+      ],
+      en: [
+        'OnlyFans news updates',
+        'adult content industry news',
+        'content creator earnings news',
+        'OnlyFans platform updates'
+      ],
+      uk: [
+        'OnlyFans новини',
+        'новини індустрії контенту для дорослих',
+        'заробіток創аторів контенту новини',
+        'OnlyFans оновлення платформи'
+      ]
+    };
+
+    const queries = searchQueriesByLang[language] || searchQueriesByLang.en;
+    const randomQuery = queries[Math.floor(Math.random() * queries.length)];
     console.log('Searching for:', randomQuery);
 
     // Using a simple news API approach
@@ -64,18 +85,51 @@ serve(async (req) => {
     // Fallback news if API fails or no key
     if (newsItems.length === 0) {
       console.log('Using fallback news');
-      const fallbackNews = [
-        {
-          title: 'Content Creator Economy Continues Growth',
-          description: 'The creator economy shows strong momentum with increased earnings across major platforms.',
-          source: 'Industry Insights'
-        },
-        {
-          title: 'New Platform Features for Content Creators',
-          description: 'Major platforms announce new tools and features to help creators monetize their content.',
-          source: 'Platform Updates'
-        }
-      ];
+      const fallbackNewsByLang: Record<string, any[]> = {
+        ru: [
+          {
+            title: 'Экономика создателей контента продолжает рост',
+            description: 'Индустрия создателей контента показывает сильный рост с увеличением доходов на всех основных платформах.',
+            source: 'Отраслевая аналитика',
+            url: 'https://onlyfans.com'
+          },
+          {
+            title: 'Новые функции для создателей контента',
+            description: 'Основные платформы анонсируют новые инструменты для монетизации контента.',
+            source: 'Новости платформ',
+            url: 'https://onlyfans.com'
+          }
+        ],
+        en: [
+          {
+            title: 'Content Creator Economy Continues Growth',
+            description: 'The creator economy shows strong momentum with increased earnings across major platforms.',
+            source: 'Industry Insights',
+            url: 'https://onlyfans.com'
+          },
+          {
+            title: 'New Platform Features for Content Creators',
+            description: 'Major platforms announce new tools and features to help creators monetize their content.',
+            source: 'Platform Updates',
+            url: 'https://onlyfans.com'
+          }
+        ],
+        uk: [
+          {
+            title: 'Економіка творців контенту продовжує зростання',
+            description: 'Індустрія творців контенту показує сильне зростання зі збільшенням доходів на всіх основних платформах.',
+            source: 'Галузева аналітика',
+            url: 'https://onlyfans.com'
+          },
+          {
+            title: 'Нові функції для творців контенту',
+            description: 'Основні платформи анонсують нові інструменти для монетизації контенту.',
+            source: 'Новини платформ',
+            url: 'https://onlyfans.com'
+          }
+        ]
+      };
+      const fallbackNews = fallbackNewsByLang[language] || fallbackNewsByLang.en;
       newsItems = [fallbackNews[Math.floor(Math.random() * fallbackNews.length)]];
     }
 
