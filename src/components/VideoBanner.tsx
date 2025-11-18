@@ -2,7 +2,7 @@ import promoVideo from "@/assets/promo-video.mp4";
 
 const VideoBanner = () => {
   return (
-    <section className="relative w-full h-[400px] overflow-hidden">
+    <section className="fixed top-[92px] left-0 right-0 h-[400px] overflow-hidden z-30">
       {/* Video Background */}
       <video
         src={promoVideo}
@@ -13,21 +13,9 @@ const VideoBanner = () => {
         className="absolute inset-0 w-full h-full object-cover"
       />
       
-      {/* Gradient Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/40 to-background/60" />
-      
-      {/* Content */}
-      <div className="relative h-full flex items-center justify-center">
-        <div className="text-center space-y-4 px-4">
-          <h1 className="text-5xl md:text-7xl font-bold text-white drop-shadow-2xl animate-text-shimmer">
-            APOLLO PRODUCTION
-          </h1>
-          <p className="text-xl md:text-2xl text-white/90 drop-shadow-lg">
-            OnlyFans Management Agency
-          </p>
-          <div className="w-32 h-1 bg-primary mx-auto rounded-full shadow-lg shadow-primary/50" />
-        </div>
-      </div>
+      {/* Darkening overlays on sides for sidebar readability */}
+      <div className="absolute left-0 top-0 bottom-0 w-80 bg-gradient-to-r from-background/90 via-background/60 to-transparent lg:block hidden" />
+      <div className="absolute right-0 top-0 bottom-0 w-80 bg-gradient-to-l from-background/90 via-background/60 to-transparent xl:block hidden" />
       
       {/* Bottom fade */}
       <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-background to-transparent" />

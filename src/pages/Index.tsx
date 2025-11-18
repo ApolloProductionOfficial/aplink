@@ -21,7 +21,7 @@ const Index = () => {
       <VideoBanner />
       <Sidebar />
       <RightSidebar />
-      <div className="lg:pl-80 xl:pr-80">
+      <div className="lg:pl-80 xl:pr-80 pt-[492px]">
         <Hero />
         <VideoPromo />
         <TrafficSources />
