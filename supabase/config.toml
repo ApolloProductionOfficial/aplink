@@ -2,3 +2,6 @@ project_id = "mthtyahawmjajnphgdwh"
 
 [functions.ai-chat]
 verify_jwt = false
+
+[functions.fetch-adult-news]
+verify_jwt = false
