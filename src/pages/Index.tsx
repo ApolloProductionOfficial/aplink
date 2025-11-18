@@ -18,10 +18,10 @@ const Index = () => {
       <MusicPlayer />
       <TopBanner />
       <Header />
-      <VideoBanner />
       <Sidebar />
       <RightSidebar />
-      <div className="lg:pl-80 xl:pr-80 pt-[492px]">
+      <div className="lg:pl-80 xl:pr-80 pt-[92px]">
+        <VideoBanner />
         <Hero />
         <VideoPromo />
         <TrafficSources />
