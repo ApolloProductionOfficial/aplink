@@ -53,13 +53,13 @@ const Hero = () => {
               
               {/* Static glow that doesn't rotate */}
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="w-72 h-72 rounded-full blur-3xl animate-pulse-glow" style={{ background: 'radial-gradient(circle, hsl(var(--primary)) 0%, hsla(var(--primary),0.5) 40%, transparent 70%)' }} />
-                <div className="absolute w-80 h-80 bg-primary/30 rounded-full blur-2xl animate-pulse-glow" style={{ animationDelay: '1s' }} />
+                <div className="w-72 h-72 rounded-full blur-3xl animate-pulse-glow" style={{ background: 'radial-gradient(circle, hsl(var(--primary)) 0%, hsla(var(--primary),0.3) 40%, transparent 70%)' }} />
+                <div className="absolute w-80 h-80 bg-primary/15 rounded-full blur-2xl animate-pulse-glow" style={{ animationDelay: '1s' }} />
               </div>
               
               {/* Logo with additional backlight */}
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="w-64 h-64 bg-primary/40 rounded-full blur-xl" />
+                <div className="w-64 h-64 bg-primary/25 rounded-full blur-xl" />
               </div>
               
               {/* Logo */}
