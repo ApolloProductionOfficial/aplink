@@ -4,10 +4,21 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 
 const MusicPlayer = () => {
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(50);
   const audioRef = useRef<HTMLAudioElement>(null);
+
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = volume / 100;
+      // Auto-play when component mounts
+      audioRef.current.play().catch(err => {
+        console.log("Autoplay blocked:", err);
+        setIsPlaying(false);
+      });
+    }
+  }, []);
 
   useEffect(() => {
     if (audioRef.current) {

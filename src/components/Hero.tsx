@@ -5,7 +5,7 @@ const Hero = () => {
   const { playClickSound } = useButtonSound();
   
   return (
-    <section id="about" className="min-h-screen flex items-center justify-center px-4 pt-8 relative overflow-hidden">
+    <section id="about" className="min-h-screen flex items-center justify-center px-4 pt-2 relative overflow-hidden">
       <div className="container mx-auto max-w-6xl relative z-10">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div className="space-y-6 animate-slide-up">
