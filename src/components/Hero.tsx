@@ -47,39 +47,35 @@ const Hero = () => {
           <div className="animate-slide-in-right relative hidden lg:block">
             <div className="relative group">
               {/* Background glow effects */}
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent rounded-full blur-3xl animate-pulse-glow" />
-              
-              {/* Rotating ring */}
-              <div className="absolute inset-0 rounded-full border-2 border-primary/30 animate-spin" style={{ animationDuration: '20s' }} />
+              <div className="absolute -inset-4 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent blur-2xl animate-pulse-glow" />
               
               {/* Main logo container */}
-              <div className="relative aspect-square w-full max-w-md mx-auto">
-                <div className="absolute inset-0 bg-gradient-to-br from-card to-card/50 backdrop-blur-xl rounded-full border-2 border-primary/40 animate-float overflow-hidden shadow-2xl shadow-primary/20">
-                  {/* Animated gradient overlay */}
-                  <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(0,188,212,0.1)_50%,transparent_75%)] bg-[length:250%_250%] animate-gradient" />
-                  
-                  {/* Logo image */}
+              <div className="relative bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl rounded-2xl p-8 border border-primary/30 overflow-hidden shadow-2xl shadow-primary/10 animate-float">
+                {/* Animated gradient overlay */}
+                <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(0,188,212,0.1)_50%,transparent_75%)] bg-[length:250%_250%] animate-gradient" />
+                
+                {/* Logo image with aspect ratio */}
+                <div className="relative aspect-video rounded-xl overflow-hidden border border-border/50">
                   <img 
                     src={customLogo} 
                     alt="Apollo Production Logo" 
-                    className="w-full h-full object-cover rounded-full relative z-10 transition-transform duration-700 group-hover:scale-110"
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
                   
-                  {/* Overlay glow on hover */}
-                  <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/10 transition-colors duration-500 rounded-full" />
+                  {/* Hover overlay effect */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 </div>
                 
-                {/* Orbiting particles */}
-                {[...Array(8)].map((_, i) => (
+                {/* Floating particles around */}
+                {[...Array(6)].map((_, i) => (
                   <div
                     key={i}
-                    className="absolute w-2 h-2 bg-primary rounded-full animate-pulse-glow"
+                    className="absolute w-1.5 h-1.5 bg-primary/60 rounded-full animate-pulse-glow"
                     style={{
-                      top: '50%',
-                      left: '50%',
-                      transform: `rotate(${i * 45}deg) translateY(-200px)`,
-                      animation: `float ${3 + i * 0.5}s ease-in-out infinite`,
-                      animationDelay: `${i * 0.2}s`
+                      top: `${20 + Math.random() * 60}%`,
+                      left: `${i % 2 === 0 ? -8 : 'calc(100% + 8px)'}`,
+                      animation: `float ${4 + i * 0.5}s ease-in-out infinite`,
+                      animationDelay: `${i * 0.3}s`
                     }}
                   />
                 ))}
