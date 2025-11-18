@@ -15,9 +15,10 @@ const AIChatBot = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showHint, setShowHint] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -26,6 +27,27 @@ const AIChatBot = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Animated hint that appears periodically
+  useEffect(() => {
+    if (isOpen) return; // Don't show hint if chat is open
+    
+    const showHintTimer = setInterval(() => {
+      setShowHint(true);
+      setTimeout(() => setShowHint(false), 5000); // Show for 5 seconds
+    }, 15000); // Show every 15 seconds
+
+    // Show hint after 3 seconds on first load
+    const initialTimer = setTimeout(() => {
+      setShowHint(true);
+      setTimeout(() => setShowHint(false), 5000);
+    }, 3000);
+
+    return () => {
+      clearInterval(showHintTimer);
+      clearTimeout(initialTimer);
+    };
+  }, [isOpen]);
 
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
@@ -76,15 +98,34 @@ const AIChatBot = () => {
     }
   };
 
+  const hintText = language === 'ru' 
+    ? "Я могу помочь! Нажми на меня 👋" 
+    : language === 'uk' 
+    ? "Я можу допомогти! Натисни на мене 👋" 
+    : "I can help! Click me 👋";
+
   return (
     <>
+      {/* Animated Hint Tooltip */}
+      {showHint && !isOpen && (
+        <div className="fixed bottom-24 right-6 z-50 animate-fade-in">
+          <div className="bg-primary text-primary-foreground px-4 py-3 rounded-lg shadow-xl relative animate-bounce">
+            <div className="absolute -bottom-2 right-6 w-4 h-4 bg-primary transform rotate-45"></div>
+            <p className="text-sm font-medium whitespace-nowrap">{hintText}</p>
+          </div>
+        </div>
+      )}
+
       {/* Chat Button */}
       <Button
-        onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full bg-primary hover:bg-primary/90 shadow-lg shadow-primary/50"
+        onClick={() => {
+          setIsOpen(!isOpen);
+          setShowHint(false);
+        }}
+        className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full bg-primary hover:bg-primary/90 shadow-lg shadow-primary/50 transition-transform hover:scale-110"
         size="icon"
       >
-        {isOpen ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
+        {isOpen ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6 animate-pulse" />}
       </Button>
 
       {/* Chat Window */}
