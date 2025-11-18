@@ -1,5 +1,6 @@
 import TopBanner from "@/components/TopBanner";
 import Header from "@/components/Header";
+import VideoBanner from "@/components/VideoBanner";
 import Sidebar from "@/components/Sidebar";
 import RightSidebar from "@/components/RightSidebar";
 import Hero from "@/components/Hero";
@@ -17,9 +18,10 @@ const Index = () => {
       <MusicPlayer />
       <TopBanner />
       <Header />
+      <VideoBanner />
       <Sidebar />
       <RightSidebar />
-      <div className="lg:pl-80 xl:pr-80 pt-[92px]">
+      <div className="lg:pl-80 xl:pr-80">
         <Hero />
         <VideoPromo />
         <TrafficSources />
