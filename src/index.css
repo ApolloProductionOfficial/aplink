@@ -113,10 +113,10 @@ All colors MUST be HSL.
 
 @keyframes pulse-glow {
   0%, 100% {
-    box-shadow: 0 0 20px hsl(190 100% 50% / 0.3);
+    box-shadow: 0 0 30px hsl(190 100% 55% / 0.4);
   }
   50% {
-    box-shadow: 0 0 40px hsl(190 100% 50% / 0.6);
+    box-shadow: 0 0 60px hsl(190 100% 60% / 0.9);
   }
 }
 
@@ -179,19 +179,13 @@ All colors MUST be HSL.
 
 @keyframes rotate3d {
   0% {
-    transform: rotateY(0deg) rotateX(0deg);
-  }
-  25% {
-    transform: rotateY(90deg) rotateX(5deg);
+    transform: rotateY(-25deg) rotateX(5deg);
   }
   50% {
-    transform: rotateY(180deg) rotateX(0deg);
-  }
-  75% {
-    transform: rotateY(270deg) rotateX(-5deg);
+    transform: rotateY(25deg) rotateX(-5deg);
   }
   100% {
-    transform: rotateY(360deg) rotateX(0deg);
+    transform: rotateY(-25deg) rotateX(5deg);
   }
 }
 

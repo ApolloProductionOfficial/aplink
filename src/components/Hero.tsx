@@ -53,7 +53,8 @@ const Hero = () => {
               
               {/* Static glow that doesn't rotate */}
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="w-56 h-56 bg-primary/30 rounded-full blur-3xl" />
+                <div className="w-72 h-72 rounded-full blur-3xl" style={{ background: 'radial-gradient(circle, hsl(var(--primary)) 0%, hsla(var(--primary),0.4) 40%, transparent 70%)' }} />
+                <div className="absolute w-80 h-80 bg-primary/20 rounded-full blur-3xl" />
               </div>
               
               {/* Logo */}
