@@ -43,7 +43,7 @@ const RightSidebar = () => {
         {/* Recruitment CTA Box */}
         <div className="bg-card/50 border border-border rounded-lg p-4 mt-8">
           <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
-            Рекрут моделей открыт — заполните анкету и получите стартовый план.
+            Заполни анкету и начни зарабатывать с нами
           </p>
           <Button
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"

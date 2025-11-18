@@ -55,14 +55,6 @@ const Sidebar = () => {
     }
   ];
 
-  const quickLinks = [
-    { text: "Разблокировка крипты (Fansly)", url: "/#/onlyfans" },
-    { text: "Telegram", url: "https://t.me/Apollo_Production" },
-    { text: "Консалтинг", url: "https://t.me/Apollo_Production" },
-    { text: "Запуск", url: "https://t.me/Apollo_Production" },
-    { text: "Анкета для новых моделей", url: "https://docs.google.com/forms/d/e/1FAIpQLSdImReNAMa_AQ74PYbBosGLMbm7FJnSaGkuq-QIJDlDNdnW5Q/viewform" },
-    { text: "Telegram‑группа", url: "https://t.me/MenuOnly4Friends" }
-  ];
 
   const handleThemeChange = (newTheme: number) => {
     playClickSound();
@@ -147,40 +139,6 @@ const Sidebar = () => {
           </div>
         </div>
 
-        {/* Quick Links */}
-        <div>
-          <h4 className="text-sm font-semibold mb-3">Быстрые ссылки</h4>
-          <ul className="space-y-2">
-            {quickLinks.map((link, i) => (
-              <li key={i}>
-                <a
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-primary hover:underline"
-                >
-                  {link.text}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Recruitment CTA */}
-        <div className="bg-card/50 border border-border rounded-lg p-4">
-          <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
-            Рекрут моделей открыт — заполните анкету и получите стартовый план.
-          </p>
-          <Button
-            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-            onClick={() => {
-              playClickSound();
-              window.open('https://docs.google.com/forms/d/e/1FAIpQLSdImReNAMa_AQ74PYbBosGLMbm7FJnSaGkuq-QIJDlDNdnW5Q/viewform', '_blank');
-            }}
-          >
-            Заполнить анкету
-          </Button>
-        </div>
       </div>
     </aside>
   );
