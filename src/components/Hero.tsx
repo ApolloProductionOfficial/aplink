@@ -61,9 +61,10 @@ const Hero = () => {
                     <img 
                       src={cfLogo} 
                       alt="CF Logo" 
-                      className="w-24 h-24 z-10 drop-shadow-2xl"
+                      className="w-32 h-32 z-10"
                       style={{
-                        filter: 'brightness(0) saturate(100%) invert(100%) drop-shadow(0 0 20px hsl(var(--primary)))'
+                        filter: 'brightness(0) saturate(100%) invert(100%) contrast(1.2) drop-shadow(0 0 30px hsl(var(--primary))) drop-shadow(0 0 10px rgba(255,255,255,0.8))',
+                        imageRendering: 'crisp-edges'
                       }}
                     />
                   </div>
