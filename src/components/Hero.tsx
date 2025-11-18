@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/button";
 import { useButtonSound } from "@/hooks/useButtonSound";
-import customLogo from "@/assets/custom-logo.jpg";
 
 const Hero = () => {
   const { playClickSound } = useButtonSound();
@@ -45,41 +44,78 @@ const Hero = () => {
           </div>
           
           <div className="animate-slide-in-right relative hidden lg:block">
-            <div className="relative group">
-              {/* Background glow effects */}
-              <div className="absolute -inset-4 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent blur-2xl animate-pulse-glow" />
-              
-              {/* Main logo container */}
-              <div className="relative bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl rounded-2xl p-8 border border-primary/30 overflow-hidden shadow-2xl shadow-primary/10 animate-float">
-                {/* Animated gradient overlay */}
-                <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(0,188,212,0.1)_50%,transparent_75%)] bg-[length:250%_250%] animate-gradient" />
-                
-                {/* Logo image with aspect ratio */}
-                <div className="relative aspect-video rounded-xl overflow-hidden border border-border/50">
-                  <img 
-                    src={customLogo} 
-                    alt="Apollo Production Logo" 
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                  />
+            <div className="relative aspect-square w-full max-w-lg mx-auto">
+              {/* Central glowing orb */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="relative w-48 h-48">
+                  {/* Main glowing sphere */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/80 to-primary/60 rounded-full blur-xl animate-pulse-glow" />
+                  <div className="absolute inset-4 bg-gradient-to-br from-primary/90 to-primary/70 rounded-full animate-float" />
+                  <div className="absolute inset-8 bg-gradient-to-br from-primary to-cyan-400 rounded-full shadow-2xl shadow-primary/50">
+                    <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.1)_50%,transparent_75%)] bg-[length:250%_250%] animate-gradient rounded-full" />
+                  </div>
                   
-                  {/* Hover overlay effect */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  {/* Inner logo text */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center text-white z-10">
+                      <div className="text-4xl font-bold mb-1 drop-shadow-lg">AP</div>
+                      <div className="text-xs font-semibold tracking-wider opacity-90">PRODUCTION</div>
+                    </div>
+                  </div>
                 </div>
-                
-                {/* Floating particles around */}
-                {[...Array(6)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="absolute w-1.5 h-1.5 bg-primary/60 rounded-full animate-pulse-glow"
-                    style={{
-                      top: `${20 + Math.random() * 60}%`,
-                      left: `${i % 2 === 0 ? -8 : 'calc(100% + 8px)'}`,
-                      animation: `float ${4 + i * 0.5}s ease-in-out infinite`,
-                      animationDelay: `${i * 0.3}s`
-                    }}
-                  />
-                ))}
               </div>
+              
+              {/* Orbital rings */}
+              {[1, 2, 3].map((ring) => (
+                <div
+                  key={ring}
+                  className="absolute inset-0 border-2 rounded-full animate-spin"
+                  style={{
+                    borderColor: `hsl(190 100% ${60 - ring * 10}% / ${0.3 - ring * 0.08})`,
+                    animationDuration: `${15 + ring * 5}s`,
+                    animationDirection: ring % 2 === 0 ? 'reverse' : 'normal',
+                    margin: `${ring * 30}px`
+                  }}
+                />
+              ))}
+              
+              {/* Floating particles */}
+              {[...Array(20)].map((_, i) => (
+                <div
+                  key={i}
+                  className="absolute w-2 h-2 bg-primary rounded-full animate-pulse-glow"
+                  style={{
+                    top: `${Math.random() * 100}%`,
+                    left: `${Math.random() * 100}%`,
+                    animation: `float ${3 + Math.random() * 4}s ease-in-out infinite, pulse-glow ${2 + Math.random() * 2}s ease-in-out infinite`,
+                    animationDelay: `${Math.random() * 3}s`,
+                    opacity: 0.4 + Math.random() * 0.6
+                  }}
+                />
+              ))}
+              
+              {/* Corner accent lines */}
+              {['top-0 left-0', 'top-0 right-0', 'bottom-0 left-0', 'bottom-0 right-0'].map((pos, i) => (
+                <div key={i} className={`absolute ${pos} w-20 h-20`}>
+                  <div className="w-full h-0.5 bg-gradient-to-r from-primary to-transparent" />
+                  <div className="w-0.5 h-full bg-gradient-to-b from-primary to-transparent" />
+                </div>
+              ))}
+              
+              {/* Data stream effect */}
+              {[...Array(8)].map((_, i) => (
+                <div
+                  key={`stream-${i}`}
+                  className="absolute h-px bg-primary/40"
+                  style={{
+                    top: `${10 + i * 12}%`,
+                    left: 0,
+                    right: 0,
+                    animation: `slide-in-right ${2 + i * 0.3}s ease-in-out infinite`,
+                    animationDelay: `${i * 0.4}s`
+                  }}
+                />
+              ))}
             </div>
           </div>
         </div>
