@@ -9,6 +9,15 @@ const Sidebar = () => {
 
   const themes = [
     {
+      title: "Источники трафика",
+      subtitle: "Все платформы",
+      description: "Полный спектр источников трафика для OnlyFans: TikTok (UGC-сетки, Spark Ads, фермы), Instagram (мобильные фермы, рилсы, автоворонки), X/Twitter (NSFW-friendly треды, рост аудитории), Telegram (лиды в чат, SFS, рекламные сетки), Dating (Tinder - тёплые диалоги с высокой конверсией), PPC (Google/Meta, pre-landing, ретаргет), Microsites/SEO (прокладки, индексация, контент-кластеры), Influencers (коллаборации, взаимный прогрев), Reddit (специальные стратегии).",
+      links: [
+        { text: "Консультация по трафику", url: "https://t.me/Apollo_Production" },
+        { text: "Полный аудит", url: "https://t.me/Apollo_Production" }
+      ]
+    },
+    {
       title: "TikTok & Instagram",
       subtitle: "Социальные сети",
       description: "UGC-сетки, Spark Ads, фермы для Instagram. Мобильные фермы, рилсы, прогрев, автоворонки и безопасные сетапы для масштабирования вашего присутствия.",
