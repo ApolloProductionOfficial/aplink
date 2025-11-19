@@ -94,16 +94,16 @@ const NewsWidget = () => {
       <div className="space-y-6">
         {/* Header */}
         <div>
+          <div className="flex items-center gap-2 mb-3">
+            <Newspaper className="h-5 w-5 text-primary flex-shrink-0" />
+            <h3 className="text-lg font-semibold text-foreground leading-tight">{newsTitle}</h3>
+          </div>
           <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <Newspaper className="h-5 w-5 text-primary flex-shrink-0" />
-              <h3 className="text-lg font-semibold text-foreground">{newsTitle}</h3>
-            </div>
+            <p className="text-xs text-muted-foreground">
+              {language === 'ru' ? 'Обновляется автоматически 2 раза в день' : language === 'uk' ? 'Оновлюється автоматично 2 рази на день' : 'Auto-updates twice daily'}
+            </p>
             <ManualNewsFetch />
           </div>
-          <p className="text-xs text-muted-foreground">
-            {language === 'ru' ? 'Обновляется автоматически 2 раза в день' : language === 'uk' ? 'Оновлюється автоматично 2 рази на день' : 'Auto-updates twice daily'}
-          </p>
         </div>
 
         {/* News List */}
