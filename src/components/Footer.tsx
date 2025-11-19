@@ -80,26 +80,42 @@ const Footer = () => {
           </div>
 
           {/* Resources */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">{t.rightSidebar.title}</h3>
+          <div className="space-y-6">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <AtSign className="h-5 w-5 text-primary" />
+              {t.rightSidebar.title}
+            </h3>
             <div className="space-y-4">
               {contacts.map((contact, i) => (
-                <div key={i} className="space-y-1">
+                <div 
+                  key={i} 
+                  className="group relative overflow-hidden rounded-lg border border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10 p-4 hover:border-primary/40 transition-all duration-300 hover:shadow-lg hover:shadow-primary/20"
+                >
                   <button
                     onClick={() => handleClick(contact.url)}
-                    className="flex items-center gap-2 text-primary hover:underline group"
+                    className="w-full text-left"
                   >
-                    <AtSign className="h-4 w-4 group-hover:scale-110 transition-transform" />
-                    <span className="text-sm font-medium">{contact.platform}: {contact.username}</span>
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center group-hover:bg-primary/30 transition-colors">
+                        <AtSign className="h-5 w-5 text-primary group-hover:scale-110 transition-transform" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-medium text-foreground group-hover:text-primary transition-colors">
+                          {contact.username}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {contact.description}
+                        </div>
+                      </div>
+                    </div>
                   </button>
-                  <p className="text-xs text-muted-foreground ml-6">— {contact.description}</p>
                 </div>
               ))}
             </div>
-            <div className="pt-6">
+            <div className="pt-2">
               <Button
                 onClick={() => handleClick('https://t.me/Apollo_Production')}
-                className="bg-primary hover:bg-primary/90"
+                className="w-full bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20"
               >
                 {t.rightSidebar.telegram}
               </Button>

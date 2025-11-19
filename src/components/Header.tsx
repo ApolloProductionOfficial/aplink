@@ -99,14 +99,7 @@ const Header = () => {
             >
               {t.header.services}
             </a>
-            <a 
-              href="#infrastructure" 
-              className="text-sm text-foreground/80 hover:text-primary transition-colors"
-              onClick={(e) => handleNavigate(e, 'infrastructure')}
-            >
-              {t.header.infrastructure}
-            </a>
-            <Button 
+            <Button
               size="sm"
               className="bg-[#FF4500] hover:bg-[#FF4500]/90 text-white"
               onClick={() => {

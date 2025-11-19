@@ -155,14 +155,13 @@ export const translations = {
     },
     // Right Sidebar
     rightSidebar: {
-      title: "Топ услуг, которые чаще всего берут",
-      partnership40: "Партнёрская программа — 40% с каждого ролика",
-      cryptoUnlock: "Разблокировка крипты (Fansly)",
+      title: "Топ предложений пользующихся спросом",
+      partnership40: "Партнёрка — 40% пассив",
+      cryptoUnlock: "Разблокировка Fansly/OF",
+      verificationRF: "Верификация РФ и СНГ на OnlyFans",
       telegram: "Telegram",
-      consulting: "Консалтинг",
       launch: "Запуск",
       modelForm: "Анкета для новых моделей",
-      telegramGroup: "Telegram‑группа",
       ctaText: "Заполни анкету и начни зарабатывать с нами",
       ctaButton: "Заполнить анкету"
     },
@@ -489,14 +488,13 @@ export const translations = {
     },
     // Right Sidebar
     rightSidebar: {
-      title: "Top Services Clients Choose",
-      partnership40: "Partnership program — 40% from each video",
-      cryptoUnlock: "Crypto Unlock (Fansly)",
+      title: "Top Offers in High Demand",
+      partnership40: "Partnership — 40% passive income",
+      cryptoUnlock: "Fansly/OF Unlock",
+      verificationRF: "Verification RF & CIS for OnlyFans",
       telegram: "Telegram",
-      consulting: "Consulting",
       launch: "Launch",
       modelForm: "Application for New Models",
-      telegramGroup: "Telegram Group",
       ctaText: "Fill out the form and start earning with us",
       ctaButton: "Fill Application"
     },
@@ -869,14 +867,13 @@ export const translations = {
     },
     // Right Sidebar
     rightSidebar: {
-      title: "Топ послуг, які найчастіше беруть",
-      partnership40: "Партнерська програма — 40% з кожного ролика",
-      cryptoUnlock: "Розблокування крипти (Fansly)",
+      title: "Топ пропозицій, що користуються попитом",
+      partnership40: "Партнерка — 40% пасив",
+      cryptoUnlock: "Розблокування Fansly/OF",
+      verificationRF: "Верифікація РФ і СНД на OnlyFans",
       telegram: "Telegram",
-      consulting: "Консалтинг",
       launch: "Запуск",
       modelForm: "Анкета для нових моделей",
-      telegramGroup: "Telegram-група",
       ctaText: "Заповни анкету і почни заробляти з нами",
       ctaButton: "Заповнити анкету"
     },
