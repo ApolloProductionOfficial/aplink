@@ -155,7 +155,8 @@ export const translations = {
     },
     // Right Sidebar
     rightSidebar: {
-      title: "Быстрые ссылки",
+      title: "Топ услуг, которые чаще всего берут",
+      partnership40: "Партнёрская программа — 40% с каждого ролика",
       cryptoUnlock: "Разблокировка крипты (Fansly)",
       telegram: "Telegram",
       consulting: "Консалтинг",
@@ -488,7 +489,8 @@ export const translations = {
     },
     // Right Sidebar
     rightSidebar: {
-      title: "Quick Links",
+      title: "Top Services Clients Choose",
+      partnership40: "Partnership program — 40% from each video",
       cryptoUnlock: "Crypto Unlock (Fansly)",
       telegram: "Telegram",
       consulting: "Consulting",
@@ -867,7 +869,8 @@ export const translations = {
     },
     // Right Sidebar
     rightSidebar: {
-      title: "Швидкі посилання",
+      title: "Топ послуг, які найчастіше беруть",
+      partnership40: "Партнерська програма — 40% з кожного ролика",
       cryptoUnlock: "Розблокування крипти (Fansly)",
       telegram: "Telegram",
       consulting: "Консалтинг",

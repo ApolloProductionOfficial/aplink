@@ -77,7 +77,7 @@ const InstagramAutomation = () => {
               Автоматизация и Софты
             </h1>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              🚀 APOLLO PRODUCTION — Автоматизация для трафика на OnlyFans
+              APOLLO PRODUCTION — Автоматизация для трафика на OnlyFans
             </p>
           </div>
 

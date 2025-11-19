@@ -89,9 +89,13 @@ const Header = () => {
               {t.header.traffic}
             </a>
             <a 
-              href="#services" 
+              href="/services" 
               className="text-sm text-foreground/80 hover:text-primary transition-colors"
-              onClick={(e) => handleNavigate(e, 'services')}
+              onClick={(e) => {
+                e.preventDefault();
+                playClickSound();
+                window.location.href = '/services';
+              }}
             >
               {t.header.services}
             </a>

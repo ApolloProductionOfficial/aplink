@@ -50,7 +50,7 @@ const Sidebar = () => {
   ];
 
   const quickLinks = [
-    { text: t.rightSidebar.modelForm, url: "/partnership", highlight: true, internal: true },
+    { text: t.rightSidebar.partnership40, url: "/partnership", highlight: true, internal: true },
     { text: t.rightSidebar.cryptoUnlock, url: "/crypto-unlock", highlight: true, internal: true },
     { text: t.rightSidebar.consulting, url: "https://t.me/Apollo_Production", highlight: false, internal: false },
     { text: t.rightSidebar.telegramGroup, url: "https://t.me/MenuOnly4Friends", highlight: false, internal: false }
