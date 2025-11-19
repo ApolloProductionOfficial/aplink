@@ -21,17 +21,17 @@ const CustomCursor = () => {
         const newTrail = [
           ...prev,
           { x: e.clientX, y: e.clientY, id: trailId++ },
-        ].slice(-10); // Keep last 10 points
+        ].slice(-8); // Keep last 8 points
         return newTrail;
       });
     };
 
     window.addEventListener('mousemove', handleMouseMove);
 
-    // Remove old trail points
+    // Remove old trail points faster
     const interval = setInterval(() => {
       setTrail((prev) => prev.slice(1));
-    }, 50);
+    }, 30);
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
@@ -41,56 +41,62 @@ const CustomCursor = () => {
 
   return (
     <div className="hidden md:block">
-      {/* Main cursor - Arrow shape */}
+      {/* Main cursor - Neon glow */}
       <div
-        className={`fixed pointer-events-none z-[9999] transition-transform duration-200 ${
-          isPointer ? 'scale-150' : 'scale-100'
+        className={`fixed pointer-events-none z-[9999] transition-transform duration-75 ${
+          isPointer ? 'scale-125' : 'scale-100'
         }`}
         style={{
           left: `${position.x}px`,
           top: `${position.y}px`,
-          transform: 'translate(-20%, -20%)',
+          transform: 'translate(-50%, -50%)',
         }}
       >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path 
-            d="M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z" 
-            fill="hsl(var(--primary))" 
-            fillOpacity="0.8"
-            stroke="hsl(var(--primary))" 
-            strokeWidth="1.5"
-            strokeLinejoin="round"
-          />
-          <path 
-            d="M12.58 12.58L19.97 19.97" 
-            stroke="hsl(var(--primary))" 
-            strokeWidth="1.5"
-            strokeLinecap="round"
-          />
-        </svg>
+        {/* Core */}
+        <div className="relative w-3 h-3">
+          <div className="absolute inset-0 rounded-full bg-primary animate-pulse" />
+          
+          {/* Inner glow */}
+          <div className="absolute inset-0 rounded-full bg-primary blur-sm animate-pulse" 
+               style={{ animationDuration: '1.5s' }} />
+          
+          {/* Outer glow */}
+          <div className="absolute -inset-2 rounded-full bg-primary/60 blur-md animate-pulse" 
+               style={{ animationDuration: '2s' }} />
+          
+          {/* Far glow */}
+          <div className="absolute -inset-4 rounded-full bg-primary/30 blur-lg animate-pulse" 
+               style={{ animationDuration: '2.5s' }} />
+        </div>
       </div>
 
-      {/* Trail */}
-      {trail.map((point, index) => (
-        <div
-          key={point.id}
-          className="fixed pointer-events-none z-[9998]"
-          style={{
-            left: `${point.x}px`,
-            top: `${point.y}px`,
-            transform: 'translate(-50%, -50%)',
-            opacity: (index / trail.length) * 0.5,
-          }}
-        >
+      {/* Trail with glow */}
+      {trail.map((point, index) => {
+        const opacity = (index / trail.length) * 0.8;
+        const size = (index / trail.length) * 16 + 4;
+        
+        return (
           <div
-            className="rounded-full bg-primary/40"
+            key={point.id}
+            className="fixed pointer-events-none z-[9998]"
             style={{
-              width: `${(index / trail.length) * 12}px`,
-              height: `${(index / trail.length) * 12}px`,
+              left: `${point.x}px`,
+              top: `${point.y}px`,
+              transform: 'translate(-50%, -50%)',
+              opacity: opacity,
             }}
-          />
-        </div>
-      ))}
+          >
+            <div
+              className="rounded-full bg-primary blur-sm"
+              style={{
+                width: `${size}px`,
+                height: `${size}px`,
+                boxShadow: `0 0 ${size}px ${size/2}px hsl(var(--primary) / 0.6)`,
+              }}
+            />
+          </div>
+        );
+      })}
     </div>
   );
 };
