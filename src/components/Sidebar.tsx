@@ -21,6 +21,16 @@ const Sidebar = () => {
       title: t.sidebar.trafficSources.title,
       description: t.sidebar.trafficSources.description,
       route: "/traffic-sources"
+    },
+    {
+      title: t.sidebar.modelVerification.title,
+      description: t.sidebar.modelVerification.description,
+      route: "/model-verification"
+    },
+    {
+      title: t.sidebar.partnership.title,
+      description: t.sidebar.partnership.description,
+      route: "/partnership"
     }
   ];
 

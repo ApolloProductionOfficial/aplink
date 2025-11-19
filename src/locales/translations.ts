@@ -85,6 +85,14 @@ export const translations = {
       trafficSources: {
         title: "Источники трафика",
         description: "Полный спектр источников трафика для OnlyFans: TikTok, Instagram, X/Twitter, Telegram, Dating, PPC, SEO и другие."
+      },
+      modelVerification: {
+        title: "Верификация моделей РФ/СНГ",
+        description: "Готовый OnlyFans с выводом в крипту. Помощь с верификацией OF + SKRILL + PAXUM не выходя из дома."
+      },
+      partnership: {
+        title: "Партнёрская программа",
+        description: "40% с каждого ролика. $300 первый месяц | $1,000+ через 3 месяца. Пассивный доход на автомате."
       }
     },
     // Right Sidebar
@@ -109,6 +117,100 @@ export const translations = {
     // Footer
     footer: {
       rights: "Все права защищены."
+    },
+    // Model Verification
+    modelVerification: {
+      back: "Назад",
+      title: "Верификация моделей РФ и СНГ",
+      subtitle: "Готовый OnlyFans с выводом в крипту для моделей из России и СНГ. Делаем всё под ключ!",
+      whatYouGet: "Что вы получите",
+      features: {
+        consultation: {
+          title: "Бесплатная консультация",
+          description: "Консультация по видеочату или текстом для подтверждения всех деталей"
+        },
+        faceban: {
+          title: "Решение проблем с FACEBAN",
+          description: "Помощь в разблокировке аккаунта и решение проблем с блокировками"
+        },
+        verification: {
+          title: "Полная верификация",
+          description: "Помощь в прохождении верификации OF + SKRILL + PAXUM не выходя из дома"
+        }
+      },
+      benefits: {
+        title: "Бонусы и гарантии",
+        items: [
+          "Любые популярные гаранты для безопасности сделки",
+          "Проходим верификацию за руку от начала и до конца",
+          "Не надо никуда ехать - всё делается дома в уюте и безопасности",
+          "Помощь с надёжными агенствами, которые делают доходы от 10-50к$ ежемесячно на новых моделях"
+        ]
+      },
+      cta: {
+        title: "Готовы начать?",
+        description: "Свяжитесь с нами для бесплатной консультации",
+        telegram: "Написать в Telegram",
+        form: "Заполнить анкету"
+      }
+    },
+    // Partnership Program
+    partnership: {
+      back: "Назад",
+      badge: "Набор ограничен",
+      title: "Набор в закрытую партнёрку",
+      subtitle: "Официальные партнёры платформы с гарантированным продвижением в рекомендациях",
+      features: {
+        commission: {
+          title: "40% с каждого ролика",
+          description: "Высокий процент от каждого загруженного видео"
+        },
+        income: {
+          title: "Стабильный рост",
+          description: "$300 первый месяц | $1,000+ через 3 месяца работы"
+        },
+        passive: {
+          title: "Пассивный доход",
+          description: "Доход на автомате после загрузки контента"
+        }
+      },
+      whyOfficial: "Почему мы - официальные партнёры",
+      advantages: {
+        recommendations: {
+          title: "Принудительное попадание в рекомендации",
+          description: "Не 'может быть' или 'если повезёт' - гарантированно. У нас прямой доступ к продвижению"
+        },
+        reach: {
+          title: "Охваты в х5 выше чем на PornHub",
+          description: "Проверено на реальных моделях. Факты, не обещания"
+        },
+        competition: {
+          title: "Почти нет конкуренции",
+          description: "Платформа новая - попасть в ТОП сейчас легко. Через полгода будет толпа, опоздаешь"
+        },
+        bonus: {
+          title: "Двойная монетизация",
+          description: "Вставляем твои ссылки (OF, TG, Fansly) - двойная монетизация с одного контента"
+        }
+      },
+      requirements: {
+        title: "От тебя требуется",
+        items: [
+          "Верификация на платформе",
+          "5-10 стартовых видео (качество не критично)",
+          "Всё остальное (монтаж, превью, SEO, алгоритмы) - наша работа"
+        ]
+      },
+      limited: {
+        title: "⚡ Набор жёстко ограничен: 15 моделей",
+        description: "Цель: войти в ТОП-30 платформы за 2 месяца и удержаться. Отбор по заявкам - берём не всех"
+      },
+      cta: {
+        title: "Хочешь попасть в программу?",
+        description: "Отправь заявку и мы свяжемся с тобой для обсуждения деталей",
+        apply: "Подать заявку",
+        questions: "Задать вопрос"
+      }
     }
   },
   en: {
@@ -197,6 +299,14 @@ export const translations = {
       trafficSources: {
         title: "Traffic Sources",
         description: "Full range of traffic sources for OnlyFans: TikTok, Instagram, X/Twitter, Telegram, Dating, PPC, SEO and others."
+      },
+      modelVerification: {
+        title: "RF/CIS Model Verification",
+        description: "Ready OnlyFans with crypto withdrawal. Assistance with OF + SKRILL + PAXUM verification from home."
+      },
+      partnership: {
+        title: "Partnership Program",
+        description: "40% from each video. $300 first month | $1,000+ after 3 months. Automated passive income."
       }
     },
     // Right Sidebar
@@ -221,6 +331,100 @@ export const translations = {
     // Footer
     footer: {
       rights: "All rights reserved."
+    },
+    // Model Verification
+    modelVerification: {
+      back: "Back",
+      title: "RF and CIS Model Verification",
+      subtitle: "Ready OnlyFans with crypto withdrawal for models from Russia and CIS. We do everything turnkey!",
+      whatYouGet: "What You Get",
+      features: {
+        consultation: {
+          title: "Free Consultation",
+          description: "Video chat or text consultation to confirm all details"
+        },
+        faceban: {
+          title: "FACEBAN Problem Solving",
+          description: "Help with account unlock and solving blocking issues"
+        },
+        verification: {
+          title: "Full Verification",
+          description: "Assistance with OF + SKRILL + PAXUM verification from home"
+        }
+      },
+      benefits: {
+        title: "Bonuses and Guarantees",
+        items: [
+          "Any popular guarantors for transaction security",
+          "We guide you through verification from start to finish",
+          "No need to go anywhere - everything done at home in comfort and safety",
+          "Help with reliable agencies making $10-50k monthly on new models"
+        ]
+      },
+      cta: {
+        title: "Ready to Start?",
+        description: "Contact us for a free consultation",
+        telegram: "Contact on Telegram",
+        form: "Fill Application"
+      }
+    },
+    // Partnership Program
+    partnership: {
+      back: "Back",
+      badge: "Limited Spots",
+      title: "Join Closed Partnership",
+      subtitle: "Official platform partners with guaranteed promotion in recommendations",
+      features: {
+        commission: {
+          title: "40% per Video",
+          description: "High percentage from each uploaded video"
+        },
+        income: {
+          title: "Stable Growth",
+          description: "$300 first month | $1,000+ after 3 months"
+        },
+        passive: {
+          title: "Passive Income",
+          description: "Automated income after uploading content"
+        }
+      },
+      whyOfficial: "Why We're Official Partners",
+      advantages: {
+        recommendations: {
+          title: "Forced Recommendations Placement",
+          description: "Not 'maybe' or 'if lucky' - guaranteed. We have direct access to promotion"
+        },
+        reach: {
+          title: "5x Higher Reach Than PornHub",
+          description: "Proven on real models. Facts, not promises"
+        },
+        competition: {
+          title: "Almost No Competition",
+          description: "Platform is new - getting to TOP is easy now. In six months there'll be crowds, you'll be late"
+        },
+        bonus: {
+          title: "Double Monetization",
+          description: "We insert your links (OF, TG, Fansly) - double monetization from single content"
+        }
+      },
+      requirements: {
+        title: "What We Need From You",
+        items: [
+          "Platform verification",
+          "5-10 starter videos (quality not critical)",
+          "Everything else (editing, thumbnails, SEO, algorithms) - our work"
+        ]
+      },
+      limited: {
+        title: "⚡ Strictly Limited: 15 Models",
+        description: "Goal: reach platform TOP-30 in 2 months and stay there. Application-based selection - we don't take everyone"
+      },
+      cta: {
+        title: "Want to Join the Program?",
+        description: "Submit application and we'll contact you to discuss details",
+        apply: "Submit Application",
+        questions: "Ask Question"
+      }
     }
   },
   uk: {
@@ -309,6 +513,14 @@ export const translations = {
       trafficSources: {
         title: "Джерела трафіку",
         description: "Повний спектр джерел трафіку для OnlyFans: TikTok, Instagram, X/Twitter, Telegram, Dating, PPC, SEO та інші."
+      },
+      modelVerification: {
+        title: "Верифікація моделей РФ/СНД",
+        description: "Готовий OnlyFans з виведенням в крипту. Допомога з верифікацією OF + SKRILL + PAXUM не виходячи з дому."
+      },
+      partnership: {
+        title: "Партнерська програма",
+        description: "40% з кожного ролика. $300 перший місяць | $1,000+ через 3 місяці. Пасивний дохід на автоматі."
       }
     },
     // Right Sidebar
@@ -333,6 +545,100 @@ export const translations = {
     // Footer
     footer: {
       rights: "Всі права захищені."
+    },
+    // Model Verification
+    modelVerification: {
+      back: "Назад",
+      title: "Верифікація моделей РФ та СНД",
+      subtitle: "Готовий OnlyFans з виведенням в крипту для моделей з Росії та СНД. Робимо все під ключ!",
+      whatYouGet: "Що ви отримаєте",
+      features: {
+        consultation: {
+          title: "Безкоштовна консультація",
+          description: "Консультація по відеочату або текстом для підтвердження всіх деталей"
+        },
+        faceban: {
+          title: "Вирішення проблем з FACEBAN",
+          description: "Допомога в розблокуванні акаунта та вирішення проблем з блокуваннями"
+        },
+        verification: {
+          title: "Повна верифікація",
+          description: "Допомога в проходженні верифікації OF + SKRILL + PAXUM не виходячи з дому"
+        }
+      },
+      benefits: {
+        title: "Бонуси та гарантії",
+        items: [
+          "Будь-які популярні гаранти для безпеки угоди",
+          "Проходимо верифікацію за руку від початку до кінця",
+          "Не треба нікуди їхати - все робиться вдома в затишку та безпеці",
+          "Допомога з надійними агентствами, які роблять доходи від 10-50к$ щомісяця на нових моделях"
+        ]
+      },
+      cta: {
+        title: "Готові почати?",
+        description: "Зв'яжіться з нами для безкоштовної консультації",
+        telegram: "Написати в Telegram",
+        form: "Заповнити анкету"
+      }
+    },
+    // Partnership Program
+    partnership: {
+      back: "Назад",
+      badge: "Набір обмежено",
+      title: "Набір в закриту партнерку",
+      subtitle: "Офіційні партнери платформи з гарантованим просуванням в рекомендаціях",
+      features: {
+        commission: {
+          title: "40% з кожного ролика",
+          description: "Високий відсоток від кожного завантаженого відео"
+        },
+        income: {
+          title: "Стабільне зростання",
+          description: "$300 перший місяць | $1,000+ через 3 місяці роботи"
+        },
+        passive: {
+          title: "Пасивний дохід",
+          description: "Дохід на автоматі після завантаження контенту"
+        }
+      },
+      whyOfficial: "Чому ми - офіційні партнери",
+      advantages: {
+        recommendations: {
+          title: "Примусове потрапляння в рекомендації",
+          description: "Не 'може бути' або 'якщо пощастить' - гарантовано. У нас прямий доступ до просування"
+        },
+        reach: {
+          title: "Охоплення в х5 вище ніж на PornHub",
+          description: "Перевірено на реальних моделях. Факти, не обіцянки"
+        },
+        competition: {
+          title: "Майже немає конкуренції",
+          description: "Платформа нова - потрапити в ТОП зараз легко. Через півроку буде натовп, запізнишся"
+        },
+        bonus: {
+          title: "Подвійна монетизація",
+          description: "Вставляємо твої посилання (OF, TG, Fansly) - подвійна монетизація з одного контенту"
+        }
+      },
+      requirements: {
+        title: "Від тебе потрібно",
+        items: [
+          "Верифікація на платформі",
+          "5-10 стартових відео (якість не критична)",
+          "Все інше (монтаж, превью, SEO, алгоритми) - наша робота"
+        ]
+      },
+      limited: {
+        title: "⚡ Набір жорстко обмежений: 15 моделей",
+        description: "Мета: увійти в ТОП-30 платформи за 2 місяці та утриматися. Відбір по заявках - беремо не всіх"
+      },
+      cta: {
+        title: "Хочеш потрапити в програму?",
+        description: "Надішли заявку і ми зв'яжемося з тобою для обговорення деталей",
+        apply: "Подати заявку",
+        questions: "Поставити питання"
+      }
     }
   }
 };
