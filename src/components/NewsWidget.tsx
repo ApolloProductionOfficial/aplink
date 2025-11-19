@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { useButtonSound } from "@/hooks/useButtonSound";
+import { Skeleton } from "@/components/ui/skeleton";
 import ManualNewsFetch from "./ManualNewsFetch";
 
 interface NewsItem {
@@ -116,8 +117,15 @@ const NewsWidget = () => {
 
         {/* News List */}
         {isLoading ? (
-          <div className="text-center text-muted-foreground py-8">
-            <p className="text-sm">{loadingText}</p>
+          <div className="space-y-6">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="space-y-3">
+                <Skeleton className="h-5 w-3/4" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-5/6" />
+                <Skeleton className="h-3 w-24" />
+              </div>
+            ))}
           </div>
         ) : news.length === 0 ? (
           <div className="text-center text-muted-foreground py-8">

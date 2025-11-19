@@ -1,11 +1,18 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, Unlock, MapPin, Video, Instagram, HandshakeIcon, Shield } from "lucide-react";
+import { ArrowLeft, Unlock, MapPin, Video, Instagram, HandshakeIcon, Shield, Filter } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useButtonSound } from "@/hooks/useButtonSound";
 import { useTilt } from "@/hooks/useTilt";
 import { useState, useEffect, useRef } from "react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const Services = () => {
   const navigate = useNavigate();
@@ -13,6 +20,8 @@ const Services = () => {
   const { playClickSound } = useButtonSound();
   const [visibleCards, setVisibleCards] = useState<Set<number>>(new Set());
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [filterType, setFilterType] = useState<string>("all");
+  const [filterPlatform, setFilterPlatform] = useState<string>("all");
 
   const handleBack = () => {
     playClickSound();
@@ -57,6 +66,8 @@ const Services = () => {
       description: t.services.partnership.description,
       icon: HandshakeIcon,
       path: "/partnership-program",
+      targetAudience: "agencies",
+      platforms: ["onlyfans", "fansly"],
     },
     {
       id: "crypto",
@@ -64,6 +75,8 @@ const Services = () => {
       description: t.services.crypto.description,
       icon: Unlock,
       path: "/crypto-unlock",
+      targetAudience: "both",
+      platforms: ["onlyfans", "fansly"],
     },
     {
       id: "verification",
@@ -71,6 +84,8 @@ const Services = () => {
       description: t.services.verification.description,
       icon: Shield,
       path: "/model-verification",
+      targetAudience: "models",
+      platforms: ["onlyfans"],
     },
     {
       id: "recruitment",
@@ -78,6 +93,8 @@ const Services = () => {
       description: "Ищем моделей для работы на всех платформах",
       icon: HandshakeIcon,
       path: "/model-recruitment",
+      targetAudience: "models",
+      platforms: ["onlyfans", "fansly", "loyalfans", "manyvids", "webcam"],
     },
     {
       id: "dubai",
@@ -85,6 +102,8 @@ const Services = () => {
       description: t.services.dubai.description,
       icon: MapPin,
       path: "/dubai-residency",
+      targetAudience: "models",
+      platforms: ["onlyfans", "fansly"],
     },
     {
       id: "webcam",
@@ -92,6 +111,8 @@ const Services = () => {
       description: t.services.webcam.description,
       icon: Video,
       path: "/webcam-services",
+      targetAudience: "models",
+      platforms: ["webcam"],
     },
     {
       id: "automation",
@@ -99,8 +120,19 @@ const Services = () => {
       description: t.services.automation.description,
       icon: Instagram,
       path: "/instagram-automation",
+      targetAudience: "both",
+      platforms: ["instagram", "tiktok", "reddit"],
     },
   ];
+
+  const filteredServices = services.filter(service => {
+    const matchesType = filterType === "all" || 
+                       filterType === service.targetAudience || 
+                       service.targetAudience === "both";
+    const matchesPlatform = filterPlatform === "all" || 
+                           service.platforms.includes(filterPlatform);
+    return matchesType && matchesPlatform;
+  });
 
   const ServiceCard = ({ service, index }: { service: typeof services[0], index: number }) => {
     const tiltRef = useTilt(10);
@@ -153,20 +185,78 @@ const Services = () => {
         </Button>
 
         <div className="max-w-7xl mx-auto space-y-12">
-          <div className="text-center space-y-4">
+          <div className="text-center space-y-6">
             <h1 className="text-4xl md:text-5xl font-bold">
               {t.services.title}
             </h1>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               {t.services.subtitle}
             </p>
+
+            {/* Filters */}
+            <div className="flex flex-wrap items-center justify-center gap-4 max-w-3xl mx-auto pt-4">
+              <div className="flex items-center gap-2">
+                <Filter className="h-5 w-5 text-primary" />
+                <span className="text-sm font-medium">Фильтры:</span>
+              </div>
+              
+              <Select value={filterType} onValueChange={setFilterType}>
+                <SelectTrigger className="w-[200px] bg-card/60 backdrop-blur border-primary/20">
+                  <SelectValue placeholder="Тип аудитории" />
+                </SelectTrigger>
+                <SelectContent className="bg-card/95 backdrop-blur border-primary/20 z-50">
+                  <SelectItem value="all">Все услуги</SelectItem>
+                  <SelectItem value="models">Для моделей</SelectItem>
+                  <SelectItem value="agencies">Для агентств</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={filterPlatform} onValueChange={setFilterPlatform}>
+                <SelectTrigger className="w-[200px] bg-card/60 backdrop-blur border-primary/20">
+                  <SelectValue placeholder="Платформа" />
+                </SelectTrigger>
+                <SelectContent className="bg-card/95 backdrop-blur border-primary/20 z-50">
+                  <SelectItem value="all">Все платформы</SelectItem>
+                  <SelectItem value="onlyfans">OnlyFans</SelectItem>
+                  <SelectItem value="fansly">Fansly</SelectItem>
+                  <SelectItem value="loyalfans">LoyalFans</SelectItem>
+                  <SelectItem value="manyvids">ManyVids</SelectItem>
+                  <SelectItem value="webcam">Webcam</SelectItem>
+                  <SelectItem value="instagram">Instagram</SelectItem>
+                  <SelectItem value="tiktok">TikTok</SelectItem>
+                  <SelectItem value="reddit">Reddit</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {(filterType !== "all" || filterPlatform !== "all") && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setFilterType("all");
+                    setFilterPlatform("all");
+                  }}
+                  className="text-primary hover:text-primary/80"
+                >
+                  Сбросить фильтры
+                </Button>
+              )}
+            </div>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {services.map((service, index) => (
-              <ServiceCard key={service.id} service={service} index={index} />
-            ))}
-          </div>
+          {filteredServices.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-xl text-muted-foreground">
+                Нет услуг, соответствующих выбранным фильтрам
+              </p>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredServices.map((service, index) => (
+                <ServiceCard key={service.id} service={service} index={index} />
+              ))}
+            </div>
+          )}
 
           <div className="border-2 border-primary/30 rounded-lg p-8 bg-card/60 backdrop-blur">
             <h2 className="text-3xl font-bold text-center mb-6">

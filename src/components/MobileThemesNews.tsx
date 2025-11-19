@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Briefcase, Newspaper, ArrowRight } from "lucide-react";
 import { useButtonSound } from "@/hooks/useButtonSound";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const MobileThemesNews = () => {
   const navigate = useNavigate();
@@ -21,7 +22,7 @@ const MobileThemesNews = () => {
     { title: t.sidebar.dubaiResidency.title, path: '/dubai-residency' },
   ];
 
-  const { data: news } = useQuery({
+  const { data: news, isLoading } = useQuery({
     queryKey: ['news', language],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -72,7 +73,16 @@ const MobileThemesNews = () => {
             </h2>
           </div>
           <div className="space-y-2">
-            {news && news.length > 0 ? (
+            {isLoading ? (
+              <div className="space-y-2">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="px-2.5 py-2.5 rounded-lg bg-card/50 border border-border/30 space-y-2">
+                    <Skeleton className="h-3 w-full" />
+                    <Skeleton className="h-2 w-16" />
+                  </div>
+                ))}
+              </div>
+            ) : news && news.length > 0 ? (
               news.map((item) => (
                 <a
                   key={item.id}
