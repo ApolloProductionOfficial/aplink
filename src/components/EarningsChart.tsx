@@ -14,15 +14,25 @@ const EarningsChart = () => {
       ([entry]) => {
         if (entry.isIntersecting) {
           setIsVisible(true);
-          // Animate the chart line growth - slower for better viewing
+          // Smooth animation with easing
           let progress = 0;
-          const interval = setInterval(() => {
-            progress += 1;
+          const duration = 3000; // 3 seconds
+          const startTime = Date.now();
+          
+          const animate = () => {
+            const elapsed = Date.now() - startTime;
+            const rawProgress = Math.min(elapsed / duration, 1);
+            // Ease-out cubic for smooth finish
+            const easedProgress = 1 - Math.pow(1 - rawProgress, 3);
+            progress = easedProgress * 100;
             setAnimationProgress(progress);
-            if (progress >= 100) {
-              clearInterval(interval);
+            
+            if (rawProgress < 1) {
+              requestAnimationFrame(animate);
             }
-          }, 50); // Slower: 50ms interval, 1% increment = 5 seconds total
+          };
+          
+          requestAnimationFrame(animate);
         }
       },
       { threshold: 0.2 }
@@ -55,11 +65,52 @@ const EarningsChart = () => {
   ];
 
   const CustomTooltip = ({ active, payload }: any) => {
+    const [displayValue, setDisplayValue] = useState(0);
+    const animationRef = useRef<number>();
+
+    useEffect(() => {
+      if (active && payload && payload.length) {
+        const targetValue = payload[0].value;
+        const duration = 800; // Animation duration in ms
+        const startTime = Date.now();
+        const startValue = 0;
+
+        const animate = () => {
+          const elapsed = Date.now() - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          // Ease-out cubic
+          const easedProgress = 1 - Math.pow(1 - progress, 3);
+          const currentValue = startValue + (targetValue - startValue) * easedProgress;
+          
+          setDisplayValue(Math.round(currentValue));
+
+          if (progress < 1) {
+            animationRef.current = requestAnimationFrame(animate);
+          }
+        };
+
+        if (animationRef.current) {
+          cancelAnimationFrame(animationRef.current);
+        }
+        animate();
+
+        return () => {
+          if (animationRef.current) {
+            cancelAnimationFrame(animationRef.current);
+          }
+        };
+      } else {
+        setDisplayValue(0);
+      }
+    }, [active, payload]);
+
     if (active && payload && payload.length) {
       return (
         <div className="bg-card/95 backdrop-blur-md border border-primary/30 rounded-lg p-3 shadow-xl">
           <p className="text-sm font-semibold text-foreground">{payload[0].payload.month}</p>
-          <p className="text-lg font-bold text-primary">{payload[0].payload.label}</p>
+          <p className="text-lg font-bold text-primary">
+            ${displayValue.toLocaleString()}+
+          </p>
         </div>
       );
     }
