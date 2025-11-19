@@ -10,13 +10,11 @@ import TrafficSources from "@/components/TrafficSources";
 import CTA from "@/components/CTA";
 import Footer from "@/components/Footer";
 import AnimatedBackground from "@/components/AnimatedBackground";
-import MusicPlayer from "@/components/MusicPlayer";
 
 const Index = () => {
   return (
     <div className="min-h-screen bg-background text-foreground relative">
       <AnimatedBackground />
-      <MusicPlayer />
       <TopBanner />
       <Header />
       <Sidebar />

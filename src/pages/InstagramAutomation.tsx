@@ -373,9 +373,9 @@ const InstagramAutomation = () => {
           {activePlatform === 'tiktok' && (
             <div className="space-y-8 animate-fade-in">
               <div className="text-center py-20">
-                <Music className="h-24 w-24 mx-auto mb-6 text-foreground" />
+                <Music className="h-24 w-24 mx-auto mb-6" style={{ color: '#00f2ea' }} />
                 <h2 className="text-3xl font-bold mb-4 flex items-center justify-center gap-3">
-                  <Music className="h-8 w-8 text-foreground" />
+                  <Music className="h-8 w-8" style={{ color: '#00f2ea' }} />
                   Автоматизация TikTok
                 </h2>
                 <p className="text-xl text-muted-foreground mb-8">
