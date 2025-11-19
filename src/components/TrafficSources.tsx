@@ -65,20 +65,20 @@ const TrafficSources = () => {
   ];
 
   return (
-    <section id="traffic" className="py-20 px-4 relative">
+    <section id="traffic" className="py-12 md:py-20 px-3 md:px-4 relative">
       <div className="container mx-auto max-w-6xl">
-        <div className="mb-12 animate-slide-up">
-          <h2 className="text-3xl md:text-4xl font-bold mb-2">
+        <div className="mb-8 md:mb-12 animate-slide-up">
+          <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-2">
             {t.trafficSources.title}
           </h2>
           <a 
             href="/#/telegram" 
-            className="text-primary hover:underline inline-flex items-center gap-1"
+            className="text-primary hover:underline inline-flex items-center gap-1 text-sm md:text-base"
           >
             {t.trafficSources.more} →
           </a>
         </div>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
           {sources.map((source, index) => {
             const Icon = source.icon;
             return (
@@ -87,16 +87,16 @@ const TrafficSources = () => {
                 className="bg-card border-border hover:border-primary/30 transition-all duration-300 group cursor-pointer overflow-hidden"
                 onClick={playClickSound}
               >
-                <CardContent className="p-6 relative">
+                <CardContent className="p-3 md:p-6 relative">
                   <div className={`absolute inset-0 bg-gradient-to-br ${source.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
                   <div className="relative">
-                    <div className="mb-4 inline-flex p-3 rounded-lg bg-background/50 group-hover:scale-110 transition-transform duration-300">
-                      <Icon className="h-6 w-6 text-primary" />
+                    <div className="mb-2 md:mb-4 inline-flex p-2 md:p-3 rounded-lg bg-background/50 group-hover:scale-110 transition-transform duration-300">
+                      <Icon className="h-4 w-4 md:h-6 md:w-6 text-primary" />
                     </div>
-                    <h3 className="text-lg font-semibold mb-3 group-hover:text-primary transition-colors">
+                    <h3 className="text-xs md:text-lg font-semibold mb-1.5 md:mb-3 group-hover:text-primary transition-colors leading-tight">
                       {source.title}
                     </h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">
+                    <p className="text-[10px] md:text-sm text-muted-foreground leading-tight md:leading-relaxed line-clamp-3">
                       {source.description}
                     </p>
                   </div>

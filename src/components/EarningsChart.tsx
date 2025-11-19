@@ -59,8 +59,8 @@ const EarningsChart = () => {
           <div className="absolute inset-0 bg-primary/5 rounded-3xl blur-3xl" />
           
           {/* Chart container */}
-          <div className="relative bg-card/50 backdrop-blur-sm border-2 border-primary/20 rounded-2xl p-6 md:p-8 shadow-2xl shadow-primary/10">
-            <ResponsiveContainer width="100%" height={400}>
+          <div className="relative bg-card/50 backdrop-blur-sm border-2 border-primary/20 rounded-2xl p-3 md:p-6 lg:p-8 shadow-2xl shadow-primary/10">
+            <ResponsiveContainer width="100%" height={300} className="md:!h-[400px]">
               <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorEarnings" x1="0" y1="0" x2="0" y2="1">

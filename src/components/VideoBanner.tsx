@@ -3,7 +3,7 @@ import promoVideo from "@/assets/promo-video.mp4";
 const VideoBanner = () => {
   return (
     <section className="relative w-full overflow-hidden">
-      <div className="relative h-[400px]">
+      <div className="relative h-[300px] md:h-[400px] lg:h-[500px]">
         {/* Video Background */}
         <video
           src={promoVideo}
