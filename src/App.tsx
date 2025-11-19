@@ -20,33 +20,35 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <LanguageProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <MusicPlayer />
-          <ScrollToTop />
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/traffic-sources" element={<TrafficSources />} />
-            <Route path="/crypto-unlock" element={<CryptoUnlock />} />
-            <Route path="/model-verification" element={<ModelVerification />} />
-            <Route path="/model-recruitment" element={<ModelRecruitment />} />
-            <Route path="/partnership-program" element={<PartnershipProgram />} />
-            <Route path="/dubai-residency" element={<DubaiResidency />} />
-            <Route path="/webcam-services" element={<WebcamServices />} />
-            <Route path="/instagram-automation" element={<InstagramAutomation />} />
-            <Route path="/services" element={<Services />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </LanguageProvider>
-  </QueryClientProvider>
-);
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <LanguageProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <MusicPlayer />
+            <ScrollToTop />
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/traffic-sources" element={<TrafficSources />} />
+              <Route path="/crypto-unlock" element={<CryptoUnlock />} />
+              <Route path="/model-verification" element={<ModelVerification />} />
+              <Route path="/model-recruitment" element={<ModelRecruitment />} />
+              <Route path="/partnership-program" element={<PartnershipProgram />} />
+              <Route path="/dubai-residency" element={<DubaiResidency />} />
+              <Route path="/webcam-services" element={<WebcamServices />} />
+              <Route path="/instagram-automation" element={<InstagramAutomation />} />
+              <Route path="/services" element={<Services />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </LanguageProvider>
+    </QueryClientProvider>
+  );
+}
 
 export default App;
