@@ -123,17 +123,15 @@ const AIChatBot = () => {
           setIsOpen(!isOpen);
           setShowHint(false);
         }}
-        className="fixed bottom-6 right-6 z-50 h-16 w-16 rounded-full shadow-lg shadow-primary/50 transition-transform hover:scale-110 overflow-visible bg-gradient-to-br from-primary/30 to-primary/10 backdrop-blur-sm border-2 border-primary/40 flex items-center justify-center relative"
+        className="fixed bottom-6 right-6 z-50 h-16 w-16 rounded-full shadow-lg shadow-primary/50 transition-transform hover:scale-110 bg-gradient-to-br from-primary/30 to-primary/10 backdrop-blur-sm border-2 border-primary/40 flex flex-col items-center justify-center gap-0 p-2"
         size="icon"
       >
         {isOpen ? (
           <X className="h-6 w-6 text-primary" />
         ) : (
           <>
-            <div className="flex flex-col items-center justify-center">
-              <Bot className="h-7 w-7 text-primary" />
-            </div>
-            <span className="absolute -bottom-1 text-[9px] font-bold text-primary tracking-wider">APOLLO</span>
+            <Bot className="h-6 w-6 text-primary" />
+            <span className="text-[9px] font-bold text-primary tracking-wider leading-none mt-0.5">APOLLO</span>
           </>
         )}
       </Button>
