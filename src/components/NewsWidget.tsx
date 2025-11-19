@@ -90,7 +90,10 @@ const NewsWidget = () => {
   const noNewsText = language === 'ru' ? "Пока нет новостей" : language === 'uk' ? "Поки немає новин" : "No news yet";
  
   return (
-    <aside className="fixed right-0 top-[120px] bottom-0 w-80 bg-card/95 backdrop-blur-md border-l border-border overflow-y-auto p-6 hidden xl:block z-40">
+    <aside 
+      data-news-widget
+      className="fixed right-0 top-[120px] bottom-0 w-80 bg-card/95 backdrop-blur-md border-l border-border overflow-y-auto p-6 hidden xl:block z-40"
+    >
       <div className="space-y-6">
         {/* Header */}
         <div>

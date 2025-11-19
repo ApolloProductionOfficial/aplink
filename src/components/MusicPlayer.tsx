@@ -7,7 +7,25 @@ const MusicPlayer = () => {
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(50);
+  const [isVisible, setIsVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
+
+  // Hide player on scroll up (mobile)
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      if (currentScrollY < lastScrollY && currentScrollY > 100) {
+        setIsVisible(false);
+      } else if (currentScrollY > lastScrollY) {
+        setIsVisible(true);
+      }
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [lastScrollY]);
 
   useEffect(() => {
     if (audioRef.current) {
@@ -52,9 +70,11 @@ const MusicPlayer = () => {
   };
 
   return (
-    <div className="fixed bottom-6 left-6 z-50">
+    <div className={`fixed bottom-4 left-4 md:bottom-6 md:left-6 z-50 transition-transform duration-300 ${
+      isVisible ? 'translate-y-0' : 'translate-y-32'
+    }`}>
       <div 
-        className={`bg-card/95 backdrop-blur-lg border border-border rounded-lg w-64 p-4 transition-all duration-150 ${
+        className={`bg-card/95 backdrop-blur-lg border border-border rounded-lg w-48 md:w-64 p-2 md:p-4 transition-all duration-150 ${
           isPlaying ? 'animate-music-pulse' : ''
         }`}
       >
@@ -65,38 +85,38 @@ const MusicPlayer = () => {
           preload="none"
         />
         
-        <div className="space-y-3">
+        <div className="space-y-2 md:space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium">Music Player</span>
+            <span className="text-[10px] md:text-xs font-medium hidden md:block">Music Player</span>
             <div className="flex gap-1">
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8"
+                className="h-6 w-6 md:h-8 md:w-8"
                 onClick={togglePlay}
               >
                 {isPlaying ? (
-                  <Pause className="h-4 w-4" />
+                  <Pause className="h-3 w-3 md:h-4 md:w-4" />
                 ) : (
-                  <Play className="h-4 w-4" />
+                  <Play className="h-3 w-3 md:h-4 md:w-4" />
                 )}
               </Button>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8"
+                className="h-6 w-6 md:h-8 md:w-8"
                 onClick={toggleMute}
               >
                 {isMuted ? (
-                  <VolumeX className="h-4 w-4" />
+                  <VolumeX className="h-3 w-3 md:h-4 md:w-4" />
                 ) : (
-                  <Volume2 className="h-4 w-4" />
+                  <Volume2 className="h-3 w-3 md:h-4 md:w-4" />
                 )}
               </Button>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Volume2 className="h-3 w-3 text-muted-foreground" />
+            <Volume2 className="h-2 w-2 md:h-3 md:w-3 text-muted-foreground hidden md:block" />
             <Slider
               value={[volume]}
               onValueChange={handleVolumeChange}
@@ -104,7 +124,7 @@ const MusicPlayer = () => {
               step={1}
               className="flex-1"
             />
-            <span className="text-xs text-muted-foreground w-8">{volume}%</span>
+            <span className="text-[10px] md:text-xs text-muted-foreground w-6 md:w-8">{volume}%</span>
           </div>
         </div>
       </div>

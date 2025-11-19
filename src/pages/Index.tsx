@@ -4,6 +4,7 @@ import VideoBanner from "@/components/VideoBanner";
 import Sidebar from "@/components/Sidebar";
 import NewsWidget from "@/components/NewsWidget";
 import AIChatBot from "@/components/AIChatBot";
+import MobileMenu from "@/components/MobileMenu";
 import Hero from "@/components/Hero";
 import EarningsChart from "@/components/EarningsChart";
 import Stats from "@/components/Stats";
@@ -21,6 +22,7 @@ const Index = () => {
       <Sidebar />
       <NewsWidget />
       <AIChatBot />
+      <MobileMenu />
       <div className="lg:pl-80 xl:pr-80">
         <VideoBanner />
         <Hero />

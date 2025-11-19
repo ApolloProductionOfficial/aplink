@@ -144,10 +144,10 @@ const AIChatBot = () => {
       {/* Animated Hint Tooltip */}
       {showHint && !isOpen && (
         <div className="fixed bottom-24 right-6 z-50 animate-fade-in">
-          <div className="bg-primary text-primary-foreground px-4 py-3 rounded-lg shadow-xl relative animate-bounce flex items-center gap-2">
+          <div className="bg-primary text-primary-foreground px-3 py-2 md:px-4 md:py-3 rounded-lg shadow-xl relative animate-bounce flex items-center gap-2 max-w-[200px] md:max-w-none">
             <div className="absolute -bottom-2 right-6 w-4 h-4 bg-primary transform rotate-45"></div>
-            <Bot className="w-6 h-6" />
-            <p className="text-sm font-medium whitespace-nowrap">{hintText}</p>
+            <Bot className="w-4 h-4 md:w-6 md:h-6 flex-shrink-0" />
+            <p className="text-xs md:text-sm font-medium md:whitespace-nowrap">{hintText}</p>
           </div>
         </div>
       )}
