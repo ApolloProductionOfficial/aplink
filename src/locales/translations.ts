@@ -214,6 +214,91 @@ export const translations = {
         form: "Заполнить анкету"
       }
     },
+    // Model Recruitment
+    modelRecruitment: {
+      title: "Набор моделей на многоплатформенную работу",
+      subtitle: "Работа на лучших платформах для взрослого контента с профессиональной поддержкой и высоким доходом",
+      platformsTitle: "Платформы для работы",
+      loyalfans: {
+        title: "LoyalFans — платформа для доминирующих моделей",
+        description: "Платформа для моделей с доминирующим стилем работы",
+        tasksTitle: "Твои задачи",
+        tasks: [
+          "Фото/видео по контент-плану",
+          "Кастомы для фанатов",
+          "Стримы по желанию (+дополнительный доход)"
+        ],
+        conditionsTitle: "Условия",
+        conditions: [
+          "20% тебе (+5% за стримы)",
+          "Выплаты 2 раза/месяц в USDT",
+          "Блокировка стран для безопасности"
+        ]
+      },
+      manyvids: {
+        title: "ManyVids — фокус на кастомных видео",
+        description: "Особенность: воплощение фантазий фанатов",
+        conditionsTitle: "Условия",
+        conditions: [
+          "20% тебе",
+          "Выплаты еженедельно на Paxum",
+          "$10-25 за минуту кастомов",
+          "Самостоятельный вывод на крипту"
+        ]
+      },
+      fourbased: {
+        title: "4based — немецкая аудитория",
+        description: "На платформе 4based, ориентированной на немецкую аудиторию, предоставляется возможность для моделей продавать свой контент. Каждый контент-сет стоит $300-$500, и агенства планируют делать такие покупки регулярно.",
+        verification: "Для участия необходимо пройти верификацию через предоставленную ссылку",
+        traffic: "Трафик привлекается только внутренний, без использования социальных сетей, и ориентирован на немецкую аудиторию",
+        contentPlanTitle: "Контент-план включает",
+        contentPlan: [
+          "50 видео без наготы (15-30 секунд)",
+          "200 фотографий без обнажения",
+          "10 фотографий груди",
+          "10 фотографий киски крупным планом",
+          "10 фотографий попы",
+          "10 фотографий пальцев ног",
+          "10 фотографий в зеркале",
+          "10 полных фотографий",
+          "10 фотографий в разных позах",
+          "5 фотографий попки крупным планом",
+          "5 фото попки раком",
+          "10 видео мастурбации по 5-10 минут каждое",
+          "10 анальных видео по 5-10 минут каждое",
+          "10 партнерских видео с мальчиком",
+          "Минет с дилдо, видео 5 минут"
+        ],
+        importantTitle: "Самое важное",
+        scriptInfo: "5 различных скриптов секстинга, в каждом сценарии минимум 3-5 фото и 2-3 видео продолжительностью 3-5 минут",
+        scripts: [
+          "Учительница (школьница)",
+          "Спортзал",
+          "Душ",
+          "Доминант (БДСМ)",
+          "Кухня"
+        ]
+      },
+      f2f: {
+        title: "F2F & FanCentro — европейская аудитория",
+        description: "Предложение по работе на платформах F2F и FanCentro (аудиторія из Европы, в основном из Нидерландов). Менеджеры агентства англоязычные, базируется агентство на Кипре",
+        income: "Модель получает 20% от дохода (доходы в среднем 1-5к$)",
+        content: "Контент нужен только готовый, 300+ файлов. Дополнительных съемок не нужно, это будет почти пассивный заработок",
+        traffic: "Трафик только внутренний, без соц сетей"
+      },
+      keyPoints: {
+        title: "Ключевые моменты",
+        points: [
+          "Процент модели: 20% везде",
+          "Валюта: USDT (LoyalFans) / Paxum (ManyVids)",
+          "Специализация: доминирование (LoyalFans) / кастомы (ManyVids)",
+          "Безопасность: блокировка стран",
+          "Готовый контент для пассивного дохода (F2F/FanCentro)",
+          "Работа на нескольких платформах одновременно"
+        ]
+      },
+      cta: "Связаться в Telegram"
+    },
     // Partnership Program
     partnership: {
       back: "Назад",
@@ -494,6 +579,7 @@ export const translations = {
       partnership40: "Partnership — 40% passive income",
       cryptoUnlock: "Fansly/OF Unlock",
       verificationRF: "Verification RF & CIS for OnlyFans",
+      modelRecruitment: "Looking for models for multi-platform work",
       telegram: "Telegram",
       launch: "Launch",
       modelForm: "Application for New Models",
@@ -713,6 +799,91 @@ export const translations = {
       ctaDescription: "Contact us for consultation and to start cooperation",
       contactButton: "Contact Us"
     },
+    // Model Recruitment
+    modelRecruitment: {
+      title: "Recruiting Models for Multi-Platform Work",
+      subtitle: "Work on the best adult content platforms with professional support and high income",
+      platformsTitle: "Platforms for Work",
+      loyalfans: {
+        title: "LoyalFans — Platform for Dominant Models",
+        description: "Platform for models with dominant work style",
+        tasksTitle: "Your Tasks",
+        tasks: [
+          "Photos/videos according to content plan",
+          "Custom content for fans",
+          "Streams optionally (+additional income)"
+        ],
+        conditionsTitle: "Conditions",
+        conditions: [
+          "20% for you (+5% for streams)",
+          "Payments 2 times/month in USDT",
+          "Country blocking for safety"
+        ]
+      },
+      manyvids: {
+        title: "ManyVids — Focus on Custom Videos",
+        description: "Specialty: bringing fans' fantasies to life",
+        conditionsTitle: "Conditions",
+        conditions: [
+          "20% for you",
+          "Weekly payments to Paxum",
+          "$10-25 per minute of customs",
+          "Independent withdrawal to crypto"
+        ]
+      },
+      fourbased: {
+        title: "4based — German Audience",
+        description: "On the 4based platform, oriented towards German audience, models have the opportunity to sell their content. Each content set costs $300-$500, and agencies plan to make such purchases regularly.",
+        verification: "To participate, you need to complete verification through the provided link",
+        traffic: "Traffic is attracted only internally, without using social networks, and is oriented towards German audience",
+        contentPlanTitle: "Content Plan Includes",
+        contentPlan: [
+          "50 non-nude videos (15-30 seconds)",
+          "200 non-nude photos",
+          "10 breast photos",
+          "10 close-up pussy photos",
+          "10 butt photos",
+          "10 toe photos",
+          "10 mirror photos",
+          "10 full photos",
+          "10 photos in different poses",
+          "5 close-up butt photos",
+          "5 doggy-style butt photos",
+          "10 masturbation videos 5-10 minutes each",
+          "10 anal videos 5-10 minutes each",
+          "10 partner videos with a guy",
+          "Dildo blowjob video, 5 minutes"
+        ],
+        importantTitle: "Most Important",
+        scriptInfo: "5 different sexting scripts, each scenario with minimum 3-5 photos and 2-3 videos 3-5 minutes long",
+        scripts: [
+          "Teacher (schoolgirl)",
+          "Gym",
+          "Shower",
+          "Dominant (BDSM)",
+          "Kitchen"
+        ]
+      },
+      f2f: {
+        title: "F2F & FanCentro — European Audience",
+        description: "Work opportunity on F2F and FanCentro platforms (audience from Europe, mainly from Netherlands). Agency managers are English-speaking, based in Cyprus",
+        income: "Model receives 20% of earnings (average earnings 1-5k$)",
+        content: "Only ready content needed, 300+ files. No additional shooting required, this will be almost passive income",
+        traffic: "Internal traffic only, no social networks"
+      },
+      keyPoints: {
+        title: "Key Points",
+        points: [
+          "Model percentage: 20% everywhere",
+          "Currency: USDT (LoyalFans) / Paxum (ManyVids)",
+          "Specialization: dominance (LoyalFans) / customs (ManyVids)",
+          "Safety: country blocking",
+          "Ready content for passive income (F2F/FanCentro)",
+          "Work on multiple platforms simultaneously"
+        ]
+      },
+      cta: "Contact on Telegram"
+    },
     // Services Page
     services: {
       title: "Our Services",
@@ -874,6 +1045,7 @@ export const translations = {
       partnership40: "Партнерка — 40% пасив",
       cryptoUnlock: "Розблокування Fansly/OF",
       verificationRF: "Верифікація РФ і СНД на OnlyFans",
+      modelRecruitment: "Шукаємо моделей для роботи на платформах",
       telegram: "Telegram",
       launch: "Запуск",
       modelForm: "Анкета для нових моделей",
@@ -1092,6 +1264,91 @@ export const translations = {
       ctaTitle: "Готові почати заробляти?",
       ctaDescription: "Зв'яжіться з нами для консультації та початку співпраці",
       contactButton: "Зв'язатися з нами"
+    },
+    // Model Recruitment
+    modelRecruitment: {
+      title: "Набір моделей на багатоплатформну роботу",
+      subtitle: "Робота на кращих платформах для дорослого контенту з професійною підтримкою та високим доходом",
+      platformsTitle: "Платформи для роботи",
+      loyalfans: {
+        title: "LoyalFans — платформа для домінуючих моделей",
+        description: "Платформа для моделей з домінуючим стилем роботи",
+        tasksTitle: "Твої завдання",
+        tasks: [
+          "Фото/відео за контент-планом",
+          "Кастоми для фанатів",
+          "Стріми за бажанням (+додатковий дохід)"
+        ],
+        conditionsTitle: "Умови",
+        conditions: [
+          "20% тобі (+5% за стріми)",
+          "Виплати 2 рази/місяць в USDT",
+          "Блокування країн для безпеки"
+        ]
+      },
+      manyvids: {
+        title: "ManyVids — фокус на кастомних відео",
+        description: "Особливість: втілення фантазій фанатів",
+        conditionsTitle: "Умови",
+        conditions: [
+          "20% тобі",
+          "Виплати щотижня на Paxum",
+          "$10-25 за хвилину кастомів",
+          "Самостійне виведення на крипту"
+        ]
+      },
+      fourbased: {
+        title: "4based — німецька аудиторія",
+        description: "На платформі 4based, орієнтованій на німецьку аудиторію, надається можливість для моделей продавати свій контент. Кожен контент-сет коштує $300-$500, і агентства планують робити такі покупки регулярно.",
+        verification: "Для участі необхідно пройти верифікацію через надане посилання",
+        traffic: "Трафік залучається тільки внутрішній, без використання соціальних мереж, і орієнтований на німецьку аудиторію",
+        contentPlanTitle: "Контент-план включає",
+        contentPlan: [
+          "50 відео без оголення (15-30 секунд)",
+          "200 фотографій без оголення",
+          "10 фотографій грудей",
+          "10 фотографій кіски великим планом",
+          "10 фотографій попи",
+          "10 фотографій пальців ніг",
+          "10 фотографій в дзеркалі",
+          "10 повних фотографій",
+          "10 фотографій в різних позах",
+          "5 фотографій попки великим планом",
+          "5 фото попки раком",
+          "10 відео мастурбації по 5-10 хвилин кожне",
+          "10 анальних відео по 5-10 хвилин кожне",
+          "10 партнерських відео з хлопцем",
+          "Мінет з ділдо, відео 5 хвилин"
+        ],
+        importantTitle: "Найважливіше",
+        scriptInfo: "5 різних скриптів секстингу, в кожному сценарії мінімум 3-5 фото та 2-3 відео тривалістю 3-5 хвилин",
+        scripts: [
+          "Вчителька (школярка)",
+          "Спортзал",
+          "Душ",
+          "Домінант (БДСМ)",
+          "Кухня"
+        ]
+      },
+      f2f: {
+        title: "F2F & FanCentro — європейська аудиторія",
+        description: "Пропозиція по роботі на платформах F2F та FanCentro (аудиторія з Європи, в основному з Нідерландів). Менеджери агентства англомовні, базується агентство на Кіпрі",
+        income: "Модель отримує 20% від доходу (доходи в середньому 1-5к$)",
+        content: "Контент потрібен тільки готовий, 300+ файлів. Додаткових зйомок не потрібно, це буде майже пасивний заробіток",
+        traffic: "Трафік тільки внутрішній, без соц мереж"
+      },
+      keyPoints: {
+        title: "Ключові моменти",
+        points: [
+          "Відсоток моделі: 20% всюди",
+          "Валюта: USDT (LoyalFans) / Paxum (ManyVids)",
+          "Спеціалізація: домінування (LoyalFans) / кастоми (ManyVids)",
+          "Безпека: блокування країн",
+          "Готовий контент для пасивного доходу (F2F/FanCentro)",
+          "Робота на декількох платформах одночасно"
+        ]
+      },
+      cta: "Зв'язатися в Telegram"
     },
     // Services Page
     services: {
