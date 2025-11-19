@@ -6,6 +6,7 @@ import NewsWidget from "@/components/NewsWidget";
 import AIChatBot from "@/components/AIChatBot";
 import MobileMenu from "@/components/MobileMenu";
 import MobileThemesNews from "@/components/MobileThemesNews";
+import MobileTopServices from "@/components/MobileTopServices";
 import ServiceBadges from "@/components/ServiceBadges";
 import Hero from "@/components/Hero";
 import EarningsChart from "@/components/EarningsChart";
@@ -30,6 +31,7 @@ const Index = () => {
         <Hero />
         <ServiceBadges />
         <MobileThemesNews />
+        <MobileTopServices />
         <EarningsChart />
         <TrafficSources />
         <CTA />
