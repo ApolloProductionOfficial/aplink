@@ -4,6 +4,7 @@ import { MessageCircle, X, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/hooks/useTranslation";
+import onlyFansLogo from "@/assets/onlyfans-logo.png";
 
 interface Message {
   role: 'user' | 'assistant';
@@ -109,8 +110,9 @@ const AIChatBot = () => {
       {/* Animated Hint Tooltip */}
       {showHint && !isOpen && (
         <div className="fixed bottom-24 right-6 z-50 animate-fade-in">
-          <div className="bg-primary text-primary-foreground px-4 py-3 rounded-lg shadow-xl relative animate-bounce">
+          <div className="bg-primary text-primary-foreground px-4 py-3 rounded-lg shadow-xl relative animate-bounce flex items-center gap-2">
             <div className="absolute -bottom-2 right-6 w-4 h-4 bg-primary transform rotate-45"></div>
+            <img src={onlyFansLogo} alt="OnlyFans" className="w-6 h-6" />
             <p className="text-sm font-medium whitespace-nowrap">{hintText}</p>
           </div>
         </div>
@@ -122,10 +124,14 @@ const AIChatBot = () => {
           setIsOpen(!isOpen);
           setShowHint(false);
         }}
-        className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full bg-primary hover:bg-primary/90 shadow-lg shadow-primary/50 transition-transform hover:scale-110"
+        className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg shadow-primary/50 transition-transform hover:scale-110 p-0 overflow-hidden"
         size="icon"
       >
-        {isOpen ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6 animate-pulse" />}
+        {isOpen ? (
+          <X className="h-6 w-6" />
+        ) : (
+          <img src={onlyFansLogo} alt="OnlyFans" className="w-full h-full object-cover" />
+        )}
       </Button>
 
       {/* Chat Window */}
