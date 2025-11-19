@@ -107,6 +107,52 @@ export const translations = {
         description: "Instagram ферм для трафика на OnlyFans. 200-400+ аккаунтов / устройство. ИИ в лайве 24/7."
       }
     },
+    // Services Page
+    services: {
+      title: "Наши услуги",
+      subtitle: "Полный спектр услуг для успешной работы на OnlyFans",
+      howItWorks: "Как это работает",
+      step1: "Консультация",
+      step1Desc: "Бесплатная консультация и подбор оптимального пакета услуг",
+      step2: "Настройка",
+      step2Desc: "Настраиваем все необходимые системы и инструменты",
+      step3: "Запуск",
+      step3Desc: "Запуск кампаний и начало работы",
+      step4: "Рост",
+      step4Desc: "Постоянная оптимизация и масштабирование",
+      readyToStart: "Готовы начать?",
+      contactDesc: "Свяжитесь с нами для бесплатной консультации",
+      partnership: {
+        title: "Партнёрская программа",
+        description: "40% с каждого ролика. Пассивный доход на автомате"
+      },
+      crypto: {
+        title: "Разблокировка крипты",
+        description: "Fansly/OnlyFans разблокировка за 24 часа"
+      },
+      verification: {
+        title: "Верификация моделей",
+        description: "Готовый OnlyFans с выводом в крипту"
+      },
+      dubai: {
+        title: "ВНЖ в Дубае",
+        description: "Оформление ID Dubai за 10-14 дней"
+      },
+      webcam: {
+        title: "Вебкам услуги",
+        description: "Работа на 7 сайтах с персональным оператором"
+      },
+      automation: {
+        title: "Автоматизация",
+        description: "Instagram фермы с ИИ в лайве 24/7"
+      }
+    },
+    // Common
+    common: {
+      back: "Назад",
+      learnMore: "Подробнее",
+      contactTelegram: "Связаться в Telegram"
+    },
     // Right Sidebar
     rightSidebar: {
       title: "Быстрые ссылки",
@@ -663,6 +709,52 @@ export const translations = {
       ctaTitle: "Ready to Start Earning?",
       ctaDescription: "Contact us for consultation and to start cooperation",
       contactButton: "Contact Us"
+    },
+    // Services Page
+    services: {
+      title: "Our Services",
+      subtitle: "Full range of services for successful work on OnlyFans",
+      howItWorks: "How it Works",
+      step1: "Consultation",
+      step1Desc: "Free consultation and selection of optimal service package",
+      step2: "Setup",
+      step2Desc: "We set up all necessary systems and tools",
+      step3: "Launch",
+      step3Desc: "Launch campaigns and start working",
+      step4: "Growth",
+      step4Desc: "Continuous optimization and scaling",
+      readyToStart: "Ready to Start?",
+      contactDesc: "Contact us for a free consultation",
+      partnership: {
+        title: "Partnership Program",
+        description: "40% from each video. Automated passive income"
+      },
+      crypto: {
+        title: "Crypto Unlock",
+        description: "Fansly/OnlyFans unlock within 24 hours"
+      },
+      verification: {
+        title: "Model Verification",
+        description: "Ready OnlyFans with crypto withdrawal"
+      },
+      dubai: {
+        title: "Dubai Residency",
+        description: "ID Dubai processing in 10-14 days"
+      },
+      webcam: {
+        title: "Webcam Services",
+        description: "Work on 7 sites with personal operator"
+      },
+      automation: {
+        title: "Automation",
+        description: "Instagram farms with AI live 24/7"
+      }
+    },
+    // Common
+    common: {
+      back: "Back",
+      learnMore: "Learn More",
+      contactTelegram: "Contact on Telegram"
     }
   },
   uk: {
@@ -996,6 +1088,52 @@ export const translations = {
       ctaTitle: "Готові почати заробляти?",
       ctaDescription: "Зв'яжіться з нами для консультації та початку співпраці",
       contactButton: "Зв'язатися з нами"
+    },
+    // Services Page
+    services: {
+      title: "Наші послуги",
+      subtitle: "Повний спектр послуг для успішної роботи на OnlyFans",
+      howItWorks: "Як це працює",
+      step1: "Консультація",
+      step1Desc: "Безкоштовна консультація та підбір оптимального пакету послуг",
+      step2: "Налаштування",
+      step2Desc: "Налаштовуємо всі необхідні системи та інструменти",
+      step3: "Запуск",
+      step3Desc: "Запуск кампаній та початок роботи",
+      step4: "Зростання",
+      step4Desc: "Постійна оптимізація та масштабування",
+      readyToStart: "Готові почати?",
+      contactDesc: "Зв'яжіться з нами для безкоштовної консультації",
+      partnership: {
+        title: "Партнерська программа",
+        description: "40% з кожного ролика. Пасивний дохід на автоматі"
+      },
+      crypto: {
+        title: "Розблокування крипти",
+        description: "Fansly/OnlyFans розблокування за 24 години"
+      },
+      verification: {
+        title: "Верифікація моделей",
+        description: "Готовий OnlyFans з виведенням в крипту"
+      },
+      dubai: {
+        title: "ВНЖ в Дубаї",
+        description: "Оформлення ID Dubai за 10-14 днів"
+      },
+      webcam: {
+        title: "Вебкам послуги",
+        description: "Робота на 7 сайтах з персональним оператором"
+      },
+      automation: {
+        title: "Автоматизація",
+        description: "Instagram ферми з ШІ в лайві 24/7"
+      }
+    },
+    // Common
+    common: {
+      back: "Назад",
+      learnMore: "Докладніше",
+      contactTelegram: "Зв'язатися в Telegram"
     }
   }
 };

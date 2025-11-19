@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
-import { ArrowLeft, Instagram, Music, MessageSquare, HelpCircle, DollarSign } from "lucide-react";
+import { ArrowLeft, Instagram, Music, MessageSquare, HelpCircle, DollarSign, Smartphone, MessageCircle, Globe, Settings, Zap, Package } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useButtonSound } from "@/hooks/useButtonSound";
 
@@ -30,9 +30,9 @@ const InstagramAutomation = () => {
   const avgConversionRate = 0.02;
   const avgRevenuePerSubscriber = 15;
   const monthlyRevenue = totalAccounts * avgConversionRate * avgRevenuePerSubscriber;
-  const setupCostPerDevice = 500;
+  const setupCostPerDevice = 320; // $3200 for 10 devices = $320 per device
   const totalSetupCost = devices * setupCostPerDevice;
-  const monthsToROI = totalSetupCost / monthlyRevenue;
+  const monthsToROI = monthlyRevenue > 0 ? totalSetupCost / monthlyRevenue : 0;
 
   const platforms = [
     { 
@@ -123,24 +123,25 @@ const InstagramAutomation = () => {
               <div className="border-2 border-primary/50 rounded-lg p-8 bg-card/30">
                 <div className="border-b-2 border-primary/50 pb-3 mb-6">
                   <h2 className="text-2xl font-bold text-primary flex items-center gap-2">
-                    📱 ЁМКОСТЬ УСТРОЙСТВ
+                    <Smartphone className="h-6 w-6" />
+                    ЁМКОСТЬ УСТРОЙСТВ
                   </h2>
                 </div>
                 <div className="space-y-3 text-lg">
-                  <p className="flex items-start gap-2">
-                    <span className="text-foreground/70">🔘</span>
+                  <p className="flex items-start gap-3">
+                    <span className="text-primary mt-1">•</span>
                     <span>200-400+ IG-аккаунтов / устройство</span>
                   </p>
-                  <p className="flex items-start gap-2">
-                    <span className="text-foreground/70">🔘</span>
+                  <p className="flex items-start gap-3">
+                    <span className="text-primary mt-1">•</span>
                     <span>10 девайсов = 2,500+ аккаунтов</span>
                   </p>
-                  <p className="flex items-start gap-2">
-                    <span className="text-foreground/70">🔘</span>
+                  <p className="flex items-start gap-3">
+                    <span className="text-primary mt-1">•</span>
                     <span>20 девайсов = 5,000+ аккаунтов</span>
                   </p>
-                  <p className="flex items-start gap-2 text-primary">
-                    <span>➜</span>
+                  <p className="flex items-start gap-3 text-primary">
+                    <Zap className="h-5 w-5 mt-0.5" />
                     <span>Масштаб без просадки качества</span>
                   </p>
                 </div>
@@ -150,23 +151,24 @@ const InstagramAutomation = () => {
               <div className="border-2 border-primary/50 rounded-lg p-8 bg-card/30">
                 <div className="border-b-2 border-primary/50 pb-3 mb-6">
                   <h2 className="text-2xl font-bold text-primary flex items-center gap-2">
-                    💬 ИИ В ЛАЙВЕ 24/7
+                    <MessageCircle className="h-6 w-6" />
+                    ИИ В ЛАЙВЕ 24/7
                   </h2>
                 </div>
                 <div className="space-y-3 text-lg">
-                  <p className="flex items-start gap-2">
+                  <p className="flex items-start gap-3">
                     <span className="text-green-500">✓</span>
                     <span>Отвечает «как человек» в DM/сторис</span>
                   </p>
-                  <p className="flex items-start gap-2">
+                  <p className="flex items-start gap-3">
                     <span className="text-green-500">✓</span>
                     <span>Ведёт к OF по ссылке в BIO</span>
                   </p>
-                  <p className="flex items-start gap-2">
+                  <p className="flex items-start gap-3">
                     <span className="text-green-500">✓</span>
                     <span>Автоперевод на нужные языки</span>
                   </p>
-                  <p className="flex items-start gap-2">
+                  <p className="flex items-start gap-3">
                     <span className="text-green-500">✓</span>
                     <span>Скрипты под нишу + анти‑спам тайминги</span>
                   </p>
@@ -177,19 +179,20 @@ const InstagramAutomation = () => {
               <div className="border-2 border-primary/50 rounded-lg p-8 bg-card/30">
                 <div className="border-b-2 border-primary/50 pb-3 mb-6">
                   <h2 className="text-2xl font-bold text-primary flex items-center gap-2">
-                    🏪 ВЕБ‑КАБИНЕТ
+                    <Globe className="h-6 w-6" />
+                    ВЕБ‑КАБИНЕТ
                   </h2>
                 </div>
                 <div className="space-y-3 text-lg">
-                  <p className="flex items-start gap-2">
+                  <p className="flex items-start gap-3">
                     <span className="text-green-500">✓</span>
                     <span>Онлайн‑дашборд</span>
                   </p>
-                  <p className="flex items-start gap-2">
+                  <p className="flex items-start gap-3">
                     <span className="text-green-500">✓</span>
                     <span>Обзор каждого устройства</span>
                   </p>
-                  <p className="flex items-start gap-2">
+                  <p className="flex items-start gap-3">
                     <span className="text-green-500">✓</span>
                     <span>DM, клики BIO, подписки OF, CR/EPC, логи, роли доступа и т.д.</span>
                   </p>
@@ -200,23 +203,24 @@ const InstagramAutomation = () => {
               <div className="border-2 border-primary/50 rounded-lg p-8 bg-card/30">
                 <div className="border-b-2 border-primary/50 pb-3 mb-6">
                   <h2 className="text-2xl font-bold text-primary flex items-center gap-2">
-                    ⚙️ ТЕХНОЛОГИИ
+                    <Settings className="h-6 w-6" />
+                    ТЕХНОЛОГИИ
                   </h2>
                 </div>
                 <div className="space-y-3 text-lg">
-                  <p className="flex items-start gap-2">
+                  <p className="flex items-start gap-3">
                     <span className="text-green-500">✓</span>
                     <span>Телефоны только НОВОГО поколения, повышенный TRUST</span>
                   </p>
-                  <p className="flex items-start gap-2">
+                  <p className="flex items-start gap-3">
                     <span className="text-green-500">✓</span>
                     <span>Индивидуальные мобильные прокси</span>
                   </p>
-                  <p className="flex items-start gap-2">
+                  <p className="flex items-start gap-3">
                     <span className="text-green-500">✓</span>
                     <span>Проф. стойки + охлаждение 24/7</span>
                   </p>
-                  <p className="flex items-start gap-2">
+                  <p className="flex items-start gap-3">
                     <span className="text-green-500">✓</span>
                     <span>99.9% аптайм, авто‑бэкапы, авто‑рестор</span>
                   </p>
@@ -227,23 +231,24 @@ const InstagramAutomation = () => {
               <div className="border-2 border-primary/50 rounded-lg p-8 bg-card/30">
                 <div className="border-b-2 border-primary/50 pb-3 mb-6">
                   <h2 className="text-2xl font-bold text-primary flex items-center gap-2">
-                    ❔ ЧТО ПОЛУЧАЕТЕ
+                    <Package className="h-6 w-6" />
+                    ЧТО ПОЛУЧАЕТЕ
                   </h2>
                 </div>
                 <div className="space-y-3 text-lg">
-                  <p className="flex items-start gap-2">
+                  <p className="flex items-start gap-3">
                     <span className="text-green-500">✓</span>
                     <span>Telegram‑бот управления</span>
                   </p>
-                  <p className="flex items-start gap-2">
+                  <p className="flex items-start gap-3">
                     <span className="text-green-500">✓</span>
                     <span>Обучение + ИИ‑скрипты</span>
                   </p>
-                  <p className="flex items-start gap-2">
+                  <p className="flex items-start gap-3">
                     <span className="text-green-500">✓</span>
                     <span>Поддержка 24/7</span>
                   </p>
-                  <p className="flex items-start gap-2">
+                  <p className="flex items-start gap-3">
                     <span className="text-green-500">✓</span>
                     <span>OF‑воронка под вашу нишу</span>
                   </p>
@@ -254,20 +259,21 @@ const InstagramAutomation = () => {
               <div className="border-2 border-primary/50 rounded-lg p-8 bg-card/30">
                 <div className="border-b-2 border-primary/50 pb-3 mb-6">
                   <h2 className="text-2xl font-bold text-primary flex items-center gap-2">
-                    ⚡️ ЗАПУСК
+                    <Zap className="h-6 w-6" />
+                    ЗАПУСК
                   </h2>
                 </div>
                 <div className="space-y-3 text-lg">
-                  <p className="flex items-start gap-2">
-                    <span className="text-primary">➜</span>
+                  <p className="flex items-start gap-3">
+                    <Zap className="h-5 w-5 text-primary mt-0.5" />
                     <span>Созвон → выбор пакета</span>
                   </p>
-                  <p className="flex items-start gap-2">
-                    <span className="text-primary">➜</span>
+                  <p className="flex items-start gap-3">
+                    <Zap className="h-5 w-5 text-primary mt-0.5" />
                     <span>Настройка и старт: 2–3 недели</span>
                   </p>
-                  <p className="flex items-start gap-2">
-                    <span className="text-primary">➜</span>
+                  <p className="flex items-start gap-3">
+                    <Zap className="h-5 w-5 text-primary mt-0.5" />
                     <span>Масштаб без лимитов</span>
                   </p>
                 </div>
@@ -347,14 +353,17 @@ const InstagramAutomation = () => {
 
               {/* CTA */}
               <div className="text-center border-2 border-primary/30 rounded-lg p-8 bg-gradient-to-r from-primary/10 to-primary/5">
-                <p className="text-2xl font-bold mb-4">🔥 ГОТОВЫ ПОКАЗАТЬ</p>
-                <p className="text-lg mb-6">🔘 Демо ИИ и веб‑кабинета</p>
+                <p className="text-2xl font-bold mb-4 flex items-center justify-center gap-2">
+                  <Zap className="h-7 w-7 text-primary" />
+                  ГОТОВЫ ПОКАЗАТЬ
+                </p>
+                <p className="text-lg mb-6">Демо ИИ и веб‑кабинета</p>
                 <Button
                   size="lg"
                   onClick={handleContact}
                   className="bg-primary hover:bg-primary/90 text-primary-foreground text-lg px-8"
                 >
-                  🔘 Для связи → @Apollo_Production
+                  Для связи → @Apollo_Production
                 </Button>
               </div>
             </div>
@@ -364,8 +373,11 @@ const InstagramAutomation = () => {
           {activePlatform === 'tiktok' && (
             <div className="space-y-8 animate-fade-in">
               <div className="text-center py-20">
-                <Music className="h-24 w-24 mx-auto mb-6 text-muted-foreground" />
-                <h2 className="text-3xl font-bold mb-4">Автоматизация TikTok</h2>
+                <Music className="h-24 w-24 mx-auto mb-6 text-foreground" />
+                <h2 className="text-3xl font-bold mb-4 flex items-center justify-center gap-3">
+                  <Music className="h-8 w-8 text-foreground" />
+                  Автоматизация TikTok
+                </h2>
                 <p className="text-xl text-muted-foreground mb-8">
                   Скоро будет доступна автоматизация для TikTok
                 </p>
@@ -408,7 +420,10 @@ const InstagramAutomation = () => {
             <div className="space-y-8 animate-fade-in">
               <div className="text-center py-20">
                 <MessageSquare className="h-24 w-24 mx-auto mb-6 text-orange-500" />
-                <h2 className="text-3xl font-bold mb-4">Автоматизация Reddit</h2>
+                <h2 className="text-3xl font-bold mb-4 flex items-center justify-center gap-3">
+                  <MessageSquare className="h-8 w-8 text-orange-500" />
+                  Автоматизация Reddit
+                </h2>
                 <p className="text-xl text-muted-foreground mb-8">
                   Скоро будет доступна автоматизация для Reddit
                 </p>
