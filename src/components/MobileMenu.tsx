@@ -49,7 +49,7 @@ const MobileMenu = () => {
   };
 
   return (
-    <div className={`md:hidden fixed top-[52px] right-4 z-40 transition-all duration-300 ${
+    <div className={`md:hidden fixed top-[72px] right-4 z-40 transition-all duration-300 ${
       isVisible ? 'translate-x-0 opacity-100' : 'translate-x-32 opacity-0'
     }`}>
       <Drawer open={open} onOpenChange={setOpen}>
