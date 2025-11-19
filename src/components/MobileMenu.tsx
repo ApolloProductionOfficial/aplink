@@ -71,8 +71,8 @@ const MobileMenu = () => {
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
         </DrawerTrigger>
-        <DrawerContent className="h-[85vh]">
-          <div className="overflow-y-auto p-3 space-y-5">
+        <DrawerContent className="h-[85vh] flex flex-col">
+          <div className="flex-1 overflow-y-auto p-3 space-y-5">
             <div>
               <h3 className="text-base font-semibold mb-2.5 flex items-center gap-1.5">
                 <Briefcase className="h-4 w-4" />

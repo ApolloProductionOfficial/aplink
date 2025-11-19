@@ -109,12 +109,24 @@ const MusicPlayer = () => {
     const newVolume = value[0];
     setVolume(newVolume);
     if (audioRef.current) {
-      audioRef.current.volume = newVolume / 100;
+      // Force volume change on mobile devices
+      const audio = audioRef.current;
+      audio.volume = newVolume / 100;
+      
+      // Additional mobile fix: pause and play to apply volume
+      if (isPlaying) {
+        const currentTime = audio.currentTime;
+        audio.pause();
+        audio.volume = newVolume / 100;
+        audio.currentTime = currentTime;
+        audio.play().catch(err => console.log("Play error:", err));
+      }
+      
       if (newVolume === 0) {
-        audioRef.current.muted = true;
+        audio.muted = true;
         setIsMuted(true);
       } else if (isMuted) {
-        audioRef.current.muted = false;
+        audio.muted = false;
         setIsMuted(false);
       }
     }
