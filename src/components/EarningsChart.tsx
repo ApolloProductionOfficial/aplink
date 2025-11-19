@@ -17,7 +17,11 @@ const CountUp = ({ end, duration = 2000, suffix = '', prefix = '', decimals = 0,
   const countRef = useRef<number>();
 
   useEffect(() => {
-    if (!isVisible) return;
+    // Reset to 0 when not visible
+    if (!isVisible) {
+      setCount(0);
+      return;
+    }
 
     let startTime: number;
     const startValue = 0;
@@ -69,8 +73,10 @@ const EarningsChart = () => {
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
+        // Update visibility based on intersection
+        setIsVisible(entry.isIntersecting);
+        
         if (entry.isIntersecting) {
-          setIsVisible(true);
           // Smooth animation with easing
           let progress = 0;
           const duration = 3000; // 3 seconds
@@ -90,6 +96,9 @@ const EarningsChart = () => {
           };
           
           requestAnimationFrame(animate);
+        } else {
+          // Reset animation when out of view
+          setAnimationProgress(0);
         }
       },
       { threshold: 0.2 }

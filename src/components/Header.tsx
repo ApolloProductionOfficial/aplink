@@ -76,7 +76,7 @@ const Header = () => {
           <nav className="hidden lg:flex items-center gap-6">
             <a 
               href="#about" 
-              className="text-sm text-foreground/80 hover:text-primary transition-all relative group px-3 py-1.5 rounded-md bg-primary/[0.02] shadow-[0_0_8px_rgba(var(--primary-rgb),0.08)] hover:bg-primary/5 hover:shadow-[0_0_15px_rgba(var(--primary-rgb),0.15)] animate-subtle-pulse"
+              className="text-sm text-foreground/80 hover:text-primary transition-all relative group px-3 py-1.5 rounded-md bg-primary/[0.02] shadow-[0_0_8px_rgba(var(--primary-rgb),0.08)] hover:bg-primary/5 hover:shadow-[0_0_15px_rgba(var(--primary-rgb),0.15)] animate-text-shine"
               onClick={(e) => handleNavigate(e, 'about')}
             >
               {t.header.about}
@@ -84,7 +84,8 @@ const Header = () => {
             </a>
             <a 
               href="#traffic" 
-              className="text-sm text-foreground/80 hover:text-primary transition-all relative group px-3 py-1.5 rounded-md bg-primary/[0.02] shadow-[0_0_8px_rgba(var(--primary-rgb),0.08)] hover:bg-primary/5 hover:shadow-[0_0_15px_rgba(var(--primary-rgb),0.15)] animate-subtle-pulse"
+              className="text-sm text-foreground/80 hover:text-primary transition-all relative group px-3 py-1.5 rounded-md bg-primary/[0.02] shadow-[0_0_8px_rgba(var(--primary-rgb),0.08)] hover:bg-primary/5 hover:shadow-[0_0_15px_rgba(var(--primary-rgb),0.15)] animate-text-shine"
+              style={{ animationDelay: '1s' }}
               onClick={(e) => handleNavigate(e, 'traffic')}
             >
               {t.header.traffic}
@@ -92,7 +93,8 @@ const Header = () => {
             </a>
             <a 
               href="/services" 
-              className="text-sm text-foreground/80 hover:text-primary transition-all relative group px-3 py-1.5 rounded-md bg-primary/[0.02] shadow-[0_0_8px_rgba(var(--primary-rgb),0.08)] hover:bg-primary/5 hover:shadow-[0_0_15px_rgba(var(--primary-rgb),0.15)] animate-subtle-pulse"
+              className="text-sm text-foreground/80 hover:text-primary transition-all relative group px-3 py-1.5 rounded-md bg-primary/[0.02] shadow-[0_0_8px_rgba(var(--primary-rgb),0.08)] hover:bg-primary/5 hover:shadow-[0_0_15px_rgba(var(--primary-rgb),0.15)] animate-text-shine"
+              style={{ animationDelay: '2s' }}
               onClick={(e) => {
                 e.preventDefault();
                 playClickSound();
