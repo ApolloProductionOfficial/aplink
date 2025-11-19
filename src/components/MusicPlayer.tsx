@@ -54,15 +54,15 @@ const MusicPlayer = () => {
     };
   }, []);
 
-  // Hide player on scroll up (mobile only)
+  // Hide player on scroll (mobile only)
   useEffect(() => {
-    if (window.innerWidth >= 768) {
-      // Desktop: всегда показываем плеер
-      setIsVisible(true);
-      return;
-    }
-
     const handleScroll = () => {
+      // Check if mobile every time
+      if (window.innerWidth >= 768) {
+        setIsVisible(true);
+        return;
+      }
+
       const currentScrollY = window.scrollY;
       if (currentScrollY < lastScrollY && currentScrollY > 100) {
         setIsVisible(false);
@@ -72,8 +72,13 @@ const MusicPlayer = () => {
       setLastScrollY(currentScrollY);
     };
 
+    handleScroll(); // Initial check
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener('resize', handleScroll); // Check on resize
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+    };
   }, [lastScrollY]);
 
   useEffect(() => {

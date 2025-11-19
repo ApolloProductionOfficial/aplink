@@ -14,12 +14,12 @@ const MobileMenu = () => {
 
   // Sync with music player visibility (mobile only)
   useEffect(() => {
-    if (window.innerWidth >= 768) {
-      setIsVisible(true);
-      return;
-    }
-
     const handleScroll = () => {
+      if (window.innerWidth >= 768) {
+        setIsVisible(true);
+        return;
+      }
+
       const currentScrollY = window.scrollY;
       if (currentScrollY < lastScrollY && currentScrollY > 100) {
         setIsVisible(false);
@@ -29,8 +29,13 @@ const MobileMenu = () => {
       setLastScrollY(currentScrollY);
     };
 
+    handleScroll();
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener('resize', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+    };
   }, [lastScrollY]);
 
   const services = [
