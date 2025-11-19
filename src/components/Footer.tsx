@@ -13,8 +13,7 @@ const Footer = () => {
       links: [
         { text: t.header.about, url: "#about" },
         { text: t.header.traffic, url: "#traffic" },
-        { text: t.header.services, url: "#services" },
-        { text: t.header.infrastructure, url: "#infrastructure" }
+        { text: t.header.services, url: "/services" }
       ]
     }
   ];
@@ -52,7 +51,7 @@ const Footer = () => {
           {/* Company Info */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <Grid className="h-5 w-5 text-primary" />
+              <Grid className="h-7 w-7 text-primary" />
               <h3 className="text-lg font-bold">{t.header.title}</h3>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed max-w-md">
@@ -67,7 +66,19 @@ const Footer = () => {
                         <a
                           href={link.url}
                           className="text-sm text-muted-foreground hover:text-primary transition-colors"
-                          onClick={playClickSound}
+                          onClick={(e) => {
+                            playClickSound();
+                            if (link.url.startsWith('#')) {
+                              e.preventDefault();
+                              const element = document.getElementById(link.url.slice(1));
+                              if (element) {
+                                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                              }
+                            } else if (link.url.startsWith('/')) {
+                              e.preventDefault();
+                              window.location.href = link.url;
+                            }
+                          }}
                         >
                           {link.text}
                         </a>
@@ -83,7 +94,7 @@ const Footer = () => {
           <div className="space-y-6">
             <h3 className="text-lg font-semibold flex items-center gap-2">
               <AtSign className="h-5 w-5 text-primary" />
-              {t.rightSidebar.title}
+              {t.footer.contactTitle}
             </h3>
             <div className="space-y-4">
               {contacts.map((contact, i) => (

@@ -75,9 +75,9 @@ const StatCard = ({
   useEffect(() => {
     if (isVisible && count < stat.value) {
       const timer = setTimeout(() => {
-        const increment = Math.ceil(stat.value / 50);
+        const increment = Math.ceil(stat.value / 15);
         setCount(prev => Math.min(prev + increment, stat.value));
-      }, 30);
+      }, 10);
       return () => clearTimeout(timer);
     }
   }, [count, isVisible, stat.value]);
