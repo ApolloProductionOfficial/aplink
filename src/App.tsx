@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import MusicPlayer from "@/components/MusicPlayer";
+import ScrollToTop from "@/components/ScrollToTop";
 import Index from "./pages/Index";
 import TrafficSources from "./pages/TrafficSources";
 import CryptoUnlock from "./pages/CryptoUnlock";
@@ -27,6 +28,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <MusicPlayer />
+          <ScrollToTop />
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/traffic-sources" element={<TrafficSources />} />
