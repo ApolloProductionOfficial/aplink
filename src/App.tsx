@@ -33,7 +33,7 @@ const App = () => (
             <Route path="/crypto-unlock" element={<CryptoUnlock />} />
             <Route path="/model-verification" element={<ModelVerification />} />
             <Route path="/model-recruitment" element={<ModelRecruitment />} />
-            <Route path="/partnership" element={<PartnershipProgram />} />
+            <Route path="/partnership-program" element={<PartnershipProgram />} />
             <Route path="/dubai-residency" element={<DubaiResidency />} />
             <Route path="/webcam-services" element={<WebcamServices />} />
             <Route path="/instagram-automation" element={<InstagramAutomation />} />
