@@ -43,10 +43,21 @@ const NewsWidget = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [language]); // Added language dependency to refetch when language changes
 
   const fetchNews = async () => {
+    setIsLoading(true);
     try {
+      // First, fetch fresh translated news from the edge function
+      const { error: fetchError } = await supabase.functions.invoke('fetch-adult-news', {
+        body: { language }
+      });
+
+      if (fetchError) {
+        console.warn('Could not fetch fresh news:', fetchError);
+      }
+
+      // Then load news from database
       const { data, error } = await supabase
         .from('news')
         .select('*')
