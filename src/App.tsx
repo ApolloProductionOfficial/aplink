@@ -7,6 +7,8 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import Index from "./pages/Index";
 import TrafficSources from "./pages/TrafficSources";
 import CryptoUnlock from "./pages/CryptoUnlock";
+import ModelVerification from "./pages/ModelVerification";
+import PartnershipProgram from "./pages/PartnershipProgram";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +24,8 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/traffic-sources" element={<TrafficSources />} />
             <Route path="/crypto-unlock" element={<CryptoUnlock />} />
+            <Route path="/model-verification" element={<ModelVerification />} />
+            <Route path="/partnership" element={<PartnershipProgram />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
