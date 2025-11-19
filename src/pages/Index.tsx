@@ -22,7 +22,7 @@ const Index = () => {
       <Sidebar />
       <NewsWidget />
       <AIChatBot />
-      <div className="lg:pl-80 xl:pr-80 pt-[92px]">
+      <div className="lg:pl-80 xl:pr-80">
         <VideoBanner />
         <Hero />
         <EarningsChart />
