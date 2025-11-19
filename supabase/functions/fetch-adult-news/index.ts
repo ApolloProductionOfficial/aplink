@@ -222,7 +222,8 @@ serve(async (req) => {
         description: item.description,
         source: item.source,
         url: item.url,
-        published_at: new Date().toISOString()
+        published_at: new Date().toISOString(),
+        language: language
       })));
 
     if (error) {

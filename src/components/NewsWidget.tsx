@@ -67,6 +67,7 @@ const NewsWidget = () => {
       const { data, error } = await supabase
         .from('news')
         .select('*')
+        .eq('language', language)
         .order('published_at', { ascending: false })
         .limit(10);
 
