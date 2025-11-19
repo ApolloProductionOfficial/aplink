@@ -67,7 +67,6 @@ const CountUp = ({ end, duration = 2000, suffix = '', prefix = '', decimals = 0,
 const EarningsChart = () => {
   const { t } = useTranslation();
   const [isVisible, setIsVisible] = useState(false);
-  const [animationProgress, setAnimationProgress] = useState(0);
   const sectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -75,31 +74,6 @@ const EarningsChart = () => {
       ([entry]) => {
         // Update visibility based on intersection
         setIsVisible(entry.isIntersecting);
-        
-        if (entry.isIntersecting) {
-          // Smooth animation with easing
-          let progress = 0;
-          const duration = 3000; // 3 seconds
-          const startTime = Date.now();
-          
-          const animate = () => {
-            const elapsed = Date.now() - startTime;
-            const rawProgress = Math.min(elapsed / duration, 1);
-            // Ease-out cubic for smooth finish
-            const easedProgress = 1 - Math.pow(1 - rawProgress, 3);
-            progress = easedProgress * 100;
-            setAnimationProgress(progress);
-            
-            if (rawProgress < 1) {
-              requestAnimationFrame(animate);
-            }
-          };
-          
-          requestAnimationFrame(animate);
-        } else {
-          // Reset animation when out of view
-          setAnimationProgress(0);
-        }
       },
       { threshold: 0.2 }
     );
@@ -174,7 +148,7 @@ const EarningsChart = () => {
       return (
         <div className="bg-card/95 backdrop-blur-md border border-primary/30 rounded-lg p-3 shadow-xl">
           <p className="text-sm font-semibold text-foreground">{payload[0].payload.month}</p>
-          <p className="text-lg font-bold text-primary">
+          <p className="text-lg font-bold text-primary transition-transform duration-300">
             ${displayValue.toLocaleString()}+
           </p>
         </div>
@@ -183,8 +157,8 @@ const EarningsChart = () => {
     return null;
   };
 
-  // Filter data based on animation progress
-  const visibleData = data.slice(0, Math.ceil((data.length * animationProgress) / 100));
+  // Use full data set for smooth line animation
+  const visibleData = data;
 
   return (
     <section 
@@ -247,7 +221,9 @@ const EarningsChart = () => {
                   stroke="hsl(var(--primary))" 
                   strokeWidth={3}
                   fill="url(#colorEarnings)" 
-                  animationDuration={2000}
+                  isAnimationActive
+                  animationDuration={3000}
+                  animationEasing="ease-in-out"
                 />
               </AreaChart>
             </ResponsiveContainer>
