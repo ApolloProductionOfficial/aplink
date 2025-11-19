@@ -94,9 +94,11 @@ const NewsWidget = () => {
       <div className="space-y-6">
         {/* Header */}
         <div>
-          <div className="flex items-center gap-2 mb-2">
-            <Newspaper className="h-5 w-5 text-primary flex-shrink-0" />
-            <h3 className="text-lg font-semibold text-foreground flex-1">{newsTitle}</h3>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Newspaper className="h-5 w-5 text-primary flex-shrink-0" />
+              <h3 className="text-lg font-semibold text-foreground">{newsTitle}</h3>
+            </div>
             <ManualNewsFetch />
           </div>
           <p className="text-xs text-muted-foreground">
