@@ -41,29 +41,29 @@ const MobileMenu = () => {
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
         </DrawerTrigger>
-        <DrawerContent className="h-[80vh]">
-          <div className="overflow-y-auto p-4 space-y-6">
+        <DrawerContent className="h-[85vh]">
+          <div className="overflow-y-auto p-3 space-y-5">
             <div>
-              <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                <Briefcase className="h-5 w-5" />
+              <h3 className="text-base font-semibold mb-2.5 flex items-center gap-1.5">
+                <Briefcase className="h-4 w-4" />
                 {servicesTitle}
               </h3>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {services.map((service, index) => (
                   <button
                     key={index}
                     onClick={() => handleNavigation(service.path)}
-                    className="w-full text-left px-4 py-3 rounded-lg bg-card hover:bg-muted transition-colors border border-border"
+                    className="w-full text-left px-3 py-2 rounded-lg bg-card hover:bg-muted transition-colors border border-border"
                   >
-                    <span className="text-sm font-medium">{service.title}</span>
+                    <span className="text-xs font-medium leading-tight">{service.title}</span>
                   </button>
                 ))}
               </div>
             </div>
 
             <div>
-              <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                <Newspaper className="h-5 w-5" />
+              <h3 className="text-base font-semibold mb-2.5 flex items-center gap-1.5">
+                <Newspaper className="h-4 w-4" />
                 {newsTitle}
               </h3>
               <button
@@ -75,9 +75,9 @@ const MobileMenu = () => {
                     setOpen(false);
                   }
                 }}
-                className="w-full text-left px-4 py-3 rounded-lg bg-card hover:bg-muted transition-colors border border-border"
+                className="w-full text-left px-3 py-2 rounded-lg bg-card hover:bg-muted transition-colors border border-border"
               >
-                <span className="text-sm font-medium">
+                <span className="text-xs font-medium">
                   {viewAllNews}
                 </span>
               </button>

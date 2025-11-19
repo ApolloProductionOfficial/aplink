@@ -70,11 +70,11 @@ const MusicPlayer = () => {
   };
 
   return (
-    <div className={`fixed bottom-4 left-4 md:bottom-6 md:left-6 z-50 transition-transform duration-300 ${
+    <div className={`fixed bottom-2 left-2 right-2 md:bottom-6 md:left-6 md:right-auto z-50 transition-transform duration-300 ${
       isVisible ? 'translate-y-0' : 'translate-y-32'
     }`}>
       <div 
-        className={`bg-card/95 backdrop-blur-lg border border-border rounded-lg w-48 md:w-64 p-2 md:p-4 transition-all duration-150 ${
+        className={`bg-card/95 backdrop-blur-lg border border-border rounded-full px-3 py-1.5 md:rounded-lg md:w-64 md:p-4 transition-all duration-150 ${
           isPlaying ? 'animate-music-pulse' : ''
         }`}
       >
@@ -85,46 +85,85 @@ const MusicPlayer = () => {
           preload="none"
         />
         
-        <div className="space-y-2 md:space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] md:text-xs font-medium hidden md:block">Music Player</span>
-            <div className="flex gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 md:h-8 md:w-8"
-                onClick={togglePlay}
-              >
-                {isPlaying ? (
-                  <Pause className="h-3 w-3 md:h-4 md:w-4" />
-                ) : (
-                  <Play className="h-3 w-3 md:h-4 md:w-4" />
-                )}
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 md:h-8 md:w-8"
-                onClick={toggleMute}
-              >
-                {isMuted ? (
-                  <VolumeX className="h-3 w-3 md:h-4 md:w-4" />
-                ) : (
-                  <Volume2 className="h-3 w-3 md:h-4 md:w-4" />
-                )}
-              </Button>
-            </div>
+        <div className="flex items-center gap-2 md:flex-col md:space-y-3">
+          {/* Mobile: compact horizontal layout */}
+          <div className="flex items-center gap-1.5 md:hidden">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6"
+              onClick={togglePlay}
+            >
+              {isPlaying ? (
+                <Pause className="h-3 w-3" />
+              ) : (
+                <Play className="h-3 w-3" />
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6"
+              onClick={toggleMute}
+            >
+              {isMuted ? (
+                <VolumeX className="h-3 w-3" />
+              ) : (
+                <Volume2 className="h-3 w-3" />
+              )}
+            </Button>
           </div>
-          <div className="flex items-center gap-2">
-            <Volume2 className="h-2 w-2 md:h-3 md:w-3 text-muted-foreground hidden md:block" />
-            <Slider
-              value={[volume]}
-              onValueChange={handleVolumeChange}
-              max={100}
-              step={1}
-              className="flex-1"
-            />
-            <span className="text-[10px] md:text-xs text-muted-foreground w-6 md:w-8">{volume}%</span>
+          
+          <Slider
+            value={[volume]}
+            onValueChange={handleVolumeChange}
+            max={100}
+            step={1}
+            className="flex-1"
+          />
+          
+          {/* Desktop layout */}
+          <div className="hidden md:flex md:flex-col md:space-y-3 md:w-full">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium">Music Player</span>
+              <div className="flex gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={togglePlay}
+                >
+                  {isPlaying ? (
+                    <Pause className="h-4 w-4" />
+                  ) : (
+                    <Play className="h-4 w-4" />
+                  )}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={toggleMute}
+                >
+                  {isMuted ? (
+                    <VolumeX className="h-4 w-4" />
+                  ) : (
+                    <Volume2 className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Volume2 className="h-3 w-3 text-muted-foreground" />
+              <Slider
+                value={[volume]}
+                onValueChange={handleVolumeChange}
+                max={100}
+                step={1}
+                className="flex-1"
+              />
+              <span className="text-xs text-muted-foreground w-8">{volume}%</span>
+            </div>
           </div>
         </div>
       </div>
