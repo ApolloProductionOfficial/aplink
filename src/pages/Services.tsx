@@ -131,7 +131,7 @@ const Services = () => {
                 <Card
                   key={service.id}
                   ref={el => cardRefs.current[index] = el}
-                  className={`p-6 cursor-pointer border-2 border-primary/20 bg-card/60 backdrop-blur hover:border-primary/60 hover:shadow-lg transition-all duration-500 ${
+                  className={`p-6 cursor-pointer border-2 border-primary/20 bg-card/60 backdrop-blur hover:border-primary/60 hover:shadow-2xl hover:scale-105 hover:-translate-y-2 transition-all duration-500 ${
                     isVisible 
                       ? 'opacity-100 translate-y-0' 
                       : 'opacity-0 translate-y-8'
