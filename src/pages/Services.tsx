@@ -20,7 +20,6 @@ const Services = () => {
   const { playClickSound } = useButtonSound();
   const [visibleCards, setVisibleCards] = useState<Set<number>>(new Set());
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const [filterType, setFilterType] = useState<string>("all");
   const [filterPlatform, setFilterPlatform] = useState<string>("all");
 
   const handleBack = () => {
@@ -126,12 +125,9 @@ const Services = () => {
   ];
 
   const filteredServices = services.filter(service => {
-    const matchesType = filterType === "all" || 
-                       filterType === service.targetAudience || 
-                       service.targetAudience === "both";
     const matchesPlatform = filterPlatform === "all" || 
                            service.platforms.includes(filterPlatform);
-    return matchesType && matchesPlatform;
+    return matchesPlatform;
   });
 
   const ServiceCard = ({ service, index }: { service: typeof services[0], index: number }) => {
@@ -197,19 +193,8 @@ const Services = () => {
             <div className="flex flex-wrap items-center justify-center gap-4 max-w-3xl mx-auto pt-4">
               <div className="flex items-center gap-2">
                 <Filter className="h-5 w-5 text-primary" />
-                <span className="text-sm font-medium">Фильтры:</span>
+                <span className="text-sm font-medium">Фильтр по платформе:</span>
               </div>
-              
-              <Select value={filterType} onValueChange={setFilterType}>
-                <SelectTrigger className="w-[200px] bg-card/60 backdrop-blur border-primary/20">
-                  <SelectValue placeholder="Тип аудитории" />
-                </SelectTrigger>
-                <SelectContent className="bg-card/95 backdrop-blur border-primary/20 z-50">
-                  <SelectItem value="all">Все услуги</SelectItem>
-                  <SelectItem value="models">Для моделей</SelectItem>
-                  <SelectItem value="agencies">Для агентств</SelectItem>
-                </SelectContent>
-              </Select>
 
               <Select value={filterPlatform} onValueChange={setFilterPlatform}>
                 <SelectTrigger className="w-[200px] bg-card/60 backdrop-blur border-primary/20">
@@ -228,17 +213,16 @@ const Services = () => {
                 </SelectContent>
               </Select>
 
-              {(filterType !== "all" || filterPlatform !== "all") && (
+              {filterPlatform !== "all" && (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => {
-                    setFilterType("all");
                     setFilterPlatform("all");
                   }}
                   className="text-primary hover:text-primary/80"
                 >
-                  Сбросить фильтры
+                  Сбросить фильтр
                 </Button>
               )}
             </div>
