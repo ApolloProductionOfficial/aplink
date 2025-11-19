@@ -26,7 +26,7 @@ const Services = () => {
       title: t.services.partnership.title,
       description: t.services.partnership.description,
       icon: HandshakeIcon,
-      path: "/partnership",
+      path: "/partnership-program",
     },
     {
       id: "crypto",

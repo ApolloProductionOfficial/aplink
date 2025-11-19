@@ -143,7 +143,7 @@ const AIChatBot = () => {
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
 
-  // Sync with music player visibility (mobile only)
+  // Hide chatbot on scroll down, show on scroll up (mobile only)
   useEffect(() => {
     const handleScroll = () => {
       if (window.innerWidth >= 768) {
@@ -152,9 +152,11 @@ const AIChatBot = () => {
       }
 
       const currentScrollY = window.scrollY;
-      if (currentScrollY < lastScrollY && currentScrollY > 100) {
+      
+      // Hide when scrolling down, show when scrolling up
+      if (currentScrollY > lastScrollY && currentScrollY > 100) {
         setIsVisible(false);
-      } else if (currentScrollY > lastScrollY) {
+      } else if (currentScrollY < lastScrollY) {
         setIsVisible(true);
       }
       setLastScrollY(currentScrollY);

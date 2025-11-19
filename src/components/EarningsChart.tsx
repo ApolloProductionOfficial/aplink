@@ -1,9 +1,33 @@
+import { useEffect, useRef, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
 import { TrendingUp } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 
 const EarningsChart = () => {
   const { t } = useTranslation();
+  const [isVisible, setIsVisible] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+        }
+      },
+      { threshold: 0.2 }
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => {
+      if (sectionRef.current) {
+        observer.unobserve(sectionRef.current);
+      }
+    };
+  }, []);
   
   const data = [
     { month: `${t.earnings.month} 1`, earnings: 2500, label: '2-3k+' },
@@ -33,7 +57,15 @@ const EarningsChart = () => {
   };
 
   return (
-    <section className="py-20 px-4 relative overflow-hidden">
+    <section 
+      ref={sectionRef}
+      className="py-20 px-4 relative overflow-hidden"
+      style={{
+        opacity: isVisible ? 1 : 0,
+        transform: isVisible ? 'translateY(0)' : 'translateY(30px)',
+        transition: 'all 0.8s ease-out'
+      }}
+    >
       <div className="container mx-auto max-w-6xl">
         {/* Header */}
         <div className="text-center mb-12">

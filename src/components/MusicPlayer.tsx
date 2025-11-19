@@ -54,7 +54,7 @@ const MusicPlayer = () => {
     };
   }, []);
 
-  // Hide player on scroll (mobile only)
+  // Hide player on scroll down, show on scroll up (mobile only)
   useEffect(() => {
     const handleScroll = () => {
       // Check if mobile every time
@@ -64,9 +64,11 @@ const MusicPlayer = () => {
       }
 
       const currentScrollY = window.scrollY;
-      if (currentScrollY < lastScrollY && currentScrollY > 100) {
+      
+      // Hide when scrolling down, show when scrolling up
+      if (currentScrollY > lastScrollY && currentScrollY > 100) {
         setIsVisible(false);
-      } else if (currentScrollY > lastScrollY) {
+      } else if (currentScrollY < lastScrollY) {
         setIsVisible(true);
       }
       setLastScrollY(currentScrollY);
