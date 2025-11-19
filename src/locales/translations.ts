@@ -18,7 +18,7 @@ export const translations = {
     hero: {
       badge: "OnlyFans Management Agency",
       title: "Управляем ростом моделей на OnlyFans",
-      description: "Мы раскачиваем аудиторию историями с клиффхэнгерами — удерживаем внимание и передаём «на пике» чатерам для монетизации.",
+      description: "5 лет работы в индустрии OnlyFans. За это время помогли открыть и запустить десятки агентств по всему миру, собрали огромный опыт в управлении моделями, трафике и монетизации. Теперь мы применяем весь накопленный опыт для развития собственного агентства и достижения максимальных результатов для наших моделей.",
       startButton: "Начать работу",
       formButton: "Заполнить анкету"
     },
@@ -157,8 +157,8 @@ export const translations = {
     rightSidebar: {
       title: "Топ предложений пользующихся спросом",
       partnership40: "Партнёрка — 40% пассив",
-      cryptoUnlock: "Разблокировка Fansly/OF",
-      verificationRF: "Верификация РФ и СНГ на OnlyFans",
+      cryptoUnlock: "Разблокировка вывода в крипту Fansly",
+      verificationRF: "Верификация РФ и СНГ даже с FACEBAN",
       modelRecruitment: "Ищем моделей для работы на платформах",
       telegram: "Telegram",
       launch: "Запуск",
@@ -484,7 +484,7 @@ export const translations = {
     hero: {
       badge: "OnlyFans Management Agency",
       title: "Managing Model Growth on OnlyFans",
-      description: "We build audiences with cliffhanger stories — keeping attention and passing leads at peak moments to chatters for monetization.",
+      description: "5 years working in the OnlyFans industry. During this time, we've helped launch and establish dozens of agencies worldwide, accumulated vast experience in model management, traffic generation, and monetization. Now we're applying all this accumulated expertise to develop our own agency and achieve maximum results for our models.",
       startButton: "Get Started",
       formButton: "Fill Application"
     },
@@ -577,8 +577,8 @@ export const translations = {
     rightSidebar: {
       title: "Top Offers in High Demand",
       partnership40: "Partnership — 40% passive income",
-      cryptoUnlock: "Fansly/OF Unlock",
-      verificationRF: "Verification RF & CIS for OnlyFans",
+      cryptoUnlock: "Fansly Crypto Withdrawal Unlock",
+      verificationRF: "Verification RF & CIS even with FACEBAN",
       modelRecruitment: "Looking for models for multi-platform work",
       telegram: "Telegram",
       launch: "Launch",
@@ -950,7 +950,7 @@ export const translations = {
     hero: {
       badge: "OnlyFans Management Agency",
       title: "Керуємо зростанням моделей на OnlyFans",
-      description: "Ми розкручуємо аудиторію історіями з кліфхенгерами — утримуємо увагу і передаємо «на піку» чатерам для монетизації.",
+      description: "5 років роботи в індустрії OnlyFans. За цей час допомогли відкрити та запустити десятки агентств по всьому світу, зібрали величезний досвід у керуванні моделями, трафіку та монетизації. Тепер ми застосовуємо весь накопичений досвід для розвитку власного агентства та досягнення максимальних результатів для наших моделей.",
       startButton: "Почати роботу",
       formButton: "Заповнити анкету"
     },
@@ -1043,8 +1043,8 @@ export const translations = {
     rightSidebar: {
       title: "Топ пропозицій, що користуються попитом",
       partnership40: "Партнерка — 40% пасив",
-      cryptoUnlock: "Розблокування Fansly/OF",
-      verificationRF: "Верифікація РФ і СНД на OnlyFans",
+      cryptoUnlock: "Розблокування виводу в крипту Fansly",
+      verificationRF: "Верифікація РФ і СНД навіть з FACEBAN",
       modelRecruitment: "Шукаємо моделей для роботи на платформах",
       telegram: "Telegram",
       launch: "Запуск",

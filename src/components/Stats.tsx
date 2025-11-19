@@ -73,16 +73,25 @@ const StatCard = ({
   delay: number;
 }) => {
   const [count, setCount] = useState(0);
+  const [hasAnimated, setHasAnimated] = useState(false);
 
   useEffect(() => {
-    if (isVisible && count < stat.value) {
-      const timer = setTimeout(() => {
-        const increment = Math.ceil(stat.value / 20);
-        setCount(prev => Math.min(prev + increment, stat.value));
-      }, 15);
-      return () => clearTimeout(timer);
+    if (isVisible && !hasAnimated) {
+      setHasAnimated(true);
+      let currentCount = 0;
+      const increment = Math.ceil(stat.value / 50);
+      const timer = setInterval(() => {
+        currentCount += increment;
+        if (currentCount >= stat.value) {
+          setCount(stat.value);
+          clearInterval(timer);
+        } else {
+          setCount(currentCount);
+        }
+      }, 30);
+      return () => clearInterval(timer);
     }
-  }, [count, isVisible, stat.value]);
+  }, [isVisible, stat.value, hasAnimated]);
 
   return (
     <div
