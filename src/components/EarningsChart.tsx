@@ -3,6 +3,63 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { TrendingUp } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 
+interface CountUpProps {
+  end: number;
+  duration?: number;
+  suffix?: string;
+  prefix?: string;
+  decimals?: number;
+  isVisible: boolean;
+}
+
+const CountUp = ({ end, duration = 2000, suffix = '', prefix = '', decimals = 0, isVisible }: CountUpProps) => {
+  const [count, setCount] = useState(0);
+  const countRef = useRef<number>();
+
+  useEffect(() => {
+    if (!isVisible) return;
+
+    let startTime: number;
+    const startValue = 0;
+
+    const animate = (currentTime: number) => {
+      if (!startTime) startTime = currentTime;
+      const progress = Math.min((currentTime - startTime) / duration, 1);
+      
+      // Ease-out cubic
+      const easedProgress = 1 - Math.pow(1 - progress, 3);
+      const currentCount = startValue + (end - startValue) * easedProgress;
+      
+      setCount(currentCount);
+
+      if (progress < 1) {
+        countRef.current = requestAnimationFrame(animate);
+      }
+    };
+
+    countRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (countRef.current) {
+        cancelAnimationFrame(countRef.current);
+      }
+    };
+  }, [end, duration, isVisible]);
+
+  const formatNumber = (num: number) => {
+    if (decimals > 0) {
+      return num.toFixed(decimals);
+    }
+    return Math.floor(num).toLocaleString();
+  };
+
+  return (
+    <span>
+      {prefix}{formatNumber(count)}{suffix}
+    </span>
+  );
+};
+
 const EarningsChart = () => {
   const { t } = useTranslation();
   const [isVisible, setIsVisible] = useState(false);
@@ -137,7 +194,9 @@ const EarningsChart = () => {
             </span>
           </div>
           <h2 className="text-4xl md:text-5xl font-bold mb-4">
-            {t.earnings.title} <span className="text-primary">{t.earnings.titleAmount}</span>
+            {t.earnings.title} <span className="text-primary">
+              <CountUp end={20000} prefix="$" suffix="+" isVisible={isVisible} duration={2500} />
+            </span>
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             {t.earnings.description}
@@ -187,15 +246,21 @@ const EarningsChart = () => {
             {/* Stats */}
             <div className="grid grid-cols-3 gap-4 mt-8 pt-6 border-t border-border/50">
               <div className="text-center">
-                <p className="text-2xl md:text-3xl font-bold text-primary">$2.5k</p>
+                <p className="text-2xl md:text-3xl font-bold text-primary">
+                  <CountUp end={2.5} prefix="$" suffix="k" decimals={1} isVisible={isVisible} duration={2000} />
+                </p>
                 <p className="text-sm text-muted-foreground mt-1">{t.earnings.start}</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl md:text-3xl font-bold text-primary">$12k</p>
+                <p className="text-2xl md:text-3xl font-bold text-primary">
+                  <CountUp end={12} prefix="$" suffix="k" isVisible={isVisible} duration={2000} />
+                </p>
                 <p className="text-sm text-muted-foreground mt-1">{t.earnings.months6}</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl md:text-3xl font-bold text-primary">$23k+</p>
+                <p className="text-2xl md:text-3xl font-bold text-primary">
+                  <CountUp end={23} prefix="$" suffix="k+" isVisible={isVisible} duration={2000} />
+                </p>
                 <p className="text-sm text-muted-foreground mt-1">{t.earnings.months12}</p>
               </div>
             </div>
