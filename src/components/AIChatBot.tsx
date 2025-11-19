@@ -104,6 +104,17 @@ const AIChatBot = () => {
     ? "Я знаю все про адалт і відповім на будь-яке питання" 
     : "I know everything about adult industry and will answer any question";
 
+  // Function to format text with markdown-like syntax
+  const formatMessage = (text: string) => {
+    // Replace **text** with bold
+    return text.split(/(\*\*.*?\*\*)/).map((part, i) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={i}>{part.slice(2, -2)}</strong>;
+      }
+      return part;
+    });
+  };
+
   return (
     <>
       {/* Animated Hint Tooltip */}
@@ -167,7 +178,7 @@ const AIChatBot = () => {
                       : 'bg-muted'
                   }`}
                 >
-                  <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                  <p className="text-sm whitespace-pre-wrap">{formatMessage(msg.content)}</p>
                 </div>
               </div>
             ))}
