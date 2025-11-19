@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { ArrowLeft, Unlock, MapPin, Video, Instagram, HandshakeIcon, Shield } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useButtonSound } from "@/hooks/useButtonSound";
+import { useTilt } from "@/hooks/useTilt";
 import { useState, useEffect, useRef } from "react";
 
 const Services = () => {
@@ -101,6 +102,44 @@ const Services = () => {
     },
   ];
 
+  const ServiceCard = ({ service, index }: { service: typeof services[0], index: number }) => {
+    const tiltRef = useTilt(10);
+    const Icon = service.icon;
+    const isVisible = visibleCards.has(index);
+
+    return (
+      <Card
+        ref={(el) => {
+          cardRefs.current[index] = el;
+          (tiltRef as any).current = el;
+        }}
+        className={`p-6 cursor-pointer border-2 border-primary/20 bg-card/60 backdrop-blur hover:border-primary/60 hover:shadow-2xl transition-all duration-500 ${
+          isVisible 
+            ? 'opacity-100 translate-y-0' 
+            : 'opacity-0 translate-y-8'
+        }`}
+        style={{
+          transitionDelay: `${index * 100}ms`,
+          transformStyle: 'preserve-3d'
+        }}
+        onClick={() => handleServiceClick(service.path)}
+      >
+        <div className="flex flex-col items-center text-center space-y-4">
+          <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+            <Icon className="h-8 w-8 text-primary" />
+          </div>
+          <h3 className="text-2xl font-bold">{service.title}</h3>
+          <p className="text-muted-foreground text-sm">
+            {service.description}
+          </p>
+          <Button variant="outline" className="mt-2">
+            {t.common.learnMore}
+          </Button>
+        </div>
+      </Card>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="container mx-auto px-4 py-8">
@@ -124,38 +163,9 @@ const Services = () => {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {services.map((service, index) => {
-              const Icon = service.icon;
-              const isVisible = visibleCards.has(index);
-              return (
-                <Card
-                  key={service.id}
-                  ref={el => cardRefs.current[index] = el}
-                  className={`p-6 cursor-pointer border-2 border-primary/20 bg-card/60 backdrop-blur hover:border-primary/60 hover:shadow-2xl hover:scale-105 hover:-translate-y-2 transition-all duration-500 ${
-                    isVisible 
-                      ? 'opacity-100 translate-y-0' 
-                      : 'opacity-0 translate-y-8'
-                  }`}
-                  style={{
-                    transitionDelay: `${index * 100}ms`
-                  }}
-                  onClick={() => handleServiceClick(service.path)}
-                >
-                  <div className="flex flex-col items-center text-center space-y-4">
-                    <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Icon className="h-8 w-8 text-primary" />
-                    </div>
-                    <h3 className="text-2xl font-bold">{service.title}</h3>
-                    <p className="text-muted-foreground text-sm">
-                      {service.description}
-                    </p>
-                    <Button variant="outline" className="mt-2">
-                      {t.common.learnMore}
-                    </Button>
-                  </div>
-                </Card>
-              );
-            })}
+            {services.map((service, index) => (
+              <ServiceCard key={service.id} service={service} index={index} />
+            ))}
           </div>
 
           <div className="border-2 border-primary/30 rounded-lg p-8 bg-card/60 backdrop-blur">
