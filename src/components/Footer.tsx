@@ -33,7 +33,7 @@ const Footer = () => {
     },
     {
       platform: "Telegram",
-      username: "Only4Friends",
+      username: "Only4riends",
       description: "Telegram Group",
       url: "https://t.me/MenuOnly4Friends"
     }
