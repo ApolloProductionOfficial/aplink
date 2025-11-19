@@ -174,7 +174,8 @@ export const translations = {
     },
     // Footer
     footer: {
-      rights: "Все права защищены."
+      rights: "Все права защищены.",
+      contactTitle: "Свяжитесь с нами"
     },
     // Model Verification
     modelVerification: {
@@ -507,7 +508,8 @@ export const translations = {
     },
     // Footer
     footer: {
-      rights: "All rights reserved."
+      rights: "All rights reserved.",
+      contactTitle: "Get in Touch"
     },
     // Model Verification
     modelVerification: {
@@ -886,7 +888,8 @@ export const translations = {
     },
     // Footer
     footer: {
-      rights: "Всі права захищені."
+      rights: "Всі права захищені.",
+      contactTitle: "Зв'яжіться з нами"
     },
     // Model Verification
     modelVerification: {
