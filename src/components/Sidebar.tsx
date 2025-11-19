@@ -150,13 +150,14 @@ const Sidebar = () => {
                     playClickSound();
                     navigate(link.url);
                   }}
-                  className={`block text-sm transition-colors text-left w-full ${
+                  className={`flex items-start gap-2 text-sm transition-colors text-left w-full py-2 border-b border-border/50 last:border-0 ${
                     link.highlight 
                       ? 'text-primary hover:text-primary/80 font-medium' 
                       : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  {link.text}
+                  <span className="text-primary mt-0.5">•</span>
+                  <span className="flex-1">{link.text}</span>
                 </button>
               ) : (
                 <a
@@ -165,13 +166,14 @@ const Sidebar = () => {
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={playClickSound}
-                  className={`block text-sm transition-colors ${
+                  className={`flex items-start gap-2 text-sm transition-colors py-2 border-b border-border/50 last:border-0 ${
                     link.highlight 
                       ? 'text-primary hover:text-primary/80 font-medium' 
                       : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  {link.text}
+                  <span className="text-primary mt-0.5">•</span>
+                  <span className="flex-1">{link.text}</span>
                 </a>
               )
             ))}
