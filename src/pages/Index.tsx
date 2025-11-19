@@ -5,6 +5,9 @@ import Sidebar from "@/components/Sidebar";
 import NewsWidget from "@/components/NewsWidget";
 import AIChatBot from "@/components/AIChatBot";
 import MobileMenu from "@/components/MobileMenu";
+import MobileServices from "@/components/MobileServices";
+import MobileNews from "@/components/MobileNews";
+import ServiceBadges from "@/components/ServiceBadges";
 import Hero from "@/components/Hero";
 import EarningsChart from "@/components/EarningsChart";
 import Stats from "@/components/Stats";
@@ -26,6 +29,9 @@ const Index = () => {
       <div className="lg:pl-80 xl:pr-80">
         <VideoBanner />
         <Hero />
+        <ServiceBadges />
+        <MobileServices />
+        <MobileNews />
         <EarningsChart />
         <TrafficSources />
         <CTA />
