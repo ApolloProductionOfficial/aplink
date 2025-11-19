@@ -17,6 +17,7 @@ const AIChatBot = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatWindowRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const { t, language } = useTranslation();
 
@@ -168,6 +169,31 @@ const AIChatBot = () => {
     };
   }, [lastScrollY]);
 
+  // Close chat when clicking outside on mobile
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      // Only on mobile
+      if (window.innerWidth >= 768) return;
+      
+      if (
+        isOpen &&
+        chatWindowRef.current &&
+        !chatWindowRef.current.contains(event.target as Node)
+      ) {
+        // Check if click is not on the chat button itself
+        const target = event.target as HTMLElement;
+        if (!target.closest('button[class*="bottom-16"]')) {
+          setIsOpen(false);
+        }
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isOpen]);
+
   return (
     <>
       {/* Animated Hint Tooltip */}
@@ -208,7 +234,7 @@ const AIChatBot = () => {
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="fixed bottom-[5.5rem] md:bottom-24 right-6 z-50 w-96 max-w-[calc(100vw-3rem)] h-[500px] bg-card border-2 border-primary/30 rounded-2xl shadow-2xl shadow-primary/20 flex flex-col">
+        <div ref={chatWindowRef} className="fixed bottom-[5.5rem] md:bottom-24 right-6 z-50 w-96 max-w-[calc(100vw-3rem)] h-[500px] bg-card border-2 border-primary/30 rounded-2xl shadow-2xl shadow-primary/20 flex flex-col">
           {/* Header */}
           <div className="p-4 border-b border-border">
             <h3 className="font-semibold text-lg">AI Помощник</h3>
