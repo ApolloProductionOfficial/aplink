@@ -112,7 +112,12 @@ const AIChatBot = () => {
         <div className="fixed bottom-24 right-6 z-50 animate-fade-in">
           <div className="bg-primary text-primary-foreground px-4 py-3 rounded-lg shadow-xl relative animate-bounce flex items-center gap-2">
             <div className="absolute -bottom-2 right-6 w-4 h-4 bg-primary transform rotate-45"></div>
-            <img src={onlyFansLogo} alt="OnlyFans" className="w-6 h-6" />
+            <img 
+              src={onlyFansLogo} 
+              alt="OnlyFans" 
+              className="w-6 h-6"
+              style={{ filter: 'brightness(0) saturate(100%) invert(100%)' }}
+            />
             <p className="text-sm font-medium whitespace-nowrap">{hintText}</p>
           </div>
         </div>
@@ -124,13 +129,18 @@ const AIChatBot = () => {
           setIsOpen(!isOpen);
           setShowHint(false);
         }}
-        className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg shadow-primary/50 transition-transform hover:scale-110 p-2 overflow-hidden bg-background"
+        className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg shadow-primary/50 transition-transform hover:scale-110 p-3 overflow-hidden bg-primary/20 backdrop-blur-sm border-2 border-primary/40"
         size="icon"
       >
         {isOpen ? (
           <X className="h-6 w-6 text-primary" />
         ) : (
-          <img src={onlyFansLogo} alt="OnlyFans" className="w-full h-full object-contain" />
+          <img 
+            src={onlyFansLogo} 
+            alt="OnlyFans" 
+            className="w-full h-full object-contain"
+            style={{ filter: 'brightness(0) saturate(100%) invert(61%) sepia(98%) saturate(4658%) hue-rotate(162deg) brightness(101%) contrast(101%)' }}
+          />
         )}
       </Button>
 
