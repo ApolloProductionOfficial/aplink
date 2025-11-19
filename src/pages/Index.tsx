@@ -16,7 +16,6 @@ import CTA from "@/components/CTA";
 import Footer from "@/components/Footer";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import StarField from "@/components/StarField";
-import CustomCursor from "@/components/CustomCursor";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 
 const Index = () => {
@@ -29,7 +28,6 @@ const Index = () => {
     <div className="min-h-screen bg-background text-foreground relative">
       <AnimatedBackground />
       <StarField />
-      <CustomCursor />
       <TopBanner />
       <Header />
       <Sidebar />

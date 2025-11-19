@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import MusicPlayer from "@/components/MusicPlayer";
 import ScrollToTop from "@/components/ScrollToTop";
+import CustomCursor from "@/components/CustomCursor";
 import Index from "./pages/Index";
 import TrafficSources from "./pages/TrafficSources";
 import CryptoUnlock from "./pages/CryptoUnlock";
@@ -28,6 +29,7 @@ function App() {
           <Toaster />
           <Sonner />
           <BrowserRouter>
+            <CustomCursor />
             <MusicPlayer />
             <ScrollToTop />
             <Routes>

@@ -41,18 +41,33 @@ const CustomCursor = () => {
 
   return (
     <div className="hidden md:block">
-      {/* Main cursor */}
+      {/* Main cursor - Arrow shape */}
       <div
-        className={`fixed w-6 h-6 pointer-events-none z-[9999] transition-transform duration-200 ${
+        className={`fixed pointer-events-none z-[9999] transition-transform duration-200 ${
           isPointer ? 'scale-150' : 'scale-100'
         }`}
         style={{
           left: `${position.x}px`,
           top: `${position.y}px`,
-          transform: 'translate(-50%, -50%)',
+          transform: 'translate(-20%, -20%)',
         }}
       >
-        <div className="w-full h-full rounded-full border-2 border-primary bg-primary/20 backdrop-blur-sm" />
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path 
+            d="M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z" 
+            fill="hsl(var(--primary))" 
+            fillOpacity="0.8"
+            stroke="hsl(var(--primary))" 
+            strokeWidth="1.5"
+            strokeLinejoin="round"
+          />
+          <path 
+            d="M12.58 12.58L19.97 19.97" 
+            stroke="hsl(var(--primary))" 
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+        </svg>
       </div>
 
       {/* Trail */}
