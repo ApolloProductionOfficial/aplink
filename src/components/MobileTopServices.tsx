@@ -28,15 +28,14 @@ const MobileTopServices = () => {
           </h2>
           <Star className="h-3 w-3 text-primary fill-primary" />
         </div>
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           {topServices.map((service, index) => (
             <button
               key={index}
               onClick={() => navigate(service.path)}
-              className="w-full text-left px-2.5 py-2 rounded-lg bg-card hover:bg-card/80 border border-border transition-all duration-200 shadow-sm flex items-start gap-2"
+              className="w-full text-left px-2.5 py-2 rounded-lg bg-card hover:bg-card/80 border border-border transition-all duration-200 shadow-sm"
             >
-              <span className="text-primary text-[10px] mt-0.5">•</span>
-              <span className="text-[10px] font-semibold leading-tight text-foreground flex-1">
+              <span className="text-[10px] font-semibold leading-tight text-foreground block">
                 {service.title}
               </span>
             </button>
