@@ -22,6 +22,37 @@ const Header = () => {
     uk: { label: 'Українська', flag: '🇺🇦' }
   };
   
+  const handleNavigate = (e: React.MouseEvent<HTMLAnchorElement>, sectionId: string) => {
+    e.preventDefault();
+    playClickSound();
+    
+    // Create a shine effect element
+    const shine = document.createElement('div');
+    shine.className = 'fixed inset-0 pointer-events-none z-50';
+    shine.style.background = 'radial-gradient(circle at center, hsla(var(--primary), 0.3) 0%, transparent 70%)';
+    shine.style.opacity = '0';
+    shine.style.transition = 'opacity 0.6s ease';
+    document.body.appendChild(shine);
+    
+    // Animate shine
+    setTimeout(() => {
+      shine.style.opacity = '1';
+    }, 10);
+    
+    setTimeout(() => {
+      shine.style.opacity = '0';
+      setTimeout(() => {
+        document.body.removeChild(shine);
+      }, 600);
+    }, 300);
+    
+    // Smooth scroll to section
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+  
   return (
     <header className="sticky top-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-lg border-b border-border">
       <div className="container mx-auto px-4 py-3">
@@ -46,28 +77,28 @@ const Header = () => {
             <a 
               href="#about" 
               className="text-sm text-foreground/80 hover:text-primary transition-colors"
-              onClick={playClickSound}
+              onClick={(e) => handleNavigate(e, 'about')}
             >
               {t.header.about}
             </a>
             <a 
               href="#traffic" 
               className="text-sm text-foreground/80 hover:text-primary transition-colors"
-              onClick={playClickSound}
+              onClick={(e) => handleNavigate(e, 'traffic')}
             >
               {t.header.traffic}
             </a>
             <a 
               href="#services" 
               className="text-sm text-foreground/80 hover:text-primary transition-colors"
-              onClick={playClickSound}
+              onClick={(e) => handleNavigate(e, 'services')}
             >
               {t.header.services}
             </a>
             <a 
               href="#infrastructure" 
               className="text-sm text-foreground/80 hover:text-primary transition-colors"
-              onClick={playClickSound}
+              onClick={(e) => handleNavigate(e, 'infrastructure')}
             >
               {t.header.infrastructure}
             </a>

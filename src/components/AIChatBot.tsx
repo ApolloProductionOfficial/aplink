@@ -98,11 +98,35 @@ const AIChatBot = () => {
     }
   };
 
-  const hintText = language === 'ru' 
-    ? "Я знаю всё об адалте и отвечу на любой вопрос" 
+  // Array of hint messages that will rotate
+  const hintMessages = language === 'ru' 
+    ? [
+        "Я знаю всё об адалте и отвечу на любой вопрос",
+        "Я найду информацию на сайте за тебя если ты не нашел то что искал",
+        "Нажми на меня 👋"
+      ]
     : language === 'uk' 
-    ? "Я знаю все про адалт і відповім на будь-яке питання" 
-    : "I know everything about adult industry and will answer any question";
+    ? [
+        "Я знаю все про адалт і відповім на будь-яке питання",
+        "Я знайду інформацію на сайті за тебе якщо ти не знайшов те що шукав",
+        "Натисни на мене 👋"
+      ]
+    : [
+        "I know everything about adult industry and will answer any question",
+        "I can find information on the site for you if you didn't find what you were looking for",
+        "Click me 👋"
+      ];
+  
+  const [currentHintIndex, setCurrentHintIndex] = useState(0);
+  const hintText = hintMessages[currentHintIndex];
+  
+  // Rotate hint messages
+  useEffect(() => {
+    const rotateHints = setInterval(() => {
+      setCurrentHintIndex(prev => (prev + 1) % hintMessages.length);
+    }, 5000);
+    return () => clearInterval(rotateHints);
+  }, [hintMessages.length]);
 
   // Function to format text with markdown-like syntax
   const formatMessage = (text: string) => {
@@ -142,7 +166,7 @@ const AIChatBot = () => {
         ) : (
           <>
             <Bot className="h-6 w-6 text-primary-foreground" />
-            <span className="text-[8px] font-bold text-primary-foreground tracking-wider leading-none">APOLLO</span>
+            <span className="text-[8px] font-bold text-primary-foreground tracking-wider leading-none">APOLLO AI</span>
           </>
         )}
       </Button>

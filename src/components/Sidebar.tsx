@@ -23,6 +23,11 @@ const Sidebar = () => {
       route: "/traffic-sources"
     },
     {
+      title: t.sidebar.instagramAutomation?.title || "Автоматизация и Софты",
+      description: t.sidebar.instagramAutomation?.description || "Instagram ферм для трафика на OnlyFans",
+      route: "/instagram-automation"
+    },
+    {
       title: t.sidebar.modelVerification.title,
       description: t.sidebar.modelVerification.description,
       route: "/model-verification"
@@ -45,12 +50,10 @@ const Sidebar = () => {
   ];
 
   const quickLinks = [
+    { text: t.rightSidebar.modelForm, url: "/partnership", highlight: true, internal: true },
     { text: t.rightSidebar.cryptoUnlock, url: "/crypto-unlock", highlight: true, internal: true },
-    { text: t.rightSidebar.telegram, url: "https://t.me/Apollo_Production", internal: false },
-    { text: t.rightSidebar.consulting, url: "https://t.me/Apollo_Production", internal: false },
-    { text: t.rightSidebar.launch, url: "https://t.me/Apollo_Production", internal: false },
-    { text: t.rightSidebar.modelForm, url: "https://docs.google.com/forms/d/e/1FAIpQLSdImReNAMa_AQ74PYbBosGLMbm7FJnSaGkuq-QIJDlDNdnW5Q/viewform", highlight: true, internal: false },
-    { text: t.rightSidebar.telegramGroup, url: "https://t.me/MenuOnly4Friends", highlight: true, internal: false }
+    { text: t.rightSidebar.consulting, url: "https://t.me/Apollo_Production", highlight: false, internal: false },
+    { text: t.rightSidebar.telegramGroup, url: "https://t.me/MenuOnly4Friends", highlight: false, internal: false }
   ];
 
   const handleThemeChange = (newTheme: number) => {

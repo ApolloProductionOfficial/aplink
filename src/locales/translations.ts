@@ -101,6 +101,10 @@ export const translations = {
       webcamServices: {
         title: "Вебкам услуги",
         description: "Работа на 7 сайтах с персональным оператором. Релокация в Грузию. Выплаты 2 раза в месяц."
+      },
+      instagramAutomation: {
+        title: "Автоматизация и Софты",
+        description: "Instagram ферм для трафика на OnlyFans. 200-400+ аккаунтов / устройство. ИИ в лайве 24/7."
       }
     },
     // Right Sidebar
@@ -430,6 +434,10 @@ export const translations = {
       webcamServices: {
         title: "Webcam Services",
         description: "Work on 7 sites with personal operator. Relocation to Georgia. Payments twice a month."
+      },
+      instagramAutomation: {
+        title: "Automation and Software",
+        description: "Instagram farms for OnlyFans traffic. 200-400+ accounts / device. AI live 24/7."
       }
     },
     // Right Sidebar
@@ -759,6 +767,10 @@ export const translations = {
       webcamServices: {
         title: "Вебкам послуги",
         description: "Робота на 7 сайтах з персональним оператором. Релокація до Грузії. Виплати 2 рази на місяць."
+      },
+      instagramAutomation: {
+        title: "Автоматизація та Софти",
+        description: "Instagram ферм для трафіку на OnlyFans. 200-400+ акаунтів / пристрій. ШІ в лайві 24/7."
       }
     },
     // Right Sidebar

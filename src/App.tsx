@@ -11,6 +11,7 @@ import ModelVerification from "./pages/ModelVerification";
 import PartnershipProgram from "./pages/PartnershipProgram";
 import DubaiResidency from "./pages/DubaiResidency";
 import WebcamServices from "./pages/WebcamServices";
+import InstagramAutomation from "./pages/InstagramAutomation";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/partnership" element={<PartnershipProgram />} />
             <Route path="/dubai-residency" element={<DubaiResidency />} />
             <Route path="/webcam-services" element={<WebcamServices />} />
+            <Route path="/instagram-automation" element={<InstagramAutomation />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
