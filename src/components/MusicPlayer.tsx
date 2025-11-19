@@ -30,11 +30,19 @@ const MusicPlayer = () => {
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.volume = volume / 100;
-      // Auto-play when component mounts
-      audioRef.current.play().catch(err => {
-        console.log("Autoplay blocked:", err);
-        setIsPlaying(false);
-      });
+      // Auto-play when component mounts with delay for better mobile support
+      const playAudio = async () => {
+        try {
+          await audioRef.current?.play();
+          setIsPlaying(true);
+        } catch (err) {
+          console.log("Autoplay blocked:", err);
+          setIsPlaying(false);
+        }
+      };
+      
+      // Small delay to ensure DOM is ready
+      setTimeout(playAudio, 100);
     }
   }, []);
 
@@ -82,7 +90,8 @@ const MusicPlayer = () => {
           ref={audioRef}
           src="https://abs.zaycev.fm/kpop128k"
           loop
-          preload="none"
+          preload="auto"
+          playsInline
         />
         
         {/* Mobile & Desktop: Slider with better mobile touch area */}
