@@ -13,13 +13,13 @@ const ServiceBadges = () => {
   ];
 
   return (
-    <div className="w-full px-4 lg:px-0 py-6 lg:py-8">
-      <div className="flex flex-wrap gap-2 justify-center">
+    <div className="w-full px-3 lg:px-0 py-4 lg:py-8">
+      <div className="flex flex-wrap gap-1.5 justify-center">
         {topServices.map((service, index) => (
           <button
             key={index}
             onClick={() => navigate(service.path)}
-            className={`px-3 py-1.5 lg:px-4 lg:py-2 rounded-full text-xs lg:text-sm font-medium transition-all duration-300 ${
+            className={`px-2 py-1 lg:px-4 lg:py-2 rounded-full text-[10px] lg:text-sm font-medium transition-all duration-300 ${
               service.highlight
                 ? 'bg-primary/20 text-primary border border-primary/50 hover:bg-primary/30'
                 : 'bg-card/50 text-foreground border border-border/50 hover:bg-card'
