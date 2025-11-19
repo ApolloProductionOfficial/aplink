@@ -109,18 +109,9 @@ const MusicPlayer = () => {
     const newVolume = value[0];
     setVolume(newVolume);
     if (audioRef.current) {
-      // Force volume change on mobile devices
       const audio = audioRef.current;
+      // Smooth volume change without interrupting playback
       audio.volume = newVolume / 100;
-      
-      // Additional mobile fix: pause and play to apply volume
-      if (isPlaying) {
-        const currentTime = audio.currentTime;
-        audio.pause();
-        audio.volume = newVolume / 100;
-        audio.currentTime = currentTime;
-        audio.play().catch(err => console.log("Play error:", err));
-      }
       
       if (newVolume === 0) {
         audio.muted = true;
