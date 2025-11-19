@@ -139,11 +139,32 @@ const AIChatBot = () => {
     });
   };
 
+  const [isVisible, setIsVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
+  // Sync with music player visibility on mobile
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      if (currentScrollY < lastScrollY && currentScrollY > 100) {
+        setIsVisible(false);
+      } else if (currentScrollY > lastScrollY) {
+        setIsVisible(true);
+      }
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [lastScrollY]);
+
   return (
     <>
       {/* Animated Hint Tooltip */}
       {showHint && !isOpen && (
-        <div className="fixed bottom-[6rem] md:bottom-24 right-6 z-50 animate-fade-in">
+        <div className={`fixed bottom-[6rem] md:bottom-24 right-6 z-50 animate-fade-in transition-all duration-300 ${
+          isVisible ? 'translate-x-0 opacity-100' : 'translate-x-32 opacity-0'
+        }`}>
           <div className="bg-primary text-primary-foreground px-2 py-1.5 md:px-4 md:py-3 rounded-lg shadow-xl relative animate-bounce flex items-center gap-1.5 max-w-[140px] md:max-w-none">
             <div className="absolute -bottom-2 right-6 w-4 h-4 bg-primary transform rotate-45"></div>
             <Bot className="w-3 h-3 md:w-6 md:h-6 flex-shrink-0" />
@@ -158,7 +179,9 @@ const AIChatBot = () => {
           setIsOpen(!isOpen);
           setShowHint(false);
         }}
-        className="fixed bottom-16 md:bottom-6 right-6 z-50 h-16 w-16 rounded-full shadow-lg shadow-primary/50 transition-transform hover:scale-110 bg-primary backdrop-blur-sm border-2 border-primary flex flex-col items-center justify-center gap-0.5 p-2"
+        className={`fixed bottom-16 md:bottom-6 right-6 z-50 h-16 w-16 rounded-full shadow-lg shadow-primary/50 transition-all duration-300 bg-primary backdrop-blur-sm border-2 border-primary flex flex-col items-center justify-center gap-0.5 p-2 ${
+          isVisible ? 'translate-x-0 opacity-100' : 'translate-x-32 opacity-0'
+        }`}
         size="icon"
       >
         {isOpen ? (

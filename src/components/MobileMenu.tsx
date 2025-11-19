@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Menu, X, Newspaper, Briefcase } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
@@ -7,8 +7,26 @@ import { useTranslation } from "@/hooks/useTranslation";
 
 const MobileMenu = () => {
   const [open, setOpen] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
   const navigate = useNavigate();
   const { t, language } = useTranslation();
+
+  // Sync with music player visibility
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      if (currentScrollY < lastScrollY && currentScrollY > 100) {
+        setIsVisible(false);
+      } else if (currentScrollY > lastScrollY) {
+        setIsVisible(true);
+      }
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [lastScrollY]);
 
   const services = [
     { title: t.sidebar.trafficSources.title, path: '/traffic-sources' },
@@ -31,7 +49,9 @@ const MobileMenu = () => {
   };
 
   return (
-    <div className="md:hidden fixed top-20 right-4 z-40">
+    <div className={`md:hidden fixed top-[52px] right-4 z-40 transition-all duration-300 ${
+      isVisible ? 'translate-x-0 opacity-100' : 'translate-x-32 opacity-0'
+    }`}>
       <Drawer open={open} onOpenChange={setOpen}>
         <DrawerTrigger asChild>
           <Button
