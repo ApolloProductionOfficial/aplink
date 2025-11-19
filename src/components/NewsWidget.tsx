@@ -95,7 +95,7 @@ const NewsWidget = () => {
         {/* Header */}
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <Newspaper className="h-5 w-5 text-primary" />
+            <Newspaper className="h-5 w-5 text-primary flex-shrink-0" />
             <h3 className="text-lg font-semibold text-foreground flex-1">{newsTitle}</h3>
             <ManualNewsFetch />
           </div>
