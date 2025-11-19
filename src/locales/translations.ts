@@ -93,6 +93,10 @@ export const translations = {
       partnership: {
         title: "Партнёрская программа",
         description: "40% с каждого ролика. $300 первый месяц | $1,000+ через 3 месяца. Пассивный доход на автомате."
+      },
+      dubaiResidency: {
+        title: "ВНЖ в Дубае",
+        description: "Оформление ID Dubai за 10-14 дней. Полное сопровождение процесса от А до Я. Гарантия 100%."
       }
     },
     // Right Sidebar
@@ -211,6 +215,74 @@ export const translations = {
         apply: "Подать заявку",
         questions: "Задать вопрос"
       }
+    },
+    // Dubai Residency
+    dubaiResidency: {
+      back: "Назад",
+      badge: "ID Dubai by APOLLO PRODUCTION",
+      title: "Резидентство в Дубае",
+      subtitle: "Оформление ID Dubai за 10-14 дней с полным сопровождением процесса",
+      mainInfo: {
+        title: "Основная информация",
+        timing: {
+          title: "Сроки оформления",
+          description: "10-14 дней с момента подачи документов"
+        },
+        cost: {
+          title: "Стоимость услуги",
+          description: "$1750 - полный пакет сопровождения от А до Я"
+        },
+        validity: {
+          title: "Срок действия",
+          description: "1 год с возможностью продления"
+        },
+        renewal: {
+          title: "Продление",
+          description: "Раз в полгода необходимо пересекать границу Дубая"
+        }
+      },
+      requirements: {
+        title: "Что нужно от вас",
+        items: [
+          "Скан загранпаспорта",
+          "Фото нужного формата (инструкцию предоставим)",
+          "Прилететь в Дубай после одобрения"
+        ]
+      },
+      included: {
+        title: "Что включено в услугу",
+        items: [
+          "Полное сопровождение всего процесса",
+          "Детальные инструкции: навигация, экономия, коммуникация",
+          "Гарантированное прохождение документа (100%) при регистрации OnlyFans"
+        ]
+      },
+      additionalCosts: {
+        title: "Дополнительные расходы",
+        items: [
+          "Медицинские анализы: ~$200 (оплата в Дубае)",
+          "Проживание и питание: ~$1000 на 5-6 дней (включает жильё, питание 3 раза в день, такси и бытовые расходы)"
+        ]
+      },
+      trip: {
+        title: "Поездка в Дубай",
+        description: "Необходимое пребывание: 5-6 дней. Мы подскажем, где остановиться и как сэкономить."
+      },
+      afterReceiving: {
+        title: "После получения документа",
+        items: [
+          "Регистрация SIM-карты в Дубае",
+          "OnlyFans (100% прохождение верификации)",
+          "Paxum и Skrill для вывода средств",
+          "Банковский счёт в Дубае (обсуждается индивидуально)"
+        ]
+      },
+      cta: {
+        title: "Готовы получить ID Dubai?",
+        description: "Свяжитесь с нами для консультации и начала процесса оформления",
+        telegram: "Написать в Telegram",
+        form: "Заполнить анкету"
+      }
     }
   },
   en: {
@@ -307,6 +379,10 @@ export const translations = {
       partnership: {
         title: "Partnership Program",
         description: "40% from each video. $300 first month | $1,000+ after 3 months. Automated passive income."
+      },
+      dubaiResidency: {
+        title: "Dubai Residency",
+        description: "ID Dubai processing in 10-14 days. Full process support from A to Z. 100% guarantee."
       }
     },
     // Right Sidebar
@@ -425,6 +501,74 @@ export const translations = {
         apply: "Submit Application",
         questions: "Ask Question"
       }
+    },
+    // Dubai Residency
+    dubaiResidency: {
+      back: "Back",
+      badge: "ID Dubai by APOLLO PRODUCTION",
+      title: "Dubai Residency",
+      subtitle: "ID Dubai processing in 10-14 days with full process support",
+      mainInfo: {
+        title: "Main Information",
+        timing: {
+          title: "Processing Time",
+          description: "10-14 days from document submission"
+        },
+        cost: {
+          title: "Service Cost",
+          description: "$1750 - complete support package from A to Z"
+        },
+        validity: {
+          title: "Validity Period",
+          description: "1 year with renewal option"
+        },
+        renewal: {
+          title: "Renewal",
+          description: "Border crossing required every 6 months"
+        }
+      },
+      requirements: {
+        title: "What You Need",
+        items: [
+          "Passport scan",
+          "Photo in required format (we'll provide instructions)",
+          "Fly to Dubai after approval"
+        ]
+      },
+      included: {
+        title: "What's Included",
+        items: [
+          "Full process support",
+          "Detailed instructions: navigation, savings, communication",
+          "Guaranteed document approval (100%) for OnlyFans registration"
+        ]
+      },
+      additionalCosts: {
+        title: "Additional Costs",
+        items: [
+          "Medical tests: ~$200 (paid in Dubai)",
+          "Accommodation and meals: ~$1000 for 5-6 days (includes housing, 3 meals daily, taxi and living expenses)"
+        ]
+      },
+      trip: {
+        title: "Trip to Dubai",
+        description: "Required stay: 5-6 days. We'll advise where to stay and how to save money."
+      },
+      afterReceiving: {
+        title: "After Receiving Document",
+        items: [
+          "Dubai SIM card registration",
+          "OnlyFans (100% verification pass)",
+          "Paxum and Skrill for withdrawals",
+          "Dubai bank account (discussed individually)"
+        ]
+      },
+      cta: {
+        title: "Ready to Get ID Dubai?",
+        description: "Contact us for consultation and to start the processing",
+        telegram: "Contact on Telegram",
+        form: "Fill Application"
+      }
     }
   },
   uk: {
@@ -521,6 +665,10 @@ export const translations = {
       partnership: {
         title: "Партнерська програма",
         description: "40% з кожного ролика. $300 перший місяць | $1,000+ через 3 місяці. Пасивний дохід на автоматі."
+      },
+      dubaiResidency: {
+        title: "ВНЖ в Дубаї",
+        description: "Оформлення ID Dubai за 10-14 днів. Повний супровід процесу від А до Я. Гарантія 100%."
       }
     },
     // Right Sidebar
@@ -638,6 +786,74 @@ export const translations = {
         description: "Надішли заявку і ми зв'яжемося з тобою для обговорення деталей",
         apply: "Подати заявку",
         questions: "Поставити питання"
+      }
+    },
+    // Dubai Residency
+    dubaiResidency: {
+      back: "Назад",
+      badge: "ID Dubai by APOLLO PRODUCTION",
+      title: "Резидентство в Дубаї",
+      subtitle: "Оформлення ID Dubai за 10-14 днів з повним супроводом процесу",
+      mainInfo: {
+        title: "Основна інформація",
+        timing: {
+          title: "Терміни оформлення",
+          description: "10-14 днів з моменту подачі документів"
+        },
+        cost: {
+          title: "Вартість послуги",
+          description: "$1750 - повний пакет супроводу від А до Я"
+        },
+        validity: {
+          title: "Термін дії",
+          description: "1 рік з можливістю продовження"
+        },
+        renewal: {
+          title: "Продовження",
+          description: "Раз на півроку необхідно перетинати кордон Дубая"
+        }
+      },
+      requirements: {
+        title: "Що потрібно від вас",
+        items: [
+          "Скан закордонного паспорта",
+          "Фото потрібного формату (інструкцію надамо)",
+          "Прилетіти в Дубай після схвалення"
+        ]
+      },
+      included: {
+        title: "Що включено в послугу",
+        items: [
+          "Повний супровід всього процесу",
+          "Детальні інструкції: навігація, економія, комунікація",
+          "Гарантоване проходження документа (100%) при реєстрації OnlyFans"
+        ]
+      },
+      additionalCosts: {
+        title: "Додаткові витрати",
+        items: [
+          "Медичні аналізи: ~$200 (оплата в Дубаї)",
+          "Проживання та харчування: ~$1000 на 5-6 днів (включає житло, харчування 3 рази на день, таксі та побутові витрати)"
+        ]
+      },
+      trip: {
+        title: "Поїздка в Дубай",
+        description: "Необхідне перебування: 5-6 днів. Ми підкажемо, де зупинитися і як заощадити."
+      },
+      afterReceiving: {
+        title: "Після отримання документа",
+        items: [
+          "Реєстрація SIM-карти в Дубаї",
+          "OnlyFans (100% проходження верифікації)",
+          "Paxum і Skrill для виведення коштів",
+          "Банківський рахунок в Дубаї (обговорюється індивідуально)"
+        ]
+      },
+      cta: {
+        title: "Готові отримати ID Dubai?",
+        description: "Зв'яжіться з нами для консультації та початку процесу оформлення",
+        telegram: "Написати в Telegram",
+        form: "Заповнити анкету"
       }
     }
   }

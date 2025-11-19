@@ -31,6 +31,11 @@ const Sidebar = () => {
       title: t.sidebar.partnership.title,
       description: t.sidebar.partnership.description,
       route: "/partnership"
+    },
+    {
+      title: t.sidebar.dubaiResidency.title,
+      description: t.sidebar.dubaiResidency.description,
+      route: "/dubai-residency"
     }
   ];
 
