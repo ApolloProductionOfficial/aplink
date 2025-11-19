@@ -6,6 +6,7 @@ import NewsWidget from "@/components/NewsWidget";
 import AIChatBot from "@/components/AIChatBot";
 import Hero from "@/components/Hero";
 import EarningsChart from "@/components/EarningsChart";
+import Stats from "@/components/Stats";
 import TrafficSources from "@/components/TrafficSources";
 import CTA from "@/components/CTA";
 import Footer from "@/components/Footer";
@@ -24,6 +25,7 @@ const Index = () => {
         <VideoBanner />
         <Hero />
         <EarningsChart />
+        <Stats />
         <TrafficSources />
         <CTA />
         <Footer />

@@ -159,7 +159,7 @@ export const translations = {
       partnership40: "Партнёрка — 40% пассив",
       cryptoUnlock: "Разблокировка вывода в крипту Fansly",
       verificationRF: "Верификация РФ и СНГ даже с FACEBAN",
-      modelRecruitment: "Ищем моделей для работы на платформах",
+      modelRecruitment: "Ищем моделей для OnlyFans / Fansly / 4based / MYM / FanCentro / Meloum / Fanvu / LoyalFans / ManyVids / F4F / Twitch / Kick",
       telegram: "Telegram",
       launch: "Запуск",
       modelForm: "Анкета для новых моделей",

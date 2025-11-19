@@ -53,7 +53,7 @@ const Sidebar = () => {
     { text: t.rightSidebar.partnership40, url: "/partnership", highlight: true, internal: true },
     { text: t.rightSidebar.cryptoUnlock, url: "/crypto-unlock", highlight: true, internal: true },
     { text: t.rightSidebar.verificationRF, url: "/model-verification", highlight: true, internal: true },
-    { text: t.rightSidebar.modelRecruitment, url: "/model-recruitment", highlight: false, internal: true }
+    { text: t.rightSidebar.modelRecruitment, url: "/model-recruitment", highlight: true, internal: true }
   ];
 
   const handleThemeChange = (newTheme: number) => {
