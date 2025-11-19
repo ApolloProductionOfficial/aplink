@@ -118,8 +118,22 @@ const MusicPlayer = () => {
           playsInline
         />
         
-        {/* Mobile & Desktop: Slider with better mobile touch area */}
+        {/* Mobile & Desktop: Play button on mobile, slider for all */}
         <div className="flex items-center gap-2 w-full">
+          {/* Play/Pause button only on mobile */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 md:hidden flex-shrink-0"
+            onClick={togglePlay}
+          >
+            {isPlaying ? (
+              <Pause className="h-3.5 w-3.5" />
+            ) : (
+              <Play className="h-3.5 w-3.5" />
+            )}
+          </Button>
+
           <div className="flex-1 py-2 md:py-0">
             <Slider
               value={[volume]}

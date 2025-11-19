@@ -40,7 +40,7 @@ const Sidebar = () => {
     {
       title: t.sidebar.partnership.title,
       description: t.sidebar.partnership.description,
-      route: "/partnership"
+      route: "/partnership-program"
     },
     {
       title: t.sidebar.dubaiResidency.title,
@@ -55,7 +55,7 @@ const Sidebar = () => {
   ];
 
   const quickLinks = [
-    { text: t.rightSidebar.partnership40, url: "/partnership", highlight: true, internal: true },
+    { text: t.rightSidebar.partnership40, url: "/partnership-program", highlight: true, internal: true },
     { text: t.rightSidebar.cryptoUnlock, url: "/crypto-unlock", highlight: true, internal: true },
     { text: t.rightSidebar.verificationRF, url: "/model-verification", highlight: true, internal: true },
     { text: t.rightSidebar.modelRecruitment, url: "/model-recruitment", highlight: true, internal: true }
