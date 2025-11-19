@@ -51,7 +51,7 @@ const Footer = () => {
           {/* Company Info */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <Grid className="h-7 w-7 text-primary" />
+              <Grid className="h-10 w-10 text-primary" />
               <h3 className="text-lg font-bold">{t.header.title}</h3>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed max-w-md">

@@ -159,6 +159,7 @@ export const translations = {
       partnership40: "Партнёрка — 40% пассив",
       cryptoUnlock: "Разблокировка Fansly/OF",
       verificationRF: "Верификация РФ и СНГ на OnlyFans",
+      modelRecruitment: "Ищем моделей для работы на платформах",
       telegram: "Telegram",
       launch: "Запуск",
       modelForm: "Анкета для новых моделей",

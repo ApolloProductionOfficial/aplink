@@ -3,14 +3,16 @@ import { useEffect, useRef, useState } from "react";
 const Stats = () => {
   const stats = [
     {
-      value: 50,
+      value: 20000,
+      prefix: "$",
       suffix: "+",
-      label: "Запусков",
+      label: "Средний доход модели",
     },
     {
-      value: 24,
-      suffix: "/7",
-      label: "Поддержка",
+      value: 5000,
+      prefix: "$",
+      suffix: "+",
+      label: "Первый месяц",
     },
     {
       value: 100,
@@ -66,7 +68,7 @@ const StatCard = ({
   isVisible, 
   delay 
 }: { 
-  stat: { value: number; suffix: string; label: string }; 
+  stat: { value: number; suffix: string; label: string; prefix?: string }; 
   isVisible: boolean;
   delay: number;
 }) => {
@@ -75,9 +77,9 @@ const StatCard = ({
   useEffect(() => {
     if (isVisible && count < stat.value) {
       const timer = setTimeout(() => {
-        const increment = Math.ceil(stat.value / 15);
+        const increment = Math.ceil(stat.value / 20);
         setCount(prev => Math.min(prev + increment, stat.value));
-      }, 10);
+      }, 15);
       return () => clearTimeout(timer);
     }
   }, [count, isVisible, stat.value]);
@@ -94,7 +96,7 @@ const StatCard = ({
     >
       <div className="text-center">
         <div className="text-5xl font-bold text-primary mb-2 transition-all group-hover:scale-110">
-          {count}{stat.suffix}
+          {stat.prefix}{count.toLocaleString()}{stat.suffix}
         </div>
         <div className="text-muted-foreground group-hover:text-foreground transition-colors">
           {stat.label}

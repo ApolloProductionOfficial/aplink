@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import TrafficSources from "./pages/TrafficSources";
 import CryptoUnlock from "./pages/CryptoUnlock";
 import ModelVerification from "./pages/ModelVerification";
+import ModelRecruitment from "./pages/ModelRecruitment";
 import PartnershipProgram from "./pages/PartnershipProgram";
 import DubaiResidency from "./pages/DubaiResidency";
 import WebcamServices from "./pages/WebcamServices";
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="/traffic-sources" element={<TrafficSources />} />
             <Route path="/crypto-unlock" element={<CryptoUnlock />} />
             <Route path="/model-verification" element={<ModelVerification />} />
+            <Route path="/model-recruitment" element={<ModelRecruitment />} />
             <Route path="/partnership" element={<PartnershipProgram />} />
             <Route path="/dubai-residency" element={<DubaiResidency />} />
             <Route path="/webcam-services" element={<WebcamServices />} />
