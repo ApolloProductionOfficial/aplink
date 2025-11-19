@@ -5,8 +5,7 @@ import Sidebar from "@/components/Sidebar";
 import NewsWidget from "@/components/NewsWidget";
 import AIChatBot from "@/components/AIChatBot";
 import MobileMenu from "@/components/MobileMenu";
-import MobileServices from "@/components/MobileServices";
-import MobileNews from "@/components/MobileNews";
+import MobileThemesNews from "@/components/MobileThemesNews";
 import ServiceBadges from "@/components/ServiceBadges";
 import Hero from "@/components/Hero";
 import EarningsChart from "@/components/EarningsChart";
@@ -30,8 +29,7 @@ const Index = () => {
         <VideoBanner />
         <Hero />
         <ServiceBadges />
-        <MobileServices />
-        <MobileNews />
+        <MobileThemesNews />
         <EarningsChart />
         <TrafficSources />
         <CTA />
