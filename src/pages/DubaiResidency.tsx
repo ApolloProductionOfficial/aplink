@@ -66,9 +66,11 @@ const DubaiResidency = () => {
         {/* Video Section */}
         <div className="mb-12 rounded-lg overflow-hidden border border-border">
           <video 
-            controls 
+            autoPlay
+            loop
+            muted
+            playsInline
             className="w-full"
-            poster="/placeholder.svg"
           >
             <source src={dubaiVideo} type="video/mp4" />
             Your browser does not support the video tag.
