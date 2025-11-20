@@ -5,6 +5,7 @@ import { Slider } from "@/components/ui/slider";
 import { useScrollVisibility } from "@/hooks/useScrollVisibility";
 
 const MusicPlayer = () => {
+  const [isMobile, setIsMobile] = useState(false);
   // Load music state from localStorage
   const [isPlaying, setIsPlaying] = useState(() => {
     const saved = localStorage.getItem('musicPlaying');
@@ -130,8 +131,13 @@ const MusicPlayer = () => {
       }
     }
   };
-
-  return (
+ 
+   // On phones we completely hide the player so music does not play there at all
+   if (isMobile) {
+     return null;
+   }
+ 
+   return (
     <div className={`fixed bottom-2 left-2 right-2 md:bottom-6 md:left-6 md:right-auto z-50 transition-transform duration-300 ${
       isVisible ? 'translate-y-0' : 'translate-y-32'
     }`}>
