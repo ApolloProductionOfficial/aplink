@@ -10,7 +10,7 @@ const MusicPlayer = () => {
     return saved ? JSON.parse(saved) : false;
   });
   const [isMuted, setIsMuted] = useState(false);
-  const [volume, setVolume] = useState(15);
+  const [volume, setVolume] = useState(5);
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
