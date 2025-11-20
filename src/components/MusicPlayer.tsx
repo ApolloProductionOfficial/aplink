@@ -21,10 +21,11 @@ const MusicPlayer = () => {
 
   // Restore music state on mount
   useEffect(() => {
-    const isMobile = window.innerWidth < 768;
+    const isMobileScreen = typeof window !== 'undefined' && window.innerWidth < 768;
+    setIsMobile(isMobileScreen);
 
     // On mobile devices we completely disable autoplay so music never starts by itself
-    if (isMobile) {
+    if (isMobileScreen) {
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
