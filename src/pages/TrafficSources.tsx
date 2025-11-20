@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useButtonSound } from "@/hooks/useButtonSound";
 import { ArrowLeft } from "lucide-react";
@@ -54,6 +55,14 @@ const TrafficSources = () => {
       features: ["Органический рост", "Активное участие", "Ценный контент", "Community building"]
     }
   ];
+
+  useEffect(() => {
+    // On entering this page always fully unlock scroll (fix mobile stuck scroll)
+    if (typeof document !== 'undefined') {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
