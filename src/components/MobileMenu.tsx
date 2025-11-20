@@ -1,44 +1,18 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Menu, X, Newspaper, Briefcase } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useScrollVisibility } from "@/hooks/useScrollVisibility";
 
 const MobileMenu = () => {
   const [open, setOpen] = useState(false);
-  const [isVisible, setIsVisible] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
   const navigate = useNavigate();
   const { t, language } = useTranslation();
-
-  // Hide menu on scroll down, show on scroll up (mobile only)
-  useEffect(() => {
-    const handleScroll = () => {
-      if (window.innerWidth >= 768) {
-        setIsVisible(true);
-        return;
-      }
-
-      const currentScrollY = window.scrollY;
-      
-      // Hide when scrolling down, show when scrolling up
-      if (currentScrollY > lastScrollY && currentScrollY > 100) {
-        setIsVisible(false);
-      } else if (currentScrollY < lastScrollY) {
-        setIsVisible(true);
-      }
-      setLastScrollY(currentScrollY);
-    };
-
-    handleScroll();
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    window.addEventListener('resize', handleScroll);
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('resize', handleScroll);
-    };
-  }, [lastScrollY]);
+  
+  // Use scroll visibility hook - mobile only, hide during scroll
+  const isVisible = useScrollVisibility(true, 200);
 
   const services = [
     { title: t.sidebar.trafficSources.title, path: '/traffic-sources' },

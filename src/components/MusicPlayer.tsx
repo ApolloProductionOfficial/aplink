@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Music, Play, Pause, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
+import { useScrollVisibility } from "@/hooks/useScrollVisibility";
 
 const MusicPlayer = () => {
   // Load music state from localStorage
@@ -11,10 +12,11 @@ const MusicPlayer = () => {
   });
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(5);
-  const [isVisible, setIsVisible] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
   const hasStartedRef = useRef(false);
+  
+  // Use scroll visibility hook - hide during scroll, show when stopped
+  const isVisible = useScrollVisibility(false, 200);
 
   // Restore music state on mount
   useEffect(() => {
@@ -69,35 +71,6 @@ const MusicPlayer = () => {
       document.removeEventListener('touchstart', startAudioOnInteraction);
     };
   }, []);
-
-  // Hide player on scroll down, show on scroll up (mobile only)
-  useEffect(() => {
-    const handleScroll = () => {
-      // Check if mobile every time
-      if (window.innerWidth >= 768) {
-        setIsVisible(true);
-        return;
-      }
-
-      const currentScrollY = window.scrollY;
-      
-      // Hide when scrolling down, show when scrolling up
-      if (currentScrollY > lastScrollY && currentScrollY > 100) {
-        setIsVisible(false);
-      } else if (currentScrollY < lastScrollY) {
-        setIsVisible(true);
-      }
-      setLastScrollY(currentScrollY);
-    };
-
-    handleScroll(); // Initial check
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    window.addEventListener('resize', handleScroll); // Check on resize
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('resize', handleScroll);
-    };
-  }, [lastScrollY]);
 
   useEffect(() => {
     if (audioRef.current) {

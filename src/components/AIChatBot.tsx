@@ -4,6 +4,7 @@ import { MessageCircle, X, Send, Bot } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useScrollVisibility } from "@/hooks/useScrollVisibility";
 
 interface Message {
   role: 'user' | 'assistant';
@@ -20,6 +21,9 @@ const AIChatBot = () => {
   const chatWindowRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const { t, language } = useTranslation();
+  
+  // Use scroll visibility hook - hide during scroll, show when stopped
+  const isVisible = useScrollVisibility(false, 200);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -139,37 +143,6 @@ const AIChatBot = () => {
       return part;
     });
   };
-
-  const [isVisible, setIsVisible] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
-
-  // Hide chatbot on scroll down, show on scroll up (mobile only)
-  useEffect(() => {
-    const handleScroll = () => {
-      if (window.innerWidth >= 768) {
-        setIsVisible(true);
-        return;
-      }
-
-      const currentScrollY = window.scrollY;
-      
-      // Hide when scrolling down, show when scrolling up
-      if (currentScrollY > lastScrollY && currentScrollY > 100) {
-        setIsVisible(false);
-      } else if (currentScrollY < lastScrollY) {
-        setIsVisible(true);
-      }
-      setLastScrollY(currentScrollY);
-    };
-
-    handleScroll();
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    window.addEventListener('resize', handleScroll);
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('resize', handleScroll);
-    };
-  }, [lastScrollY]);
 
   // Close chat when clicking outside on mobile
   useEffect(() => {
