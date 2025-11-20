@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Menu, X, Newspaper, Briefcase } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
@@ -32,8 +32,19 @@ const MobileMenu = () => {
   const handleNavigation = (path: string) => {
     navigate(path);
     setOpen(false);
+    // Ensure body scroll is always unlocked after navigating from the menu (fixes stuck scroll on mobile)
+    if (typeof document !== 'undefined') {
+      document.body.style.overflow = '';
+    }
   };
 
+  // Safety: whenever the drawer closes, always make sure body scroll is unlocked
+  useEffect(() => {
+    if (!open && typeof document !== 'undefined') {
+      document.body.style.overflow = '';
+    }
+  }, [open]);
+ 
   return (
     <div className={`md:hidden fixed top-[72px] right-4 z-40 transition-all duration-300 ${
       isVisible ? 'translate-x-0 opacity-100' : 'translate-x-32 opacity-0'
