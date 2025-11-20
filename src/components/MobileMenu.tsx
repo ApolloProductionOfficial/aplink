@@ -35,6 +35,7 @@ const MobileMenu = () => {
     // Ensure body scroll is always unlocked after navigating from the menu (fixes stuck scroll on mobile)
     if (typeof document !== 'undefined') {
       document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
     }
   };
 
@@ -42,6 +43,7 @@ const MobileMenu = () => {
   useEffect(() => {
     if (!open && typeof document !== 'undefined') {
       document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
     }
   }, [open]);
  
