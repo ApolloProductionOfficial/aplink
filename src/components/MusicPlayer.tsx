@@ -5,7 +5,9 @@ import { Slider } from "@/components/ui/slider";
 import { useScrollVisibility } from "@/hooks/useScrollVisibility";
 
 const MusicPlayer = () => {
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth < 768 : false
+  );
   // Load music state from localStorage
   const [isPlaying, setIsPlaying] = useState(() => {
     const saved = localStorage.getItem('musicPlaying');
