@@ -140,10 +140,11 @@ const MusicPlayer = () => {
      return null;
    }
  
-   return (
-    <div className={`fixed bottom-2 left-2 right-2 md:bottom-6 md:left-6 md:right-auto z-50 transition-transform duration-300 ${
+  return (
+    <div className={`hidden md:block fixed bottom-2 left-2 right-2 md:bottom-6 md:left-6 md:right-auto z-50 transition-transform duration-300 ${
       isVisible ? 'translate-y-0' : 'translate-y-32'
     }`}>
+
       <div 
         className={`bg-card/95 backdrop-blur-lg border border-border rounded-full px-3 py-1.5 md:rounded-lg md:w-64 md:p-4 transition-all duration-150 ${
           isPlaying ? 'animate-music-pulse' : ''
