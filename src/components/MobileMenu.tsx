@@ -1,7 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Menu, X, Newspaper, Briefcase } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useScrollVisibility } from "@/hooks/useScrollVisibility";
@@ -32,36 +31,43 @@ const MobileMenu = () => {
   const handleNavigation = (path: string) => {
     navigate(path);
     setOpen(false);
-    // Ensure body scroll is always unlocked after navigating from the menu (fixes stuck scroll on mobile)
-    if (typeof document !== 'undefined') {
-      document.body.style.overflow = '';
-      document.documentElement.style.overflow = '';
-    }
   };
 
-  // Safety: whenever the drawer closes, always make sure body scroll is unlocked
-  useEffect(() => {
-    if (!open && typeof document !== 'undefined') {
-      document.body.style.overflow = '';
-      document.documentElement.style.overflow = '';
-    }
-  }, [open]);
- 
   return (
-    <div className={`md:hidden fixed top-[72px] right-4 z-40 transition-all duration-300 ${
-      isVisible ? 'translate-x-0 opacity-100' : 'translate-x-32 opacity-0'
-    }`}>
-      <Drawer open={open} onOpenChange={setOpen}>
-        <DrawerTrigger asChild>
-          <Button
-            size="icon"
-            className="h-10 w-10 rounded-full shadow-lg bg-primary hover:bg-primary/90"
-          >
-            {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </Button>
-        </DrawerTrigger>
-        <DrawerContent className="h-[85vh] flex flex-col">
-          <div className="flex-1 overflow-y-auto p-3 space-y-5">
+    <>
+      {/* Кнопка открытия меню */}
+      <div className={`md:hidden fixed top-[72px] right-4 z-40 transition-all duration-300 ${
+        isVisible ? 'translate-x-0 opacity-100' : 'translate-x-32 opacity-0'
+      }`}>
+        <Button
+          size="icon"
+          className="h-10 w-10 rounded-full shadow-lg bg-primary hover:bg-primary/90"
+          onClick={() => setOpen(true)}
+        >
+          {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        </Button>
+      </div>
+
+      {/* Само мобильное меню без Drawer, чтобы не ломать скролл */}
+      {open && (
+        <div className="fixed inset-0 z-40 md:hidden flex flex-col bg-background/80 backdrop-blur-sm">
+          {/* Кликабельный фон для закрытия */}
+          <div className="flex-1" onClick={() => setOpen(false)} />
+
+          {/* Нижняя панель меню */}
+          <div className="h-[85vh] bg-background border-t border-border rounded-t-2xl p-3 space-y-5 overflow-y-auto">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm font-semibold">Меню</span>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8"
+                onClick={() => setOpen(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
             <div>
               <h3 className="text-base font-semibold mb-2.5 flex items-center gap-1.5">
                 <Briefcase className="h-4 w-4" />
@@ -87,12 +93,11 @@ const MobileMenu = () => {
               </h3>
               <button
                 onClick={() => {
-                  // Scroll to news section or navigate
                   const newsElement = document.querySelector('[data-news-widget]');
                   if (newsElement) {
                     newsElement.scrollIntoView({ behavior: 'smooth' });
-                    setOpen(false);
                   }
+                  setOpen(false);
                 }}
                 className="w-full text-left px-3 py-2 rounded-lg bg-card hover:bg-muted transition-colors border border-border"
               >
@@ -102,9 +107,9 @@ const MobileMenu = () => {
               </button>
             </div>
           </div>
-        </DrawerContent>
-      </Drawer>
-    </div>
+        </div>
+      )}
+    </>
   );
 };
 
