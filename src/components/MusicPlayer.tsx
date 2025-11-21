@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from "react";
 import { Music, Play, Pause, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { useScrollVisibility } from "@/hooks/useScrollVisibility";
 
 const MusicPlayer = () => {
   const [isMobile, setIsMobile] = useState(() =>
@@ -14,12 +13,9 @@ const MusicPlayer = () => {
     return saved ? JSON.parse(saved) : false;
   });
   const [isMuted, setIsMuted] = useState(false);
-  const [volume, setVolume] = useState(2);
+  const [volume, setVolume] = useState(5);
   const audioRef = useRef<HTMLAudioElement>(null);
   const hasStartedRef = useRef(false);
-  
-  // Use scroll visibility hook - hide during scroll, show when stopped
-  const isVisible = useScrollVisibility(false, 200);
 
   // Restore music state on mount
   useEffect(() => {
@@ -141,11 +137,9 @@ const MusicPlayer = () => {
    }
  
   return (
-    <div className={`hidden md:block fixed bottom-2 left-2 right-2 md:bottom-6 md:left-6 md:right-auto z-50 transition-transform duration-300 ${
-      isVisible ? 'translate-y-0' : 'translate-y-32'
-    }`}>
+    <div className="hidden md:block fixed bottom-6 left-6 right-auto z-50">
 
-      <div 
+      <div
         className={`bg-card/95 backdrop-blur-lg border border-border rounded-full px-3 py-1.5 md:rounded-lg md:w-64 md:p-4 transition-all duration-150 ${
           isPlaying ? 'animate-music-pulse' : ''
         }`}
