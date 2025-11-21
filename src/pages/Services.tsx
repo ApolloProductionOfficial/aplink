@@ -180,27 +180,27 @@ const Services = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-4 md:py-8">
         <Button
           variant="ghost"
           onClick={handleBack}
-          className="mb-8 hover:bg-accent/50 transition-colors"
+          className="mb-4 md:mb-8 hover:bg-accent/50 transition-colors"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           {t.common.back}
         </Button>
 
-        <div className="max-w-7xl mx-auto space-y-12">
-          <div className="text-center space-y-6">
-            <h1 className="text-4xl md:text-5xl font-bold">
+        <div className="max-w-7xl mx-auto space-y-6 md:space-y-12">
+          <div className="text-center space-y-3 md:space-y-6">
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold">
               {t.services.title}
             </h1>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+            <p className="text-base md:text-xl text-muted-foreground max-w-3xl mx-auto">
               {t.services.subtitle}
             </p>
 
             {/* Filters */}
-            <div className="flex flex-wrap items-center justify-center gap-4 max-w-3xl mx-auto pt-4">
+            <div className="flex flex-wrap items-center justify-center gap-2 md:gap-4 max-w-3xl mx-auto pt-2 md:pt-4">
               <div className="flex items-center gap-2">
                 <Filter className="h-5 w-5 text-primary" />
                 <span className="text-sm font-medium">Фильтр по платформе:</span>
@@ -252,11 +252,11 @@ const Services = () => {
             </div>
           )}
 
-          <div className="border-2 border-primary/30 rounded-lg p-8 bg-card/60 backdrop-blur">
-            <h2 className="text-3xl font-bold text-center mb-6">
+          <div className="border-2 border-primary/30 rounded-lg p-4 md:p-8 bg-card/60 backdrop-blur">
+            <h2 className="text-2xl md:text-3xl font-bold text-center mb-4 md:mb-6">
               {t.services.howItWorks}
             </h2>
-            <div className="grid md:grid-cols-4 gap-6 text-sm text-muted-foreground">
+            <div className="grid md:grid-cols-4 gap-4 md:gap-6 text-xs md:text-sm text-muted-foreground">
               <div className="text-center space-y-2">
                 <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center mx-auto text-primary font-semibold">
                   1
@@ -288,9 +288,9 @@ const Services = () => {
             </div>
           </div>
 
-          <div className="text-center border-2 border-primary/30 rounded-lg p-10 bg-gradient-to-r from-primary/10 to-primary/5">
-            <h2 className="text-3xl font-bold mb-4">{t.services.readyToStart}</h2>
-            <p className="text-lg text-muted-foreground mb-6">
+          <div className="text-center border-2 border-primary/30 rounded-lg p-6 md:p-10 bg-gradient-to-r from-primary/10 to-primary/5">
+            <h2 className="text-2xl md:text-3xl font-bold mb-3 md:mb-4">{t.services.readyToStart}</h2>
+            <p className="text-base md:text-lg text-muted-foreground mb-4 md:mb-6">
               {t.services.contactDesc}
             </p>
             <Button
