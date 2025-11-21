@@ -20,7 +20,22 @@ export const translations = {
       title: "Управляем ростом моделей на OnlyFans",
       description: "5 лет работы в индустрии OnlyFans. За это время помогли открыть и запустить десятки агентств по всему миру, собрали огромный опыт в управлении моделями, трафике и монетизации. Теперь мы применяем весь накопленный опыт для развития собственного агентства и достижения максимальных результатов для наших моделей.",
       startButton: "Начать работу",
-      formButton: "Заполнить анкету"
+      formButton: "Заполнить анкету",
+      calculator: {
+        title: "Калькулятор дохода",
+        subscribers: "Подписчики",
+        price: "Цена подписки ($)",
+        monthly: "Месячная выручка",
+        commission: "Комиссия агентства (20%)",
+        yourIncome: "Ваш месячный доход",
+        yearly: "Годовой доход"
+      }
+    },
+    // Navigation
+    nav: {
+      home: "Главная",
+      services: "Услуги",
+      news: "Новости"
     },
     // Earnings Chart
     earnings: {
@@ -186,6 +201,19 @@ export const translations = {
       title: "Готова увеличить свой доход?",
       description: "Заполни анкету и наша команда свяжется с тобой в течение 24 часов",
       button: "Заполнить анкету"
+    },
+    // Testimonials
+    testimonials: {
+      badge: "Истории успеха",
+      title: "Реальные результаты от реальных моделей",
+      subtitle: "Посмотрите, как наши модели трансформировали свой доход",
+      before: "До",
+      after: "После",
+      period: "за",
+      months: "месяцев",
+      feedback1: "Apollo Production изменило мою карьеру. За 6 месяцев мой доход вырос в 15 раз!",
+      feedback2: "Профессиональная команда, отличные источники трафика и постоянная поддержка. Лучшее решение!",
+      feedback3: "Агентство берет все на себя - я просто создаю контент. Результаты говорят сами за себя!"
     },
     // Crypto Unlock
     cryptoUnlock: {
@@ -564,7 +592,22 @@ export const translations = {
       title: "Managing Model Growth on OnlyFans",
       description: "5 years working in the OnlyFans industry. During this time, we've helped launch and establish dozens of agencies worldwide, accumulated vast experience in model management, traffic generation, and monetization. Now we're applying all this accumulated expertise to develop our own agency and achieve maximum results for our models.",
       startButton: "Get Started",
-      formButton: "Fill Application"
+      formButton: "Fill Application",
+      calculator: {
+        title: "Income Calculator",
+        subscribers: "Subscribers",
+        price: "Price per subscription ($)",
+        monthly: "Monthly Revenue",
+        commission: "Agency Fee (20%)",
+        yourIncome: "Your Monthly Income",
+        yearly: "Yearly"
+      }
+    },
+    // Navigation
+    nav: {
+      home: "Home",
+      services: "Services",
+      news: "News"
     },
     // Earnings Chart
     earnings: {
@@ -670,6 +713,19 @@ export const translations = {
       title: "Ready to Increase Your Income?",
       description: "Fill out the application and our team will contact you within 24 hours",
       button: "Fill Application"
+    },
+    // Testimonials
+    testimonials: {
+      badge: "Success Stories",
+      title: "Real Results from Real Models",
+      subtitle: "See how our models transformed their income",
+      before: "Before",
+      after: "After",
+      period: "in",
+      months: "months",
+      feedback1: "Apollo Production transformed my career. In 6 months, my income increased 15x!",
+      feedback2: "Professional team, excellent traffic sources, and constant support. Best decision I made!",
+      feedback3: "The agency handles everything - I just focus on content. Results speak for themselves!"
     },
     // Crypto Unlock
     cryptoUnlock: {
@@ -1108,7 +1164,22 @@ export const translations = {
       title: "Керуємо зростанням моделей на OnlyFans",
       description: "5 років роботи в індустрії OnlyFans. За цей час допомогли відкрити та запустити десятки агентств по всьому світу, зібрали величезний досвід у керуванні моделями, трафіку та монетизації. Тепер ми застосовуємо весь накопичений досвід для розвитку власного агентства та досягнення максимальних результатів для наших моделей.",
       startButton: "Почати роботу",
-      formButton: "Заповнити анкету"
+      formButton: "Заповнити анкету",
+      calculator: {
+        title: "Калькулятор доходу",
+        subscribers: "Підписники",
+        price: "Ціна підписки ($)",
+        monthly: "Місячна виручка",
+        commission: "Комісія агентства (20%)",
+        yourIncome: "Ваш місячний дохід",
+        yearly: "Річний дохід"
+      }
+    },
+    // Navigation
+    nav: {
+      home: "Головна",
+      services: "Послуги",
+      news: "Новини"
     },
     // Earnings Chart
     earnings: {
@@ -1214,6 +1285,19 @@ export const translations = {
       title: "Готова збільшити свій дохід?",
       description: "Заповни анкету і наша команда зв'яжеться з тобою протягом 24 годин",
       button: "Заповнити анкету"
+    },
+    // Testimonials
+    testimonials: {
+      badge: "Історії успіху",
+      title: "Реальні результати від реальних моделей",
+      subtitle: "Подивіться, як наші моделі трансформували свій дохід",
+      before: "До",
+      after: "Після",
+      period: "за",
+      months: "місяців",
+      feedback1: "Apollo Production змінило мою кар'єру. За 6 місяців мій дохід виріс у 15 разів!",
+      feedback2: "Професійна команда, чудові джерела трафіку та постійна підтримка. Найкраще рішення!",
+      feedback3: "Агентство бере все на себе - я просто створюю контент. Результати говорять самі за себе!"
     },
     // Crypto Unlock
     cryptoUnlock: {
