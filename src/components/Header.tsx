@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Button } from "@/components/ui/button";
 import { useButtonSound } from "@/hooks/useButtonSound";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -11,7 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import logoVideo from "@/assets/logo-video.mov";
 
-const Header = () => {
+const Header = memo(() => {
   const { playClickSound } = useButtonSound();
   const { language, setLanguage } = useLanguage();
   const { t } = useTranslation();
@@ -65,6 +66,7 @@ const Header = () => {
                 loop 
                 muted 
                 playsInline
+                preload="metadata"
                 className="w-full h-full object-cover scale-110"
               />
             </div>
@@ -176,6 +178,8 @@ const Header = () => {
       </div>
     </header>
   );
-};
+});
+
+Header.displayName = 'Header';
 
 export default Header;

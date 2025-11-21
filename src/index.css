@@ -74,6 +74,20 @@ All colors MUST be HSL.
 }
 
 @layer utilities {
+  /* Performance optimizations */
+  .will-change-transform {
+    will-change: transform;
+  }
+  
+  @supports (will-change: transform) {
+    .animate-float,
+    .animate-pulse-glow,
+    .animate-slide-in-right,
+    .animate-slide-in-left {
+      will-change: transform;
+    }
+  }
+  
   .animate-gradient {
     background-size: 200% 200%;
     animation: gradient 8s ease infinite;

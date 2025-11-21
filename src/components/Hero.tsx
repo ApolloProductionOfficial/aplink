@@ -1,9 +1,10 @@
+import { memo } from "react";
 import { Button } from "@/components/ui/button";
 import { useButtonSound } from "@/hooks/useButtonSound";
 import { useTranslation } from "@/hooks/useTranslation";
 import cfLogo from "@/assets/cf-logo-final.png";
 
-const Hero = () => {
+const Hero = memo(() => {
   const { playClickSound } = useButtonSound();
   const { t } = useTranslation();
   
@@ -66,10 +67,11 @@ const Hero = () => {
               
               {/* Logo */}
               <div className="absolute inset-0 flex items-center justify-center z-50" style={{ perspective: '1000px' }}>
-                <div style={{ transformStyle: 'preserve-3d', animation: 'rotate3d 20s linear infinite' }}>
+                <div style={{ transformStyle: 'preserve-3d', animation: 'rotate3d 20s linear infinite', willChange: 'transform' }}>
                   <img 
                     src={cfLogo} 
                     alt="CF Logo" 
+                    loading="lazy"
                     className="w-56 h-56 object-contain"
                     style={{
                       filter: 'brightness(1.1) contrast(1.2) drop-shadow(2px 2px 0px rgba(0,0,0,0.9)) drop-shadow(4px 4px 0px rgba(0,0,0,0.7)) drop-shadow(6px 6px 0px rgba(0,0,0,0.5)) drop-shadow(8px 8px 0px rgba(0,0,0,0.3))',
@@ -79,7 +81,7 @@ const Hero = () => {
                 </div>
               </div>
               
-              {/* Orbital rings */}
+              {/* Orbital rings - optimized */}
               {[1, 2, 3, 4].map((ring) => (
                 <div
                   key={ring}
@@ -89,13 +91,14 @@ const Hero = () => {
                     animationDirection: ring % 2 === 0 ? 'reverse' : 'normal',
                     margin: `${ring * 25}px`,
                     borderStyle: ring % 2 === 0 ? 'dashed' : 'solid',
-                    boxShadow: `0 0 10px hsl(var(--primary) / 0.3)`
+                    boxShadow: `0 0 10px hsl(var(--primary) / 0.3)`,
+                    willChange: 'transform'
                   }}
                 />
               ))}
               
-              {/* Space particles / stars */}
-              {[...Array(40)].map((_, i) => {
+              {/* Space particles / stars - reduced from 40 to 20 */}
+              {[...Array(20)].map((_, i) => {
                 const size = Math.random() > 0.7 ? 'w-1 h-1' : 'w-0.5 h-0.5';
                 return (
                   <div
@@ -107,7 +110,8 @@ const Hero = () => {
                       animation: `float ${4 + Math.random() * 6}s ease-in-out infinite, pulse-glow ${1.5 + Math.random() * 3}s ease-in-out infinite`,
                       animationDelay: `${Math.random() * 4}s`,
                       opacity: 0.5 + Math.random() * 0.5,
-                      boxShadow: '0 0 6px hsl(var(--primary))'
+                      boxShadow: '0 0 6px hsl(var(--primary))',
+                      willChange: 'transform'
                     }}
                   />
                 );
@@ -145,6 +149,8 @@ const Hero = () => {
       </div>
     </section>
   );
-};
+});
+
+Hero.displayName = 'Hero';
 
 export default Hero;
