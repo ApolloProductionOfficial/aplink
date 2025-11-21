@@ -57,18 +57,18 @@ const Header = () => {
     <header className="sticky top-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-lg border-b border-border">
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-14 h-14 rounded-full overflow-hidden">
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full overflow-hidden flex-shrink-0">
               <video 
                 src={logoVideo} 
                 autoPlay 
                 loop 
                 muted 
                 playsInline
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover scale-110"
               />
             </div>
-            <span className="text-base font-bold animate-text-shimmer">
+            <span className="text-sm sm:text-base font-bold animate-text-shimmer whitespace-nowrap">
               {t.header.title}
             </span>
           </div>
