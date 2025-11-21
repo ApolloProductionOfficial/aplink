@@ -55,9 +55,9 @@ const Header = () => {
   
   return (
     <header className="sticky top-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-lg border-b border-border">
-      <div className="container mx-auto px-4 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 md:gap-3">
+      <div className="container mx-auto px-6 md:px-8 lg:px-4 py-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
             <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full overflow-hidden flex-shrink-0">
               <video 
                 src={logoVideo} 
@@ -69,7 +69,7 @@ const Header = () => {
                 className="w-full h-full object-cover scale-110"
               />
             </div>
-            <span className="text-sm sm:text-base font-bold animate-text-shimmer whitespace-nowrap">
+            <span className="text-xs sm:text-sm md:text-base font-bold animate-text-shimmer break-words line-clamp-2 min-w-0">
               {t.header.title}
             </span>
           </div>
