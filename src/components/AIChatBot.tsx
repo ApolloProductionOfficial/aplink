@@ -173,28 +173,23 @@ const AIChatBot = () => {
     <>
       {/* Animated Hint Tooltip */}
       {showHint && !isOpen && (
-        <div
-          className={`fixed bottom-20 right-4 z-50 animate-fade-in transition-all duration-300 ${
-            isVisible ? 'translate-x-0 opacity-100' : 'md:translate-x-0 md:opacity-100 translate-x-full opacity-0'
-          }`}
-        >
-          <div className="bg-primary text-primary-foreground px-2 py-1.5 md:px-4 md:py-3 rounded-lg shadow-xl relative animate-bounce flex items-center gap-1.5 max-w-[140px] md:max-w-none">
+        <div className="hidden md:block fixed bottom-20 right-4 z-50 animate-fade-in">
+          <div className="bg-primary text-primary-foreground px-4 py-3 rounded-lg shadow-xl relative animate-bounce flex items-center gap-1.5">
             <div className="absolute -bottom-2 right-6 w-4 h-4 bg-primary transform rotate-45"></div>
-            <Bot className="w-3 h-3 md:w-6 md:h-6 flex-shrink-0" />
-            <p className="text-[10px] md:text-sm font-medium md:whitespace-nowrap leading-tight">{hintText}</p>
+            <Bot className="w-6 h-6 flex-shrink-0" />
+            <p className="text-sm font-medium whitespace-nowrap leading-tight">{hintText}</p>
           </div>
         </div>
       )}
 
       {/* Chat Button */}
       <Button
+        data-chat-button
         onClick={() => {
           setIsOpen(!isOpen);
           setShowHint(false);
         }}
-        className={`fixed bottom-4 right-4 z-50 h-14 w-14 rounded-full shadow-lg shadow-primary/50 transition-all duration-300 bg-primary backdrop-blur-sm border-2 border-primary flex flex-col items-center justify-center gap-0.5 p-2 ${
-          isVisible ? 'translate-x-0 opacity-100' : 'md:translate-x-0 md:opacity-100 translate-x-full opacity-0'
-        }`}
+        className={`hidden md:flex fixed bottom-4 right-4 z-50 h-14 w-14 rounded-full shadow-lg shadow-primary/50 transition-all duration-300 bg-primary backdrop-blur-sm border-2 border-primary flex-col items-center justify-center gap-0.5 p-2`}
         size="icon"
       >
         {isOpen ? (

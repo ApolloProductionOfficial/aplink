@@ -55,19 +55,21 @@ const BottomNavigation = () => {
               key={index}
               onClick={() => handleNavClick(item)}
               className={`flex flex-col items-center justify-center flex-1 h-full transition-all duration-300 hover:scale-105 ${
-                active 
+                item.action === "chat"
+                  ? "text-primary animate-cosmic-glow"
+                  : active 
                   ? "text-primary" 
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
               <Icon 
                 className={`w-5 h-5 mb-1 transition-all duration-300 ${
-                  active ? "scale-110 animate-pulse" : ""
+                  item.action === "chat" ? "scale-110" : active ? "scale-110" : ""
                 }`} 
               />
               <span className="text-xs font-medium">{item.label}</span>
-              {active && (
-                <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent animate-slide-in-bottom" />
+              {active && item.action !== "chat" && (
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent" />
               )}
             </button>
           );

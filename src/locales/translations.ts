@@ -17,7 +17,7 @@ export const translations = {
     // Hero
     hero: {
       badge: "OnlyFans Management Agency",
-      title: "Управляем ростом моделей на OnlyFans",
+      title: "Управляем ростом моделей и агентств на OnlyFans",
       description: "5 лет работы в индустрии OnlyFans. За это время помогли открыть и запустить десятки агентств по всему миру, собрали огромный опыт в управлении моделями, трафике и монетизации. Мы управляем ростом моделей на всех крупных платформах и помогаем агентствам развиваться, применяя весь накопленный опыт для достижения максимальных результатов.",
       startButton: "Начать работу",
       formButton: "Заполнить анкету",
@@ -589,7 +589,7 @@ export const translations = {
     // Hero
     hero: {
       badge: "OnlyFans Management Agency",
-      title: "Managing Model Growth on OnlyFans",
+      title: "Managing Model and Agency Growth on OnlyFans",
       description: "5 years working in the OnlyFans industry. During this time, we've helped launch and establish dozens of agencies worldwide, accumulated vast experience in model management, traffic generation, and monetization. We manage model growth on all major platforms and help agencies develop, applying all our accumulated expertise to achieve maximum results.",
       startButton: "Get Started",
       formButton: "Fill Application",
@@ -1161,7 +1161,7 @@ export const translations = {
     // Hero
     hero: {
       badge: "OnlyFans Management Agency",
-      title: "Керуємо зростанням моделей на OnlyFans",
+      title: "Керуємо зростанням моделей та агентств на OnlyFans",
       description: "5 років роботи в індустрії OnlyFans. За цей час допомогли відкрити та запустити десятки агентств по всьому світу, зібрали величезний досвід у керуванні моделями, трафіку та монетизації. Ми керуємо зростанням моделей на всіх основних платформах і допомагаємо агентствам розвиватися, застосовуючи весь накопичений досвід для досягнення максимальних результатів.",
       startButton: "Почати роботу",
       formButton: "Заповнити анкету",
