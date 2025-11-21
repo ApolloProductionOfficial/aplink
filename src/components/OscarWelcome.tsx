@@ -18,19 +18,19 @@ const OscarWelcome = ({ onComplete }: OscarWelcomeProps) => {
     }));
     setStars(newStars);
 
-    // Play Oscar's special music track snippet (32-36 seconds = 4 seconds)
+    // Play Oscar's special music track snippet (33-37 seconds = 4 seconds)
     const audio = new Audio("/audio/oscar-welcome.mp3");
     audio.volume = 0.7;
 
-    // Start playback from 32s and let it play smoothly for 4 seconds
-    audio.currentTime = 32;
+    // Start playback from 33s and let it play smoothly for 4 seconds
+    audio.currentTime = 33;
     const playPromise = audio.play();
 
     if (playPromise !== undefined) {
       playPromise.catch((error) => console.log("Audio play failed:", error));
     }
 
-    // Close welcome after exactly 4 seconds (duration from 32 to 36 seconds)
+    // Close welcome after exactly 4 seconds (duration from 33 to 37 seconds)
     const welcomeTimer = setTimeout(() => {
       audio.pause();
       audio.currentTime = 0;
