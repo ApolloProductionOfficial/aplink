@@ -151,19 +151,23 @@ const Services = () => {
           cardRefs.current[index] = el;
           (tiltRef as any).current = el;
         }}
-        className={`group relative overflow-hidden cursor-pointer border-2 border-primary/20 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur hover:border-primary/60 hover:shadow-2xl hover:shadow-primary/20 transition-all duration-500 ${
+        className={`group relative overflow-hidden cursor-pointer border-2 border-primary/30 bg-gradient-to-br from-card/90 to-card/50 backdrop-blur hover:border-primary hover:shadow-2xl hover:shadow-primary/30 transition-all duration-500 hover:-translate-y-1 ${
           isVisible 
             ? 'opacity-100 translate-y-0' 
             : 'opacity-0 translate-y-8'
         }`}
         style={{
           transitionDelay: `${index * 100}ms`,
-          transformStyle: 'preserve-3d'
+          transformStyle: 'preserve-3d',
+          boxShadow: '0 0 20px rgba(var(--primary-rgb), 0.1)'
         }}
         onClick={() => handleServiceClick(service.path)}
       >
         {/* Animated gradient overlay on hover */}
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/15 via-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+        
+        {/* Subtle glow effect */}
+        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br from-primary/5 to-transparent blur-xl" />
         
         {/* Mobile: Horizontal Layout */}
         <div className="md:hidden flex items-center gap-3 p-3 relative z-10">

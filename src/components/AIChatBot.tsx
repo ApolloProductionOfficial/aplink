@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useScrollVisibility } from "@/hooks/useScrollVisibility";
+import { useNavigate } from "react-router-dom";
 
 interface Message {
   role: 'user' | 'assistant';
@@ -21,6 +22,7 @@ const AIChatBot = () => {
   const chatWindowRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const { t, language } = useTranslation();
+  const navigate = useNavigate();
   
   // Use scroll visibility hook - mobile only, hide during scroll
   const isVisible = useScrollVisibility(true, 200);
@@ -133,15 +135,58 @@ const AIChatBot = () => {
     return () => clearInterval(rotateHints);
   }, [hintMessages.length]);
 
-  // Function to format text with markdown-like syntax
+  // Function to format text with markdown-like syntax including links
   const formatMessage = (text: string) => {
-    // Replace **text** with bold
-    return text.split(/(\*\*.*?\*\*)/).map((part, i) => {
-      if (part.startsWith('**') && part.endsWith('**')) {
-        return <strong key={i}>{part.slice(2, -2)}</strong>;
+    const parts: (string | JSX.Element)[] = [];
+    let lastIndex = 0;
+    
+    // Regex to match **bold** and [text](link)
+    const regex = /(\*\*.*?\*\*|\[.*?\]\(.*?\))/g;
+    let match;
+    
+    while ((match = regex.exec(text)) !== null) {
+      // Add text before match
+      if (match.index > lastIndex) {
+        parts.push(text.slice(lastIndex, match.index));
       }
-      return part;
-    });
+      
+      const matched = match[0];
+      
+      // Handle bold text
+      if (matched.startsWith('**') && matched.endsWith('**')) {
+        parts.push(<strong key={match.index}>{matched.slice(2, -2)}</strong>);
+      }
+      // Handle links [text](url)
+      else if (matched.startsWith('[')) {
+        const linkMatch = matched.match(/\[(.*?)\]\((.*?)\)/);
+        if (linkMatch) {
+          const [, linkText, linkUrl] = linkMatch;
+          parts.push(
+            <a
+              key={match.index}
+              href={linkUrl}
+              onClick={(e) => {
+                e.preventDefault();
+                navigate(linkUrl);
+                setIsOpen(false);
+              }}
+              className="text-primary hover:underline font-semibold cursor-pointer"
+            >
+              {linkText}
+            </a>
+          );
+        }
+      }
+      
+      lastIndex = regex.lastIndex;
+    }
+    
+    // Add remaining text
+    if (lastIndex < text.length) {
+      parts.push(text.slice(lastIndex));
+    }
+    
+    return parts;
   };
 
   // Close chat when clicking outside on mobile
