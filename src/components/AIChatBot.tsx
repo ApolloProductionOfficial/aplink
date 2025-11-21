@@ -304,17 +304,36 @@ const AIChatBot = () => {
           setIsOpen(!isOpen);
           setShowHint(false);
         }}
-        className={`hidden md:flex fixed bottom-4 right-4 z-50 h-14 w-14 rounded-full shadow-lg shadow-primary/50 transition-all duration-300 bg-primary backdrop-blur-sm border-2 border-primary flex-col items-center justify-center gap-0.5 p-2`}
+        className={`hidden md:flex fixed bottom-4 right-4 z-50 h-16 w-16 rounded-full transition-all duration-300 backdrop-blur-sm flex-col items-center justify-center gap-0.5 p-2 relative group ${
+          isOpen 
+            ? 'bg-gradient-to-br from-primary via-primary to-primary/90 border-2 border-primary shadow-2xl shadow-primary/60' 
+            : 'bg-gradient-to-br from-primary/90 via-primary to-primary/80 border-2 border-primary shadow-2xl shadow-primary/60 hover:shadow-primary/80 hover:scale-110'
+        }`}
         size="icon"
       >
-        {isOpen ? (
-          <X className="h-6 w-6 text-primary-foreground" />
-        ) : (
-          <>
-            <Bot className="h-6 w-6 text-primary-foreground" />
-            <span className="text-[7px] font-bold text-primary-foreground tracking-tight leading-none">APOLLO AI</span>
-          </>
-        )}
+        {/* Cosmic glow effect - always visible */}
+        <div className="absolute inset-0 rounded-full bg-gradient-to-r from-primary/40 via-primary/60 to-primary/40 blur-xl opacity-60 group-hover:opacity-100 animate-pulse-glow" />
+        
+        {/* Animated shimmer ring */}
+        <div className="absolute inset-0 rounded-full border-2 border-primary/0 group-hover:border-primary/40 animate-shimmer" />
+        
+        {/* Rotating cosmic particles */}
+        <div className="absolute inset-0 rounded-full overflow-hidden">
+          <div className="absolute top-0 left-1/2 w-1 h-1 bg-primary/60 rounded-full animate-spin" style={{ animationDuration: '3s' }} />
+          <div className="absolute bottom-0 right-1/2 w-1 h-1 bg-primary/60 rounded-full animate-spin" style={{ animationDuration: '4s', animationDirection: 'reverse' }} />
+        </div>
+        
+        {/* Content */}
+        <div className="relative z-10">
+          {isOpen ? (
+            <X className="h-7 w-7 text-primary-foreground drop-shadow-lg" />
+          ) : (
+            <>
+              <Bot className="h-7 w-7 text-primary-foreground drop-shadow-lg" />
+              <span className="text-[8px] font-bold text-primary-foreground tracking-tight leading-none drop-shadow-md">APOLLO AI</span>
+            </>
+          )}
+        </div>
       </Button>
 
       {/* Chat Window */}
