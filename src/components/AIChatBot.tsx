@@ -140,8 +140,9 @@ const AIChatBot = () => {
     const parts: (string | JSX.Element)[] = [];
     let lastIndex = 0;
     
-    // Regex to match **[text](link)** (bold links), **bold**, [text](link), @username, and emoji
-    const regex = /(\*\*\[.*?\]\(.*?\)\*\*|\*\*.*?\*\*|\[.*?\]\(.*?\)|@[a-zA-Z0-9_]+|[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}])/gu;
+    // Regex to match @username, **[text](link)** (bold links), **bold**, [text](link), and emoji
+    // Put @username FIRST so it matches before bold text processing
+    const regex = /(@[a-zA-Z0-9_]+|\*\*\[.*?\]\(.*?\)\*\*|\*\*.*?\*\*|\[.*?\]\(.*?\)|[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}])/gu;
     let match;
     let emojiIndex = 0;
     
@@ -153,8 +154,23 @@ const AIChatBot = () => {
       
       const matched = match[0];
       
+      // Handle telegram mentions @username FIRST
+      if (matched.startsWith('@')) {
+        const username = matched.slice(1);
+        parts.push(
+          <a
+            key={match.index}
+            href={`https://t.me/${username}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary hover:underline hover:text-primary/80 font-bold cursor-pointer transition-colors duration-200"
+          >
+            {matched}
+          </a>
+        );
+      }
       // Handle emoji
-      if (/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/u.test(matched)) {
+      else if (/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/u.test(matched)) {
         parts.push(
           <span
             key={match.index}
@@ -165,21 +181,6 @@ const AIChatBot = () => {
           </span>
         );
         emojiIndex++;
-      }
-      // Handle telegram mentions @username
-      else if (matched.startsWith('@')) {
-        const username = matched.slice(1);
-        parts.push(
-          <a
-            key={match.index}
-            href={`https://t.me/${username}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-primary hover:underline font-bold cursor-pointer inline-flex items-center gap-1"
-          >
-            {matched}
-          </a>
-        );
       }
       // Handle bold links **[text](url)**
       else if (matched.startsWith('**[') && matched.endsWith(')**')) {
@@ -202,10 +203,16 @@ const AIChatBot = () => {
           );
         }
       }
-      // Handle bold text **text**
+      // Handle bold text **text** - but check if it contains @username
       else if (matched.startsWith('**') && matched.endsWith('**')) {
         const boldContent = matched.slice(2, -2);
-        parts.push(<strong key={match.index}>{boldContent}</strong>);
+        // Check if bold content contains @username
+        if (boldContent.includes('@')) {
+          // Recursively format the bold content to handle @username inside
+          parts.push(<strong key={match.index}>{formatMessage(boldContent)}</strong>);
+        } else {
+          parts.push(<strong key={match.index}>{boldContent}</strong>);
+        }
       }
       // Handle regular links [text](url)
       else if (matched.startsWith('[')) {
