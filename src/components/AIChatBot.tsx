@@ -297,14 +297,14 @@ const AIChatBot = () => {
         </div>
       )}
 
-      {/* Chat Button */}
+      {/* Chat Button - hidden visually on mobile but accessible via BottomNavigation click */}
       <Button
         data-chat-button
         onClick={() => {
           setIsOpen(!isOpen);
           setShowHint(false);
         }}
-        className={`hidden md:flex fixed bottom-4 right-4 z-50 h-16 w-16 rounded-full transition-all duration-300 backdrop-blur-sm flex-col items-center justify-center gap-0.5 p-2 relative group ${
+        className={`opacity-0 md:opacity-100 pointer-events-none md:pointer-events-auto fixed bottom-4 right-4 z-50 h-16 w-16 rounded-full transition-all duration-300 backdrop-blur-sm flex flex-col items-center justify-center gap-0.5 p-2 relative group ${
           isOpen 
             ? 'bg-gradient-to-br from-primary via-primary to-primary/90 border-2 border-primary shadow-2xl shadow-primary/60' 
             : 'bg-gradient-to-br from-primary/90 via-primary to-primary/80 border-2 border-primary shadow-2xl shadow-primary/60 hover:shadow-primary/80 hover:scale-110'
