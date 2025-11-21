@@ -93,7 +93,7 @@ const Header = () => {
             </a>
             <a 
               href="/services" 
-              className="text-sm font-bold text-primary hover:text-primary/80 transition-all relative group px-4 py-2 rounded-lg bg-primary/10 border border-primary/30 animate-nav-wave-3"
+              className="text-sm font-bold text-primary hover:text-primary/80 transition-all relative group px-4 py-2 rounded-lg bg-primary/15 border border-primary/40 animate-nav-wave-3"
               onClick={(e) => {
                 e.preventDefault();
                 playClickSound();
@@ -101,7 +101,6 @@ const Header = () => {
               }}
             >
               <span className="relative z-10">{t.header.services}</span>
-              <span className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary/30 to-primary/20 rounded-lg animate-shimmer"></span>
               <span className="absolute -bottom-0.5 left-4 w-0 h-0.5 bg-primary transition-all group-hover:w-[calc(100%-32px)]"></span>
             </a>
             <Button
