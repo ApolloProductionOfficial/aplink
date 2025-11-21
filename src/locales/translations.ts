@@ -153,6 +153,20 @@ export const translations = {
       learnMore: "Подробнее",
       contactTelegram: "Связаться в Telegram"
     },
+    // AI Chatbot
+    chatbot: {
+      title: "AI Помощник",
+      subtitle: "Навигация по сайту",
+      placeholder: "Введите сообщение...",
+      welcome: "Привет! Я помогу тебе найти информацию на сайте.",
+      welcomeDetails: "Спроси меня о наших услугах, ценах или контактах.",
+      disclaimer: "Если не могу ответить - направлю в Telegram"
+    },
+    // Footer
+    footer: {
+      rights: "Все права защищены.",
+      contactTitle: "Свяжитесь с нами"
+    },
     // Right Sidebar
     rightSidebar: {
       title: "Топ предложений пользующихся спросом",
@@ -172,11 +186,6 @@ export const translations = {
       title: "Готова увеличить свой доход?",
       description: "Заполни анкету и наша команда свяжется с тобой в течение 24 часов",
       button: "Заполнить анкету"
-    },
-    // Footer
-    footer: {
-      rights: "Все права защищены.",
-      contactTitle: "Свяжитесь с нами"
     },
     // Crypto Unlock
     cryptoUnlock: {
@@ -662,11 +671,6 @@ export const translations = {
       description: "Fill out the application and our team will contact you within 24 hours",
       button: "Fill Application"
     },
-    // Footer
-    footer: {
-      rights: "All rights reserved.",
-      contactTitle: "Get in Touch"
-    },
     // Crypto Unlock
     cryptoUnlock: {
       back: "Back",
@@ -1067,6 +1071,20 @@ export const translations = {
       back: "Back",
       learnMore: "Learn More",
       contactTelegram: "Contact on Telegram"
+    },
+    // AI Chatbot
+    chatbot: {
+      title: "AI Assistant",
+      subtitle: "Site Navigation",
+      placeholder: "Type a message...",
+      welcome: "Hello! I'll help you find information on the site.",
+      welcomeDetails: "Ask me about our services, prices or contacts.",
+      disclaimer: "If I can't answer - I'll direct you to Telegram"
+    },
+    // Footer
+    footer: {
+      rights: "All rights reserved.",
+      contactTitle: "Get in Touch"
     }
   },
   uk: {
@@ -1196,11 +1214,6 @@ export const translations = {
       title: "Готова збільшити свій дохід?",
       description: "Заповни анкету і наша команда зв'яжеться з тобою протягом 24 годин",
       button: "Заповнити анкету"
-    },
-    // Footer
-    footer: {
-      rights: "Всі права захищені.",
-      contactTitle: "Зв'яжіться з нами"
     },
     // Crypto Unlock
     cryptoUnlock: {
@@ -1600,8 +1613,22 @@ export const translations = {
     // Common
     common: {
       back: "Назад",
-      learnMore: "Докладніше",
+      learnMore: "Детальніше",
       contactTelegram: "Зв'язатися в Telegram"
+    },
+    // AI Chatbot
+    chatbot: {
+      title: "AI Помічник",
+      subtitle: "Навігація по сайту",
+      placeholder: "Введіть повідомлення...",
+      welcome: "Привіт! Я допоможу тобі знайти інформацію на сайті.",
+      welcomeDetails: "Запитай мене про наші послуги, ціни або контакти.",
+      disclaimer: "Якщо не можу відповісти - направлю в Telegram"
+    },
+    // Footer
+    footer: {
+      rights: "Всі права захищені.",
+      contactTitle: "Зв'яжіться з нами"
     }
   }
 };

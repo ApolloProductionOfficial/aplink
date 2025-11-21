@@ -19,7 +19,26 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const systemPrompt = `Ты - дружелюбный помощник APOLLO PRODUCTION (OnlyFans Management Agency). Ты эксперт в индустрии для взрослых и можешь отвечать на широкий спектр вопросов.
+    // Detect language from the last user message
+    const lastUserMessage = messages.filter((m: any) => m.role === 'user').pop();
+    const userText = lastUserMessage?.content || '';
+    
+    // Simple language detection based on Cyrillic characters
+    const hasCyrillic = /[а-яА-ЯёЁіІїЇєЄґҐ]/.test(userText);
+    const hasUkrainian = /[іІїЇєЄґҐ]/.test(userText);
+    
+    let languageInstruction = '';
+    if (hasCyrillic) {
+      if (hasUkrainian) {
+        languageInstruction = '\n\nВАЖЛИВО: Відповідай ТІЛЬКИ українською мовою, оскільки користувач пише українською.';
+      } else {
+        languageInstruction = '\n\nВАЖНО: Отвечай ТОЛЬКО на русском языке, так как пользователь пишет на русском.';
+      }
+    } else {
+      languageInstruction = '\n\nIMPORTANT: Respond ONLY in English, as the user is writing in English.';
+    }
+
+    const systemPrompt = `Ты - дружелюбный помощник APOLLO PRODUCTION (OnlyFans Management Agency). Ты эксперт в индустрии для взрослых и можешь отвечать на широкий спектр вопросов.${languageInstruction}
 
 ВАЖНО: К тебе могут обращаться ДВА ТИПА КЛИЕНТОВ:
 
