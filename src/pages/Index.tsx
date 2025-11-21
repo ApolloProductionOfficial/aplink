@@ -16,6 +16,10 @@ import CTA from "@/components/CTA";
 import Footer from "@/components/Footer";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import StarField from "@/components/StarField";
+import ScrollProgress from "@/components/ScrollProgress";
+import BottomNavigation from "@/components/BottomNavigation";
+import Testimonials from "@/components/Testimonials";
+import StickyCTA from "@/components/StickyCTA";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 
 const Index = () => {
@@ -25,15 +29,18 @@ const Index = () => {
   const ctaAnim = useScrollAnimation();
 
   return (
-    <div className="min-h-screen bg-background text-foreground relative">
+    <div className="min-h-screen bg-background text-foreground relative pb-20 md:pb-0">
       <AnimatedBackground />
       <StarField />
+      <ScrollProgress />
       <TopBanner />
       <Header />
       <Sidebar />
       <NewsWidget />
       <AIChatBot />
       <MobileMenu />
+      <BottomNavigation />
+      <StickyCTA />
       <div className="lg:pl-80 xl:pr-80">
         <VideoBanner />
         <Hero />
@@ -60,6 +67,7 @@ const Index = () => {
         >
           <EarningsChart />
         </div>
+        <Testimonials />
         <div
           ref={trafficSourcesAnim.elementRef}
           className={`transition-all duration-700 ${
