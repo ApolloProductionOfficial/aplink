@@ -1,4 +1,3 @@
-import TopBanner from "@/components/TopBanner";
 import Header from "@/components/Header";
 import VideoBanner from "@/components/VideoBanner";
 import Sidebar from "@/components/Sidebar";
@@ -31,7 +30,6 @@ const Index = () => {
       <AnimatedBackground />
       <StarField />
       <ScrollProgress />
-      <TopBanner />
       <Header />
       <Sidebar />
       <NewsWidget />
