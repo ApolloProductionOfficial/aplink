@@ -1,6 +1,4 @@
-import { memo } from "react";
-
-const AnimatedBackground = memo(() => {
+const AnimatedBackground = () => {
   return (
     <div className="fixed inset-0 -z-10 overflow-hidden bg-background">
       {/* Subtle gradient orbs - optimized */}
@@ -15,8 +13,6 @@ const AnimatedBackground = memo(() => {
       <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.01)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.01)_1px,transparent_1px)] bg-[size:100px_100px]" />
     </div>
   );
-});
-
-AnimatedBackground.displayName = 'AnimatedBackground';
+};
 
 export default AnimatedBackground;

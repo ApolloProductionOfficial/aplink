@@ -1,6 +1,6 @@
-import { useEffect, useRef, memo } from 'react';
+import { useEffect, useRef } from 'react';
 
-const StarField = memo(() => {
+const StarField = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -92,8 +92,6 @@ const StarField = memo(() => {
       style={{ opacity: 0.5, willChange: 'transform' }}
     />
   );
-});
-
-StarField.displayName = 'StarField';
+};
 
 export default StarField;

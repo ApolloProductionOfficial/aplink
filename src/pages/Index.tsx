@@ -1,7 +1,9 @@
-import { lazy, Suspense } from "react";
 import TopBanner from "@/components/TopBanner";
 import Header from "@/components/Header";
 import VideoBanner from "@/components/VideoBanner";
+import Sidebar from "@/components/Sidebar";
+import NewsWidget from "@/components/NewsWidget";
+import AIChatBot from "@/components/AIChatBot";
 import MobileMenu from "@/components/MobileMenu";
 import MobileThemesNews from "@/components/MobileThemesNews";
 import MobileTopServices from "@/components/MobileTopServices";
@@ -13,13 +15,8 @@ import TrafficSources from "@/components/TrafficSources";
 import CTA from "@/components/CTA";
 import Footer from "@/components/Footer";
 import AnimatedBackground from "@/components/AnimatedBackground";
+import StarField from "@/components/StarField";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
-
-// Lazy load heavy components
-const Sidebar = lazy(() => import("@/components/Sidebar"));
-const NewsWidget = lazy(() => import("@/components/NewsWidget"));
-const AIChatBot = lazy(() => import("@/components/AIChatBot"));
-const StarField = lazy(() => import("@/components/StarField"));
 
 const Index = () => {
   const serviceBadgesAnim = useScrollAnimation();
@@ -30,20 +27,12 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background text-foreground relative">
       <AnimatedBackground />
-      <Suspense fallback={<div className="fixed inset-0 pointer-events-none z-0" />}>
-        <StarField />
-      </Suspense>
+      <StarField />
       <TopBanner />
       <Header />
-      <Suspense fallback={<div className="hidden lg:block" />}>
-        <Sidebar />
-      </Suspense>
-      <Suspense fallback={<div className="hidden xl:block" />}>
-        <NewsWidget />
-      </Suspense>
-      <Suspense fallback={null}>
-        <AIChatBot />
-      </Suspense>
+      <Sidebar />
+      <NewsWidget />
+      <AIChatBot />
       <MobileMenu />
       <div className="lg:pl-80 xl:pr-80">
         <VideoBanner />

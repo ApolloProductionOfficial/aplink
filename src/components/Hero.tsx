@@ -1,10 +1,9 @@
-import { memo } from "react";
 import { Button } from "@/components/ui/button";
 import { useButtonSound } from "@/hooks/useButtonSound";
 import { useTranslation } from "@/hooks/useTranslation";
 import cfLogo from "@/assets/cf-logo-final.png";
 
-const Hero = memo(() => {
+const Hero = () => {
   const { playClickSound } = useButtonSound();
   const { t } = useTranslation();
   
@@ -149,8 +148,6 @@ const Hero = memo(() => {
       </div>
     </section>
   );
-});
-
-Hero.displayName = 'Hero';
+};
 
 export default Hero;
