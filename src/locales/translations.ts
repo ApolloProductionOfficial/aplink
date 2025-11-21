@@ -18,7 +18,7 @@ export const translations = {
     hero: {
       badge: "OnlyFans Management Agency",
       title: "Управляем ростом моделей на OnlyFans",
-      description: "5 лет работы в индустрии OnlyFans. За это время помогли открыть и запустить десятки агентств по всему миру, собрали огромный опыт в управлении моделями, трафике и монетизации. Теперь мы применяем весь накопленный опыт для развития собственного агентства и достижения максимальных результатов для наших моделей.",
+      description: "5 лет работы в индустрии OnlyFans. За это время помогли открыть и запустить десятки агентств по всему миру, собрали огромный опыт в управлении моделями, трафике и монетизации. Мы управляем ростом моделей на всех крупных платформах и помогаем агентствам развиваться, применяя весь накопленный опыт для достижения максимальных результатов.",
       startButton: "Начать работу",
       formButton: "Заполнить анкету",
       calculator: {
@@ -590,7 +590,7 @@ export const translations = {
     hero: {
       badge: "OnlyFans Management Agency",
       title: "Managing Model Growth on OnlyFans",
-      description: "5 years working in the OnlyFans industry. During this time, we've helped launch and establish dozens of agencies worldwide, accumulated vast experience in model management, traffic generation, and monetization. Now we're applying all this accumulated expertise to develop our own agency and achieve maximum results for our models.",
+      description: "5 years working in the OnlyFans industry. During this time, we've helped launch and establish dozens of agencies worldwide, accumulated vast experience in model management, traffic generation, and monetization. We manage model growth on all major platforms and help agencies develop, applying all our accumulated expertise to achieve maximum results.",
       startButton: "Get Started",
       formButton: "Fill Application",
       calculator: {
@@ -1162,7 +1162,7 @@ export const translations = {
     hero: {
       badge: "OnlyFans Management Agency",
       title: "Керуємо зростанням моделей на OnlyFans",
-      description: "5 років роботи в індустрії OnlyFans. За цей час допомогли відкрити та запустити десятки агентств по всьому світу, зібрали величезний досвід у керуванні моделями, трафіку та монетизації. Тепер ми застосовуємо весь накопичений досвід для розвитку власного агентства та досягнення максимальних результатів для наших моделей.",
+      description: "5 років роботи в індустрії OnlyFans. За цей час допомогли відкрити та запустити десятки агентств по всьому світу, зібрали величезний досвід у керуванні моделями, трафіку та монетизації. Ми керуємо зростанням моделей на всіх основних платформах і допомагаємо агентствам розвиватися, застосовуючи весь накопичений досвід для досягнення максимальних результатів.",
       startButton: "Почати роботу",
       formButton: "Заповнити анкету",
       calculator: {

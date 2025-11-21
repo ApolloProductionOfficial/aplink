@@ -18,7 +18,6 @@ import AnimatedBackground from "@/components/AnimatedBackground";
 import StarField from "@/components/StarField";
 import ScrollProgress from "@/components/ScrollProgress";
 import BottomNavigation from "@/components/BottomNavigation";
-import StickyCTA from "@/components/StickyCTA";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 
 const Index = () => {
@@ -37,9 +36,7 @@ const Index = () => {
       <Sidebar />
       <NewsWidget />
       <AIChatBot />
-      <MobileMenu />
       <BottomNavigation />
-      <StickyCTA />
       <div className="lg:pl-80 xl:pr-80">
         <VideoBanner />
         <Hero />
