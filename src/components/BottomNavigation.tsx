@@ -60,6 +60,7 @@ const BottomNavigation = () => {
           const Icon = item.icon;
           const active = isActive(item);
           const isChatItem = item.action === "chat";
+          const isServicesItem = item.path === "/services";
           
           return (
             <button
@@ -68,6 +69,8 @@ const BottomNavigation = () => {
               className={`relative flex flex-col items-center justify-center flex-1 h-full transition-all duration-300 ${
                 isChatItem
                   ? "text-primary"
+                  : isServicesItem
+                  ? "text-primary/90"
                   : active 
                   ? "text-primary" 
                   : "text-muted-foreground hover:text-foreground"
@@ -80,20 +83,24 @@ const BottomNavigation = () => {
                 </div>
               )}
               
-              {/* Glow effect for active/chat items */}
-              {(active || isChatItem) && (
+              {/* Glow effect for active/chat/services items */}
+              {(active || isChatItem || isServicesItem) && (
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-10 h-10 rounded-full bg-primary/20 blur-xl animate-pulse-glow" />
+                  <div className={`w-10 h-10 rounded-full blur-xl ${
+                    isChatItem ? 'bg-primary/20 animate-pulse-glow' : 'bg-primary/15 animate-subtle-pulse'
+                  }`} />
                 </div>
               )}
               
               {/* Icon container with hover animation */}
               <div className={`relative mb-1 transition-all duration-300 ${
                 isChatItem ? 'animate-cosmic-glow' : ''
-              } ${active ? 'scale-110' : 'scale-100'} hover:scale-110`}>
+              } ${active || isServicesItem ? 'scale-110' : 'scale-100'} hover:scale-110`}>
                 <Icon 
                   className={`w-5 h-5 relative z-10 ${
                     isChatItem ? 'drop-shadow-[0_0_8px_rgba(59,130,246,0.8)]' : ''
+                  } ${
+                    isServicesItem ? 'drop-shadow-[0_0_6px_rgba(59,130,246,0.5)]' : ''
                   }`}
                 />
                 
