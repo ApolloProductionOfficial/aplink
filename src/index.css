@@ -126,7 +126,7 @@ All colors MUST be HSL.
   }
   
   .animate-cosmic-appear {
-    animation: cosmic-appear 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    animation: cosmic-appear 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
   
   .animate-text-shimmer {
@@ -312,23 +312,11 @@ All colors MUST be HSL.
 @keyframes cosmic-appear {
   0% {
     opacity: 0;
-    transform: scale(0.7) translateY(20px);
-    filter: blur(12px);
-  }
-  30% {
-    opacity: 0.3;
-    transform: scale(0.85) translateY(10px);
-    filter: blur(8px);
-  }
-  60% {
-    opacity: 0.7;
-    transform: scale(0.95) translateY(3px);
-    filter: blur(3px);
+    transform: scale(0.9) translateY(8px);
   }
   100% {
     opacity: 1;
     transform: scale(1) translateY(0);
-    filter: blur(0);
   }
 }
 

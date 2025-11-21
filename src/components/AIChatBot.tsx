@@ -287,29 +287,30 @@ const AIChatBot = () => {
       {showHint && !isOpen && (
         <div className="hidden md:block fixed bottom-[110px] right-4 z-50">
           <div className="relative animate-cosmic-appear">
-            {/* Outer cosmic glow */}
-            <div className="absolute -inset-4 rounded-2xl bg-primary/20 blur-3xl opacity-60 animate-pulse-glow" />
-            <div className="absolute -inset-6 rounded-2xl bg-primary/10 blur-2xl opacity-40 animate-pulse" style={{ animationDuration: '4s' }} />
+            {/* Outer cosmic glow - slightly offset so doesn't overlap text */}
+            <div className="absolute -inset-4 rounded-2xl bg-primary/15 blur-3xl opacity-50 animate-pulse-glow" />
             
-            <div className="relative bg-gradient-to-br from-primary/95 via-primary to-primary/90 text-primary-foreground px-4 py-2.5 rounded-2xl shadow-2xl shadow-primary/50 backdrop-blur-xl overflow-hidden flex items-center gap-2 border-2 border-primary-foreground/30">
-              {/* Cosmic glow inside */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary-foreground/20 to-transparent animate-shimmer" />
+            <div className="relative bg-gradient-to-br from-primary via-primary/95 to-primary/90 text-primary-foreground px-4 py-2.5 rounded-2xl shadow-2xl shadow-primary/60 backdrop-blur-2xl overflow-hidden flex items-center gap-2 border-2 border-primary-foreground/40">
+              {/* Dark overlay for better text contrast */}
+              <div className="absolute inset-0 bg-black/20 rounded-2xl" />
               
-              {/* Rotating shimmer */}
-              <div className="absolute inset-0 rounded-2xl border-2 border-transparent border-t-primary-foreground/30 border-r-primary-foreground/20 animate-spin" style={{ animationDuration: '4s' }} />
+              {/* Cosmic glow inside - subtle */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary-foreground/10 to-transparent animate-shimmer opacity-50" />
               
-              {/* Floating particles inside hint */}
-              <div className="absolute top-1 left-3 w-1 h-1 rounded-full bg-primary-foreground/40 animate-float shadow-[0_0_6px_rgba(255,255,255,0.6)]" style={{ animationDuration: '2s' }} />
-              <div className="absolute bottom-1.5 right-4 w-0.5 h-0.5 rounded-full bg-primary-foreground/30 animate-float shadow-[0_0_4px_rgba(255,255,255,0.4)]" style={{ animationDuration: '2.5s', animationDelay: '0.5s' }} />
-              <div className="absolute top-2 right-2 w-0.5 h-0.5 rounded-full bg-primary-foreground/35 animate-float shadow-[0_0_4px_rgba(255,255,255,0.5)]" style={{ animationDuration: '2.2s', animationDelay: '0.3s' }} />
+              {/* Rotating shimmer - subtle */}
+              <div className="absolute inset-0 rounded-2xl border-2 border-transparent border-t-primary-foreground/20 border-r-primary-foreground/10 animate-spin opacity-40" style={{ animationDuration: '4s' }} />
               
-              <Bot className="w-5 h-5 flex-shrink-0 relative z-10 drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] animate-pulse" style={{ animationDuration: '2s' }} />
-              <p className="text-sm font-semibold whitespace-nowrap leading-tight relative z-10 drop-shadow-[0_0_6px_rgba(255,255,255,0.6)]">
+              {/* Floating particles inside hint - subtle and fewer */}
+              <div className="absolute top-1 left-3 w-0.5 h-0.5 rounded-full bg-primary-foreground/30 animate-float" style={{ animationDuration: '2s' }} />
+              <div className="absolute bottom-1.5 right-4 w-0.5 h-0.5 rounded-full bg-primary-foreground/25 animate-float" style={{ animationDuration: '2.5s', animationDelay: '0.5s' }} />
+              
+              <Bot className="w-5 h-5 flex-shrink-0 relative z-10 drop-shadow-[0_0_4px_rgba(0,0,0,0.8)]" />
+              <p className="text-sm font-bold whitespace-nowrap leading-tight relative z-10 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] tracking-wide" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.8), 0 0 8px rgba(0,0,0,0.5)' }}>
                 {hintText}
               </p>
               
-              {/* Arrow pointing to bot with glow */}
-              <div className="absolute -bottom-2 right-8 w-4 h-4 bg-gradient-to-br from-primary to-primary/90 transform rotate-45 shadow-lg shadow-primary/50" />
+              {/* Arrow pointing to bot with stronger shadow */}
+              <div className="absolute -bottom-2 right-8 w-4 h-4 bg-gradient-to-br from-primary to-primary/95 transform rotate-45 shadow-xl shadow-primary/60 border-r border-b border-primary-foreground/30" />
             </div>
           </div>
         </div>
