@@ -4,7 +4,6 @@ import { Card } from "@/components/ui/card";
 import { ArrowLeft, Unlock, MapPin, Video, Instagram, HandshakeIcon, Shield, Filter } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useButtonSound } from "@/hooks/useButtonSound";
-import { useTilt } from "@/hooks/useTilt";
 import { useState, useEffect, useRef } from "react";
 import {
   Select,
@@ -141,7 +140,6 @@ const Services = () => {
   });
 
   const ServiceCard = ({ service, index }: { service: typeof services[0], index: number }) => {
-    const tiltRef = useTilt(10);
     const Icon = service.icon;
     const isVisible = visibleCards.has(index);
 
@@ -149,19 +147,14 @@ const Services = () => {
       <Card
         ref={(el) => {
           cardRefs.current[index] = el;
-          if (tiltRef && 'current' in tiltRef) {
-            tiltRef.current = el;
-          }
         }}
-        className={`group relative overflow-hidden cursor-pointer border-2 border-primary/30 bg-gradient-to-br from-card/90 to-card/50 backdrop-blur hover:border-primary hover:shadow-2xl hover:shadow-primary/30 transition-all duration-500 hover:-translate-y-1 ${
+        className={`group relative overflow-hidden cursor-pointer border-2 border-primary/30 bg-gradient-to-br from-card/90 to-card/50 backdrop-blur hover:border-primary hover:shadow-2xl hover:shadow-primary/40 transition-all duration-300 hover:scale-105 ${
           isVisible 
             ? 'opacity-100 translate-y-0' 
             : 'opacity-0 translate-y-8'
         }`}
         style={{
           transitionDelay: `${index * 100}ms`,
-          transformStyle: 'preserve-3d',
-          boxShadow: '0 0 20px rgba(var(--primary-rgb), 0.1)'
         }}
         onClick={() => handleServiceClick(service.path)}
       >
