@@ -138,12 +138,20 @@ const MusicPlayer = () => {
  
   return (
     <div className="hidden md:block fixed bottom-6 left-6 right-auto z-50">
-
       <div
-        className={`bg-card/95 backdrop-blur-lg border border-border rounded-full px-3 py-1.5 md:rounded-lg md:w-64 md:p-4 transition-all duration-150 ${
-          isPlaying ? 'animate-music-pulse' : ''
-        }`}
+        className={`relative group bg-gradient-to-br from-card/95 to-card/80 backdrop-blur-xl border-2 ${
+          isPlaying ? 'border-primary/60 shadow-2xl shadow-primary/30' : 'border-border/50'
+        } rounded-2xl md:w-72 md:p-5 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-primary/40`}
       >
+        {/* Cosmic glow effect */}
+        <div className={`absolute inset-0 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent rounded-2xl blur-xl opacity-0 ${
+          isPlaying ? 'opacity-100 animate-shimmer' : 'group-hover:opacity-60'
+        } transition-opacity duration-500`} />
+        
+        {/* Music icon with glow */}
+        <div className="absolute -top-3 -left-3 w-12 h-12 rounded-full bg-gradient-to-br from-primary/40 to-primary/20 flex items-center justify-center border-2 border-primary/50 shadow-lg shadow-primary/30">
+          <Music className={`h-6 w-6 text-primary ${isPlaying ? 'animate-pulse' : ''}`} />
+        </div>
         <audio
           ref={audioRef}
           src="https://abs.zaycev.fm/kpop128k"
@@ -153,7 +161,7 @@ const MusicPlayer = () => {
         />
         
         {/* Mobile & Desktop: Play button on mobile, slider for all */}
-        <div className="flex items-center gap-2 w-full">
+        <div className="relative z-10 flex items-center gap-3 w-full pt-3">
           {/* Play/Pause button only on mobile */}
           <Button
             variant="ghost"
@@ -180,13 +188,17 @@ const MusicPlayer = () => {
 
           {/* Десктоп: маленький текст и кнопки справа */}
           <div className="hidden md:flex items-center gap-2">
-            <span className="text-xs text-muted-foreground w-8 text-right">
+            <span className="text-xs font-medium text-primary/80 w-10 text-right bg-primary/10 rounded-full px-2 py-1">
               {volume}%
             </span>
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className={`h-9 w-9 rounded-full transition-all duration-300 ${
+                isPlaying 
+                  ? 'bg-primary/20 text-primary hover:bg-primary/30 shadow-lg shadow-primary/20' 
+                  : 'hover:bg-primary/10 hover:text-primary'
+              }`}
               onClick={togglePlay}
             >
               {isPlaying ? (
@@ -198,7 +210,11 @@ const MusicPlayer = () => {
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className={`h-9 w-9 rounded-full transition-all duration-300 ${
+                isMuted 
+                  ? 'bg-destructive/20 text-destructive hover:bg-destructive/30' 
+                  : 'hover:bg-primary/10 hover:text-primary'
+              }`}
               onClick={toggleMute}
             >
               {isMuted ? (

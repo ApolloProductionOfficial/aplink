@@ -253,22 +253,6 @@ const Sidebar = () => {
               );
             })}
           </div>
-
-          {/* CTA Box */}
-          <div className="bg-card/50 border border-border rounded-lg p-4 mt-6">
-            <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
-              {t.rightSidebar.ctaText}
-            </p>
-            <Button
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-              onClick={() => {
-                playClickSound();
-                window.open('https://docs.google.com/forms/d/e/1FAIpQLSdImReNAMa_AQ74PYbBosGLMbm7FJnSaGkuq-QIJDlDNdnW5Q/viewform', '_blank');
-              }}
-            >
-              {t.rightSidebar.ctaButton}
-            </Button>
-          </div>
         </div>
       </div>
     </aside>
