@@ -18,7 +18,7 @@ const OscarWelcome = ({ onComplete }: OscarWelcomeProps) => {
     }));
     setStars(newStars);
 
-    // Play Oscar's special music track (18-37 seconds = 19 seconds)
+    // Play Oscar's special music track (18-28 seconds = 10 seconds)
     const audio = new Audio("/audio/oscar-welcome.mp3");
     audio.volume = 0.7;
     audio.preload = "auto";
@@ -36,12 +36,12 @@ const OscarWelcome = ({ onComplete }: OscarWelcomeProps) => {
     
     playAudio();
     
-    // Close welcome after exactly 19 seconds (duration from 18 to 37 seconds)
+    // Close welcome after exactly 10 seconds (duration from 18 to 28 seconds)
     const welcomeTimer = setTimeout(() => {
       audio.pause();
       audio.currentTime = 0;
       onComplete();
-    }, 19000);
+    }, 10000);
     
     return () => {
       clearTimeout(welcomeTimer);
