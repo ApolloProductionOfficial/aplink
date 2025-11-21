@@ -112,23 +112,20 @@ const AIChatBot = () => {
     }
   };
 
-  // Array of hint messages that will rotate
+  // Array of hint messages that will rotate - shortened versions
   const hintMessages = language === 'ru' 
     ? [
-        "Я знаю всё об адалте и отвечу на любой вопрос",
-        "Я найду информацию на сайте за тебя если ты не нашел то что искал",
-        "Нажми на меня 👋"
+        "Помогу найти всё!",
+        "Задай вопрос 👋"
       ]
     : language === 'uk' 
     ? [
-        "Я знаю все про адалт і відповім на будь-яке питання",
-        "Я знайду інформацію на сайті за тебе якщо ти не знайшов те що шукав",
-        "Натисни на мене 👋"
+        "Допоможу знайти все!",
+        "Задай питання 👋"
       ]
     : [
-        "I know everything about adult industry and will answer any question",
-        "I can find information on the site for you if you didn't find what you were looking for",
-        "Click me 👋"
+        "I'll help you find everything!",
+        "Ask me 👋"
       ];
   
   const [currentHintIndex, setCurrentHintIndex] = useState(0);
@@ -288,11 +285,24 @@ const AIChatBot = () => {
 
       {/* Animated Hint Tooltip */}
       {showHint && !isOpen && (
-        <div className="hidden md:block fixed bottom-20 right-4 z-50 animate-fade-in">
-          <div className="bg-primary text-primary-foreground px-4 py-3 rounded-lg shadow-xl relative animate-bounce flex items-center gap-1.5">
-            <div className="absolute -bottom-2 right-6 w-4 h-4 bg-primary transform rotate-45"></div>
-            <Bot className="w-6 h-6 flex-shrink-0" />
-            <p className="text-sm font-medium whitespace-nowrap leading-tight">{hintText}</p>
+        <div className="hidden md:block fixed bottom-[110px] right-4 z-50">
+          <div className="relative animate-cosmic-appear">
+            <div className="bg-gradient-to-br from-primary/95 via-primary to-primary/90 text-primary-foreground px-4 py-2.5 rounded-2xl shadow-2xl shadow-primary/50 backdrop-blur-xl relative overflow-hidden flex items-center gap-2 border border-primary-foreground/20">
+              {/* Cosmic glow inside */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary-foreground/10 to-transparent animate-shimmer" />
+              
+              {/* Floating particles */}
+              <div className="absolute top-1 left-2 w-1 h-1 rounded-full bg-primary-foreground/40 animate-float" style={{ animationDuration: '2s' }} />
+              <div className="absolute bottom-1 right-3 w-0.5 h-0.5 rounded-full bg-primary-foreground/30 animate-float" style={{ animationDuration: '2.5s', animationDelay: '0.5s' }} />
+              
+              <Bot className="w-5 h-5 flex-shrink-0 relative z-10 drop-shadow-lg" />
+              <p className="text-sm font-semibold whitespace-nowrap leading-tight relative z-10 drop-shadow-md">
+                {hintText}
+              </p>
+              
+              {/* Arrow pointing to bot */}
+              <div className="absolute -bottom-2 right-8 w-4 h-4 bg-gradient-to-br from-primary to-primary/90 transform rotate-45 shadow-lg" />
+            </div>
           </div>
         </div>
       )}
@@ -304,10 +314,10 @@ const AIChatBot = () => {
           setIsOpen(!isOpen);
           setShowHint(false);
         }}
-        className="opacity-0 md:opacity-100 pointer-events-none md:pointer-events-auto fixed bottom-6 right-6 z-50 h-16 w-16 p-0"
+        className="opacity-0 md:opacity-100 pointer-events-none md:pointer-events-auto fixed bottom-6 right-6 z-50 h-16 w-16 p-0 bg-transparent border-0 overflow-visible"
         size="icon"
       >
-        <div className={`relative w-full h-full rounded-full transition-all duration-500 group ${
+        <div className={`relative w-full h-full rounded-full transition-all duration-500 group overflow-hidden ${
           isOpen 
             ? 'bg-gradient-to-br from-primary via-primary to-primary/90 scale-95' 
             : 'bg-gradient-to-br from-primary/90 via-primary to-primary/80 hover:scale-110'
