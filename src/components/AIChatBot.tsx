@@ -140,8 +140,8 @@ const AIChatBot = () => {
     const parts: (string | JSX.Element)[] = [];
     let lastIndex = 0;
     
-    // Regex to match **bold** and [text](link)
-    const regex = /(\*\*.*?\*\*|\[.*?\]\(.*?\))/g;
+    // Regex to match **[text](link)** (bold links), **bold**, and [text](link)
+    const regex = /(\*\*\[.*?\]\(.*?\)\*\*|\*\*.*?\*\*|\[.*?\]\(.*?\))/g;
     let match;
     
     while ((match = regex.exec(text)) !== null) {
@@ -152,11 +152,33 @@ const AIChatBot = () => {
       
       const matched = match[0];
       
-      // Handle bold text
-      if (matched.startsWith('**') && matched.endsWith('**')) {
-        parts.push(<strong key={match.index}>{matched.slice(2, -2)}</strong>);
+      // Handle bold links **[text](url)**
+      if (matched.startsWith('**[') && matched.endsWith(')**')) {
+        const linkMatch = matched.match(/\*\*\[(.*?)\]\((.*?)\)\*\*/);
+        if (linkMatch) {
+          const [, linkText, linkUrl] = linkMatch;
+          parts.push(
+            <a
+              key={match.index}
+              href={linkUrl}
+              onClick={(e) => {
+                e.preventDefault();
+                navigate(linkUrl);
+                setIsOpen(false);
+              }}
+              className="text-primary hover:underline font-bold cursor-pointer"
+            >
+              {linkText}
+            </a>
+          );
+        }
       }
-      // Handle links [text](url)
+      // Handle bold text **text**
+      else if (matched.startsWith('**') && matched.endsWith('**')) {
+        const boldContent = matched.slice(2, -2);
+        parts.push(<strong key={match.index}>{boldContent}</strong>);
+      }
+      // Handle regular links [text](url)
       else if (matched.startsWith('[')) {
         const linkMatch = matched.match(/\[(.*?)\]\((.*?)\)/);
         if (linkMatch) {

@@ -87,7 +87,7 @@ const BottomNavigation = () => {
               {(active || isChatItem || isServicesItem) && (
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className={`w-10 h-10 rounded-full blur-xl ${
-                    isChatItem ? 'bg-primary/20 animate-pulse-glow' : 'bg-primary/15 animate-subtle-pulse'
+                    isChatItem ? 'bg-primary/20 animate-pulse-glow' : 'bg-primary/10 animate-subtle-pulse'
                   }`} />
                 </div>
               )}
@@ -100,7 +100,7 @@ const BottomNavigation = () => {
                   className={`w-5 h-5 relative z-10 ${
                     isChatItem ? 'drop-shadow-[0_0_8px_rgba(59,130,246,0.8)]' : ''
                   } ${
-                    isServicesItem ? 'drop-shadow-[0_0_6px_rgba(59,130,246,0.5)]' : ''
+                    isServicesItem ? 'drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]' : ''
                   }`}
                 />
                 
