@@ -5,7 +5,6 @@ import NewsWidget from "@/components/NewsWidget";
 import AIChatBot from "@/components/AIChatBot";
 import MobileMenu from "@/components/MobileMenu";
 import MobileThemesNews from "@/components/MobileThemesNews";
-import ServiceBadges from "@/components/ServiceBadges";
 import Hero from "@/components/Hero";
 import EarningsChart from "@/components/EarningsChart";
 import Stats from "@/components/Stats";
@@ -19,7 +18,6 @@ import BottomNavigation from "@/components/BottomNavigation";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 
 const Index = () => {
-  const serviceBadgesAnim = useScrollAnimation();
   const earningsChartAnim = useScrollAnimation();
   const trafficSourcesAnim = useScrollAnimation();
   const ctaAnim = useScrollAnimation();
@@ -37,16 +35,6 @@ const Index = () => {
       <div className="lg:pl-80 xl:pr-80">
         <VideoBanner />
         <Hero />
-        <div
-          ref={serviceBadgesAnim.elementRef}
-          className={`transition-all duration-700 ${
-            serviceBadgesAnim.isVisible
-              ? 'opacity-100 translate-y-0'
-              : 'opacity-0 translate-y-12'
-          }`}
-        >
-          <ServiceBadges />
-        </div>
         <MobileThemesNews />
         <div
           ref={earningsChartAnim.elementRef}

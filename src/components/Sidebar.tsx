@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useButtonSound } from "@/hooks/useButtonSound";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useNavigate } from "react-router-dom";
-import { HandshakeIcon, Unlock, Shield, Users } from "lucide-react";
+import { HandshakeIcon, Unlock, Shield, Users, TrendingUp } from "lucide-react";
 
 const Sidebar = () => {
   const { playClickSound } = useButtonSound();
@@ -169,7 +169,12 @@ const Sidebar = () => {
 
         {/* Quick Links */}
         <div className="pt-6 border-t border-border">
-          <h3 className="text-sm font-semibold text-foreground mb-4">{t.rightSidebar.title}</h3>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="relative flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-primary/30 to-primary/20 flex items-center justify-center border border-primary/40 shadow-lg shadow-primary/20 animate-pulse-glow">
+              <TrendingUp className="h-5 w-5 text-primary" />
+            </div>
+            <h3 className="text-sm font-semibold text-foreground">{t.rightSidebar.title}</h3>
+          </div>
           <div className="space-y-3">
             {quickLinks.map((link, i) => {
               const Icon = link.icon;
