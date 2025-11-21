@@ -319,13 +319,13 @@ All colors MUST be HSL.
     transform: scale(1) rotate(0deg);
   }
   25% {
-    transform: scale(1.2) rotate(-8deg);
+    transform: scale(1.25) rotate(-10deg);
   }
   50% {
-    transform: scale(1.15) rotate(8deg);
+    transform: scale(1.15) rotate(10deg);
   }
   75% {
-    transform: scale(1.2) rotate(-5deg);
+    transform: scale(1.25) rotate(-5deg);
   }
 }
 
@@ -340,20 +340,8 @@ All colors MUST be HSL.
   animation: shimmer 3s ease-in-out infinite;
 }
 
-/* Animated emoji in chat messages */
-.emoji-animate :is(span, img)[alt*="👋"],
-.emoji-animate :is(span, img)[alt*="🚀"],
-.emoji-animate :is(span, img)[alt*="💰"],
-.emoji-animate :is(span, img)[alt*="✓"],
-.emoji-animate :is(span, img)[alt*="🤝"],
-.emoji-animate :is(span, img)[alt*="😊"],
-.emoji-animate :is(span, img)[alt*="📱"],
-.emoji-animate :is(span, img)[alt*="💬"],
-.emoji-animate :is(span, img)[alt*="💼"],
-.emoji-animate :is(span, img)[alt*="🎯"] {
-  display: inline-block;
+.animate-emoji-bounce {
   animation: emoji-bounce 2.5s ease-in-out infinite;
-  animation-delay: calc(var(--emoji-index, 0) * 0.2s);
 }
 
 @layer base {

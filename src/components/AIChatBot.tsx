@@ -140,9 +140,10 @@ const AIChatBot = () => {
     const parts: (string | JSX.Element)[] = [];
     let lastIndex = 0;
     
-    // Regex to match **[text](link)** (bold links), **bold**, [text](link), and @username
-    const regex = /(\*\*\[.*?\]\(.*?\)\*\*|\*\*.*?\*\*|\[.*?\]\(.*?\)|@[a-zA-Z0-9_]+)/g;
+    // Regex to match **[text](link)** (bold links), **bold**, [text](link), @username, and emoji
+    const regex = /(\*\*\[.*?\]\(.*?\)\*\*|\*\*.*?\*\*|\[.*?\]\(.*?\)|@[a-zA-Z0-9_]+|[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}])/gu;
     let match;
+    let emojiIndex = 0;
     
     while ((match = regex.exec(text)) !== null) {
       // Add text before match
@@ -152,8 +153,21 @@ const AIChatBot = () => {
       
       const matched = match[0];
       
+      // Handle emoji
+      if (/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/u.test(matched)) {
+        parts.push(
+          <span
+            key={match.index}
+            className="inline-block animate-emoji-bounce"
+            style={{ animationDelay: `${emojiIndex * 0.15}s` }}
+          >
+            {matched}
+          </span>
+        );
+        emojiIndex++;
+      }
       // Handle telegram mentions @username
-      if (matched.startsWith('@')) {
+      else if (matched.startsWith('@')) {
         const username = matched.slice(1);
         parts.push(
           <a
@@ -319,7 +333,7 @@ const AIChatBot = () => {
                       : 'bg-gradient-to-br from-primary/5 via-muted/90 to-primary/10 border border-primary/20 shadow-md shadow-primary/10'
                   }`}
                 >
-                  <p className="text-sm whitespace-pre-wrap leading-relaxed emoji-animate">{formatMessage(msg.content)}</p>
+                  <p className="text-sm whitespace-pre-wrap leading-relaxed">{formatMessage(msg.content)}</p>
                 </div>
               </div>
             ))}
