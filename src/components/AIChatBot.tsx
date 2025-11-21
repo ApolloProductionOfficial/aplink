@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useScrollVisibility } from "@/hooks/useScrollVisibility";
 import { useNavigate } from "react-router-dom";
+import OscarWelcome from "./OscarWelcome";
 
 interface Message {
   role: 'user' | 'assistant';
@@ -18,6 +19,7 @@ const AIChatBot = () => {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showHint, setShowHint] = useState(false);
+  const [showOscarWelcome, setShowOscarWelcome] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatWindowRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -78,6 +80,11 @@ const AIChatBot = () => {
           variant: "destructive"
         });
         return;
+      }
+
+      // Check for Oscar special effect
+      if (data.special_effect === "oscar_welcome") {
+        setShowOscarWelcome(true);
       }
 
       const assistantMessage: Message = {
@@ -274,6 +281,11 @@ const AIChatBot = () => {
 
   return (
     <>
+      {/* Oscar Welcome Effect */}
+      {showOscarWelcome && (
+        <OscarWelcome onComplete={() => setShowOscarWelcome(false)} />
+      )}
+
       {/* Animated Hint Tooltip */}
       {showHint && !isOpen && (
         <div className="hidden md:block fixed bottom-20 right-4 z-50 animate-fade-in">

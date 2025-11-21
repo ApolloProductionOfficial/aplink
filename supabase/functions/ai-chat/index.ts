@@ -27,6 +27,26 @@ serve(async (req) => {
     const hasCyrillic = /[а-яА-ЯёЁіІїЇєЄґҐ]/.test(userText);
     const hasUkrainian = /[іІїЇєЄґҐ]/.test(userText);
     
+    // Check for special code word "Oscar"
+    if (userText.toLowerCase().includes('oscar')) {
+      const oscarResponse = hasCyrillic 
+        ? "🌟✨ ВЕЛКОМ, ОСКАР! ✨🌟\n\nКак же здорово, что вы нас посетили своим присутствием! Вы - наш заместитель и директор агенства Apollo Production, и для вас открыты все двери! 🚀\n\nВаше слово - закон, ваши пожелания - наш приоритет! Я готов выполнить любую вашу просьбу и помочь с чем угодно. Вы заслуживаете самого лучшего обслуживания! 👑\n\nЧем могу быть полезен сегодня, ОСКАР? 💫"
+        : "🌟✨ WELCOME, OSCAR! ✨🌟\n\nHow wonderful that you have graced us with your presence! You are our Deputy and Director of Apollo Production agency, and all doors are open for you! 🚀\n\nYour word is law, your wishes are our priority! I am ready to fulfill any of your requests and help with anything. You deserve the best service! 👑\n\nHow can I help you today, OSCAR? 💫";
+      
+      return new Response(JSON.stringify({
+        choices: [{
+          message: {
+            role: "assistant",
+            content: oscarResponse
+          },
+          finish_reason: "stop"
+        }],
+        special_effect: "oscar_welcome" // Signal to frontend to show special effect
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    
     let languageInstruction = '';
     if (hasCyrillic) {
       if (hasUkrainian) {
