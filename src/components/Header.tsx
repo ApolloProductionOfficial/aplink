@@ -95,16 +95,16 @@ const Header = () => {
             </a>
             <a 
               href="/services" 
-              className="text-sm font-bold text-primary transition-all duration-300 relative group px-4 py-2 rounded-lg bg-gradient-to-br from-primary/20 via-primary/15 to-primary/20 border border-primary/50 hover:border-primary/70 shadow-md shadow-primary/10 hover:shadow-xl hover:shadow-primary/30 hover:scale-105 animate-nav-wave-3"
+              className="text-sm font-bold text-primary transition-all duration-300 relative group px-4 py-2 rounded-lg bg-gradient-to-br from-primary/25 via-primary/20 to-primary/25 border border-primary/60 shadow-lg shadow-primary/30 hover:shadow-2xl hover:shadow-primary/50 hover:scale-105 animate-nav-wave-3"
               onClick={(e) => {
                 e.preventDefault();
                 playClickSound();
                 window.location.href = '/services';
               }}
             >
-              <span className="relative z-10 drop-shadow-[0_0_8px_rgba(6,182,212,0.4)]">{t.header.services}</span>
+              <span className="relative z-10 drop-shadow-[0_0_10px_rgba(6,182,212,0.5)]">{t.header.services}</span>
               <span className="absolute inset-0 rounded-lg bg-gradient-to-r from-transparent via-primary/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-shimmer"></span>
-              <span className="absolute inset-0 rounded-lg bg-primary/20 blur-lg opacity-40 group-hover:opacity-80 transition-opacity duration-300"></span>
+              <span className="absolute inset-0 rounded-lg bg-primary/30 blur-lg opacity-60"></span>
             </a>
             <Button
               size="sm"
