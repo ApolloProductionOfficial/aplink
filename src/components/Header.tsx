@@ -108,15 +108,15 @@ const Header = () => {
             </a>
             <Button
               size="sm"
-              className="relative overflow-hidden bg-gradient-to-r from-[#FF4500]/40 via-[#FF5722]/35 to-[#FF4500]/40 text-white font-bold shadow-lg shadow-[#FF4500]/40 hover:shadow-2xl hover:shadow-[#FF4500]/60 transition-all duration-300 hover:scale-105 border border-[#FF4500]/70"
+              className="relative overflow-hidden bg-gradient-to-br from-[#FF4500] via-[#FF5722] to-[#FF4500] text-white font-bold shadow-lg shadow-[#FF4500]/50 hover:shadow-2xl hover:shadow-[#FF4500]/70 transition-all duration-300 hover:scale-105 border border-[#FF4500]"
               onClick={() => {
                 playClickSound();
                 window.open('https://onlyreddit.com', '_blank');
               }}
             >
               <span className="relative z-10 drop-shadow-[0_0_14px_rgba(255,255,255,0.9)]">{t.header.redditSite}</span>
-              <span className="absolute inset-0 bg-gradient-to-r from-transparent via-[#FF4500]/40 to-transparent opacity-100 transition-opacity duration-500 animate-shimmer" />
-              <span className="absolute inset-0 bg-[#FF4500]/35 blur-lg opacity-80 animate-pulse-glow" />
+              <span className="absolute inset-0 bg-gradient-to-r from-transparent via-[#FF6B35] to-transparent opacity-100 transition-opacity duration-500 animate-shimmer" />
+              <span className="absolute inset-0 bg-[#FF4500] blur-lg opacity-80 animate-pulse-glow" />
             </Button>
             
             {/* Language Selector - Desktop */}
