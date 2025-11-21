@@ -18,7 +18,6 @@ import AnimatedBackground from "@/components/AnimatedBackground";
 import StarField from "@/components/StarField";
 import ScrollProgress from "@/components/ScrollProgress";
 import BottomNavigation from "@/components/BottomNavigation";
-import Testimonials from "@/components/Testimonials";
 import StickyCTA from "@/components/StickyCTA";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 
@@ -67,7 +66,6 @@ const Index = () => {
         >
           <EarningsChart />
         </div>
-        <Testimonials />
         <div
           ref={trafficSourcesAnim.elementRef}
           className={`transition-all duration-700 ${
