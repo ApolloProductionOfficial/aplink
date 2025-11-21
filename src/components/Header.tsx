@@ -54,11 +54,11 @@ const Header = () => {
   };
   
   return (
-    <header className="sticky top-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-lg border-b border-border">
+    <header className="sticky top-0 left-0 right-0 z-40 bg-gradient-to-r from-card/95 via-card/98 to-card/95 backdrop-blur-xl border-b border-primary/20 shadow-lg shadow-primary/5">
       <div className="container mx-auto px-6 md:px-8 lg:px-4 py-3">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full overflow-hidden flex-shrink-0">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-primary/30 shadow-lg shadow-primary/20">
               <video 
                 src={logoVideo} 
                 autoPlay 
@@ -69,31 +69,31 @@ const Header = () => {
                 className="w-full h-full object-cover scale-110"
               />
             </div>
-            <span className="text-xs sm:text-sm md:text-base font-bold animate-text-shimmer break-words line-clamp-2 min-w-0">
+            <span className="text-xs sm:text-sm md:text-base font-bold animate-text-shimmer break-words line-clamp-2 min-w-0 bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text">
               {t.header.title}
             </span>
           </div>
           
-          <nav className="hidden lg:flex items-center gap-6">
+          <nav className="hidden lg:flex items-center gap-4">
             <a 
               href="#about" 
-              className="text-sm text-foreground/80 hover:text-primary transition-all relative group px-3 py-1.5 rounded-md bg-primary/[0.02] hover:bg-primary/5 animate-nav-wave-1"
+              className="text-sm font-medium text-foreground/90 hover:text-primary transition-all duration-300 relative group px-4 py-2 rounded-lg bg-gradient-to-br from-primary/5 via-transparent to-primary/5 hover:from-primary/10 hover:to-primary/10 border border-primary/10 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/20 animate-nav-wave-1"
               onClick={(e) => handleNavigate(e, 'about')}
             >
-              {t.header.about}
-              <span className="absolute -bottom-0.5 left-3 w-0 h-0.5 bg-primary transition-all group-hover:w-[calc(100%-24px)]"></span>
+              <span className="relative z-10">{t.header.about}</span>
+              <span className="absolute inset-0 rounded-lg bg-gradient-to-r from-transparent via-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-shimmer"></span>
             </a>
             <a 
               href="#traffic" 
-              className="text-sm text-foreground/80 hover:text-primary transition-all relative group px-3 py-1.5 rounded-md bg-primary/[0.02] hover:bg-primary/5 animate-nav-wave-2"
+              className="text-sm font-medium text-foreground/90 hover:text-primary transition-all duration-300 relative group px-4 py-2 rounded-lg bg-gradient-to-br from-primary/5 via-transparent to-primary/5 hover:from-primary/10 hover:to-primary/10 border border-primary/10 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/20 animate-nav-wave-2"
               onClick={(e) => handleNavigate(e, 'traffic')}
             >
-              {t.header.traffic}
-              <span className="absolute -bottom-0.5 left-3 w-0 h-0.5 bg-primary transition-all group-hover:w-[calc(100%-24px)]"></span>
+              <span className="relative z-10">{t.header.traffic}</span>
+              <span className="absolute inset-0 rounded-lg bg-gradient-to-r from-transparent via-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-shimmer"></span>
             </a>
             <a 
               href="/services" 
-              className="text-sm font-bold text-primary hover:text-primary/80 transition-all relative group px-4 py-2 rounded-lg bg-primary/15 border border-primary/40 animate-nav-wave-3"
+              className="text-sm font-bold text-primary hover:text-primary/80 transition-all duration-300 relative group px-5 py-2.5 rounded-lg bg-gradient-to-br from-primary/20 via-primary/15 to-primary/20 border border-primary/50 hover:border-primary/70 hover:shadow-xl hover:shadow-primary/30 hover:scale-105 animate-nav-wave-3"
               onClick={(e) => {
                 e.preventDefault();
                 playClickSound();
@@ -101,17 +101,19 @@ const Header = () => {
               }}
             >
               <span className="relative z-10">{t.header.services}</span>
-              <span className="absolute -bottom-0.5 left-4 w-0 h-0.5 bg-primary transition-all group-hover:w-[calc(100%-32px)]"></span>
+              <span className="absolute inset-0 rounded-lg bg-gradient-to-r from-transparent via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-shimmer"></span>
+              <span className="absolute inset-0 rounded-lg bg-primary/10 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
             </a>
             <Button
               size="sm"
-              className="bg-[#FF4500] hover:bg-[#FF4500]/90 text-white"
+              className="relative overflow-hidden bg-gradient-to-r from-[#FF4500] to-[#FF5722] hover:from-[#FF5722] hover:to-[#FF4500] text-white font-semibold shadow-lg hover:shadow-xl hover:shadow-[#FF4500]/30 transition-all duration-300 hover:scale-105 border border-[#FF4500]/30"
               onClick={() => {
                 playClickSound();
                 window.open('https://onlyreddit.com', '_blank');
               }}
             >
-              {t.header.redditSite}
+              <span className="relative z-10">{t.header.redditSite}</span>
+              <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-500 animate-shimmer"></span>
             </Button>
             
             {/* Language Selector - Desktop */}
@@ -120,14 +122,14 @@ const Header = () => {
                 <Button 
                   variant="outline" 
                   size="sm"
-                  className="gap-2"
+                  className="gap-2 bg-gradient-to-br from-primary/10 to-transparent border-primary/30 hover:border-primary/50 hover:bg-primary/15 hover:shadow-lg hover:shadow-primary/20 transition-all duration-300"
                   onClick={playClickSound}
                 >
-                  <Globe className="h-4 w-4" />
-                  <span>{languages[language].flag}</span>
+                  <Globe className="h-4 w-4 text-primary animate-pulse-glow" />
+                  <span className="text-lg">{languages[language].flag}</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-40">
+              <DropdownMenuContent align="end" className="w-48 bg-card/95 backdrop-blur-xl border-primary/20 shadow-xl shadow-primary/10">
                 {Object.entries(languages).map(([code, { label, flag }]) => (
                   <DropdownMenuItem
                     key={code}
@@ -135,10 +137,10 @@ const Header = () => {
                       playClickSound();
                       setLanguage(code as 'ru' | 'en' | 'uk');
                     }}
-                    className={language === code ? 'bg-primary/10' : ''}
+                    className={`${language === code ? 'bg-primary/20 border-l-2 border-primary' : ''} hover:bg-primary/10 transition-all duration-200 cursor-pointer`}
                   >
-                    <span className="mr-2">{flag}</span>
-                    {label}
+                    <span className="mr-3 text-xl">{flag}</span>
+                    <span className={language === code ? 'font-semibold text-primary' : ''}>{label}</span>
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
@@ -149,13 +151,14 @@ const Header = () => {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button 
-                className="lg:hidden text-sm text-primary flex items-center gap-1"
+                className="lg:hidden text-base font-semibold text-primary flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/30 hover:bg-primary/15 transition-all duration-200"
                 onClick={playClickSound}
               >
-                {languages[language].flag} ▼
+                <span className="text-lg">{languages[language].flag}</span>
+                <span className="text-xs">▼</span>
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-40">
+            <DropdownMenuContent align="end" className="w-44 bg-card/95 backdrop-blur-xl border-primary/20 shadow-xl shadow-primary/10">
               {Object.entries(languages).map(([code, { label, flag }]) => (
                 <DropdownMenuItem
                   key={code}
@@ -163,10 +166,10 @@ const Header = () => {
                     playClickSound();
                     setLanguage(code as 'ru' | 'en' | 'uk');
                   }}
-                  className={language === code ? 'bg-primary/10' : ''}
+                  className={`${language === code ? 'bg-primary/20 border-l-2 border-primary' : ''} hover:bg-primary/10 transition-all duration-200 cursor-pointer`}
                 >
-                  <span className="mr-2">{flag}</span>
-                  {label}
+                  <span className="mr-2 text-lg">{flag}</span>
+                  <span className={language === code ? 'font-semibold text-primary' : ''}>{label}</span>
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
