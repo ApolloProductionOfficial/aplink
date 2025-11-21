@@ -16,7 +16,13 @@ const InstagramAutomation = () => {
 
   const handleBack = () => {
     playClickSound();
-    navigate('/');
+    // На мобильных открываем меню, на десктопе идём на главную
+    if (window.innerWidth < 768) {
+      const event = new CustomEvent('open-mobile-menu');
+      window.dispatchEvent(event);
+    } else {
+      navigate('/');
+    }
   };
 
   const handleContact = () => {

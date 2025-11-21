@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Menu, X, Newspaper, Briefcase } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -12,6 +12,13 @@ const MobileMenu = () => {
   
   // Use scroll visibility hook - mobile only, hide during scroll
   const isVisible = useScrollVisibility(true, 200);
+
+  // Слушаем событие открытия меню из других компонентов
+  useEffect(() => {
+    const handleOpenMenu = () => setOpen(true);
+    window.addEventListener('open-mobile-menu', handleOpenMenu);
+    return () => window.removeEventListener('open-mobile-menu', handleOpenMenu);
+  }, []);
 
   const services = [
     { title: t.sidebar.trafficSources.title, path: '/traffic-sources' },
@@ -35,33 +42,33 @@ const MobileMenu = () => {
 
   return (
     <>
-      {/* Кнопка открытия меню слева с анимацией пульсации */}
-      <div className={`md:hidden fixed top-[72px] left-4 z-40 transition-all duration-300 ${
-        isVisible ? 'translate-x-0 opacity-100' : '-translate-x-32 opacity-0'
+      {/* Кнопка меню в виде вертикальной линии справа */}
+      <div className={`md:hidden fixed top-1/2 -translate-y-1/2 right-0 z-40 transition-all duration-300 ${
+        isVisible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
       }`}>
         <Button
           size="icon"
-          className="h-12 w-12 rounded-full shadow-lg bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 animate-pulse"
+          className="h-20 w-2 rounded-l-full shadow-lg bg-gradient-to-b from-primary via-primary/80 to-primary hover:w-3 transition-all duration-200"
           onClick={() => setOpen(true)}
         >
-          <Menu className="h-5 w-5" />
+          <span className="sr-only">Открыть меню</span>
         </Button>
       </div>
 
-      {/* Само мобильное меню без Drawer, чтобы не ломать скролл */}
+      {/* Само мобильное меню с анимациями */}
       {open && (
-        <div className="fixed inset-0 z-40 md:hidden flex flex-col bg-background/80 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 md:hidden flex flex-col bg-background/80 backdrop-blur-sm animate-fade-in">
           {/* Кликабельный фон для закрытия */}
           <div className="flex-1" onClick={() => setOpen(false)} />
 
-          {/* Нижняя панель меню */}
-          <div className="h-[85vh] bg-background border-t border-border rounded-t-2xl p-3 space-y-5 overflow-y-auto">
+          {/* Нижняя панель меню с анимацией выезда снизу */}
+          <div className="h-[85vh] bg-background border-t border-border rounded-t-2xl p-3 space-y-5 overflow-y-auto animate-slide-in-bottom shadow-2xl">
             <div className="flex justify-between items-center mb-2">
               <span className="text-sm font-semibold">Меню</span>
               <Button
                 size="icon"
                 variant="ghost"
-                className="h-8 w-8"
+                className="h-8 w-8 hover:rotate-90 transition-transform duration-300"
                 onClick={() => setOpen(false)}
               >
                 <X className="h-4 w-4" />
@@ -78,7 +85,8 @@ const MobileMenu = () => {
                   <button
                     key={index}
                     onClick={() => handleNavigation(service.path)}
-                    className="w-full text-left px-3 py-2 rounded-lg bg-card hover:bg-muted transition-colors border border-border"
+                    className="w-full text-left px-3 py-2 rounded-lg bg-card hover:bg-muted transition-all duration-200 hover:translate-x-1 border border-border"
+                    style={{ animationDelay: `${index * 50}ms` }}
                   >
                     <span className="text-xs font-medium leading-tight">{service.title}</span>
                   </button>
@@ -99,7 +107,7 @@ const MobileMenu = () => {
                   }
                   setOpen(false);
                 }}
-                className="w-full text-left px-3 py-2 rounded-lg bg-card hover:bg-muted transition-colors border border-border"
+                className="w-full text-left px-3 py-2 rounded-lg bg-card hover:bg-muted transition-all duration-200 hover:translate-x-1 border border-border"
               >
                 <span className="text-xs font-medium">
                   {viewAllNews}
@@ -114,3 +122,9 @@ const MobileMenu = () => {
 };
 
 export default MobileMenu;
+
+// Экспортируем функцию для открытия меню из других компонентов
+export const openMobileMenu = () => {
+  const event = new CustomEvent('open-mobile-menu');
+  window.dispatchEvent(event);
+};

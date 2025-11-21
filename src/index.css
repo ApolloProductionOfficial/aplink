@@ -103,6 +103,10 @@ All colors MUST be HSL.
     animation: slide-in-right 0.8s ease-out;
   }
   
+  .animate-slide-in-bottom {
+    animation: slide-in-bottom 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  
   .animate-text-shimmer {
     background: linear-gradient(
       90deg,
@@ -258,6 +262,17 @@ All colors MUST be HSL.
   }
   50%, 100% {
     left: 100%;
+  }
+}
+
+@keyframes slide-in-bottom {
+  0% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
   }
 }
 

@@ -9,6 +9,17 @@ const ModelVerification = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
 
+  const handleBack = () => {
+    playClickSound();
+    // На мобильных открываем меню, на десктопе идём на главную
+    if (window.innerWidth < 768) {
+      const event = new CustomEvent('open-mobile-menu');
+      window.dispatchEvent(event);
+    } else {
+      navigate('/');
+    }
+  };
+
   const features = [
     {
       icon: Video,
@@ -34,10 +45,7 @@ const ModelVerification = () => {
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         <Button
           variant="ghost"
-          onClick={() => {
-            playClickSound();
-            navigate('/');
-          }}
+          onClick={handleBack}
           className="mb-6"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
