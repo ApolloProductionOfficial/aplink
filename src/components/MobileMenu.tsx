@@ -46,18 +46,17 @@ const MobileMenu = () => {
       <div className={`md:hidden fixed top-1/2 -translate-y-1/2 right-0 z-40 transition-all duration-300 ${
         isVisible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
       }`}>
-        <div className="flex items-center gap-2">
+        <button 
+          className="flex items-center gap-2 cursor-pointer"
+          onClick={() => setOpen(true)}
+        >
           <span className="text-xs font-semibold text-primary animate-cosmic-glow">
             {servicesTitle}
           </span>
-          <Button
-            size="icon"
-            className="h-20 w-2 rounded-l-full bg-gradient-to-b from-primary via-primary/80 to-primary hover:w-3 transition-all duration-200 animate-cosmic-glow shadow-[0_0_15px_rgba(59,130,246,0.5)]"
-            onClick={() => setOpen(true)}
-          >
+          <div className="h-20 w-2 rounded-l-full bg-gradient-to-b from-primary via-primary/80 to-primary hover:w-3 transition-all duration-200 animate-cosmic-glow shadow-[0_0_15px_rgba(59,130,246,0.5)]">
             <span className="sr-only">Открыть меню</span>
-          </Button>
-        </div>
+          </div>
+        </button>
       </div>
 
       {/* Само мобильное меню с анимациями */}

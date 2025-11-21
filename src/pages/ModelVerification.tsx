@@ -11,10 +11,14 @@ const ModelVerification = () => {
 
   const handleBack = () => {
     playClickSound();
-    // На мобильных открываем меню, на десктопе идём на главную
+    // На мобильных возвращаемся на главную и открываем меню, на десктопе просто на главную
     if (window.innerWidth < 768) {
-      const event = new CustomEvent('open-mobile-menu');
-      window.dispatchEvent(event);
+      navigate('/');
+      // Небольшая задержка чтобы страница загрузилась перед открытием меню
+      setTimeout(() => {
+        const event = new CustomEvent('open-mobile-menu');
+        window.dispatchEvent(event);
+      }, 100);
     } else {
       navigate('/');
     }
