@@ -314,6 +314,21 @@ All colors MUST be HSL.
   }
 }
 
+@keyframes emoji-bounce {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+  }
+  25% {
+    transform: scale(1.2) rotate(-8deg);
+  }
+  50% {
+    transform: scale(1.15) rotate(8deg);
+  }
+  75% {
+    transform: scale(1.2) rotate(-5deg);
+  }
+}
+
 .animate-shimmer {
   background: linear-gradient(
     90deg,
@@ -323,6 +338,22 @@ All colors MUST be HSL.
   );
   background-size: 200% 100%;
   animation: shimmer 3s ease-in-out infinite;
+}
+
+/* Animated emoji in chat messages */
+.emoji-animate :is(span, img)[alt*="👋"],
+.emoji-animate :is(span, img)[alt*="🚀"],
+.emoji-animate :is(span, img)[alt*="💰"],
+.emoji-animate :is(span, img)[alt*="✓"],
+.emoji-animate :is(span, img)[alt*="🤝"],
+.emoji-animate :is(span, img)[alt*="😊"],
+.emoji-animate :is(span, img)[alt*="📱"],
+.emoji-animate :is(span, img)[alt*="💬"],
+.emoji-animate :is(span, img)[alt*="💼"],
+.emoji-animate :is(span, img)[alt*="🎯"] {
+  display: inline-block;
+  animation: emoji-bounce 2.5s ease-in-out infinite;
+  animation-delay: calc(var(--emoji-index, 0) * 0.2s);
 }
 
 @layer base {

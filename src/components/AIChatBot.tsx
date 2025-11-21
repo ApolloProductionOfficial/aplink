@@ -316,10 +316,10 @@ const AIChatBot = () => {
                   className={`max-w-[80%] p-3 rounded-xl backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] ${
                     msg.role === 'user'
                       ? 'bg-gradient-to-br from-primary via-primary to-primary/90 text-primary-foreground shadow-lg shadow-primary/30'
-                      : 'bg-gradient-to-br from-muted/80 to-muted/60 border border-primary/10 shadow-md'
+                      : 'bg-gradient-to-br from-primary/5 via-muted/90 to-primary/10 border border-primary/20 shadow-md shadow-primary/10'
                   }`}
                 >
-                  <p className="text-sm whitespace-pre-wrap leading-relaxed">{formatMessage(msg.content)}</p>
+                  <p className="text-sm whitespace-pre-wrap leading-relaxed emoji-animate">{formatMessage(msg.content)}</p>
                 </div>
               </div>
             ))}
