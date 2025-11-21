@@ -86,7 +86,6 @@ const Header = () => {
             <a 
               href="#traffic" 
               className="text-sm text-foreground/80 hover:text-primary transition-all relative group px-3 py-1.5 rounded-md bg-primary/[0.02] shadow-[0_0_8px_rgba(var(--primary-rgb),0.08)] hover:bg-primary/5 hover:shadow-[0_0_15px_rgba(var(--primary-rgb),0.15)] animate-text-shine"
-              style={{ animationDelay: '1s' }}
               onClick={(e) => handleNavigate(e, 'traffic')}
             >
               {t.header.traffic}
