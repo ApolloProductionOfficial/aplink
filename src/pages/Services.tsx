@@ -151,7 +151,7 @@ const Services = () => {
           cardRefs.current[index] = el;
           (tiltRef as any).current = el;
         }}
-        className={`p-6 cursor-pointer border-2 border-primary/20 bg-card/60 backdrop-blur hover:border-primary/60 hover:shadow-2xl transition-all duration-500 ${
+        className={`p-3 md:p-6 cursor-pointer border-2 border-primary/20 bg-card/60 backdrop-blur hover:border-primary/60 hover:shadow-2xl transition-all duration-500 ${
           isVisible 
             ? 'opacity-100 translate-y-0' 
             : 'opacity-0 translate-y-8'
@@ -162,15 +162,15 @@ const Services = () => {
         }}
         onClick={() => handleServiceClick(service.path)}
       >
-        <div className="flex flex-col items-center text-center space-y-4">
-          <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
-            <Icon className="h-8 w-8 text-primary" />
+        <div className="flex flex-col items-center text-center space-y-2 md:space-y-4">
+          <div className="w-8 h-8 md:w-14 md:h-14 rounded-full bg-primary/10 flex items-center justify-center">
+            <Icon className="h-5 w-5 md:h-8 md:w-8 text-primary" />
           </div>
-          <h3 className="text-2xl font-bold">{service.title}</h3>
-          <p className="text-muted-foreground text-sm">
+          <h3 className="text-sm md:text-2xl font-bold leading-tight">{service.title}</h3>
+          <p className="text-muted-foreground text-xs md:text-sm leading-tight">
             {service.description}
           </p>
-          <Button variant="outline" className="mt-2">
+          <Button variant="outline" className="mt-1 md:mt-2 text-xs md:text-sm h-7 md:h-9 px-2 md:px-4">
             {t.common.learnMore}
           </Button>
         </div>
@@ -190,17 +190,17 @@ const Services = () => {
           {t.common.back}
         </Button>
 
-        <div className="max-w-7xl mx-auto space-y-6 md:space-y-12">
-          <div className="text-center space-y-3 md:space-y-6">
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold">
+        <div className="max-w-7xl mx-auto space-y-4 md:space-y-12">
+          <div className="text-center space-y-2 md:space-y-6">
+            <h1 className="text-2xl md:text-4xl lg:text-5xl font-bold">
               {t.services.title}
             </h1>
-            <p className="text-base md:text-xl text-muted-foreground max-w-3xl mx-auto">
+            <p className="text-sm md:text-xl text-muted-foreground max-w-3xl mx-auto">
               {t.services.subtitle}
             </p>
 
             {/* Filters */}
-            <div className="flex flex-wrap items-center justify-center gap-2 md:gap-4 max-w-3xl mx-auto pt-2 md:pt-4">
+            <div className="flex flex-wrap items-center justify-center gap-2 md:gap-4 max-w-3xl mx-auto pt-1 md:pt-4">
               <div className="flex items-center gap-2">
                 <Filter className="h-5 w-5 text-primary" />
                 <span className="text-sm font-medium">Фильтр по платформе:</span>
@@ -245,15 +245,15 @@ const Services = () => {
               </p>
             </div>
           ) : (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-3 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
               {filteredServices.map((service, index) => (
                 <ServiceCard key={service.id} service={service} index={index} />
               ))}
             </div>
           )}
 
-          <div className="border-2 border-primary/30 rounded-lg p-4 md:p-8 bg-card/60 backdrop-blur">
-            <h2 className="text-2xl md:text-3xl font-bold text-center mb-4 md:mb-6">
+          <div className="border-2 border-primary/30 rounded-lg p-3 md:p-8 bg-card/60 backdrop-blur">
+            <h2 className="text-xl md:text-3xl font-bold text-center mb-3 md:mb-6">
               {t.services.howItWorks}
             </h2>
             <div className="grid md:grid-cols-4 gap-4 md:gap-6 text-xs md:text-sm text-muted-foreground">
@@ -288,9 +288,9 @@ const Services = () => {
             </div>
           </div>
 
-          <div className="text-center border-2 border-primary/30 rounded-lg p-6 md:p-10 bg-gradient-to-r from-primary/10 to-primary/5">
-            <h2 className="text-2xl md:text-3xl font-bold mb-3 md:mb-4">{t.services.readyToStart}</h2>
-            <p className="text-base md:text-lg text-muted-foreground mb-4 md:mb-6">
+          <div className="text-center border-2 border-primary/30 rounded-lg p-4 md:p-10 bg-gradient-to-r from-primary/10 to-primary/5">
+            <h2 className="text-xl md:text-3xl font-bold mb-2 md:mb-4">{t.services.readyToStart}</h2>
+            <p className="text-sm md:text-lg text-muted-foreground mb-3 md:mb-6">
               {t.services.contactDesc}
             </p>
             <Button

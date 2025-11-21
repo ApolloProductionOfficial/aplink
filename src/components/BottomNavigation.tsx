@@ -38,6 +38,7 @@ const BottomNavigation = () => {
 
   const isActive = (item: typeof navItems[0]) => {
     if (item.action === "chat") return isChatOpen;
+    if (item.path === "/") return false; // Главная никогда не активна
     return location.pathname === item.path;
   };
 
