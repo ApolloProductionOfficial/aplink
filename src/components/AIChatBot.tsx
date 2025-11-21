@@ -212,8 +212,8 @@ const AIChatBot = () => {
         <div ref={chatWindowRef} className="fixed bottom-20 right-4 z-50 w-96 max-w-[calc(100vw-2rem)] h-[500px] bg-card border-2 border-primary/30 rounded-2xl shadow-2xl shadow-primary/20 flex flex-col">
           {/* Header */}
           <div className="p-4 border-b border-border">
-            <h3 className="font-semibold text-lg">AI Помощник</h3>
-            <p className="text-xs text-muted-foreground">Навигация по сайту</p>
+            <h3 className="font-semibold text-lg">{t.chatbot.title}</h3>
+            <p className="text-xs text-muted-foreground">{t.chatbot.subtitle}</p>
           </div>
 
           {/* Messages */}
@@ -221,8 +221,8 @@ const AIChatBot = () => {
             {messages.length === 0 && (
               <div className="text-center text-muted-foreground text-sm pt-8">
                 <MessageCircle className="h-12 w-12 mx-auto mb-4 text-primary/50" />
-                <p>Привет! Я помогу тебе найти информацию на сайте.</p>
-                <p className="mt-2 text-xs">Спроси меня о наших услугах, ценах или контактах.</p>
+                <p>{t.chatbot.welcome}</p>
+                <p className="mt-2 text-xs">{t.chatbot.welcomeDetails}</p>
               </div>
             )}
             
@@ -266,7 +266,7 @@ const AIChatBot = () => {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Введите сообщение..."
+                placeholder={t.chatbot.placeholder}
                 className="flex-1 px-3 py-2 bg-background border border-border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary"
                 disabled={isLoading}
               />
@@ -280,7 +280,7 @@ const AIChatBot = () => {
               </Button>
             </div>
             <p className="text-xs text-muted-foreground mt-2 text-center">
-              Если не могу ответить - направлю в{" "}
+              {t.chatbot.disclaimer}{" "}
               <a 
                 href="https://t.me/Apollo_Production" 
                 target="_blank" 
