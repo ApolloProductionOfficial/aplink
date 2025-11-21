@@ -35,16 +35,16 @@ const MobileMenu = () => {
 
   return (
     <>
-      {/* Кнопка открытия меню */}
-      <div className={`md:hidden fixed top-[72px] right-4 z-40 transition-all duration-300 ${
-        isVisible ? 'translate-x-0 opacity-100' : 'translate-x-32 opacity-0'
+      {/* Кнопка открытия меню слева с анимацией пульсации */}
+      <div className={`md:hidden fixed top-[72px] left-4 z-40 transition-all duration-300 ${
+        isVisible ? 'translate-x-0 opacity-100' : '-translate-x-32 opacity-0'
       }`}>
         <Button
           size="icon"
-          className="h-10 w-10 rounded-full shadow-lg bg-primary hover:bg-primary/90"
+          className="h-12 w-12 rounded-full shadow-lg bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 animate-pulse"
           onClick={() => setOpen(true)}
         >
-          {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          <Menu className="h-5 w-5" />
         </Button>
       </div>
 

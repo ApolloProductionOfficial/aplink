@@ -174,7 +174,7 @@ const AIChatBot = () => {
       {/* Animated Hint Tooltip */}
       {showHint && !isOpen && (
         <div
-          className={`fixed bottom-[8.5rem] md:bottom-28 right-6 z-50 animate-fade-in transition-all duration-300 ${
+          className={`fixed bottom-20 right-4 z-50 animate-fade-in transition-all duration-300 ${
             isVisible ? 'translate-x-0 opacity-100' : 'translate-x-32 opacity-0'
           }`}
         >
@@ -192,7 +192,7 @@ const AIChatBot = () => {
           setIsOpen(!isOpen);
           setShowHint(false);
         }}
-        className={`fixed bottom-16 md:bottom-6 right-6 z-50 h-16 w-16 rounded-full shadow-lg shadow-primary/50 transition-all duration-300 bg-primary backdrop-blur-sm border-2 border-primary flex flex-col items-center justify-center gap-0.5 p-2 ${
+        className={`fixed bottom-4 right-4 z-50 h-14 w-14 rounded-full shadow-lg shadow-primary/50 transition-all duration-300 bg-primary backdrop-blur-sm border-2 border-primary flex flex-col items-center justify-center gap-0.5 p-2 ${
           isVisible ? 'translate-x-0 opacity-100' : 'translate-x-32 opacity-0'
         }`}
         size="icon"
@@ -209,7 +209,7 @@ const AIChatBot = () => {
 
       {/* Chat Window */}
       {isOpen && (
-        <div ref={chatWindowRef} className="fixed bottom-[5.5rem] md:bottom-24 right-6 z-50 w-96 max-w-[calc(100vw-3rem)] h-[500px] bg-card border-2 border-primary/30 rounded-2xl shadow-2xl shadow-primary/20 flex flex-col">
+        <div ref={chatWindowRef} className="fixed bottom-20 right-4 z-50 w-96 max-w-[calc(100vw-2rem)] h-[500px] bg-card border-2 border-primary/30 rounded-2xl shadow-2xl shadow-primary/20 flex flex-col">
           {/* Header */}
           <div className="p-4 border-b border-border">
             <h3 className="font-semibold text-lg">AI Помощник</h3>
