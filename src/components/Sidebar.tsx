@@ -79,14 +79,6 @@ const Sidebar = () => {
       internal: true,
       icon: Shield,
       color: 'from-primary/20 to-primary/10'
-    },
-    { 
-      text: t.rightSidebar.modelRecruitment, 
-      url: "/model-recruitment", 
-      highlight: true, 
-      internal: true,
-      icon: Users,
-      color: 'from-primary/20 to-primary/10'
     }
   ];
 

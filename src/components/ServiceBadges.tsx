@@ -27,6 +27,12 @@ const ServiceBadges = () => {
       icon: Shield,
       color: 'from-primary/20 to-primary/10'
     },
+    { 
+      title: t.sidebar?.dubaiResidency?.title || "Резидентство Дубай", 
+      path: '/dubai-residency',
+      icon: MapPin,
+      color: 'from-primary/20 to-primary/10'
+    },
   ];
 
   return (

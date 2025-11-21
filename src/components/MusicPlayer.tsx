@@ -147,11 +147,6 @@ const MusicPlayer = () => {
         <div className={`absolute inset-0 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent rounded-2xl blur-xl opacity-0 ${
           isPlaying ? 'opacity-100 animate-shimmer' : 'group-hover:opacity-60'
         } transition-opacity duration-500`} />
-        
-        {/* Music icon with glow */}
-        <div className="absolute -top-3 -left-3 w-12 h-12 rounded-full bg-gradient-to-br from-primary/40 to-primary/20 flex items-center justify-center border-2 border-primary/50 shadow-lg shadow-primary/30">
-          <Music className={`h-6 w-6 text-primary ${isPlaying ? 'animate-pulse' : ''}`} />
-        </div>
         <audio
           ref={audioRef}
           src="https://abs.zaycev.fm/kpop128k"
@@ -161,7 +156,11 @@ const MusicPlayer = () => {
         />
         
         {/* Mobile & Desktop: Play button on mobile, slider for all */}
-        <div className="relative z-10 flex items-center gap-3 w-full pt-3">
+        <div className="relative z-10 flex items-center gap-3 w-full">
+          {/* Music icon with glow - desktop only */}
+          <div className="hidden md:flex w-10 h-10 rounded-full bg-gradient-to-br from-primary/40 to-primary/20 items-center justify-center border-2 border-primary/50 shadow-lg shadow-primary/30 flex-shrink-0">
+            <Music className={`h-5 w-5 text-primary ${isPlaying ? 'animate-pulse' : ''}`} />
+          </div>
           {/* Play/Pause button only on mobile */}
           <Button
             variant="ghost"
