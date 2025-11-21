@@ -151,7 +151,7 @@ const Services = () => {
           cardRefs.current[index] = el;
           (tiltRef as any).current = el;
         }}
-        className={`p-3 md:p-6 cursor-pointer border-2 border-primary/20 bg-card/60 backdrop-blur hover:border-primary/60 hover:shadow-2xl transition-all duration-500 ${
+        className={`group relative overflow-hidden cursor-pointer border-2 border-primary/20 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur hover:border-primary/60 hover:shadow-2xl hover:shadow-primary/20 transition-all duration-500 ${
           isVisible 
             ? 'opacity-100 translate-y-0' 
             : 'opacity-0 translate-y-8'
@@ -162,18 +162,45 @@ const Services = () => {
         }}
         onClick={() => handleServiceClick(service.path)}
       >
-        <div className="flex flex-col items-center text-center space-y-2 md:space-y-4">
-          <div className="w-8 h-8 md:w-14 md:h-14 rounded-full bg-primary/10 flex items-center justify-center">
-            <Icon className="h-5 w-5 md:h-8 md:w-8 text-primary" />
+        {/* Animated gradient overlay on hover */}
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+        
+        {/* Mobile: Horizontal Layout */}
+        <div className="md:hidden flex items-center gap-3 p-3 relative z-10">
+          <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+            <Icon className="h-6 w-6 text-primary" />
           </div>
-          <h3 className="text-sm md:text-2xl font-bold leading-tight">{service.title}</h3>
-          <p className="text-muted-foreground text-xs md:text-sm leading-tight">
+          <div className="flex-1 min-w-0">
+            <h3 className="text-sm font-bold leading-tight mb-1 group-hover:text-primary transition-colors">{service.title}</h3>
+            <p className="text-[10px] text-muted-foreground leading-tight line-clamp-2">
+              {service.description}
+            </p>
+          </div>
+          <div className="flex-shrink-0">
+            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop: Vertical Layout */}
+        <div className="hidden md:flex flex-col items-center text-center space-y-4 p-6 relative z-10">
+          <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+            <Icon className="h-8 w-8 text-primary" />
+          </div>
+          <h3 className="text-2xl font-bold group-hover:text-primary transition-colors">{service.title}</h3>
+          <p className="text-muted-foreground text-sm">
             {service.description}
           </p>
-          <Button variant="outline" className="mt-1 md:mt-2 text-xs md:text-sm h-7 md:h-9 px-2 md:px-4">
+          <Button variant="outline" className="mt-2 group-hover:bg-primary group-hover:text-primary-foreground transition-all">
             {t.common.learnMore}
           </Button>
         </div>
+        
+        {/* Animated corner accent */}
+        <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-bl-full" />
       </Card>
     );
   };
@@ -245,7 +272,7 @@ const Services = () => {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-3 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-6">
               {filteredServices.map((service, index) => (
                 <ServiceCard key={service.id} service={service} index={index} />
               ))}
