@@ -18,9 +18,9 @@ const OscarWelcome = ({ onComplete }: OscarWelcomeProps) => {
     }));
     setStars(newStars);
 
-    // Play comet sound
-    const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
-    audio.volume = 0.3;
+    // Play clear comet sound
+    const audio = new Audio("https://cdn.pixabay.com/download/audio/2022/03/10/audio_4a465fd1d0.mp3");
+    audio.volume = 0.6;
     audio.play().catch(() => console.log("Audio play failed"));
 
     // Auto complete after 5 seconds
@@ -34,7 +34,7 @@ const OscarWelcome = ({ onComplete }: OscarWelcomeProps) => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 backdrop-blur-xl"
+        className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-md"
       >
         {/* Starfield background */}
         <div className="absolute inset-0 overflow-hidden">
@@ -63,36 +63,45 @@ const OscarWelcome = ({ onComplete }: OscarWelcomeProps) => {
           ))}
         </div>
 
-        {/* Comet effect */}
+        {/* Comet effect - Enhanced */}
         <motion.div
           className="absolute"
-          initial={{ x: "-10%", y: "-10%", opacity: 0 }}
+          initial={{ x: "-20%", y: "-20%", opacity: 0 }}
           animate={{
-            x: "110%",
-            y: "110%",
-            opacity: [0, 1, 1, 0],
+            x: "120%",
+            y: "120%",
+            opacity: [0, 1, 1, 1, 0],
           }}
-          transition={{ duration: 2, ease: "easeInOut" }}
+          transition={{ duration: 2.5, ease: "easeInOut" }}
         >
           <div className="relative">
-            {/* Comet head */}
+            {/* Comet head - larger and brighter */}
             <motion.div
-              className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-400 via-cyan-300 to-white"
+              className="w-16 h-16 rounded-full bg-gradient-to-r from-blue-400 via-cyan-300 to-white"
               animate={{
                 boxShadow: [
-                  "0 0 20px 5px rgba(59, 130, 246, 0.8)",
-                  "0 0 40px 10px rgba(6, 182, 212, 1)",
-                  "0 0 20px 5px rgba(59, 130, 246, 0.8)",
+                  "0 0 40px 15px rgba(59, 130, 246, 1)",
+                  "0 0 80px 25px rgba(6, 182, 212, 1)",
+                  "0 0 40px 15px rgba(59, 130, 246, 1)",
                 ],
+                scale: [1, 1.2, 1],
               }}
-              transition={{ duration: 0.5, repeat: Infinity }}
+              transition={{ duration: 0.4, repeat: Infinity }}
             />
-            {/* Comet tail */}
+            {/* Comet tail - longer and more visible */}
             <motion.div
-              className="absolute top-1/2 right-full w-64 h-1 -translate-y-1/2"
+              className="absolute top-1/2 right-full w-96 h-2 -translate-y-1/2"
+              style={{
+                background: "linear-gradient(to left, rgba(59, 130, 246, 1), rgba(6, 182, 212, 0.6), transparent)",
+                filter: "blur(3px)",
+              }}
+            />
+            {/* Secondary tail glow */}
+            <motion.div
+              className="absolute top-1/2 right-full w-64 h-4 -translate-y-1/2"
               style={{
                 background: "linear-gradient(to left, rgba(59, 130, 246, 0.8), transparent)",
-                filter: "blur(2px)",
+                filter: "blur(8px)",
               }}
             />
           </div>
@@ -120,10 +129,10 @@ const OscarWelcome = ({ onComplete }: OscarWelcomeProps) => {
             transition={{ duration: 1.5, repeat: Infinity }}
           >
             <h1 className="text-6xl md:text-8xl font-bold bg-gradient-to-r from-blue-400 via-cyan-300 to-blue-400 bg-clip-text text-transparent mb-4">
-              ВЕЛКОМ, ОСКАР! ✨
+              WELCOME, OSCAR! ✨
             </h1>
             <p className="text-2xl md:text-3xl text-cyan-300 font-semibold">
-              Как хорошо, что вы нас посетили! 🌟
+              How wonderful to have you here! 🌟
             </p>
           </motion.div>
 
