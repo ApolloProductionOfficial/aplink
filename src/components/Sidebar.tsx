@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useButtonSound } from "@/hooks/useButtonSound";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useNavigate } from "react-router-dom";
+import { HandshakeIcon, Unlock, Shield, Users } from "lucide-react";
 
 const Sidebar = () => {
   const { playClickSound } = useButtonSound();
@@ -55,10 +56,38 @@ const Sidebar = () => {
   ];
 
   const quickLinks = [
-    { text: t.rightSidebar.partnership40, url: "/partnership-program", highlight: true, internal: true },
-    { text: t.rightSidebar.cryptoUnlock, url: "/crypto-unlock", highlight: true, internal: true },
-    { text: t.rightSidebar.verificationRF, url: "/model-verification", highlight: true, internal: true },
-    { text: t.rightSidebar.modelRecruitment, url: "/model-recruitment", highlight: true, internal: true }
+    { 
+      text: t.rightSidebar.partnership40, 
+      url: "/partnership-program", 
+      highlight: true, 
+      internal: true,
+      icon: HandshakeIcon,
+      color: 'from-primary/30 to-primary/20'
+    },
+    { 
+      text: t.rightSidebar.cryptoUnlock, 
+      url: "/crypto-unlock", 
+      highlight: true, 
+      internal: true,
+      icon: Unlock,
+      color: 'from-primary/30 to-primary/20'
+    },
+    { 
+      text: t.rightSidebar.verificationRF, 
+      url: "/model-verification", 
+      highlight: true, 
+      internal: true,
+      icon: Shield,
+      color: 'from-primary/20 to-primary/10'
+    },
+    { 
+      text: t.rightSidebar.modelRecruitment, 
+      url: "/model-recruitment", 
+      highlight: true, 
+      internal: true,
+      icon: Users,
+      color: 'from-primary/20 to-primary/10'
+    }
   ];
 
   const handleThemeChange = (newTheme: number) => {
@@ -142,22 +171,43 @@ const Sidebar = () => {
         <div className="pt-6 border-t border-border">
           <h3 className="text-sm font-semibold text-foreground mb-4">{t.rightSidebar.title}</h3>
           <div className="space-y-3">
-            {quickLinks.map((link, i) => (
-              link.internal ? (
+            {quickLinks.map((link, i) => {
+              const Icon = link.icon;
+              return link.internal ? (
                 <button
                   key={i}
                   onClick={() => {
                     playClickSound();
                     navigate(link.url);
                   }}
-                  className={`flex items-start gap-2 text-sm transition-colors text-left w-full py-2 border-b border-border/50 last:border-0 ${
-                    link.highlight 
-                      ? 'text-primary hover:text-primary/80 font-medium' 
-                      : 'text-muted-foreground hover:text-foreground'
+                  className={`w-full group relative overflow-hidden px-4 py-3 rounded-xl transition-all duration-300 flex items-center gap-3 hover:scale-105 hover:shadow-xl hover:shadow-primary/30 ${
+                    link.highlight
+                      ? 'bg-gradient-to-r from-primary/25 to-primary/15 border-2 border-primary/60 shadow-lg shadow-primary/20'
+                      : 'bg-gradient-to-r from-card/80 to-card/60 border border-border/50 hover:border-primary/40'
                   }`}
                 >
-                  <span className="text-primary mt-0.5">•</span>
-                  <span className="flex-1">{link.text}</span>
+                  {/* Animated gradient overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-shimmer" />
+                  
+                  {/* Glow effect */}
+                  <div className="absolute inset-0 bg-primary/10 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  
+                  {/* Icon circle */}
+                  <div className={`relative z-10 flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br ${link.color} flex items-center justify-center border border-primary/40 group-hover:border-primary/70 group-hover:scale-110 transition-all duration-300 shadow-lg shadow-primary/20`}>
+                    <Icon className="h-5 w-5 text-primary" />
+                  </div>
+                  
+                  {/* Text */}
+                  <span className="relative z-10 text-sm font-medium text-foreground group-hover:text-primary transition-colors text-left flex-1">
+                    {link.text}
+                  </span>
+                  
+                  {/* Arrow indicator */}
+                  <div className="relative z-10 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
                 </button>
               ) : (
                 <a
@@ -166,17 +216,37 @@ const Sidebar = () => {
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={playClickSound}
-                  className={`flex items-start gap-2 text-sm transition-colors py-2 border-b border-border/50 last:border-0 ${
-                    link.highlight 
-                      ? 'text-primary hover:text-primary/80 font-medium' 
-                      : 'text-muted-foreground hover:text-foreground'
+                  className={`w-full group relative overflow-hidden px-4 py-3 rounded-xl transition-all duration-300 flex items-center gap-3 hover:scale-105 hover:shadow-xl hover:shadow-primary/30 ${
+                    link.highlight
+                      ? 'bg-gradient-to-r from-primary/25 to-primary/15 border-2 border-primary/60 shadow-lg shadow-primary/20'
+                      : 'bg-gradient-to-r from-card/80 to-card/60 border border-border/50 hover:border-primary/40'
                   }`}
                 >
-                  <span className="text-primary mt-0.5">•</span>
-                  <span className="flex-1">{link.text}</span>
+                  {/* Animated gradient overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-shimmer" />
+                  
+                  {/* Glow effect */}
+                  <div className="absolute inset-0 bg-primary/10 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  
+                  {/* Icon circle */}
+                  <div className={`relative z-10 flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br ${link.color} flex items-center justify-center border border-primary/40 group-hover:border-primary/70 group-hover:scale-110 transition-all duration-300 shadow-lg shadow-primary/20`}>
+                    <Icon className="h-5 w-5 text-primary" />
+                  </div>
+                  
+                  {/* Text */}
+                  <span className="relative z-10 text-sm font-medium text-foreground group-hover:text-primary transition-colors text-left flex-1">
+                    {link.text}
+                  </span>
+                  
+                  {/* Arrow indicator */}
+                  <div className="relative z-10 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
                 </a>
-              )
-            ))}
+              );
+            })}
           </div>
 
           {/* CTA Box */}
