@@ -20,8 +20,12 @@ const OscarWelcome = ({ onComplete }: OscarWelcomeProps) => {
 
     // Play Oscar's special music track (18-37 seconds)
     const audio = new Audio("/audio/oscar-welcome.mp3");
-    audio.currentTime = 18; // Start at 18 seconds
     audio.volume = 0.7;
+    
+    // Set start time to 18 seconds
+    audio.addEventListener('loadedmetadata', () => {
+      audio.currentTime = 18;
+    });
     
     const playPromise = audio.play();
     
@@ -35,8 +39,8 @@ const OscarWelcome = ({ onComplete }: OscarWelcomeProps) => {
       audio.currentTime = 0;
     }, 19000); // 19 seconds (37 - 18 = 19)
 
-    // Auto complete after 5 seconds
-    const timer = setTimeout(onComplete, 5000);
+    // Auto complete after 19 seconds (same as track duration)
+    const timer = setTimeout(onComplete, 19000);
     
     return () => {
       clearTimeout(timer);
