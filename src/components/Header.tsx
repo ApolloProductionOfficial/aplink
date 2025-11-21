@@ -77,7 +77,7 @@ const Header = () => {
           <nav className="hidden lg:flex items-center gap-6">
             <a 
               href="#about" 
-              className="text-sm text-foreground/80 hover:text-primary transition-all relative group px-3 py-1.5 rounded-md bg-primary/[0.02] shadow-[0_0_8px_rgba(var(--primary-rgb),0.08)] hover:bg-primary/5 hover:shadow-[0_0_15px_rgba(var(--primary-rgb),0.15)] animate-text-shine"
+              className="text-sm text-foreground/80 hover:text-primary transition-all relative group px-3 py-1.5 rounded-md bg-primary/[0.02] hover:bg-primary/5 animate-nav-wave-1"
               onClick={(e) => handleNavigate(e, 'about')}
             >
               {t.header.about}
@@ -85,7 +85,7 @@ const Header = () => {
             </a>
             <a 
               href="#traffic" 
-              className="text-sm text-foreground/80 hover:text-primary transition-all relative group px-3 py-1.5 rounded-md bg-primary/[0.02] shadow-[0_0_8px_rgba(var(--primary-rgb),0.08)] hover:bg-primary/5 hover:shadow-[0_0_15px_rgba(var(--primary-rgb),0.15)] animate-text-shine"
+              className="text-sm text-foreground/80 hover:text-primary transition-all relative group px-3 py-1.5 rounded-md bg-primary/[0.02] hover:bg-primary/5 animate-nav-wave-2"
               onClick={(e) => handleNavigate(e, 'traffic')}
             >
               {t.header.traffic}
@@ -93,7 +93,7 @@ const Header = () => {
             </a>
             <a 
               href="/services" 
-              className="text-sm font-bold text-primary hover:text-primary/80 transition-all relative group px-4 py-2 rounded-lg bg-primary/10 shadow-[0_0_20px_rgba(59,130,246,0.4)] hover:shadow-[0_0_30px_rgba(59,130,246,0.6)] border border-primary/30 animate-pulse-glow"
+              className="text-sm font-bold text-primary hover:text-primary/80 transition-all relative group px-4 py-2 rounded-lg bg-primary/10 border border-primary/30 animate-nav-wave-3"
               onClick={(e) => {
                 e.preventDefault();
                 playClickSound();

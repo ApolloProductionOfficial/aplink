@@ -314,6 +314,21 @@ All colors MUST be HSL.
   }
 }
 
+@keyframes nav-wave {
+  0% {
+    opacity: 0.3;
+    box-shadow: 0 0 5px rgba(59, 130, 246, 0.2);
+  }
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 25px rgba(59, 130, 246, 0.6);
+  }
+  100% {
+    opacity: 0.3;
+    box-shadow: 0 0 5px rgba(59, 130, 246, 0.2);
+  }
+}
+
 @keyframes emoji-bounce {
   0%, 100% {
     transform: scale(1) rotate(0deg);
@@ -342,6 +357,21 @@ All colors MUST be HSL.
 
 .animate-emoji-bounce {
   animation: emoji-bounce 2.5s ease-in-out infinite;
+}
+
+.animate-nav-wave-1 {
+  animation: nav-wave 6s ease-in-out infinite;
+  animation-delay: 0s;
+}
+
+.animate-nav-wave-2 {
+  animation: nav-wave 6s ease-in-out infinite;
+  animation-delay: 1s;
+}
+
+.animate-nav-wave-3 {
+  animation: nav-wave 6s ease-in-out infinite;
+  animation-delay: 2s;
 }
 
 @layer base {
