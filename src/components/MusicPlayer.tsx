@@ -97,27 +97,31 @@ const MusicPlayer = () => {
     }
   }, [volume]);
 
-  // Equalizer animation (not real frequencies, smooth visual effect)
+  // Equalizer animation - simple movement when playing
   useEffect(() => {
     const bars = 10;
+    let frameCount = 0;
 
     const animate = () => {
       if (!isPlaying) {
+        // Static when not playing
         setFrequencyData(new Array(bars).fill(2));
       } else {
+        // Animated when playing
         const arr: number[] = [];
+        frameCount += 0.15;
+        
         for (let i = 0; i < bars; i++) {
           const base = 2;
-          const variance = 14;
-          const intensity = 0.4 + Math.random() * 0.6;
-          arr.push(base + variance * intensity * (i % 3 === 0 ? 1.3 : 1));
+          const variance = 12;
+          const wave = Math.sin(frameCount + i * 0.5) * 0.5 + 0.5;
+          arr.push(base + variance * wave);
         }
         setFrequencyData(arr);
       }
       animationFrameRef.current = requestAnimationFrame(animate);
     };
 
-    // start animation
     animate();
 
     return () => {
@@ -171,7 +175,7 @@ const MusicPlayer = () => {
    }
  
   return (
-    <div className="hidden md:block fixed bottom-6 left-6 right-auto z-50">
+    <div className="hidden md:block fixed bottom-20 left-6 right-auto z-50">
       {/* Cosmic glow around player - outside */}
       <div className="absolute inset-0 -m-20 pointer-events-none">
         {/* Green glow */}
