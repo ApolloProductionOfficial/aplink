@@ -8,7 +8,7 @@ const FeaturedServices = () => {
   const { t } = useTranslation();
   const { playClickSound } = useButtonSound();
 
-  const services = [
+  const topServices = [
     {
       title: t.services.partnership.title,
       description: t.services.partnership.description,
@@ -31,7 +31,7 @@ const FeaturedServices = () => {
       color: "from-purple-500/20 to-purple-500/10"
     },
     {
-      title: t.sidebar.partnership.title,
+      title: t.rightSidebar.modelRecruitment,
       description: "Ищем моделей для работы на OnlyFans, Fansly и других платформах",
       icon: UserPlus,
       path: "/model-recruitment",
@@ -59,8 +59,8 @@ const FeaturedServices = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {services.map((service) => {
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          {topServices.map((service) => {
             const Icon = service.icon;
             return (
               <button
@@ -101,6 +101,25 @@ const FeaturedServices = () => {
               </button>
             );
           })}
+        </div>
+
+        {/* View All Services Button */}
+        <div className="text-center">
+          <button
+            onClick={() => {
+              playClickSound();
+              navigate("/services");
+            }}
+            className="group relative inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-primary/20 to-cyan-500/20 hover:from-primary/30 hover:to-cyan-500/30 border border-primary/50 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-primary/20"
+          >
+            <span className="text-lg font-semibold text-primary">
+              {t.services.title}
+            </span>
+            <span className="text-primary group-hover:translate-x-1 transition-transform">→</span>
+            
+            {/* Glow effect */}
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-cyan-500/10 rounded-xl opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-300" />
+          </button>
         </div>
       </div>
     </section>

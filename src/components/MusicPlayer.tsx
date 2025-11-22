@@ -143,21 +143,20 @@ const MusicPlayer = () => {
           isPlaying ? 'border-primary/60 shadow-2xl shadow-primary/30' : 'border-border/50'
         } rounded-2xl md:w-72 md:p-5 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-primary/40`}
       >
-        {/* Animated cosmic background */}
+        {/* Animated cosmic background - always animated */}
         <div className="absolute inset-0 overflow-hidden">
-          <div className={`absolute inset-0 bg-gradient-to-br from-primary/30 via-purple-500/20 to-cyan-500/30 ${
-            isPlaying ? 'animate-pulse' : ''
-          }`} style={{ animationDuration: '3s' }} />
-          <div className={`absolute inset-0 bg-gradient-to-tr from-cyan-500/20 via-transparent to-primary/20 ${
-            isPlaying ? 'animate-shimmer' : ''
-          }`} />
-          <div className="absolute top-0 left-0 w-full h-full bg-gradient-radial from-primary/10 via-transparent to-transparent opacity-50" />
+          {/* Wave animation layers */}
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-purple-500/20 to-cyan-500/30 animate-pulse" style={{ animationDuration: '3s' }} />
+          <div className="absolute inset-0 bg-gradient-to-tr from-cyan-500/20 via-transparent to-primary/20 animate-shimmer" />
+          <div className="absolute inset-0 bg-gradient-to-bl from-purple-500/15 via-transparent to-cyan-500/15 animate-pulse" style={{ animationDuration: '4s', animationDelay: '0.5s' }} />
+          
+          {/* Moving waves */}
+          <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-primary/20 to-transparent animate-pulse" style={{ animationDuration: '2.5s' }} />
+          <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-cyan-500/15 to-transparent animate-pulse" style={{ animationDuration: '3.5s', animationDelay: '1s' }} />
         </div>
         
-        {/* Cosmic glow effect */}
-        <div className={`absolute inset-0 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent rounded-2xl blur-xl opacity-0 ${
-          isPlaying ? 'opacity-100 animate-shimmer' : 'group-hover:opacity-60'
-        } transition-opacity duration-500`} />
+        {/* Cosmic glow effect - always visible */}
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent rounded-2xl blur-xl opacity-70 animate-shimmer transition-opacity duration-500 group-hover:opacity-100" />
         <audio
           ref={audioRef}
           src="https://abs.zaycev.fm/kpop128k"
