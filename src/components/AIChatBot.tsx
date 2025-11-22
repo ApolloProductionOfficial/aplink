@@ -340,7 +340,7 @@ const AIChatBot = () => {
           setIsOpen(!isOpen);
           setShowHint(false);
         }}
-        className="opacity-0 md:opacity-100 pointer-events-none md:pointer-events-auto fixed bottom-6 right-6 z-50 h-16 w-16 p-0 bg-transparent border-0 overflow-visible"
+        className="opacity-0 md:opacity-100 pointer-events-none md:pointer-events-auto fixed bottom-6 right-6 z-50 h-16 w-16 p-0 bg-transparent border-0 overflow-visible rounded-full focus-visible:ring-0 focus-visible:ring-offset-0 hover:bg-transparent"
         size="icon"
       >
         {/* Outer cosmic glow layers - outside the button */}
