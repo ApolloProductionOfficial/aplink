@@ -59,28 +59,28 @@ const FeaturedServices = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-2 gap-3 md:gap-6 mb-8">
           {topServices.map((service) => {
             const Icon = service.icon;
             return (
               <button
                 key={service.path}
                 onClick={() => handleServiceClick(service.path)}
-                className="group relative overflow-hidden rounded-2xl border border-border/50 p-6 text-left transition-all duration-300 hover:scale-105 hover:border-primary/60 hover:shadow-2xl hover:shadow-primary/20 bg-card/50 backdrop-blur-sm"
+                className="group relative overflow-hidden rounded-2xl border border-border/50 p-4 md:p-6 text-left transition-all duration-300 hover:scale-105 hover:border-primary/60 hover:shadow-2xl hover:shadow-primary/20 bg-card/50 backdrop-blur-sm"
               >
                 {/* Animated background */}
                 <div className={`absolute inset-0 bg-gradient-to-br ${service.color} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
                 
                 {/* Icon */}
-                <div className="relative z-10 flex items-start gap-4 mb-4">
-                  <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${service.color} flex items-center justify-center border border-border/30 group-hover:scale-110 transition-transform duration-300`}>
-                    <Icon className="w-7 h-7 text-primary" />
+                <div className="relative z-10 flex flex-col items-center gap-3 mb-3 md:flex-row md:items-start md:gap-4 md:mb-4">
+                  <div className={`w-12 h-12 md:w-14 md:h-14 rounded-xl bg-gradient-to-br ${service.color} flex items-center justify-center border border-border/30 group-hover:scale-110 transition-transform duration-300 flex-shrink-0`}>
+                    <Icon className="w-6 h-6 md:w-7 md:h-7 text-primary" />
                   </div>
-                  <div className="flex-1">
-                    <h3 className="text-xl font-bold mb-2 group-hover:text-primary transition-colors">
+                  <div className="flex-1 text-center md:text-left">
+                    <h3 className="text-base md:text-xl font-bold mb-1 md:mb-2 group-hover:text-primary transition-colors leading-tight">
                       {service.title}
                     </h3>
-                    <p className="text-muted-foreground text-sm">
+                    <p className="text-muted-foreground text-xs md:text-sm leading-snug">
                       {service.description}
                     </p>
                   </div>
@@ -88,7 +88,7 @@ const FeaturedServices = () => {
 
                 {/* Hover arrow indicator */}
                 <div className="relative z-10 flex items-center justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <span className="text-sm text-primary font-medium">
+                  <span className="text-xs md:text-sm text-primary font-medium">
                     {t.common.learnMore} →
                   </span>
                 </div>
