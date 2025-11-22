@@ -13,9 +13,11 @@ const MobileTopServices = () => {
     : 'Top Popular Services';
 
   const topServices = [
+    { title: t.sidebar.marketplace?.title || "Marketplace | Only4riend", path: '/marketplace', highlighted: true },
     { title: t.rightSidebar?.partnership40 || "Партнёрская программа 40%", path: '/partnership-program' },
     { title: t.rightSidebar?.cryptoUnlock || "Разблокировка крипты Fansly/OF", path: '/crypto-unlock' },
     { title: t.rightSidebar?.verificationRF || "Верификация RF/CIS для OnlyFans", path: '/model-verification' },
+    { title: t.sidebar.marketplace?.title || "Marketplace | Only4riend", path: '/marketplace', highlighted: true },
   ];
 
   return (
@@ -29,17 +31,26 @@ const MobileTopServices = () => {
           <Star className="h-3 w-3 text-primary fill-primary flex-shrink-0" />
         </div>
         <div className="space-y-1">
-          {topServices.map((service, index) => (
-            <button
-              key={index}
-              onClick={() => navigate(service.path)}
-              className="w-full text-left px-2 py-1.5 rounded-lg bg-card hover:bg-card/80 border border-border transition-all duration-200 shadow-sm"
-            >
-              <span className="text-[10px] font-semibold leading-tight text-foreground block break-words">
-                {service.title}
-              </span>
-            </button>
-          ))}
+          {topServices.map((service, index) => {
+            const isHighlighted = 'highlighted' in service && service.highlighted;
+            return (
+              <button
+                key={index}
+                onClick={() => navigate(service.path)}
+                className={`w-full text-left px-2 py-1.5 rounded-lg ${
+                  isHighlighted 
+                    ? 'bg-gradient-to-r from-primary/30 to-cyan-400/20 border-2 border-primary shadow-lg shadow-primary/30 ring-1 ring-primary/50' 
+                    : 'bg-card border border-border'
+                } hover:bg-card/80 transition-all duration-200 shadow-sm`}
+              >
+                <span className={`text-[10px] font-semibold leading-tight ${
+                  isHighlighted ? 'text-primary animate-pulse' : 'text-foreground'
+                } block break-words`}>
+                  {service.title}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>

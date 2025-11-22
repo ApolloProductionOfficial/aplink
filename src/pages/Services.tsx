@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, Unlock, MapPin, Video, Instagram, HandshakeIcon, Shield, Filter } from "lucide-react";
+import { ArrowLeft, Unlock, MapPin, Video, Instagram, HandshakeIcon, Shield, Filter, Users } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useButtonSound } from "@/hooks/useButtonSound";
 import { useState, useEffect, useRef } from "react";
@@ -69,6 +69,16 @@ const Services = () => {
 
   const services = [
     {
+      id: "marketplace-top",
+      title: t.sidebar.marketplace?.title || "Marketplace | Only4riend",
+      description: t.sidebar.marketplace?.description || "Площадка покупки и продажи контактов моделей",
+      icon: Users,
+      path: "/marketplace",
+      targetAudience: "both",
+      platforms: ["onlyfans", "fansly", "loyalfans", "manyvids"],
+      highlighted: true,
+    },
+    {
       id: "partnership",
       title: t.services.partnership.title,
       description: t.services.partnership.description,
@@ -131,6 +141,16 @@ const Services = () => {
       targetAudience: "both",
       platforms: ["instagram", "tiktok", "reddit"],
     },
+    {
+      id: "marketplace-bottom",
+      title: t.sidebar.marketplace?.title || "Marketplace | Only4riend",
+      description: t.sidebar.marketplace?.description || "Площадка покупки и продажи контактов моделей",
+      icon: Users,
+      path: "/marketplace",
+      targetAudience: "both",
+      platforms: ["onlyfans", "fansly", "loyalfans", "manyvids"],
+      highlighted: true,
+    },
   ];
 
   const filteredServices = services.filter(service => {
@@ -142,13 +162,18 @@ const Services = () => {
   const ServiceCard = ({ service, index }: { service: typeof services[0], index: number }) => {
     const Icon = service.icon;
     const isVisible = visibleCards.has(index);
+    const isHighlighted = 'highlighted' in service && service.highlighted;
 
     return (
       <Card
         ref={(el) => {
           cardRefs.current[index] = el;
         }}
-        className={`group relative overflow-hidden cursor-pointer border-2 border-primary/30 bg-gradient-to-br from-card/90 to-card/50 backdrop-blur hover:border-primary hover:shadow-2xl hover:shadow-primary/40 transition-all duration-300 hover:scale-105 ${
+        className={`group relative overflow-hidden cursor-pointer border-2 ${
+          isHighlighted 
+            ? 'border-primary border-4 bg-gradient-to-br from-primary/20 to-primary/10 shadow-xl shadow-primary/50' 
+            : 'border-primary/30 bg-gradient-to-br from-card/90 to-card/50'
+        } backdrop-blur hover:border-primary hover:shadow-2xl hover:shadow-primary/40 transition-all duration-300 hover:scale-105 ${
           isVisible 
             ? 'opacity-100 translate-y-0' 
             : 'opacity-0 translate-y-8'
@@ -158,25 +183,48 @@ const Services = () => {
         }}
         onClick={() => handleServiceClick(service.path)}
       >
+        {/* Marketplace special effects */}
+        {isHighlighted && (
+          <>
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/30 via-cyan-400/20 to-primary/30 animate-pulse" />
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent" />
+          </>
+        )}
+        
         {/* Animated gradient overlay on hover */}
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/15 via-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+        <div className={`absolute inset-0 bg-gradient-to-r ${
+          isHighlighted 
+            ? 'from-primary/25 via-cyan-400/20 to-primary/25' 
+            : 'from-primary/15 via-primary/10 to-transparent'
+        } opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
         
         {/* Subtle glow effect */}
-        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br from-primary/5 to-transparent blur-xl" />
+        <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br ${
+          isHighlighted ? 'from-primary/20' : 'from-primary/5'
+        } to-transparent blur-xl`} />
         
         {/* Mobile: Horizontal Layout */}
         <div className="md:hidden flex items-center gap-3 p-3 relative z-10">
-          <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-            <Icon className="h-6 w-6 text-primary" />
+          <div className={`flex-shrink-0 w-12 h-12 rounded-xl ${
+            isHighlighted 
+              ? 'bg-gradient-to-br from-primary/40 to-cyan-400/20 ring-2 ring-primary/50' 
+              : 'bg-gradient-to-br from-primary/20 to-primary/5'
+          } flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
+            <Icon className={`h-6 w-6 ${isHighlighted ? 'text-primary animate-pulse' : 'text-primary'}`} />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-bold leading-tight mb-1 group-hover:text-primary transition-colors">{service.title}</h3>
+            <h3 className={`text-sm font-bold leading-tight mb-1 ${
+              isHighlighted ? 'text-primary' : ''
+            } group-hover:text-primary transition-colors`}>{service.title}</h3>
             <p className="text-[10px] text-muted-foreground leading-tight line-clamp-2">
               {service.description}
             </p>
           </div>
           <div className="flex-shrink-0">
-            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
+            <div className={`w-8 h-8 rounded-full ${
+              isHighlighted ? 'bg-primary text-primary-foreground' : 'bg-primary/10'
+            } flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300`}>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
@@ -186,14 +234,24 @@ const Services = () => {
 
         {/* Desktop: Vertical Layout */}
         <div className="hidden md:flex flex-col items-center text-center space-y-4 p-6 relative z-10">
-          <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-            <Icon className="h-8 w-8 text-primary" />
+          <div className={`w-14 h-14 rounded-full ${
+            isHighlighted 
+              ? 'bg-gradient-to-br from-primary/40 to-cyan-400/20 ring-2 ring-primary/50' 
+              : 'bg-primary/10'
+          } flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
+            <Icon className={`h-8 w-8 ${isHighlighted ? 'text-primary animate-pulse' : 'text-primary'}`} />
           </div>
-          <h3 className="text-2xl font-bold group-hover:text-primary transition-colors">{service.title}</h3>
+          <h3 className={`text-2xl font-bold ${
+            isHighlighted ? 'text-primary' : ''
+          } group-hover:text-primary transition-colors`}>{service.title}</h3>
           <p className="text-muted-foreground text-sm">
             {service.description}
           </p>
-          <Button variant="outline" className="mt-2 group-hover:bg-primary group-hover:text-primary-foreground transition-all">
+          <Button variant={isHighlighted ? "default" : "outline"} className={`mt-2 ${
+            isHighlighted 
+              ? 'bg-primary text-primary-foreground hover:bg-primary/90' 
+              : 'group-hover:bg-primary group-hover:text-primary-foreground'
+          } transition-all`}>
             {t.common.learnMore}
           </Button>
         </div>

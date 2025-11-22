@@ -10,6 +10,14 @@ const FeaturedServices = () => {
 
   const topServices = [
     {
+      title: t.sidebar.marketplace?.title || "Marketplace | Only4riend",
+      description: t.sidebar.marketplace?.description || "Площадка покупки и продажи контактов моделей",
+      icon: Users,
+      path: "/marketplace",
+      color: "from-primary/30 to-cyan-400/20",
+      highlighted: true
+    },
+    {
       title: t.services.partnership.title,
       description: t.services.partnership.description,
       icon: Users,
@@ -29,13 +37,6 @@ const FeaturedServices = () => {
       icon: ShieldCheck,
       path: "/model-verification",
       color: "from-purple-500/20 to-purple-500/10"
-    },
-    {
-      title: t.services.dubai.title,
-      description: t.services.dubai.description,
-      icon: UserPlus,
-      path: "/dubai-residency",
-      color: "from-pink-500/20 to-pink-500/10"
     }
   ];
 
@@ -62,22 +63,41 @@ const FeaturedServices = () => {
         <div className="grid grid-cols-2 md:grid-cols-2 gap-3 md:gap-6 mb-8">
           {topServices.map((service) => {
             const Icon = service.icon;
+            const isHighlighted = 'highlighted' in service && service.highlighted;
             return (
               <button
                 key={service.path}
                 onClick={() => handleServiceClick(service.path)}
-                className="group relative overflow-hidden rounded-2xl border border-border/50 p-4 md:p-6 text-left transition-all duration-300 hover:scale-105 hover:border-primary/60 hover:shadow-2xl hover:shadow-primary/20 bg-card/50 backdrop-blur-sm"
+                className={`group relative overflow-hidden rounded-2xl ${
+                  isHighlighted 
+                    ? 'border-4 border-primary shadow-2xl shadow-primary/60 ring-2 ring-primary/30' 
+                    : 'border border-border/50'
+                } p-4 md:p-6 text-left transition-all duration-300 hover:scale-105 hover:border-primary/60 hover:shadow-2xl hover:shadow-primary/20 bg-card/50 backdrop-blur-sm`}
               >
+                {/* Marketplace special effects */}
+                {isHighlighted && (
+                  <>
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-cyan-400/20 to-primary/30 animate-pulse" />
+                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent animate-pulse" />
+                  </>
+                )}
+                
                 {/* Animated background */}
-                <div className={`absolute inset-0 bg-gradient-to-br ${service.color} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
+                <div className={`absolute inset-0 bg-gradient-to-br ${service.color} ${
+                  isHighlighted ? 'opacity-50' : 'opacity-0'
+                } group-hover:opacity-100 transition-opacity duration-300`} />
                 
                 {/* Icon */}
                 <div className="relative z-10 flex flex-col items-center gap-3 mb-3 md:flex-row md:items-start md:gap-4 md:mb-4">
-                  <div className={`w-12 h-12 md:w-14 md:h-14 rounded-xl bg-gradient-to-br ${service.color} flex items-center justify-center border border-border/30 group-hover:scale-110 transition-transform duration-300 flex-shrink-0`}>
-                    <Icon className="w-6 h-6 md:w-7 md:h-7 text-primary" />
+                  <div className={`w-12 h-12 md:w-14 md:h-14 rounded-xl bg-gradient-to-br ${service.color} flex items-center justify-center ${
+                    isHighlighted ? 'ring-2 ring-primary/50' : 'border border-border/30'
+                  } group-hover:scale-110 transition-transform duration-300 flex-shrink-0`}>
+                    <Icon className={`w-6 h-6 md:w-7 md:h-7 ${isHighlighted ? 'text-primary animate-pulse' : 'text-primary'}`} />
                   </div>
                   <div className="flex-1 text-center md:text-left">
-                    <h3 className="text-base md:text-xl font-bold mb-1 md:mb-2 group-hover:text-primary transition-colors leading-tight">
+                    <h3 className={`text-base md:text-xl font-bold mb-1 md:mb-2 ${
+                      isHighlighted ? 'text-primary' : ''
+                    } group-hover:text-primary transition-colors leading-tight`}>
                       {service.title}
                     </h3>
                     <p className="text-muted-foreground text-xs md:text-sm leading-snug">

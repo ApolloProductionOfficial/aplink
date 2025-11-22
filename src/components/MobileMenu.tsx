@@ -21,6 +21,7 @@ const MobileMenu = () => {
   }, []);
 
   const services = [
+    { title: t.sidebar.marketplace?.title || "Marketplace | Only4riend", path: '/marketplace', highlighted: true },
     { title: t.sidebar.trafficSources.title, path: '/traffic-sources' },
     { title: t.sidebar.cryptoUnlock.title, path: '/crypto-unlock' },
     { title: t.sidebar.modelVerification.title, path: '/model-verification' },
@@ -29,6 +30,7 @@ const MobileMenu = () => {
     { title: t.sidebar.dubaiResidency.title, path: '/dubai-residency' },
     { title: t.sidebar.webcamServices.title, path: '/webcam-services' },
     { title: t.sidebar.instagramAutomation.title, path: '/instagram-automation' },
+    { title: t.sidebar.marketplace?.title || "Marketplace | Only4riend", path: '/marketplace', highlighted: true },
   ];
 
   const servicesTitle = language === 'ru' ? 'Услуги' : language === 'uk' ? 'Послуги' : 'Services';
@@ -85,16 +87,25 @@ const MobileMenu = () => {
                 {servicesTitle}
               </h3>
               <div className="space-y-1.5">
-                {services.map((service, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleNavigation(service.path)}
-                    className="w-full text-left px-3 py-2 rounded-lg bg-card hover:bg-muted transition-all duration-200 hover:translate-x-1 border border-border"
-                    style={{ animationDelay: `${index * 50}ms` }}
-                  >
-                    <span className="text-xs font-medium leading-tight">{service.title}</span>
-                  </button>
-                ))}
+                {services.map((service, index) => {
+                  const isHighlighted = 'highlighted' in service && service.highlighted;
+                  return (
+                    <button
+                      key={index}
+                      onClick={() => handleNavigation(service.path)}
+                      className={`w-full text-left px-3 py-2 rounded-lg ${
+                        isHighlighted 
+                          ? 'bg-gradient-to-r from-primary/30 to-cyan-400/20 border-2 border-primary hover:bg-gradient-to-r hover:from-primary/40 hover:to-cyan-400/30 shadow-lg shadow-primary/30 ring-1 ring-primary/50' 
+                          : 'bg-card hover:bg-muted border border-border'
+                      } transition-all duration-200 hover:translate-x-1`}
+                      style={{ animationDelay: `${index * 50}ms` }}
+                    >
+                      <span className={`text-xs font-medium leading-tight ${
+                        isHighlighted ? 'text-primary font-bold animate-pulse' : ''
+                      }`}>{service.title}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
