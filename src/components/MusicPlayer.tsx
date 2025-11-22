@@ -99,43 +99,54 @@ const MusicPlayer = () => {
 
   // Setup audio analyzer
   useEffect(() => {
-    if (audioRef.current && !analyserRef.current) {
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const analyser = audioContext.createAnalyser();
-      const source = audioContext.createMediaElementSource(audioRef.current);
-      
-      analyser.fftSize = 64;
-      const bufferLength = analyser.frequencyBinCount;
-      const dataArray = new Uint8Array(bufferLength) as Uint8Array;
-      
-      source.connect(analyser);
-      analyser.connect(audioContext.destination);
-      
-      analyserRef.current = analyser;
-      dataArrayRef.current = dataArray;
-      
-      const updateFrequencyData = () => {
-        if (analyserRef.current && dataArrayRef.current) {
-          // @ts-ignore - TypeScript issue with Uint8Array types
-          analyserRef.current.getByteFrequencyData(dataArrayRef.current);
-          const arr: number[] = [];
-          for (let i = 0; i < dataArrayRef.current.length; i++) {
-            arr.push(dataArrayRef.current[i]);
-          }
-          setFrequencyData(arr);
+    const setupAnalyser = () => {
+      if (audioRef.current && !analyserRef.current && isPlaying) {
+        try {
+          console.log('Setting up audio analyser...');
+          const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+          const analyser = audioContext.createAnalyser();
+          const source = audioContext.createMediaElementSource(audioRef.current);
+          
+          analyser.fftSize = 64;
+          const bufferLength = analyser.frequencyBinCount;
+          const dataArray = new Uint8Array(bufferLength) as Uint8Array;
+          
+          source.connect(analyser);
+          analyser.connect(audioContext.destination);
+          
+          analyserRef.current = analyser;
+          dataArrayRef.current = dataArray;
+          
+          console.log('Audio analyser setup complete');
+          
+          const updateFrequencyData = () => {
+            if (analyserRef.current && dataArrayRef.current) {
+              // @ts-ignore - TypeScript issue with Uint8Array types
+              analyserRef.current.getByteFrequencyData(dataArrayRef.current);
+              const arr: number[] = [];
+              for (let i = 0; i < dataArrayRef.current.length; i++) {
+                arr.push(dataArrayRef.current[i]);
+              }
+              setFrequencyData(arr);
+            }
+            animationFrameRef.current = requestAnimationFrame(updateFrequencyData);
+          };
+          
+          updateFrequencyData();
+        } catch (error) {
+          console.error('Error setting up audio analyser:', error);
         }
-        animationFrameRef.current = requestAnimationFrame(updateFrequencyData);
-      };
-      
-      updateFrequencyData();
-    }
+      }
+    };
+
+    setupAnalyser();
     
     return () => {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, []);
+  }, [isPlaying]);
 
   const togglePlay = () => {
     if (audioRef.current) {
