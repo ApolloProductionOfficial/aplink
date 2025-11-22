@@ -155,36 +155,6 @@ const MusicPlayer = () => {
           isPlaying ? 'border-primary/60 shadow-2xl shadow-primary/30' : 'border-border/50'
         } rounded-2xl md:w-72 md:p-5 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-primary/40`}
       >
-        {/* Left side wave bars */}
-        <div className="absolute left-2 top-1/2 -translate-y-1/2 flex gap-1 z-10">
-          {[...Array(5)].map((_, i) => (
-            <div
-              key={`left-${i}`}
-              className="w-1 bg-gradient-to-t from-primary/60 to-cyan-500/60 rounded-full animate-pulse"
-              style={{
-                height: `${20 + i * 8}px`,
-                animationDuration: `${0.6 + i * 0.2}s`,
-                animationDelay: `${i * 0.1}s`
-              }}
-            />
-          ))}
-        </div>
-
-        {/* Right side wave bars */}
-        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1 z-10">
-          {[...Array(5)].map((_, i) => (
-            <div
-              key={`right-${i}`}
-              className="w-1 bg-gradient-to-t from-cyan-500/60 to-primary/60 rounded-full animate-pulse"
-              style={{
-                height: `${20 + (4 - i) * 8}px`,
-                animationDuration: `${0.6 + (4 - i) * 0.2}s`,
-                animationDelay: `${(4 - i) * 0.1}s`
-              }}
-            />
-          ))}
-        </div>
-
         {/* Animated cosmic background - always animated */}
         <div className="absolute inset-0 overflow-hidden">
           {/* Wave animation layers */}
