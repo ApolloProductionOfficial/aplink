@@ -174,23 +174,23 @@ const MusicPlayer = () => {
       {/* Cosmic glow around player - outside */}
       <div className="absolute inset-0 -m-20 pointer-events-none">
         {/* Green glow */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-green-500/40 rounded-full blur-[100px] animate-pulse" style={{ animationDuration: '3s' }} />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-green-500/15 rounded-full blur-[100px] animate-pulse" style={{ animationDuration: '3s' }} />
         {/* Purple glow */}
-        <div className="absolute bottom-0 right-0 w-56 h-56 bg-purple-500/40 rounded-full blur-[100px] animate-pulse" style={{ animationDuration: '4s', animationDelay: '0.5s' }} />
+        <div className="absolute bottom-0 right-0 w-56 h-56 bg-purple-500/15 rounded-full blur-[100px] animate-pulse" style={{ animationDuration: '4s', animationDelay: '0.5s' }} />
         {/* Cyan glow */}
-        <div className="absolute top-1/2 left-0 w-48 h-48 bg-cyan-500/40 rounded-full blur-[100px] animate-pulse" style={{ animationDuration: '3.5s', animationDelay: '1s' }} />
+        <div className="absolute top-1/2 left-0 w-48 h-48 bg-cyan-500/15 rounded-full blur-[100px] animate-pulse" style={{ animationDuration: '3.5s', animationDelay: '1s' }} />
         {/* Pink glow */}
-        <div className="absolute bottom-1/4 left-1/4 w-40 h-40 bg-pink-500/30 rounded-full blur-[100px] animate-pulse" style={{ animationDuration: '4.5s', animationDelay: '1.5s' }} />
+        <div className="absolute bottom-1/4 left-1/4 w-40 h-40 bg-pink-500/12 rounded-full blur-[100px] animate-pulse" style={{ animationDuration: '4.5s', animationDelay: '1.5s' }} />
       </div>
       
       <div
         className={`relative group bg-gradient-to-br from-card/95 to-card/80 backdrop-blur-xl border-2 ${
-          isPlaying ? 'border-primary/60 shadow-2xl shadow-primary/30' : 'border-border/50'
-        } rounded-2xl md:w-72 md:p-5 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-primary/40`}
+          isPlaying ? 'border-primary/40 shadow-xl shadow-primary/15' : 'border-border/50'
+        } rounded-2xl md:w-72 md:p-5 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-primary/20`}
       >
         {/* Cosmic glow effect */}
-        <div className={`absolute inset-0 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent rounded-2xl blur-xl opacity-0 ${
-          isPlaying ? 'opacity-100 animate-shimmer' : 'group-hover:opacity-60'
+        <div className={`absolute inset-0 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-2xl blur-xl opacity-0 ${
+          isPlaying ? 'opacity-100 animate-shimmer' : 'group-hover:opacity-40'
         } transition-opacity duration-500`} />
         <audio
           ref={audioRef}
@@ -204,7 +204,7 @@ const MusicPlayer = () => {
         <div className="relative z-10 flex items-center gap-3 w-full">
           {/* Music icon with glow and equalizer - desktop only */}
           <div className="hidden md:flex flex-col items-center gap-1 flex-shrink-0">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/40 to-primary/20 flex items-center justify-center border-2 border-primary/50 shadow-lg shadow-primary/30">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/25 to-primary/12 flex items-center justify-center border-2 border-primary/30 shadow-lg shadow-primary/15">
               <Music className={`h-5 w-5 text-primary ${isPlaying ? 'animate-pulse' : ''}`} />
             </div>
             {/* Equalizer below icon */}

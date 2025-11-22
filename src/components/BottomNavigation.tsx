@@ -51,10 +51,10 @@ const BottomNavigation = () => {
     }`}>
       {/* Cosmic gradient background with animation */}
       <div className="absolute inset-0 bg-gradient-to-t from-card via-card/95 to-card/80 backdrop-blur-xl" />
-      <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 animate-pulse-glow" />
+      <div className="absolute inset-0 bg-gradient-to-r from-primary/2 via-primary/5 to-primary/2 animate-pulse-glow" />
       
       {/* Top border with glow */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary to-transparent animate-shimmer" />
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/60 to-transparent animate-shimmer" />
       
       <div className="relative flex items-center justify-around h-16 px-2">{navItems.map((item, index) => {
           const Icon = item.icon;
@@ -79,7 +79,7 @@ const BottomNavigation = () => {
               {/* Ripple effect on click */}
               {activeRipple === index && (
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-12 h-12 rounded-full bg-primary/30 animate-ping" />
+                  <div className="w-12 h-12 rounded-full bg-primary/15 animate-ping" />
                 </div>
               )}
               
@@ -87,7 +87,7 @@ const BottomNavigation = () => {
               {(active || isChatItem || isServicesItem) && (
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className={`w-10 h-10 rounded-full blur-xl ${
-                    isChatItem ? 'bg-primary/20 animate-pulse-glow' : 'bg-primary/10 animate-subtle-pulse'
+                    isChatItem ? 'bg-primary/10 animate-pulse-glow' : 'bg-primary/6 animate-subtle-pulse'
                   }`} />
                 </div>
               )}
@@ -98,9 +98,9 @@ const BottomNavigation = () => {
               } ${active || isServicesItem ? 'scale-110' : 'scale-100'} hover:scale-110`}>
                 <Icon 
                   className={`w-5 h-5 relative z-10 ${
-                    isChatItem ? 'drop-shadow-[0_0_8px_rgba(59,130,246,0.8)]' : ''
+                    isChatItem ? 'drop-shadow-[0_0_4px_rgba(6,182,228,0.4)]' : ''
                   } ${
-                    isServicesItem ? 'drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]' : ''
+                    isServicesItem ? 'drop-shadow-[0_0_2px_rgba(6,182,228,0.15)]' : ''
                   }`}
                 />
                 
@@ -123,15 +123,15 @@ const BottomNavigation = () => {
               {/* Active indicator - wave effect */}
               {active && item.action !== "chat" && (
                 <>
-                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-gradient-to-r from-transparent via-primary to-transparent rounded-full animate-shimmer" />
-                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-2 bg-primary/20 blur-md" />
+                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-gradient-to-r from-transparent via-primary/70 to-transparent rounded-full animate-shimmer" />
+                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-2 bg-primary/10 blur-md" />
                 </>
               )}
               
               {/* Cosmic glow ring for chat */}
               {isChatItem && (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="w-14 h-14 rounded-full border-2 border-primary/30 animate-ping" style={{ animationDuration: '2s' }} />
+                  <div className="w-14 h-14 rounded-full border-2 border-primary/15 animate-ping" style={{ animationDuration: '2s' }} />
                 </div>
               )}
             </button>

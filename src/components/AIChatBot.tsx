@@ -288,21 +288,21 @@ const AIChatBot = () => {
         <div className="hidden md:block fixed bottom-[110px] right-4 z-50">
           <div className="relative animate-cosmic-appear">
             {/* Outer cosmic glow - slightly offset so doesn't overlap text */}
-            <div className="absolute -inset-4 rounded-2xl bg-primary/15 blur-3xl opacity-50 animate-pulse-glow" />
+            <div className="absolute -inset-4 rounded-2xl bg-primary/8 blur-3xl opacity-40 animate-pulse-glow" />
             
-            <div className="relative bg-gradient-to-br from-primary via-primary/95 to-primary/90 text-primary-foreground px-4 py-2.5 rounded-2xl shadow-2xl shadow-primary/60 backdrop-blur-2xl overflow-hidden flex items-center gap-2 border-2 border-primary-foreground/40">
+            <div className="relative bg-gradient-to-br from-primary via-primary/95 to-primary/90 text-primary-foreground px-4 py-2.5 rounded-2xl shadow-xl shadow-primary/30 backdrop-blur-2xl overflow-hidden flex items-center gap-2 border-2 border-primary-foreground/25">
               {/* Very subtle dark overlay for minimal contrast */}
               <div className="absolute inset-0 bg-black/5 rounded-2xl" />
               
               {/* Cosmic glow inside - subtle */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary-foreground/10 to-transparent animate-shimmer opacity-50" />
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary-foreground/5 to-transparent animate-shimmer opacity-30" />
               
               {/* Rotating shimmer - subtle */}
-              <div className="absolute inset-0 rounded-2xl border-2 border-transparent border-t-primary-foreground/20 border-r-primary-foreground/10 animate-spin opacity-40" style={{ animationDuration: '4s' }} />
+              <div className="absolute inset-0 rounded-2xl border-2 border-transparent border-t-primary-foreground/10 border-r-primary-foreground/5 animate-spin opacity-25" style={{ animationDuration: '4s' }} />
               
               {/* Floating particles inside hint - subtle and fewer */}
-              <div className="absolute top-1 left-3 w-0.5 h-0.5 rounded-full bg-primary-foreground/30 animate-float" style={{ animationDuration: '2s' }} />
-              <div className="absolute bottom-1.5 right-4 w-0.5 h-0.5 rounded-full bg-primary-foreground/25 animate-float" style={{ animationDuration: '2.5s', animationDelay: '0.5s' }} />
+              <div className="absolute top-1 left-3 w-0.5 h-0.5 rounded-full bg-primary-foreground/20 animate-float" style={{ animationDuration: '2s' }} />
+              <div className="absolute bottom-1.5 right-4 w-0.5 h-0.5 rounded-full bg-primary-foreground/15 animate-float" style={{ animationDuration: '2.5s', animationDelay: '0.5s' }} />
               
               <Bot className="w-5 h-5 flex-shrink-0 relative z-10 drop-shadow-lg" />
               <p className="text-sm font-semibold whitespace-nowrap leading-tight relative z-10 drop-shadow-md">
@@ -310,7 +310,7 @@ const AIChatBot = () => {
               </p>
               
               {/* Arrow pointing to bot */}
-              <div className="absolute -bottom-2 right-8 w-4 h-4 bg-gradient-to-br from-primary to-primary/95 transform rotate-45 shadow-xl shadow-primary/60 border-r border-b border-primary-foreground/20" />
+              <div className="absolute -bottom-2 right-8 w-4 h-4 bg-gradient-to-br from-primary to-primary/95 transform rotate-45 shadow-lg shadow-primary/30 border-r border-b border-primary-foreground/15" />
             </div>
           </div>
         </div>
@@ -327,8 +327,8 @@ const AIChatBot = () => {
         size="icon"
       >
         {/* Outer cosmic glow layers - outside the button */}
-        <div className="absolute -inset-4 rounded-full bg-primary/20 blur-3xl opacity-60 animate-pulse-glow" />
-        <div className="absolute -inset-6 rounded-full bg-primary/10 blur-2xl opacity-40 animate-pulse" style={{ animationDuration: '4s' }} />
+        <div className="absolute -inset-4 rounded-full bg-primary/10 blur-3xl opacity-40 animate-pulse-glow" />
+        <div className="absolute -inset-6 rounded-full bg-primary/5 blur-2xl opacity-25 animate-pulse" style={{ animationDuration: '4s' }} />
         
         <div className={`relative w-full h-full rounded-full transition-all duration-500 group ${
           isOpen 
@@ -336,29 +336,29 @@ const AIChatBot = () => {
             : 'bg-gradient-to-br from-primary/90 via-primary to-primary/80 hover:scale-110'
         }`}>
           {/* Liquid drop effect - multiple layers */}
-          <div className="absolute -inset-2 rounded-full bg-gradient-to-br from-primary/60 via-primary/40 to-transparent blur-2xl opacity-70 group-hover:opacity-100 animate-pulse-glow" />
-          <div className="absolute -inset-1 rounded-full bg-gradient-to-t from-primary/50 to-transparent blur-xl opacity-60 animate-pulse" style={{ animationDuration: '3s' }} />
+          <div className="absolute -inset-2 rounded-full bg-gradient-to-br from-primary/30 via-primary/20 to-transparent blur-2xl opacity-50 group-hover:opacity-70 animate-pulse-glow" />
+          <div className="absolute -inset-1 rounded-full bg-gradient-to-t from-primary/25 to-transparent blur-xl opacity-40 animate-pulse" style={{ animationDuration: '3s' }} />
           
           {/* Multiple ripple rings with different speeds */}
-          <div className="absolute -inset-3 rounded-full border-2 border-primary/40 animate-ping opacity-30" style={{ animationDuration: '2s' }} />
-          <div className="absolute -inset-4 rounded-full border border-primary/30 animate-ping opacity-20" style={{ animationDuration: '3s', animationDelay: '0.5s' }} />
-          <div className="absolute -inset-5 rounded-full border border-primary/20 animate-ping opacity-10" style={{ animationDuration: '4s', animationDelay: '1s' }} />
+          <div className="absolute -inset-3 rounded-full border-2 border-primary/20 animate-ping opacity-20" style={{ animationDuration: '2s' }} />
+          <div className="absolute -inset-4 rounded-full border border-primary/15 animate-ping opacity-12" style={{ animationDuration: '3s', animationDelay: '0.5s' }} />
+          <div className="absolute -inset-5 rounded-full border border-primary/10 animate-ping opacity-8" style={{ animationDuration: '4s', animationDelay: '1s' }} />
           
           {/* Shimmer wave effect */}
           <div className="absolute inset-0 rounded-full overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent animate-shimmer" />
           </div>
           
           {/* Rotating glow ring */}
           <div className="absolute inset-0 rounded-full">
-            <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-primary/50 border-r-primary/30 animate-spin" style={{ animationDuration: '3s' }} />
+            <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-primary/25 border-r-primary/15 animate-spin" style={{ animationDuration: '3s' }} />
           </div>
           
           {/* Floating particles */}
-          <div className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-primary-foreground/60 animate-float shadow-[0_0_8px_rgba(255,255,255,0.6)]" style={{ animationDuration: '2s' }} />
-          <div className="absolute bottom-3 left-3 w-1 h-1 rounded-full bg-primary-foreground/40 animate-float shadow-[0_0_6px_rgba(255,255,255,0.4)]" style={{ animationDuration: '3s', animationDelay: '0.5s' }} />
-          <div className="absolute top-4 left-2 w-0.5 h-0.5 rounded-full bg-primary-foreground/50 animate-float shadow-[0_0_4px_rgba(255,255,255,0.5)]" style={{ animationDuration: '2.5s', animationDelay: '1s' }} />
-          <div className="absolute bottom-1 right-4 w-0.5 h-0.5 rounded-full bg-primary-foreground/30 animate-float shadow-[0_0_4px_rgba(255,255,255,0.3)]" style={{ animationDuration: '2.8s', animationDelay: '0.3s' }} />
+          <div className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-primary-foreground/40 animate-float shadow-[0_0_4px_rgba(255,255,255,0.3)]" style={{ animationDuration: '2s' }} />
+          <div className="absolute bottom-3 left-3 w-1 h-1 rounded-full bg-primary-foreground/25 animate-float shadow-[0_0_3px_rgba(255,255,255,0.2)]" style={{ animationDuration: '3s', animationDelay: '0.5s' }} />
+          <div className="absolute top-4 left-2 w-0.5 h-0.5 rounded-full bg-primary-foreground/30 animate-float shadow-[0_0_2px_rgba(255,255,255,0.25)]" style={{ animationDuration: '2.5s', animationDelay: '1s' }} />
+          <div className="absolute bottom-1 right-4 w-0.5 h-0.5 rounded-full bg-primary-foreground/20 animate-float shadow-[0_0_2px_rgba(255,255,255,0.15)]" style={{ animationDuration: '2.8s', animationDelay: '0.3s' }} />
           
           {/* Content */}
           <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
@@ -373,19 +373,19 @@ const AIChatBot = () => {
           </div>
           
           {/* Inner glow border */}
-          <div className="absolute inset-0 rounded-full border-2 border-primary-foreground/30 group-hover:border-primary-foreground/50 transition-all duration-300 shadow-[inset_0_0_20px_rgba(255,255,255,0.1)]" />
+          <div className="absolute inset-0 rounded-full border-2 border-primary-foreground/20 group-hover:border-primary-foreground/30 transition-all duration-300 shadow-[inset_0_0_15px_rgba(255,255,255,0.05)]" />
         </div>
       </Button>
 
       {/* Chat Window */}
       {isOpen && (
-        <div ref={chatWindowRef} className="fixed bottom-20 right-4 z-50 w-96 max-w-[calc(100vw-2rem)] h-[500px] backdrop-blur-xl bg-gradient-to-br from-card/95 via-card/90 to-card/95 border-2 border-primary/30 rounded-2xl shadow-2xl shadow-primary/30 flex flex-col overflow-hidden">
+        <div ref={chatWindowRef} className="fixed bottom-20 right-4 z-50 w-96 max-w-[calc(100vw-2rem)] h-[500px] backdrop-blur-xl bg-gradient-to-br from-card/95 via-card/90 to-card/95 border-2 border-primary/20 rounded-2xl shadow-xl shadow-primary/15 flex flex-col overflow-hidden">
           {/* Cosmic background effects */}
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10 animate-pulse-glow pointer-events-none" />
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary to-transparent animate-shimmer" />
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/3 via-transparent to-primary/5 animate-pulse-glow pointer-events-none" />
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/60 to-transparent animate-shimmer" />
           
           {/* Header */}
-          <div className="relative p-4 border-b border-primary/20 bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10">
+          <div className="relative p-4 border-b border-primary/15 bg-gradient-to-r from-primary/5 via-primary/3 to-primary/5">
             <h3 className="font-semibold text-lg bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent">{t.chatbot.title}</h3>
             <p className="text-xs text-muted-foreground">{t.chatbot.subtitle}</p>
           </div>
@@ -408,8 +408,8 @@ const AIChatBot = () => {
                 <div
                   className={`max-w-[80%] p-3 rounded-xl backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] ${
                     msg.role === 'user'
-                      ? 'bg-gradient-to-br from-primary via-primary to-primary/90 text-primary-foreground shadow-lg shadow-primary/30'
-                      : 'bg-gradient-to-br from-primary/5 via-muted/90 to-primary/10 border border-primary/20 shadow-md shadow-primary/10'
+                      ? 'bg-gradient-to-br from-primary via-primary to-primary/90 text-primary-foreground shadow-md shadow-primary/15'
+                      : 'bg-gradient-to-br from-primary/3 via-muted/90 to-primary/5 border border-primary/15 shadow-sm shadow-primary/5'
                   }`}
                 >
                   <p className="text-sm whitespace-pre-wrap leading-relaxed">{formatMessage(msg.content)}</p>

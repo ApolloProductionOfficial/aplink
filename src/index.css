@@ -36,40 +36,43 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
+    /* Darker background for better contrast */
+    --background: 0 0% 2%;
+    --foreground: 0 0% 100%;
 
-    --card: 0 0% 3.9%;
+    --card: 0 0% 4%;
     --card-foreground: 0 0% 98%;
 
-    --popover: 0 0% 3.9%;
+    --popover: 0 0% 4%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 190 100% 47%;
-    --primary-rgb: 0, 182, 240;
-    --primary-foreground: 0 0% 98%;
+    /* Single primary color - cyan/blue */
+    --primary: 190 95% 45%;
+    --primary-rgb: 6, 182, 228;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 0 0% 14.9%;
+    /* Subdued secondary colors using primary hue */
+    --secondary: 190 15% 15%;
     --secondary-foreground: 0 0% 98%;
 
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 65%;
 
-    --accent: 0 0% 14.9%;
+    --accent: 190 20% 18%;
     --accent-foreground: 0 0% 98%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
+    --border: 0 0% 18%;
+    --input: 0 0% 15%;
+    --ring: 190 70% 50%;
 
     --radius: 0.5rem;
 
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-background: 0 0% 3%;
+    --sidebar-foreground: 0 0% 96%;
+    --sidebar-border: 0 0% 15%;
   }
 }
 
@@ -166,7 +169,7 @@ All colors MUST be HSL.
     background: linear-gradient(
       90deg,
       transparent 0%,
-      rgba(var(--primary-rgb), 0.15) 50%,
+      rgba(var(--primary-rgb), 0.08) 50%,
       transparent 100%
     );
     animation: text-shine 4s ease-in-out infinite;
@@ -193,25 +196,25 @@ All colors MUST be HSL.
 
 @keyframes pulse-glow {
   0%, 100% {
-    box-shadow: 0 0 30px hsl(190 100% 55% / 0.4);
+    box-shadow: 0 0 20px hsl(190 95% 50% / 0.2);
   }
   50% {
-    box-shadow: 0 0 60px hsl(190 100% 60% / 0.9);
+    box-shadow: 0 0 35px hsl(190 95% 55% / 0.4);
   }
 }
 
 @keyframes music-pulse {
   0%, 100% {
-    box-shadow: 0 0 10px hsl(190 100% 50% / 0.25), 0 0 20px hsl(190 100% 50% / 0.15);
+    box-shadow: 0 0 8px hsl(190 95% 50% / 0.15), 0 0 15px hsl(190 95% 50% / 0.08);
   }
   25% {
-    box-shadow: 0 0 15px hsl(190 100% 50% / 0.35), 0 0 30px hsl(190 100% 50% / 0.2);
+    box-shadow: 0 0 12px hsl(190 95% 50% / 0.2), 0 0 20px hsl(190 95% 50% / 0.12);
   }
   50% {
-    box-shadow: 0 0 20px hsl(190 100% 50% / 0.45), 0 0 40px hsl(190 100% 50% / 0.25);
+    box-shadow: 0 0 15px hsl(190 95% 50% / 0.25), 0 0 25px hsl(190 95% 50% / 0.15);
   }
   75% {
-    box-shadow: 0 0 15px hsl(190 100% 50% / 0.35), 0 0 30px hsl(190 100% 50% / 0.2);
+    box-shadow: 0 0 12px hsl(190 95% 50% / 0.2), 0 0 20px hsl(190 95% 50% / 0.12);
   }
 }
 
@@ -271,10 +274,10 @@ All colors MUST be HSL.
 
 @keyframes subtle-pulse {
   0%, 100% {
-    box-shadow: 0 0 8px rgba(var(--primary-rgb), 0.08);
+    box-shadow: 0 0 5px rgba(var(--primary-rgb), 0.05);
   }
   50% {
-    box-shadow: 0 0 12px rgba(var(--primary-rgb), 0.15);
+    box-shadow: 0 0 8px rgba(var(--primary-rgb), 0.1);
   }
 }
 
@@ -300,11 +303,11 @@ All colors MUST be HSL.
 
 @keyframes cosmic-glow {
   0%, 100% {
-    filter: brightness(1) drop-shadow(0 0 8px rgba(59, 130, 246, 0.6));
+    filter: brightness(1) drop-shadow(0 0 6px rgba(6, 182, 228, 0.3));
     opacity: 1;
   }
   50% {
-    filter: brightness(1.2) drop-shadow(0 0 16px rgba(59, 130, 246, 0.8));
+    filter: brightness(1.1) drop-shadow(0 0 10px rgba(6, 182, 228, 0.45));
     opacity: 0.95;
   }
 }
@@ -333,15 +336,15 @@ All colors MUST be HSL.
 @keyframes nav-wave {
   0% {
     opacity: 0.3;
-    box-shadow: 0 0 5px rgba(59, 130, 246, 0.2);
+    box-shadow: 0 0 4px rgba(6, 182, 228, 0.15);
   }
   50% {
     opacity: 1;
-    box-shadow: 0 0 25px rgba(59, 130, 246, 0.6);
+    box-shadow: 0 0 15px rgba(6, 182, 228, 0.35);
   }
   100% {
     opacity: 0.3;
-    box-shadow: 0 0 5px rgba(59, 130, 246, 0.2);
+    box-shadow: 0 0 4px rgba(6, 182, 228, 0.15);
   }
 }
 
@@ -364,7 +367,7 @@ All colors MUST be HSL.
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(var(--primary-rgb), 0.4) 50%,
+    rgba(var(--primary-rgb), 0.2) 50%,
     transparent 100%
   );
   background-size: 200% 100%;
