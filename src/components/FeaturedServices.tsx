@@ -31,10 +31,10 @@ const FeaturedServices = () => {
       color: "from-purple-500/20 to-purple-500/10"
     },
     {
-      title: t.rightSidebar.modelRecruitment,
-      description: "Ищем моделей для работы на OnlyFans, Fansly и других платформах",
+      title: t.services.dubai.title,
+      description: t.services.dubai.description,
       icon: UserPlus,
-      path: "/model-recruitment",
+      path: "/dubai-residency",
       color: "from-pink-500/20 to-pink-500/10"
     }
   ];
