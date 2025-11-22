@@ -193,34 +193,6 @@ const MusicPlayer = () => {
         {/* Pink glow */}
         <div className="absolute bottom-1/4 left-1/4 w-40 h-40 bg-pink-500/30 rounded-full blur-[100px] animate-pulse" style={{ animationDuration: '4.5s', animationDelay: '1.5s' }} />
       </div>
-
-      {/* Equalizer visualization - Left side */}
-      <div className="absolute -left-16 top-1/2 -translate-y-1/2 flex gap-1 h-20 items-end">
-        {frequencyData.slice(0, 8).map((value, i) => {
-          const height = Math.max(10, (value / 255) * 80);
-          return (
-            <div
-              key={i}
-              className="w-1.5 bg-gradient-to-t from-primary via-cyan-500 to-purple-500 rounded-full transition-all duration-75"
-              style={{ height: `${height}px` }}
-            />
-          );
-        })}
-      </div>
-
-      {/* Equalizer visualization - Right side */}
-      <div className="absolute -right-16 top-1/2 -translate-y-1/2 flex gap-1 h-20 items-end">
-        {frequencyData.slice(8, 16).map((value, i) => {
-          const height = Math.max(10, (value / 255) * 80);
-          return (
-            <div
-              key={i}
-              className="w-1.5 bg-gradient-to-t from-purple-500 via-pink-500 to-cyan-500 rounded-full transition-all duration-75"
-              style={{ height: `${height}px` }}
-            />
-          );
-        })}
-      </div>
       
       <div
         className={`relative group bg-gradient-to-br from-card/95 to-card/80 backdrop-blur-xl border-2 ${
@@ -241,9 +213,24 @@ const MusicPlayer = () => {
         
         {/* Mobile & Desktop: Play button on mobile, slider for all */}
         <div className="relative z-10 flex items-center gap-3 w-full">
-          {/* Music icon with glow - desktop only */}
-          <div className="hidden md:flex w-10 h-10 rounded-full bg-gradient-to-br from-primary/40 to-primary/20 items-center justify-center border-2 border-primary/50 shadow-lg shadow-primary/30 flex-shrink-0">
-            <Music className={`h-5 w-5 text-primary ${isPlaying ? 'animate-pulse' : ''}`} />
+          {/* Music icon with glow and equalizer - desktop only */}
+          <div className="hidden md:flex flex-col items-center gap-1 flex-shrink-0">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/40 to-primary/20 flex items-center justify-center border-2 border-primary/50 shadow-lg shadow-primary/30">
+              <Music className={`h-5 w-5 text-primary ${isPlaying ? 'animate-pulse' : ''}`} />
+            </div>
+            {/* Equalizer below icon */}
+            <div className="flex gap-0.5 h-4 items-end">
+              {frequencyData.slice(0, 10).map((value, i) => {
+                const height = Math.max(2, (value / 255) * 16);
+                return (
+                  <div
+                    key={i}
+                    className="w-0.5 bg-gradient-to-t from-primary to-cyan-500 rounded-full transition-all duration-75"
+                    style={{ height: `${height}px` }}
+                  />
+                );
+              })}
+            </div>
           </div>
           {/* Play/Pause button only on mobile */}
           <Button
