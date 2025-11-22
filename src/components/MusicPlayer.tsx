@@ -103,22 +103,17 @@ const MusicPlayer = () => {
     let frameCount = 0;
 
     const animate = () => {
-      if (!isPlaying) {
-        // Static when not playing
-        setFrequencyData(new Array(bars).fill(2));
-      } else {
-        // Animated when playing
-        const arr: number[] = [];
-        frameCount += 0.15;
-        
-        for (let i = 0; i < bars; i++) {
-          const base = 2;
-          const variance = 12;
-          const wave = Math.sin(frameCount + i * 0.5) * 0.5 + 0.5;
-          arr.push(base + variance * wave);
-        }
-        setFrequencyData(arr);
+      const arr: number[] = [];
+      frameCount += isPlaying ? 0.2 : 0.02;
+
+      for (let i = 0; i < bars; i++) {
+        const base = isPlaying ? 4 : 2;
+        const variance = isPlaying ? 14 : 1;
+        const wave = Math.sin(frameCount + i * 0.6) * 0.5 + 0.5;
+        arr.push(base + variance * wave);
       }
+      setFrequencyData(arr);
+
       animationFrameRef.current = requestAnimationFrame(animate);
     };
 
@@ -175,7 +170,7 @@ const MusicPlayer = () => {
    }
  
   return (
-    <div className="hidden md:block fixed bottom-20 left-6 right-auto z-50">
+    <div className="hidden md:block fixed bottom-6 left-4 right-auto z-50">
       {/* Cosmic glow around player - outside */}
       <div className="absolute inset-0 -m-20 pointer-events-none">
         {/* Green glow */}
@@ -213,13 +208,13 @@ const MusicPlayer = () => {
               <Music className={`h-5 w-5 text-primary ${isPlaying ? 'animate-pulse' : ''}`} />
             </div>
             {/* Equalizer below icon */}
-            <div className="flex gap-0.5 h-4 items-end">
+            <div className="flex gap-1 h-4 items-end">
               {frequencyData.slice(0, 10).map((value, i) => {
-                const height = Math.max(2, (value / 255) * 16);
+                const height = Math.max(2, value);
                 return (
                   <div
                     key={i}
-                    className="w-0.5 bg-gradient-to-t from-primary to-cyan-500 rounded-full transition-all duration-75"
+                    className="w-[2px] bg-primary rounded-full transition-all duration-150"
                     style={{ height: `${height}px` }}
                   />
                 );
