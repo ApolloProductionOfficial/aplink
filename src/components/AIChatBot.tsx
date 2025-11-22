@@ -21,6 +21,7 @@ const AIChatBot = () => {
   const [showHint, setShowHint] = useState(false);
   const [showOscarWelcome, setShowOscarWelcome] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const lastAssistantMessageRef = useRef<HTMLDivElement>(null);
   const chatWindowRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const { t, language } = useTranslation();
@@ -29,12 +30,28 @@ const AIChatBot = () => {
   // Use scroll visibility hook - mobile only, hide during scroll
   const isVisible = useScrollVisibility(true, 200);
 
+  const scrollToLastAssistantMessage = () => {
+    // Scroll to the start of the last assistant message
+    setTimeout(() => {
+      lastAssistantMessageRef.current?.scrollIntoView({ 
+        behavior: "smooth", 
+        block: "start" 
+      });
+    }, 100);
+  };
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   useEffect(() => {
-    scrollToBottom();
+    // If the last message is from assistant, scroll to its start
+    if (messages.length > 0 && messages[messages.length - 1].role === 'assistant') {
+      scrollToLastAssistantMessage();
+    } else {
+      // Otherwise scroll to bottom (for user messages)
+      scrollToBottom();
+    }
   }, [messages]);
 
   // Animated hint that appears periodically
@@ -400,22 +417,26 @@ const AIChatBot = () => {
               </div>
             )}
             
-            {messages.map((msg, i) => (
-              <div
-                key={i}
-                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}
-              >
+            {messages.map((msg, i) => {
+              const isLastAssistantMessage = msg.role === 'assistant' && i === messages.length - 1;
+              return (
                 <div
-                  className={`max-w-[80%] p-3 rounded-xl backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] ${
-                    msg.role === 'user'
-                      ? 'bg-gradient-to-br from-primary via-primary to-primary/90 text-primary-foreground shadow-md shadow-primary/15'
-                      : 'bg-gradient-to-br from-primary/3 via-muted/90 to-primary/5 border border-primary/15 shadow-sm shadow-primary/5'
-                  }`}
+                  key={i}
+                  ref={isLastAssistantMessage ? lastAssistantMessageRef : null}
+                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}
                 >
-                  <p className="text-sm whitespace-pre-wrap leading-relaxed">{formatMessage(msg.content)}</p>
+                  <div
+                    className={`max-w-[80%] p-3 rounded-xl backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] ${
+                      msg.role === 'user'
+                        ? 'bg-gradient-to-br from-primary via-primary to-primary/90 text-primary-foreground shadow-md shadow-primary/15'
+                        : 'bg-gradient-to-br from-primary/3 via-muted/90 to-primary/5 border border-primary/15 shadow-sm shadow-primary/5'
+                    }`}
+                  >
+                    <p className="text-sm whitespace-pre-wrap leading-relaxed">{formatMessage(msg.content)}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
             
             {isLoading && (
               <div className="flex justify-start animate-fade-in">
