@@ -97,50 +97,29 @@ const MusicPlayer = () => {
     }
   }, [volume]);
 
-  // Setup audio analyzer
+  // Equalizer animation (not real frequencies, smooth visual effect)
   useEffect(() => {
-    const setupAnalyser = () => {
-      if (audioRef.current && !analyserRef.current && isPlaying) {
-        try {
-          console.log('Setting up audio analyser...');
-          const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-          const analyser = audioContext.createAnalyser();
-          const source = audioContext.createMediaElementSource(audioRef.current);
-          
-          analyser.fftSize = 64;
-          const bufferLength = analyser.frequencyBinCount;
-          const dataArray = new Uint8Array(bufferLength) as Uint8Array;
-          
-          source.connect(analyser);
-          analyser.connect(audioContext.destination);
-          
-          analyserRef.current = analyser;
-          dataArrayRef.current = dataArray;
-          
-          console.log('Audio analyser setup complete');
-          
-          const updateFrequencyData = () => {
-            if (analyserRef.current && dataArrayRef.current) {
-              // @ts-ignore - TypeScript issue with Uint8Array types
-              analyserRef.current.getByteFrequencyData(dataArrayRef.current);
-              const arr: number[] = [];
-              for (let i = 0; i < dataArrayRef.current.length; i++) {
-                arr.push(dataArrayRef.current[i]);
-              }
-              setFrequencyData(arr);
-            }
-            animationFrameRef.current = requestAnimationFrame(updateFrequencyData);
-          };
-          
-          updateFrequencyData();
-        } catch (error) {
-          console.error('Error setting up audio analyser:', error);
+    const bars = 10;
+
+    const animate = () => {
+      if (!isPlaying) {
+        setFrequencyData(new Array(bars).fill(2));
+      } else {
+        const arr: number[] = [];
+        for (let i = 0; i < bars; i++) {
+          const base = 2;
+          const variance = 14;
+          const intensity = 0.4 + Math.random() * 0.6;
+          arr.push(base + variance * intensity * (i % 3 === 0 ? 1.3 : 1));
         }
+        setFrequencyData(arr);
       }
+      animationFrameRef.current = requestAnimationFrame(animate);
     };
 
-    setupAnalyser();
-    
+    // start animation
+    animate();
+
     return () => {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
