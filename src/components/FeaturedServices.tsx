@@ -59,7 +59,7 @@ const FeaturedServices = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-2 gap-6 mb-8">
           {topServices.map((service) => {
             const Icon = service.icon;
             return (
@@ -113,7 +113,7 @@ const FeaturedServices = () => {
             className="group relative inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-primary/20 to-cyan-500/20 hover:from-primary/30 hover:to-cyan-500/30 border border-primary/50 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-primary/20"
           >
             <span className="text-lg font-semibold text-primary">
-              {t.services.title}
+              {t.services.allServices}
             </span>
             <span className="text-primary group-hover:translate-x-1 transition-transform">→</span>
             

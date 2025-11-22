@@ -125,6 +125,7 @@ export const translations = {
     // Services Page
     services: {
       title: "Наши услуги",
+      allServices: "Все услуги",
       subtitle: "Полный спектр услуг для успешной работы на OnlyFans",
       howItWorks: "Как это работает",
       step1: "Консультация",
@@ -1085,6 +1086,7 @@ export const translations = {
     // Services Page
     services: {
       title: "Our Services",
+      allServices: "All Services",
       subtitle: "Full range of services for successful work on OnlyFans",
       howItWorks: "How it Works",
       step1: "Consultation",
@@ -1657,6 +1659,7 @@ export const translations = {
     // Services Page
     services: {
       title: "Наші послуги",
+      allServices: "Усі послуги",
       subtitle: "Повний спектр послуг для успішної роботи на OnlyFans",
       howItWorks: "Як це працює",
       step1: "Консультація",
