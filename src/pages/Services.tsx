@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, Unlock, MapPin, Video, Instagram, HandshakeIcon, Shield, Filter } from "lucide-react";
+import { ArrowLeft, Unlock, MapPin, Video, Instagram, HandshakeIcon, Shield, Filter, Users } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useButtonSound } from "@/hooks/useButtonSound";
 import { useState, useEffect, useRef } from "react";
@@ -130,6 +130,15 @@ const Services = () => {
       path: "/instagram-automation",
       targetAudience: "both",
       platforms: ["instagram", "tiktok", "reddit"],
+    },
+    {
+      id: "marketplace",
+      title: t.marketplace?.title || "Marketplace | Only4riend",
+      description: t.marketplace?.subtitle || "Площадка покупки и продажи контактов моделей",
+      icon: Users,
+      path: "/marketplace",
+      targetAudience: "both",
+      platforms: ["onlyfans", "fansly"],
     },
   ];
 

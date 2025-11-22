@@ -84,6 +84,14 @@ const Sidebar = () => {
       internal: true,
       icon: Shield,
       color: 'from-primary/20 to-primary/10'
+    },
+    { 
+      text: t.rightSidebar.marketplace || "Marketplace | Only4riend", 
+      url: "/marketplace", 
+      highlight: true, 
+      internal: true,
+      icon: Users,
+      color: 'from-primary/30 to-primary/20'
     }
   ];
 

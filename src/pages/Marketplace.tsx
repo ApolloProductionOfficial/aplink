@@ -63,6 +63,20 @@ const Marketplace = () => {
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
             {t.marketplace.subtitle}
           </p>
+
+          {/* Telegram Group Link at Top */}
+          <div className="mt-8">
+            <Button
+              onClick={() => {
+                playClickSound();
+                window.open('https://t.me/+V0MgR5QKSb01MTZi', '_blank');
+              }}
+              size="lg"
+              className="bg-primary hover:bg-primary/90 text-lg px-8 py-6"
+            >
+              {t.marketplace.telegramGroup}
+            </Button>
+          </div>
         </div>
 
         {/* Model Statuses */}
