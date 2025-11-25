@@ -31,7 +31,7 @@ const CustomCursor = () => {
     // Remove old trail points faster
     const interval = setInterval(() => {
       setTrail((prev) => prev.slice(1));
-    }, 30);
+    }, 20);
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
@@ -43,7 +43,7 @@ const CustomCursor = () => {
     <div className="hidden md:block">
       {/* Main cursor - Neon glow */}
       <div
-        className={`fixed pointer-events-none z-[9999] transition-transform duration-75 ${
+        className={`fixed pointer-events-none z-[9999] transition-transform duration-50 ${
           isPointer ? 'scale-125' : 'scale-100'
         }`}
         style={{

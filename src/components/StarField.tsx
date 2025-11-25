@@ -24,8 +24,8 @@ const StarField = () => {
     }
 
     const stars: Star[] = [];
-    // Reduced from 150 to 80 for better performance
-    const starCount = 80;
+    // Reduced for better performance
+    const starCount = 50;
 
     // Create stars
     for (let i = 0; i < starCount; i++) {

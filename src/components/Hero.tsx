@@ -96,8 +96,8 @@ const Hero = () => {
                 />
               ))}
               
-              {/* Space particles / stars - reduced from 40 to 20 */}
-              {[...Array(20)].map((_, i) => {
+              {/* Space particles / stars - reduced for performance */}
+              {[...Array(12)].map((_, i) => {
                 const size = Math.random() > 0.7 ? 'w-1 h-1' : 'w-0.5 h-0.5';
                 return (
                   <div

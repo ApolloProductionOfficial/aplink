@@ -1,6 +1,7 @@
+import { memo } from "react";
 import { Users, TrendingUp, MessageCircle, Shield } from "lucide-react";
 
-const Services = () => {
+const Services = memo(() => {
   const services = [
     {
       icon: Users,
@@ -61,6 +62,8 @@ const Services = () => {
       </div>
     </section>
   );
-};
+});
+
+Services.displayName = "Services";
 
 export default Services;
