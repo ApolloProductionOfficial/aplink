@@ -1,7 +1,6 @@
-import { memo } from "react";
 import { Users, TrendingUp, MessageCircle, Shield } from "lucide-react";
 
-const Services = memo(() => {
+const Services = () => {
   const services = [
     {
       icon: Users,
@@ -28,8 +27,11 @@ const Services = memo(() => {
   return (
     <section id="services" className="py-20 px-4 bg-secondary/30 relative overflow-hidden">
       <div className="absolute top-1/4 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl animate-float" />
-      <div className="absolute bottom-1/4 left-0 w-64 h-64 bg-accent/5 rounded-full blur-3xl animate-float" style={{ animationDelay: '3s' }} />
-      
+      <div
+        className="absolute bottom-1/4 left-0 w-64 h-64 bg-accent/5 rounded-full blur-3xl animate-float"
+        style={{ animationDelay: "3s" }}
+      />
+
       <div className="container mx-auto relative z-10">
         <div className="text-center mb-12 animate-slide-up">
           <span className="text-sm font-semibold text-primary bg-primary/10 px-4 py-2 rounded-full inline-block mb-4">
@@ -39,7 +41,7 @@ const Services = memo(() => {
             Что мы предлагаем
           </h2>
         </div>
-        
+
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
           {services.map((service, index) => (
             <div
@@ -62,8 +64,6 @@ const Services = memo(() => {
       </div>
     </section>
   );
-});
-
-Services.displayName = "Services";
+};
 
 export default Services;
