@@ -201,87 +201,80 @@ const MusicPlayer = () => {
         />
         
         {/* Mobile & Desktop: Play button on mobile, slider for all */}
-        <div className="relative z-10 flex items-center gap-3 w-full">
-          {/* Music icon with glow and equalizer - desktop only */}
-          <div className="hidden md:flex flex-col items-center gap-1 flex-shrink-0">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/25 to-primary/12 flex items-center justify-center border-2 border-primary/30 shadow-lg shadow-primary/15">
-              <Music className={`h-4 w-4 text-primary ${isPlaying ? 'animate-pulse' : ''}`} />
+        <div className="relative z-10 flex flex-col gap-3 w-full">
+          {/* Top row: Icon, equalizer, and control buttons */}
+          <div className="flex items-center justify-between w-full">
+            {/* Music icon with glow and equalizer - desktop only */}
+            <div className="hidden md:flex items-center gap-3 flex-shrink-0">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/25 to-primary/12 flex items-center justify-center border-2 border-primary/30 shadow-lg shadow-primary/15">
+                <Music className={`h-4 w-4 text-primary ${isPlaying ? 'animate-pulse' : ''}`} />
+              </div>
+              {/* Equalizer */}
+              <div className="flex gap-0.5 h-6 items-end">
+                {frequencyData.slice(0, 8).map((value, i) => {
+                  const height = Math.max(2, value * 0.8);
+                  return (
+                    <div
+                      key={i}
+                      className="w-[2px] bg-primary rounded-full transition-all duration-150"
+                      style={{ height: `${height}px` }}
+                    />
+                  );
+                })}
+              </div>
             </div>
-            {/* Equalizer below icon */}
-            <div className="flex gap-0.5 h-3 items-end">
-              {frequencyData.slice(0, 8).map((value, i) => {
-                const height = Math.max(2, value * 0.8);
-                return (
-                  <div
-                    key={i}
-                    className="w-[2px] bg-primary rounded-full transition-all duration-150"
-                    style={{ height: `${height}px` }}
-                  />
-                );
-              })}
+
+            {/* Control buttons */}
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`h-8 w-8 rounded-full transition-all duration-300 ${
+                  isPlaying 
+                    ? 'bg-primary/20 text-primary hover:bg-primary/30 shadow-lg shadow-primary/20' 
+                    : 'hover:bg-primary/10 hover:text-primary'
+                }`}
+                onClick={togglePlay}
+              >
+                {isPlaying ? (
+                  <Pause className="h-4 w-4" />
+                ) : (
+                  <Play className="h-4 w-4" />
+                )}
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`h-8 w-8 rounded-full transition-all duration-300 ${
+                  isMuted 
+                    ? 'bg-destructive/20 text-destructive hover:bg-destructive/30' 
+                    : 'hover:bg-primary/10 hover:text-primary'
+                }`}
+                onClick={toggleMute}
+              >
+                {isMuted ? (
+                  <VolumeX className="h-4 w-4" />
+                ) : (
+                  <Volume2 className="h-4 w-4" />
+                )}
+              </Button>
             </div>
           </div>
-          {/* Play/Pause button only on mobile */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 md:hidden flex-shrink-0"
-            onClick={togglePlay}
-          >
-            {isPlaying ? (
-              <Pause className="h-3.5 w-3.5" />
-            ) : (
-              <Play className="h-3.5 w-3.5" />
-            )}
-          </Button>
 
-          <div className="flex-1 py-2 md:py-0">
-            <Slider
-              value={[volume]}
-              onValueChange={handleVolumeChange}
-              max={100}
-              step={1}
-              className="w-full"
-            />
-          </div>
-
-          {/* Десктоп: маленький текст и кнопки справа */}
-          <div className="hidden md:flex items-center gap-1.5">
-            <span className="text-xs font-medium text-primary/80 w-9 text-right bg-primary/10 rounded-full px-1.5 py-0.5">
+          {/* Bottom row: Volume slider */}
+          <div className="flex items-center gap-2 w-full">
+            <div className="flex-1">
+              <Slider
+                value={[volume]}
+                onValueChange={handleVolumeChange}
+                max={100}
+                step={1}
+                className="w-full cursor-pointer"
+              />
+            </div>
+            <span className="text-xs font-medium text-primary/80 min-w-[2.5rem] text-right bg-primary/10 rounded-full px-2 py-0.5">
               {volume}%
             </span>
-            <Button
-              variant="ghost"
-              size="icon"
-              className={`h-7 w-7 rounded-full transition-all duration-300 ${
-                isPlaying 
-                  ? 'bg-primary/20 text-primary hover:bg-primary/30 shadow-lg shadow-primary/20' 
-                  : 'hover:bg-primary/10 hover:text-primary'
-              }`}
-              onClick={togglePlay}
-            >
-              {isPlaying ? (
-                <Pause className="h-3.5 w-3.5" />
-              ) : (
-                <Play className="h-3.5 w-3.5" />
-              )}
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className={`h-7 w-7 rounded-full transition-all duration-300 ${
-                isMuted 
-                  ? 'bg-destructive/20 text-destructive hover:bg-destructive/30' 
-                  : 'hover:bg-primary/10 hover:text-primary'
-              }`}
-              onClick={toggleMute}
-            >
-              {isMuted ? (
-                <VolumeX className="h-3.5 w-3.5" />
-              ) : (
-                <Volume2 className="h-3.5 w-3.5" />
-              )}
-            </Button>
           </div>
         </div>
       </div>
