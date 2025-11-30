@@ -186,7 +186,7 @@ const MusicPlayer = () => {
       <div
         className={`relative group bg-gradient-to-br from-card/95 to-card/80 backdrop-blur-xl border-2 ${
           isPlaying ? 'border-primary/40 shadow-xl shadow-primary/15' : 'border-border/50'
-        } rounded-2xl md:w-56 md:p-3 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-primary/20`}
+        } rounded-2xl md:w-80 md:p-3 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-primary/20`}
       >
         {/* Cosmic glow effect */}
         <div className={`absolute inset-0 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-2xl blur-xl opacity-0 ${
