@@ -203,29 +203,30 @@ const MusicPlayer = () => {
         {/* Mobile & Desktop: Play button on mobile, slider for all */}
         <div className="relative z-10 flex flex-col gap-3 w-full">
           {/* Top row: Icon, equalizer, and control buttons */}
-          <div className="flex items-center justify-between w-full">
-            {/* Music icon with glow and equalizer - desktop only */}
-            <div className="hidden md:flex items-center gap-3 flex-shrink-0">
+          <div className="flex items-center gap-3 w-full">
+            {/* Music icon - desktop only */}
+            <div className="hidden md:flex flex-shrink-0">
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/25 to-primary/12 flex items-center justify-center border-2 border-primary/30 shadow-lg shadow-primary/15">
                 <Music className={`h-4 w-4 text-primary ${isPlaying ? 'animate-pulse' : ''}`} />
               </div>
-              {/* Equalizer */}
-              <div className="flex gap-0.5 h-6 items-end">
-                {frequencyData.slice(0, 8).map((value, i) => {
-                  const height = Math.max(2, value * 0.8);
-                  return (
-                    <div
-                      key={i}
-                      className="w-[2px] bg-primary rounded-full transition-all duration-150"
-                      style={{ height: `${height}px` }}
-                    />
-                  );
-                })}
-              </div>
+            </div>
+            
+            {/* Equalizer - stretched across */}
+            <div className="hidden md:flex flex-1 gap-1 h-6 items-end justify-center px-2">
+              {frequencyData.slice(0, 20).map((value, i) => {
+                const height = Math.max(3, value * 1.2);
+                return (
+                  <div
+                    key={i}
+                    className="flex-1 max-w-[3px] bg-gradient-to-t from-primary to-primary/50 rounded-full transition-all duration-150 shadow-sm shadow-primary/30"
+                    style={{ height: `${height}px` }}
+                  />
+                );
+              })}
             </div>
 
             {/* Control buttons */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-shrink-0">
               <Button
                 variant="ghost"
                 size="icon"
