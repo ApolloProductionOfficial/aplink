@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Copy, Check, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -13,12 +13,20 @@ declare global {
 const MeetingRoom = () => {
   const { roomId } = useParams();
   const [searchParams] = useSearchParams();
-  const userName = searchParams.get("name") || "Гость";
+  const navigate = useNavigate();
+  const userName = searchParams.get("name");
   const containerRef = useRef<HTMLDivElement>(null);
   const apiRef = useRef<any>(null);
   const [copied, setCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+
+  // Redirect to home page if no name provided - user must introduce themselves
+  useEffect(() => {
+    if (!userName) {
+      navigate(`/?room=${encodeURIComponent(roomId || "")}`);
+    }
+  }, [userName, roomId, navigate]);
 
   const roomLink = `${window.location.origin}/room/${roomId}`;
 
@@ -108,11 +116,34 @@ const MeetingRoom = () => {
             DEFAULT_BACKGROUND: "#050505",
             TOOLBAR_ALWAYS_VISIBLE: true,
             MOBILE_APP_PROMO: false,
+            TOOLBAR_BACKGROUND: "#0a0a0a",
           },
         };
 
         apiRef.current = new window.JitsiMeetExternalAPI(domain, options);
         setIsLoading(false);
+
+        // Inject custom CSS to style the toolbar to match site theme
+        const injectCustomStyles = () => {
+          const iframe = containerRef.current?.querySelector('iframe');
+          if (iframe && iframe.contentDocument) {
+            const style = iframe.contentDocument.createElement('style');
+            style.textContent = `
+              .new-toolbox {
+                background: linear-gradient(to top, rgba(10, 10, 10, 0.95), rgba(10, 10, 10, 0.8)) !important;
+                border-top: 1px solid rgba(139, 92, 246, 0.2) !important;
+              }
+              .toolbox-background {
+                background: linear-gradient(to top, rgba(10, 10, 10, 0.95), transparent) !important;
+              }
+            `;
+            iframe.contentDocument.head.appendChild(style);
+          }
+        };
+        
+        // Try to inject styles after iframe loads
+        setTimeout(injectCustomStyles, 2000);
+        setTimeout(injectCustomStyles, 4000);
 
         // Handle call end - redirect to Apollo Production
         apiRef.current.addEventListener("readyToClose", () => {
@@ -141,6 +172,11 @@ const MeetingRoom = () => {
       }
     };
   }, [roomId, userName, toast]);
+
+  // Don't render if no username - redirecting
+  if (!userName) {
+    return null;
+  }
 
   return (
     <div className="h-screen w-screen bg-background flex flex-col overflow-hidden">

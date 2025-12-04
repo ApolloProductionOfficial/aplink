@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Video, Users, Globe, Shield, ArrowRight, Sparkles, MessageCircle, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,9 +10,18 @@ import cfLogo from "@/assets/cf-logo-final.png";
 import promoVideo from "@/assets/promo-video.mp4";
 
 const Index = () => {
-  const [roomName, setRoomName] = useState("");
+  const [searchParams] = useSearchParams();
+  const roomFromUrl = searchParams.get("room") || "";
+  const [roomName, setRoomName] = useState(roomFromUrl);
   const [userName, setUserName] = useState("");
   const navigate = useNavigate();
+
+  // Update room name if URL param changes
+  useEffect(() => {
+    if (roomFromUrl) {
+      setRoomName(roomFromUrl);
+    }
+  }, [roomFromUrl]);
 
   const handleJoinRoom = () => {
     if (roomName.trim() && userName.trim()) {
