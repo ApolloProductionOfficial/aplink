@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Video, Users, Globe, Shield, ArrowRight, Sparkles } from "lucide-react";
+import { Video, Users, Globe, Shield, ArrowRight, Sparkles, MessageCircle, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import StarField from "@/components/StarField";
 import CustomCursor from "@/components/CustomCursor";
+import cfLogo from "@/assets/cf-logo-final.png";
+import promoVideo from "@/assets/promo-video.mp4";
 
 const Index = () => {
   const [roomName, setRoomName] = useState("");
@@ -54,25 +56,49 @@ const Index = () => {
       <StarField />
       <CustomCursor />
       
+      {/* Video Background */}
+      <div className="fixed inset-0 z-0 flex items-center justify-center overflow-hidden">
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="min-w-full min-h-full object-cover opacity-30"
+        >
+          <source src={promoVideo} type="video/mp4" />
+        </video>
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-background/60" />
+      </div>
+
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
-              <Video className="w-5 h-5 text-primary-foreground" />
-            </div>
+            <img src={cfLogo} alt="Logo" className="w-10 h-10 object-contain" />
             <span className="text-2xl font-bold bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent">
               APLink
             </span>
           </div>
-          <a 
-            href="https://apolloproduction.studio" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="text-muted-foreground hover:text-primary transition-colors text-sm"
-          >
-            Apollo Production
-          </a>
+          <div className="flex items-center gap-4">
+            <a 
+              href="https://t.me/Apollo_Production" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors text-sm"
+            >
+              <MessageCircle className="w-4 h-4" />
+              <span className="hidden sm:inline">Telegram</span>
+            </a>
+            <a 
+              href="https://apolloproduction.studio" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors text-sm"
+            >
+              <ExternalLink className="w-4 h-4" />
+              <span className="hidden sm:inline">Сайт</span>
+            </a>
+          </div>
         </div>
       </header>
 
@@ -162,7 +188,7 @@ const Index = () => {
       <footer className="relative z-10 py-8 border-t border-border/30">
         <div className="container mx-auto px-4 text-center">
           <p className="text-muted-foreground text-sm">
-            © 2024 APLink by{" "}
+            © 2025 APLink by{" "}
             <a 
               href="https://apolloproduction.studio" 
               target="_blank" 
