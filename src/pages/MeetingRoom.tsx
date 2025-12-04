@@ -3,6 +3,7 @@ import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Copy, Check, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import cfLogo from "@/assets/cf-logo-final.png";
 
 declare global {
   interface Window {
@@ -70,7 +71,11 @@ const MeetingRoom = () => {
             startWithAudioMuted: false,
             startWithVideoMuted: false,
             prejoinPageEnabled: false,
+            prejoinConfig: {
+              enabled: false,
+            },
             disableDeepLinking: true,
+            enableInsecureRoomNameWarning: false,
             defaultLanguage: "ru",
             toolbarButtons: [
               'camera',
@@ -179,16 +184,17 @@ const MeetingRoom = () => {
   }
 
   return (
-    <div className="h-screen w-screen bg-background flex flex-col overflow-hidden">
+    <div className="h-screen w-screen bg-background flex flex-col overflow-hidden" style={{ cursor: 'default' }}>
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-3 bg-card/80 backdrop-blur-xl border-b border-border/50 z-10">
+      <header className="flex items-center justify-between px-4 py-3 bg-card/80 backdrop-blur-xl border-b border-border/50 z-10" style={{ cursor: 'default' }}>
         <div className="flex items-center gap-4">
           <a
             href="/"
-            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
           >
             <ArrowLeft className="w-5 h-5" />
-            <span className="hidden sm:inline">APLink</span>
+            <img src={cfLogo} alt="Logo" className="w-8 h-8 object-contain rounded-full" />
+            <span className="hidden sm:inline font-semibold">APLink</span>
           </a>
           <div className="h-6 w-px bg-border/50" />
           <div className="flex items-center gap-2">
