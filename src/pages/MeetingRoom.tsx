@@ -184,15 +184,24 @@ const MeetingRoom = () => {
   }
 
   return (
-    <div className="h-screen w-screen bg-background flex flex-col overflow-hidden [&_*]:cursor-auto">
+    <div className="h-screen w-screen bg-background flex flex-col overflow-hidden">
+      {/* Custom cursor style for header */}
+      <style>{`
+        .meeting-header, .meeting-header * {
+          cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath fill='white' stroke='black' stroke-width='1' d='M5.5 3.21V20.8l6.3-5.6h7.7L5.5 3.21z'/%3E%3C/svg%3E") 4 4, auto !important;
+        }
+        .meeting-header a:hover, .meeting-header button:hover {
+          cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath fill='white' stroke='black' stroke-width='1' d='M11 1L5 7l3.5 0L8.5 14l5 0L13.5 7l3.5 0L11 1z'/%3E%3C/svg%3E") 11 1, pointer !important;
+        }
+      `}</style>
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-3 bg-card/80 backdrop-blur-xl border-b border-border/50 z-50 relative cursor-default">
-        <div className="flex items-center gap-4 cursor-default">
+      <header className="meeting-header flex items-center justify-between px-4 py-3 bg-card/80 backdrop-blur-xl border-b border-border/50 z-50 relative">
+        <div className="flex items-center gap-4">
           <a
             href="/"
-            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
           >
-            <ArrowLeft className="w-5 h-5 cursor-pointer" />
+            <ArrowLeft className="w-5 h-5" />
             <video 
               src={logoVideo} 
               autoPlay 
@@ -201,12 +210,12 @@ const MeetingRoom = () => {
               playsInline
               className="w-8 h-8 object-cover rounded-full"
             />
-            <span className="hidden sm:inline font-semibold cursor-pointer">APLink</span>
+            <span className="hidden sm:inline font-semibold">APLink</span>
           </a>
           <div className="h-6 w-px bg-border/50" />
-          <div className="flex items-center gap-2 cursor-default">
+          <div className="flex items-center gap-2">
             <Users className="w-4 h-4 text-primary" />
-            <span className="text-sm font-medium truncate max-w-[200px] cursor-text select-all">{roomId}</span>
+            <span className="text-sm font-medium truncate max-w-[200px]">{roomId}</span>
           </div>
         </div>
         
