@@ -3,7 +3,7 @@ import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Copy, Check, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import cfLogo from "@/assets/cf-logo-final.png";
+import logoVideo from "@/assets/logo-video.mov";
 
 declare global {
   interface Window {
@@ -184,22 +184,29 @@ const MeetingRoom = () => {
   }
 
   return (
-    <div className="h-screen w-screen bg-background flex flex-col overflow-hidden" style={{ cursor: 'default' }}>
+    <div className="h-screen w-screen bg-background flex flex-col overflow-hidden [&_*]:cursor-auto">
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-3 bg-card/80 backdrop-blur-xl border-b border-border/50 z-10" style={{ cursor: 'default' }}>
-        <div className="flex items-center gap-4">
+      <header className="flex items-center justify-between px-4 py-3 bg-card/80 backdrop-blur-xl border-b border-border/50 z-50 relative cursor-default">
+        <div className="flex items-center gap-4 cursor-default">
           <a
             href="/"
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
           >
-            <ArrowLeft className="w-5 h-5" />
-            <img src={cfLogo} alt="Logo" className="w-8 h-8 object-contain rounded-full" />
-            <span className="hidden sm:inline font-semibold">APLink</span>
+            <ArrowLeft className="w-5 h-5 cursor-pointer" />
+            <video 
+              src={logoVideo} 
+              autoPlay 
+              loop 
+              muted 
+              playsInline
+              className="w-8 h-8 object-cover rounded-full"
+            />
+            <span className="hidden sm:inline font-semibold cursor-pointer">APLink</span>
           </a>
           <div className="h-6 w-px bg-border/50" />
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 cursor-default">
             <Users className="w-4 h-4 text-primary" />
-            <span className="text-sm font-medium truncate max-w-[200px]">{roomId}</span>
+            <span className="text-sm font-medium truncate max-w-[200px] cursor-text select-all">{roomId}</span>
           </div>
         </div>
         

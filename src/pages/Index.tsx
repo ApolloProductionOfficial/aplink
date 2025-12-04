@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import StarField from "@/components/StarField";
 import CustomCursor from "@/components/CustomCursor";
-import cfLogo from "@/assets/cf-logo-final.png";
+import logoVideo from "@/assets/logo-video.mov";
 import promoVideo from "@/assets/promo-video.mp4";
 
 const Index = () => {
@@ -83,7 +83,14 @@ const Index = () => {
       <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src={cfLogo} alt="Logo" className="w-10 h-10 object-contain" />
+            <video 
+              src={logoVideo} 
+              autoPlay 
+              loop 
+              muted 
+              playsInline
+              className="w-10 h-10 object-cover rounded-full"
+            />
             <span className="text-2xl font-bold bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent">
               APLink
             </span>
