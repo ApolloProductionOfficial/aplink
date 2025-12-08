@@ -26,9 +26,15 @@ const Index = () => {
 
   const handleJoinRoom = () => {
     if (roomName.trim() && userName.trim()) {
-      // Use dashes in URL for cleaner look
       const cleanRoomName = roomName.trim().replace(/ /g, '-');
       navigate(`/room/${encodeURIComponent(cleanRoomName)}?name=${encodeURIComponent(userName.trim())}`);
+    }
+  };
+
+  const handleCreateRoom = () => {
+    const randomRoom = `APLink-${Math.random().toString(36).substring(2, 8)}`;
+    if (userName.trim()) {
+      navigate(`/room/${randomRoom}?name=${encodeURIComponent(userName.trim())}`);
     }
   };
 
@@ -146,22 +152,35 @@ const Index = () => {
                 />
                 <Input
                   type="text"
-                  placeholder="Название комнаты (например: APOLLO TEAM)"
+                  placeholder="Название комнаты (или оставьте пустым)"
                   value={roomName}
                   onChange={(e) => setRoomName(e.target.value)}
                   className="bg-background/50 border-border/50 h-12 text-lg"
-                  onKeyDown={(e) => e.key === 'Enter' && roomName && handleJoinRoom()}
+                  onKeyDown={(e) => e.key === 'Enter' && (roomName ? handleJoinRoom() : handleCreateRoom())}
                 />
-                <Button
-                  onClick={handleJoinRoom}
-                  disabled={!userName.trim() || !roomName.trim()}
-                  className="w-full h-12 text-lg bg-primary hover:bg-primary/90 transition-all duration-300 hover:scale-105"
-                >
-                  <ArrowRight className="w-5 h-5 mr-2" />
-                  Присоединиться
-                </Button>
+                <div className="flex gap-3">
+                  <Button
+                    onClick={handleCreateRoom}
+                    disabled={!userName.trim()}
+                    className="flex-1 h-12 text-lg bg-primary hover:bg-primary/90 transition-all duration-300 hover:scale-105"
+                  >
+                    <Video className="w-5 h-5 mr-2" />
+                    Создать комнату
+                  </Button>
+                  {roomName && (
+                    <Button
+                      onClick={handleJoinRoom}
+                      disabled={!userName.trim()}
+                      variant="outline"
+                      className="flex-1 h-12 text-lg border-primary/50 hover:bg-primary/10 transition-all duration-300 hover:scale-105"
+                    >
+                      <ArrowRight className="w-5 h-5 mr-2" />
+                      Присоединиться
+                    </Button>
+                  )}
+                </div>
                 <p className="text-xs text-muted-foreground text-center">
-                  Введите название комнаты и присоединитесь к звонку
+                  Создайте новую комнату или введите название существующей
                 </p>
               </div>
             </div>
