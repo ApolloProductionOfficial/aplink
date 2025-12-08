@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Copy, Check, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,45 @@ declare global {
   }
 }
 
+// Sound notification functions
+const playJoinSound = () => {
+  const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+  const oscillator = audioContext.createOscillator();
+  const gainNode = audioContext.createGain();
+  
+  oscillator.connect(gainNode);
+  gainNode.connect(audioContext.destination);
+  
+  oscillator.frequency.setValueAtTime(880, audioContext.currentTime); // A5
+  oscillator.frequency.setValueAtTime(1100, audioContext.currentTime + 0.1); // C#6
+  oscillator.type = 'sine';
+  
+  gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+  gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+  
+  oscillator.start(audioContext.currentTime);
+  oscillator.stop(audioContext.currentTime + 0.3);
+};
+
+const playLeaveSound = () => {
+  const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+  const oscillator = audioContext.createOscillator();
+  const gainNode = audioContext.createGain();
+  
+  oscillator.connect(gainNode);
+  gainNode.connect(audioContext.destination);
+  
+  oscillator.frequency.setValueAtTime(660, audioContext.currentTime); // E5
+  oscillator.frequency.setValueAtTime(440, audioContext.currentTime + 0.15); // A4
+  oscillator.type = 'sine';
+  
+  gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+  gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+  
+  oscillator.start(audioContext.currentTime);
+  oscillator.stop(audioContext.currentTime + 0.3);
+};
+
 const MeetingRoom = () => {
   const { roomId } = useParams();
   const [searchParams] = useSearchParams();
@@ -21,14 +60,16 @@ const MeetingRoom = () => {
   const apiRef = useRef<any>(null);
   const [copied, setCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [participantCount, setParticipantCount] = useState(1);
   const { toast } = useToast();
 
-  // Use room ID as-is for Jitsi (consistent room name)
-  // Display with proper formatting (dashes to spaces)
+  // Decode room name for display (dashes to spaces)
   const roomDisplayName = decodeURIComponent(roomId || '').replace(/-/g, ' ');
+  // Create a clean room ID for Jitsi (lowercase, no spaces, alphanumeric + underscores)
+  const jitsiRoomId = roomDisplayName.toLowerCase().replace(/[^a-z0-9]/g, '_');
   const roomSlug = roomId || '';
 
-  // Redirect to home page if no name provided - user must introduce themselves
+  // Redirect to home page if no name provided
   useEffect(() => {
     if (!userName) {
       navigate(`/?room=${encodeURIComponent(roomSlug)}`);
@@ -57,9 +98,10 @@ const MeetingRoom = () => {
   };
 
   useEffect(() => {
+    if (!userName) return;
+
     const initJitsi = () => {
       if (!containerRef.current || !window.JitsiMeetExternalAPI) {
-        // Retry if API not loaded yet
         setTimeout(initJitsi, 500);
         return;
       }
@@ -67,7 +109,7 @@ const MeetingRoom = () => {
       try {
         const domain = "8x8.vc";
         const options = {
-          roomName: `vpaas-magic-cookie-0dd6b184ec7a4883bb89cbfc8c186c8a/${roomSlug}`,
+          roomName: `vpaas-magic-cookie-0dd6b184ec7a4883bb89cbfc8c186c8a/${jitsiRoomId}`,
           parentNode: containerRef.current,
           width: "100%",
           height: "100%",
@@ -84,6 +126,7 @@ const MeetingRoom = () => {
             disableDeepLinking: true,
             enableInsecureRoomNameWarning: false,
             defaultLanguage: "ru",
+            subject: roomDisplayName, // Display room name in Jitsi
             toolbarButtons: [
               'camera',
               'chat',
@@ -129,13 +172,19 @@ const MeetingRoom = () => {
             TOOLBAR_ALWAYS_VISIBLE: true,
             MOBILE_APP_PROMO: false,
             TOOLBAR_BACKGROUND: "#0a0a0a",
+            APP_NAME: "APLink",
+            NATIVE_APP_NAME: "APLink",
+            PROVIDER_NAME: "Apollo Production",
           },
         };
 
         apiRef.current = new window.JitsiMeetExternalAPI(domain, options);
         setIsLoading(false);
 
-        // Inject custom CSS to style the toolbar to match site theme
+        // Set the display subject/room name after API is ready
+        apiRef.current.executeCommand('subject', roomDisplayName);
+
+        // Inject custom CSS
         const injectCustomStyles = () => {
           const iframe = containerRef.current?.querySelector('iframe');
           if (iframe && iframe.contentDocument) {
@@ -153,11 +202,36 @@ const MeetingRoom = () => {
           }
         };
         
-        // Try to inject styles after iframe loads
         setTimeout(injectCustomStyles, 2000);
         setTimeout(injectCustomStyles, 4000);
 
-        // Handle call end - redirect to Apollo Production
+        // Participant joined - play sound
+        apiRef.current.addEventListener("participantJoined", (event: any) => {
+          console.log("Participant joined:", event);
+          playJoinSound();
+          toast({
+            title: "Участник присоединился",
+            description: event.displayName || "Новый участник",
+          });
+          apiRef.current.getNumberOfParticipants().then((count: number) => {
+            setParticipantCount(count);
+          });
+        });
+
+        // Participant left - play sound
+        apiRef.current.addEventListener("participantLeft", (event: any) => {
+          console.log("Participant left:", event);
+          playLeaveSound();
+          toast({
+            title: "Участник вышел",
+            description: "Кто-то покинул звонок",
+          });
+          apiRef.current.getNumberOfParticipants().then((count: number) => {
+            setParticipantCount(count);
+          });
+        });
+
+        // Handle call end
         apiRef.current.addEventListener("readyToClose", () => {
           window.location.href = "https://apolloproduction.studio";
         });
@@ -183,9 +257,8 @@ const MeetingRoom = () => {
         apiRef.current.dispose();
       }
     };
-  }, [roomId, userName, toast]);
+  }, [jitsiRoomId, userName, roomDisplayName, toast]);
 
-  // Don't render if no username - redirecting
   if (!userName) {
     return null;
   }
