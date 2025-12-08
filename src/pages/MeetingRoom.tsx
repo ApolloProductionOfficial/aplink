@@ -76,7 +76,7 @@ const MeetingRoom = () => {
           },
           configOverwrite: {
             startWithAudioMuted: false,
-            startWithVideoMuted: false,
+            startWithVideoMuted: true,
             prejoinPageEnabled: false,
             prejoinConfig: {
               enabled: false,
