@@ -14,6 +14,84 @@ export type Database = {
   }
   public: {
     Tables: {
+      meeting_participants: {
+        Row: {
+          city: string | null
+          country: string | null
+          country_code: string | null
+          id: string
+          ip_address: string | null
+          joined_at: string
+          left_at: string | null
+          region: string | null
+          room_id: string
+          user_name: string
+        }
+        Insert: {
+          city?: string | null
+          country?: string | null
+          country_code?: string | null
+          id?: string
+          ip_address?: string | null
+          joined_at?: string
+          left_at?: string | null
+          region?: string | null
+          room_id: string
+          user_name: string
+        }
+        Update: {
+          city?: string | null
+          country?: string | null
+          country_code?: string | null
+          id?: string
+          ip_address?: string | null
+          joined_at?: string
+          left_at?: string | null
+          region?: string | null
+          room_id?: string
+          user_name?: string
+        }
+        Relationships: []
+      }
+      meeting_transcripts: {
+        Row: {
+          created_at: string
+          ended_at: string | null
+          id: string
+          key_points: Json | null
+          participants: Json | null
+          room_id: string
+          room_name: string
+          started_at: string
+          summary: string | null
+          transcript: string | null
+        }
+        Insert: {
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          key_points?: Json | null
+          participants?: Json | null
+          room_id: string
+          room_name: string
+          started_at?: string
+          summary?: string | null
+          transcript?: string | null
+        }
+        Update: {
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          key_points?: Json | null
+          participants?: Json | null
+          room_id?: string
+          room_name?: string
+          started_at?: string
+          summary?: string | null
+          transcript?: string | null
+        }
+        Relationships: []
+      }
       news: {
         Row: {
           created_at: string

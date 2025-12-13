@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Copy, Check, Users } from "lucide-react";
+import { ArrowLeft, Copy, Check, Users, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import logoVideo from "@/assets/logo-video.mov";
 import CustomCursor from "@/components/CustomCursor";
 
@@ -21,12 +22,39 @@ const MeetingRoom = () => {
   const apiRef = useRef<any>(null);
   const [copied, setCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const transcriptRef = useRef<string[]>([]);
+  const participantsRef = useRef<Set<string>>(new Set());
   const { toast } = useToast();
 
   // Use room ID as-is for Jitsi (consistent room name)
   // Display with proper formatting (dashes to spaces)
   const roomDisplayName = decodeURIComponent(roomId || '').replace(/-/g, ' ');
   const roomSlug = roomId || '';
+
+  // Track participant join
+  useEffect(() => {
+    if (!userName || !roomSlug) return;
+    
+    const trackJoin = async () => {
+      try {
+        await supabase.functions.invoke('track-participant', {
+          body: { roomId: roomSlug, userName, action: 'join' }
+        });
+        console.log('Participant tracked:', userName);
+      } catch (error) {
+        console.error('Failed to track participant:', error);
+      }
+    };
+    
+    trackJoin();
+    
+    // Track leave on unmount
+    return () => {
+      supabase.functions.invoke('track-participant', {
+        body: { roomId: roomSlug, userName, action: 'leave' }
+      }).catch(console.error);
+    };
+  }, [userName, roomSlug]);
 
   // Redirect to home page if no name provided - user must introduce themselves
   useEffect(() => {
@@ -53,6 +81,34 @@ const MeetingRoom = () => {
         description: "Не удалось скопировать ссылку",
         variant: "destructive",
       });
+    }
+  };
+
+  // Save meeting transcript and summary
+  const saveMeetingTranscript = async () => {
+    if (transcriptRef.current.length === 0) {
+      console.log('No transcript to save');
+      return;
+    }
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('summarize-meeting', {
+        body: {
+          roomId: roomSlug,
+          roomName: roomDisplayName,
+          transcript: transcriptRef.current.join('\n'),
+          participants: Array.from(participantsRef.current)
+        }
+      });
+      
+      if (error) throw error;
+      
+      console.log('Meeting saved:', data);
+      
+      // Open history page after call ends
+      window.open('/history', '_blank');
+    } catch (error) {
+      console.error('Failed to save meeting:', error);
     }
   };
 
@@ -84,6 +140,11 @@ const MeetingRoom = () => {
             disableDeepLinking: true,
             enableInsecureRoomNameWarning: false,
             defaultLanguage: "ru",
+            // Enable transcription
+            transcription: {
+              enabled: true,
+              autoTranscribeOnRecord: true,
+            },
             toolbarButtons: [
               'camera',
               'chat',
@@ -135,6 +196,32 @@ const MeetingRoom = () => {
         apiRef.current = new window.JitsiMeetExternalAPI(domain, options);
         setIsLoading(false);
 
+        // Track participants
+        participantsRef.current.add(userName || 'Unknown');
+        
+        apiRef.current.addEventListener('participantJoined', (participant: { displayName: string }) => {
+          console.log('Participant joined:', participant);
+          if (participant.displayName) {
+            participantsRef.current.add(participant.displayName);
+          }
+        });
+
+        // Listen for transcription messages
+        apiRef.current.addEventListener('transcriptionChunkReceived', (data: { text: string; participant: { name: string } }) => {
+          console.log('Transcription:', data);
+          if (data.text) {
+            transcriptRef.current.push(`${data.participant?.name || 'Unknown'}: ${data.text}`);
+          }
+        });
+
+        // Also try endpoint messages for transcription
+        apiRef.current.addEventListener('endpointTextMessageReceived', (data: { text: string; participant: { displayName: string } }) => {
+          console.log('Endpoint message:', data);
+          if (data.text) {
+            transcriptRef.current.push(`${data.participant?.displayName || 'Unknown'}: ${data.text}`);
+          }
+        });
+
         // Inject custom CSS to style the toolbar to match site theme
         const injectCustomStyles = () => {
           const iframe = containerRef.current?.querySelector('iframe');
@@ -157,12 +244,14 @@ const MeetingRoom = () => {
         setTimeout(injectCustomStyles, 2000);
         setTimeout(injectCustomStyles, 4000);
 
-        // Handle call end - redirect to Apollo Production
-        apiRef.current.addEventListener("readyToClose", () => {
+        // Handle call end - save transcript and redirect
+        apiRef.current.addEventListener("readyToClose", async () => {
+          await saveMeetingTranscript();
           window.location.href = "https://apolloproduction.studio";
         });
 
-        apiRef.current.addEventListener("videoConferenceLeft", () => {
+        apiRef.current.addEventListener("videoConferenceLeft", async () => {
+          await saveMeetingTranscript();
           window.location.href = "https://apolloproduction.studio";
         });
 
@@ -196,12 +285,12 @@ const MeetingRoom = () => {
       {/* Header */}
       <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-4 py-2 sm:py-3 bg-card/80 backdrop-blur-xl border-b border-border/50 z-50 relative gap-2">
         {/* Mobile: Copy button on top */}
-        <div className="flex sm:hidden w-full justify-center">
+        <div className="flex sm:hidden w-full justify-center gap-2">
           <Button
             onClick={copyLink}
             variant="outline"
             size="sm"
-            className="border-primary/50 hover:bg-primary/10 w-full"
+            className="border-primary/50 hover:bg-primary/10 flex-1"
           >
             {copied ? (
               <>
@@ -211,9 +300,17 @@ const MeetingRoom = () => {
             ) : (
               <>
                 <Copy className="w-4 h-4 mr-2" />
-                Скопировать ссылку
+                Ссылка
               </>
             )}
+          </Button>
+          <Button
+            onClick={() => navigate('/history')}
+            variant="outline"
+            size="sm"
+            className="border-primary/50 hover:bg-primary/10"
+          >
+            <History className="w-4 h-4" />
           </Button>
         </div>
         
@@ -240,25 +337,36 @@ const MeetingRoom = () => {
           </div>
         </div>
         
-        {/* Desktop: Copy button on right */}
-        <Button
-          onClick={copyLink}
-          variant="outline"
-          size="sm"
-          className="hidden sm:flex border-primary/50 hover:bg-primary/10"
-        >
-          {copied ? (
-            <>
-              <Check className="w-4 h-4 mr-2 text-green-500" />
-              Скопировано
-            </>
-          ) : (
-            <>
-              <Copy className="w-4 h-4 mr-2" />
-              Скопировать ссылку
-            </>
-          )}
-        </Button>
+        {/* Desktop: Buttons on right */}
+        <div className="hidden sm:flex gap-2">
+          <Button
+            onClick={() => navigate('/history')}
+            variant="outline"
+            size="sm"
+            className="border-primary/50 hover:bg-primary/10"
+          >
+            <History className="w-4 h-4 mr-2" />
+            История
+          </Button>
+          <Button
+            onClick={copyLink}
+            variant="outline"
+            size="sm"
+            className="border-primary/50 hover:bg-primary/10"
+          >
+            {copied ? (
+              <>
+                <Check className="w-4 h-4 mr-2 text-green-500" />
+                Скопировано
+              </>
+            ) : (
+              <>
+                <Copy className="w-4 h-4 mr-2" />
+                Скопировать ссылку
+              </>
+            )}
+          </Button>
+        </div>
       </header>
 
       {/* Loading State */}
