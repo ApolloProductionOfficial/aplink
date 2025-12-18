@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Copy, Check, Users, History } from "lucide-react";
+import { ArrowLeft, Copy, Check, Users, History, User, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import logoVideo from "@/assets/logo-video.mov";
 import CustomCursor from "@/components/CustomCursor";
 
@@ -22,14 +23,66 @@ const MeetingRoom = () => {
   const apiRef = useRef<any>(null);
   const [copied, setCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+  const [showRegistrationHint, setShowRegistrationHint] = useState(false);
+  const headerTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const transcriptRef = useRef<string[]>([]);
   const participantsRef = useRef<Set<string>>(new Set());
   const { toast } = useToast();
+  const { user, isLoading: authLoading } = useAuth();
 
   // Use room ID as-is for Jitsi (consistent room name)
   // Display with proper formatting (dashes to spaces)
   const roomDisplayName = decodeURIComponent(roomId || '').replace(/-/g, ' ');
   const roomSlug = roomId || '';
+
+  // Auto-hide header after 3 seconds of inactivity
+  useEffect(() => {
+    if (isLoading) return;
+    
+    const hideHeader = () => {
+      setIsHeaderVisible(false);
+    };
+    
+    const showHeader = () => {
+      setIsHeaderVisible(true);
+      if (headerTimeoutRef.current) {
+        clearTimeout(headerTimeoutRef.current);
+      }
+      headerTimeoutRef.current = setTimeout(hideHeader, 3000);
+    };
+    
+    // Initial timeout
+    headerTimeoutRef.current = setTimeout(hideHeader, 3000);
+    
+    // Show header on mouse move near top
+    const handleMouseMove = (e: MouseEvent) => {
+      if (e.clientY < 100) {
+        showHeader();
+      }
+    };
+    
+    window.addEventListener('mousemove', handleMouseMove);
+    
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      if (headerTimeoutRef.current) {
+        clearTimeout(headerTimeoutRef.current);
+      }
+    };
+  }, [isLoading]);
+
+  // Show registration hint for non-authenticated users
+  useEffect(() => {
+    if (!authLoading && !user) {
+      const timer = setTimeout(() => {
+        setShowRegistrationHint(true);
+        // Auto-hide after 8 seconds
+        setTimeout(() => setShowRegistrationHint(false), 8000);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [authLoading, user]);
 
   // Track participant join
   useEffect(() => {
@@ -38,7 +91,7 @@ const MeetingRoom = () => {
     const trackJoin = async () => {
       try {
         await supabase.functions.invoke('track-participant', {
-          body: { roomId: roomSlug, userName, action: 'join' }
+          body: { roomId: roomSlug, userName, action: 'join', userId: user?.id || null }
         });
         console.log('Participant tracked:', userName);
       } catch (error) {
@@ -51,10 +104,10 @@ const MeetingRoom = () => {
     // Track leave on unmount
     return () => {
       supabase.functions.invoke('track-participant', {
-        body: { roomId: roomSlug, userName, action: 'leave' }
+        body: { roomId: roomSlug, userName, action: 'leave', userId: user?.id || null }
       }).catch(console.error);
     };
-  }, [userName, roomSlug]);
+  }, [userName, roomSlug, user?.id]);
 
   // Redirect to home page if no name provided - user must introduce themselves
   useEffect(() => {
@@ -86,6 +139,12 @@ const MeetingRoom = () => {
 
   // Save meeting transcript and summary
   const saveMeetingTranscript = async () => {
+    // Only save if user is authenticated
+    if (!user) {
+      console.log('User not authenticated, skipping transcript save');
+      return;
+    }
+    
     if (transcriptRef.current.length === 0) {
       console.log('No transcript to save');
       return;
@@ -97,7 +156,8 @@ const MeetingRoom = () => {
           roomId: roomSlug,
           roomName: roomDisplayName,
           transcript: transcriptRef.current.join('\n'),
-          participants: Array.from(participantsRef.current)
+          participants: Array.from(participantsRef.current),
+          userId: user.id
         }
       });
       
@@ -105,8 +165,8 @@ const MeetingRoom = () => {
       
       console.log('Meeting saved:', data);
       
-      // Open history page after call ends
-      window.open('/history', '_blank');
+      // Open dashboard after call ends
+      window.open('/dashboard', '_blank');
     } catch (error) {
       console.error('Failed to save meeting:', error);
     }
@@ -272,7 +332,7 @@ const MeetingRoom = () => {
         apiRef.current.dispose();
       }
     };
-  }, [roomId, userName, toast]);
+  }, [roomId, userName, toast, user]);
 
   // Don't render if no username - redirecting
   if (!userName) {
@@ -282,8 +342,13 @@ const MeetingRoom = () => {
   return (
     <div className="h-screen w-screen bg-background flex flex-col overflow-hidden cursor-none">
       <CustomCursor />
-      {/* Header */}
-      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-4 py-2 sm:py-3 bg-card/80 backdrop-blur-xl border-b border-border/50 z-50 relative gap-2">
+      
+      {/* Header - auto-hides */}
+      <header 
+        className={`flex flex-col sm:flex-row sm:items-center sm:justify-between px-4 py-2 sm:py-3 bg-card/80 backdrop-blur-xl border-b border-border/50 z-50 absolute top-0 left-0 right-0 gap-2 transition-transform duration-300 ${
+          isHeaderVisible ? 'translate-y-0' : '-translate-y-full'
+        }`}
+      >
         {/* Mobile: Copy button on top */}
         <div className="flex sm:hidden w-full justify-center gap-2">
           <Button
@@ -304,14 +369,16 @@ const MeetingRoom = () => {
               </>
             )}
           </Button>
-          <Button
-            onClick={() => navigate('/history')}
-            variant="outline"
-            size="sm"
-            className="border-primary/50 hover:bg-primary/10"
-          >
-            <History className="w-4 h-4" />
-          </Button>
+          {user && (
+            <Button
+              onClick={() => navigate('/dashboard')}
+              variant="outline"
+              size="sm"
+              className="border-primary/50 hover:bg-primary/10"
+            >
+              <History className="w-4 h-4" />
+            </Button>
+          )}
         </div>
         
         <div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-4">
@@ -339,15 +406,27 @@ const MeetingRoom = () => {
         
         {/* Desktop: Buttons on right */}
         <div className="hidden sm:flex gap-2">
-          <Button
-            onClick={() => navigate('/history')}
-            variant="outline"
-            size="sm"
-            className="border-primary/50 hover:bg-primary/10"
-          >
-            <History className="w-4 h-4 mr-2" />
-            История
-          </Button>
+          {user ? (
+            <Button
+              onClick={() => navigate('/dashboard')}
+              variant="outline"
+              size="sm"
+              className="border-primary/50 hover:bg-primary/10"
+            >
+              <User className="w-4 h-4 mr-2" />
+              Кабинет
+            </Button>
+          ) : (
+            <Button
+              onClick={() => navigate('/auth')}
+              variant="outline"
+              size="sm"
+              className="border-primary/50 hover:bg-primary/10"
+            >
+              <User className="w-4 h-4 mr-2" />
+              Войти
+            </Button>
+          )}
           <Button
             onClick={copyLink}
             variant="outline"
@@ -368,6 +447,37 @@ const MeetingRoom = () => {
           </Button>
         </div>
       </header>
+
+      {/* Registration hint for non-authenticated users */}
+      {showRegistrationHint && !user && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 glass rounded-xl px-4 py-3 border border-primary/30 animate-slide-up max-w-sm">
+          <div className="flex items-start gap-3">
+            <Sparkles className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium">Записывайте созвоны!</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Зарегистрируйтесь, чтобы получать AI-конспект после каждого звонка
+              </p>
+              <Button
+                size="sm"
+                className="mt-2 h-7 text-xs"
+                onClick={() => {
+                  setShowRegistrationHint(false);
+                  window.open('/auth', '_blank');
+                }}
+              >
+                Регистрация
+              </Button>
+            </div>
+            <button
+              onClick={() => setShowRegistrationHint(false)}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Loading State */}
       {isLoading && (
