@@ -12,9 +12,9 @@ serve(async (req) => {
   }
 
   try {
-    const { roomId, roomName, transcript, participants } = await req.json();
+    const { roomId, roomName, transcript, participants, userId } = await req.json();
     
-    console.log('Summarizing meeting:', { roomId, roomName, transcriptLength: transcript?.length });
+    console.log('Summarizing meeting:', { roomId, roomName, transcriptLength: transcript?.length, userId });
     
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
@@ -108,7 +108,8 @@ Respond in the same language as the transcript. If unsure, use Russian.`
         summary: parsedContent.summary,
         key_points: parsedContent,
         participants: participants,
-        ended_at: new Date().toISOString()
+        ended_at: new Date().toISOString(),
+        owner_user_id: userId || null
       })
       .select()
       .single();
