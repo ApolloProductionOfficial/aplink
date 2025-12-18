@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Video, Users, Globe, Shield, ArrowRight, Sparkles, MessageCircle, ExternalLink } from "lucide-react";
+import { Video, Users, Globe, Shield, ArrowRight, Sparkles, MessageCircle, ExternalLink, User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/hooks/useAuth";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import StarField from "@/components/StarField";
 import CustomCursor from "@/components/CustomCursor";
+import RegistrationBanner from "@/components/RegistrationBanner";
 import logoVideo from "@/assets/logo-video.mov";
 import promoVideo from "@/assets/promo-video.mp4";
 
@@ -16,6 +18,7 @@ const Index = () => {
   const [roomName, setRoomName] = useState(roomFromUrl);
   const [userName, setUserName] = useState("");
   const navigate = useNavigate();
+  const { user, isAdmin, isLoading, signOut } = useAuth();
 
   // Update room name if URL param changes
   useEffect(() => {
@@ -23,6 +26,14 @@ const Index = () => {
       setRoomName(roomFromUrl);
     }
   }, [roomFromUrl]);
+
+  // Pre-fill username from profile
+  useEffect(() => {
+    if (user && !userName) {
+      const displayName = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || '';
+      setUserName(displayName);
+    }
+  }, [user, userName]);
 
   const handleJoinRoom = () => {
     if (roomName.trim() && userName.trim()) {
@@ -37,6 +48,10 @@ const Index = () => {
     if (userName.trim()) {
       navigate(`/room/${randomRoom}?name=${encodeURIComponent(userName.trim())}`);
     }
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
   };
 
   const features = [
@@ -117,6 +132,40 @@ const Index = () => {
               <ExternalLink className="w-4 h-4" />
               <span className="hidden sm:inline">Сайт</span>
             </a>
+            
+            {/* Auth buttons */}
+            {isLoading ? (
+              <div className="w-5 h-5 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+            ) : user ? (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate(isAdmin ? '/admin' : '/dashboard')}
+                  className="gap-2"
+                >
+                  <User className="w-4 h-4" />
+                  <span className="hidden sm:inline">{isAdmin ? 'Админ' : 'Кабинет'}</span>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleSignOut}
+                >
+                  <LogOut className="w-4 h-4" />
+                </Button>
+              </div>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/auth')}
+                className="gap-2"
+              >
+                <User className="w-4 h-4" />
+                <span className="hidden sm:inline">Войти</span>
+              </Button>
+            )}
           </div>
         </div>
       </header>
@@ -181,6 +230,11 @@ const Index = () => {
                   )}
                 </div>
               </div>
+              
+              {/* Registration banner for non-authenticated users */}
+              {!isLoading && !user && (
+                <RegistrationBanner className="mt-4" />
+              )}
             </div>
           </div>
 

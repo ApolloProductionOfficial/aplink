@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { roomId, userName, action } = await req.json();
+    const { roomId, userName, action, userId } = await req.json();
     
     // Get client IP from headers
     const forwarded = req.headers.get('x-forwarded-for');
@@ -59,7 +59,8 @@ serve(async (req) => {
           city: geoData.city,
           country: geoData.country,
           country_code: geoData.countryCode,
-          region: geoData.region
+          region: geoData.region,
+          user_id: userId || null
         })
         .select()
         .single();
