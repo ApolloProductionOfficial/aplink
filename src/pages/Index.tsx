@@ -348,10 +348,11 @@ const Index = () => {
                       
                       <div className="flex flex-col sm:flex-row items-center gap-2">
                         <Button
+                          variant="outline"
                           onClick={() => navigate('/auth?mode=register')}
-                          className="w-full sm:w-auto h-10 gap-2"
+                          className="w-full sm:w-auto h-10 gap-2 border-primary/50 hover:bg-primary/10 hover:border-primary"
                         >
-                          <UserPlus className="w-4 h-4" />
+                          <UserPlus className="w-4 h-4 text-primary" />
                           {t.aplink?.register || 'Зарегистрироваться'}
                         </Button>
                         <Button
