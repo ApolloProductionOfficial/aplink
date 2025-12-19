@@ -229,35 +229,31 @@ export type Database = {
       }
     }
     Views: {
-      meeting_participants_safe: {
-        Row: {
-          id: string | null
-          joined_at: string | null
-          left_at: string | null
-          room_id: string | null
-          user_id: string | null
-          user_name: string | null
-        }
-        Insert: {
-          id?: string | null
-          joined_at?: string | null
-          left_at?: string | null
-          room_id?: string | null
-          user_id?: string | null
-          user_name?: string | null
-        }
-        Update: {
-          id?: string | null
-          joined_at?: string | null
-          left_at?: string | null
-          room_id?: string | null
-          user_id?: string | null
-          user_name?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
+      get_room_participants: {
+        Args: { room_id_param: string }
+        Returns: {
+          id: string
+          joined_at: string
+          left_at: string
+          room_id: string
+          user_id: string
+          user_name: string
+        }[]
+      }
+      get_safe_participants_for_room: {
+        Args: { room_id_param: string }
+        Returns: {
+          id: string
+          joined_at: string
+          left_at: string
+          room_id: string
+          user_id: string
+          user_name: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
