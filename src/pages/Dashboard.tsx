@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useToast } from '@/hooks/use-toast';
 import CustomCursor from '@/components/CustomCursor';
@@ -269,28 +269,24 @@ const Dashboard = () => {
             </Button>
           </div>
           
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 text-sm">
-              {profile?.avatar_url ? (
-                <img src={profile.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover" />
-              ) : (
-                <User className="w-4 h-4 text-primary" />
-              )}
-              <div className="flex flex-col">
-                <span>{profile?.display_name || user.email}</span>
-                {profile?.username && (
-                  <span className="text-xs text-primary">@{profile.username}</span>
-                )}
-              </div>
-            </div>
+          <div className="flex items-center gap-2">
             <Button
-              variant="outline"
+              variant={activeTab === 'calls' ? 'default' : 'outline'}
               size="sm"
-              onClick={() => navigate('/')}
+              onClick={() => setActiveTab('calls')}
               className="gap-2"
             >
-              <ArrowLeft className="w-4 h-4" />
-              На главную
+              <FileText className="w-4 h-4" />
+              Записи
+            </Button>
+            <Button
+              variant={activeTab === 'profile' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setActiveTab('profile')}
+              className="gap-2"
+            >
+              <User className="w-4 h-4" />
+              Профиль
             </Button>
           </div>
         </div>
@@ -298,16 +294,6 @@ const Dashboard = () => {
       
       <main className="container mx-auto px-4 py-8 relative z-10">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
-            <TabsTrigger value="calls" className="gap-2">
-              <FileText className="w-4 h-4" />
-              Созвоны
-            </TabsTrigger>
-            <TabsTrigger value="profile" className="gap-2">
-              <User className="w-4 h-4" />
-              Профиль
-            </TabsTrigger>
-          </TabsList>
 
           {/* Calls Tab */}
           <TabsContent value="calls" className="space-y-6">
