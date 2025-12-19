@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.cleanup-old-participants]
 verify_jwt = false
+
+[functions.send-error-notification]
+verify_jwt = false
