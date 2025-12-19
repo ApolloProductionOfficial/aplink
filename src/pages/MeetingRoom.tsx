@@ -668,6 +668,24 @@ const MeetingRoom = () => {
         </div>
       )}
 
+      {/* Recording Indicator Overlay */}
+      {(isRecording || isTranscribing) && (
+        <div className="absolute top-20 left-4 z-40 flex items-center gap-2 glass rounded-full px-4 py-2 border border-red-500/50 animate-fade-in">
+          {isTranscribing ? (
+            <>
+              <div className="w-3 h-3 rounded-full bg-yellow-500 animate-pulse" />
+              <span className="text-sm font-medium text-yellow-500">Транскрибируем...</span>
+            </>
+          ) : (
+            <>
+              <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
+              <span className="text-sm font-medium text-red-500">REC</span>
+              <span className="text-xs text-muted-foreground">Идёт запись созвона</span>
+            </>
+          )}
+        </div>
+      )}
+
       {/* Jitsi Container */}
       <div 
         ref={containerRef} 
