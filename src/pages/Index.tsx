@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Video, Users, Globe, Shield, ArrowRight, Sparkles, MessageCircle, ExternalLink, User, LogOut, UserPlus, Chrome, Copy, Check, Pencil } from "lucide-react";
+import { Video, Users, Globe, Shield, ArrowRight, Sparkles, MessageCircle, ExternalLink, User, LogOut, UserPlus, Chrome, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
@@ -272,25 +272,30 @@ const Index = () => {
               </span>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <a 
-              href="https://t.me/Apollo_Production" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors text-sm"
-            >
-              <MessageCircle className="w-4 h-4" />
-              <span className="hidden sm:inline">{t.aplink?.telegram || 'Telegram'}</span>
-            </a>
-            <a 
-              href="https://apolloproduction.studio" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors text-sm"
-            >
-              <ExternalLink className="w-4 h-4" />
-              <span className="hidden sm:inline">{t.aplink?.website || 'Сайт'}</span>
-            </a>
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* External links - icons on mobile, full on desktop */}
+            <div className="flex items-center gap-1">
+              <a 
+                href="https://t.me/Apollo_Production" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors text-sm p-2 rounded-lg hover:bg-primary/10"
+                title="Telegram"
+              >
+                <MessageCircle className="w-4 h-4" />
+                <span className="hidden md:inline">{t.aplink?.telegram || 'Telegram'}</span>
+              </a>
+              <a 
+                href="https://apolloproduction.studio" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors text-sm p-2 rounded-lg hover:bg-primary/10"
+                title="Сайт"
+              >
+                <ExternalLink className="w-4 h-4" />
+                <span className="hidden md:inline">{t.aplink?.website || 'Сайт'}</span>
+              </a>
+            </div>
             
             {/* Auth buttons */}
             {isLoading ? (
@@ -304,22 +309,14 @@ const Index = () => {
                   className="gap-1.5 h-8 px-3"
                 >
                   <User className="w-4 h-4" />
-                  <span className="hidden sm:inline">{isAdmin ? (t.aplink?.admin || 'Админ') : (t.aplink?.cabinet || 'Кабинет')}</span>
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => navigate('/profile')}
-                  className="h-8 w-8 p-0"
-                  title="Редактировать профиль"
-                >
-                  <Pencil className="w-4 h-4" />
+                  <span>{isAdmin ? (t.aplink?.admin || 'Админ') : (t.aplink?.cabinet || 'Кабинет')}</span>
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleSignOut}
                   className="h-8 w-8 p-0"
+                  title={t.auth?.loginButton === 'Sign In' ? 'Sign Out' : 'Выйти'}
                 >
                   <LogOut className="w-4 h-4" />
                 </Button>
@@ -504,29 +501,19 @@ const Index = () => {
                             <p className="font-semibold text-primary text-lg">@{userUsername}</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={handleCopyUsername}
-                            className="h-8 w-8 p-0"
-                          >
-                            {copied ? (
-                              <Check className="w-4 h-4 text-green-500" />
-                            ) : (
-                              <Copy className="w-4 h-4" />
-                            )}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => navigate('/profile')}
-                            className="h-8 w-8 p-0"
-                            title="Редактировать профиль"
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </Button>
-                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleCopyUsername}
+                          className="h-8 w-8 p-0"
+                          title="Скопировать"
+                        >
+                          {copied ? (
+                            <Check className="w-4 h-4 text-green-500" />
+                          ) : (
+                            <Copy className="w-4 h-4" />
+                          )}
+                        </Button>
                       </div>
                       <p className="text-xs text-muted-foreground mt-2">
                         Нажмите, чтобы скопировать
