@@ -42,6 +42,9 @@ const Index = () => {
   const [bannerVisible, setBannerVisible] = useState(true);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showUsernameForm, setShowUsernameForm] = useState(false);
+  const [newUsername, setNewUsername] = useState("");
+  const [savingUsername, setSavingUsername] = useState(false);
   const navigate = useNavigate();
   const { user, isAdmin, isLoading, signOut, signInWithGoogle } = useAuth();
   const { toast } = useToast();
@@ -129,6 +132,63 @@ const Index = () => {
       });
       setTimeout(() => setCopied(false), 2000);
     }
+  };
+
+  const handleSaveUsername = async () => {
+    if (!user || !newUsername.trim()) return;
+    
+    const username = newUsername.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+    if (username.length < 3) {
+      toast({
+        title: 'Ошибка',
+        description: 'Username должен быть минимум 3 символа',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    setSavingUsername(true);
+    
+    // Check if username is taken
+    const { data: existing } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('username', username)
+      .neq('user_id', user.id)
+      .maybeSingle();
+    
+    if (existing) {
+      toast({
+        title: 'Ошибка',
+        description: 'Этот username уже занят',
+        variant: 'destructive',
+      });
+      setSavingUsername(false);
+      return;
+    }
+    
+    const { error } = await supabase
+      .from('profiles')
+      .update({ username })
+      .eq('user_id', user.id);
+    
+    if (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось сохранить username',
+        variant: 'destructive',
+      });
+    } else {
+      setUserUsername(username);
+      setShowUsernameForm(false);
+      setNewUsername("");
+      toast({
+        title: 'Сохранено',
+        description: `Ваш username: @${username}`,
+      });
+    }
+    
+    setSavingUsername(false);
   };
 
   const features = [
@@ -440,9 +500,42 @@ const Index = () => {
                         Нажмите, чтобы скопировать и поделиться
                       </p>
                     </div>
+                  ) : showUsernameForm ? (
+                    <div className="glass rounded-2xl p-4 border border-primary/30">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                          <User className="w-5 h-5 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-medium">Создайте @username</p>
+                          <p className="text-xs text-muted-foreground">Только латиница, цифры и _</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Input
+                          type="text"
+                          placeholder="username"
+                          value={newUsername}
+                          onChange={(e) => setNewUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                          className="bg-background/50 border-border/50"
+                          onKeyDown={(e) => e.key === 'Enter' && handleSaveUsername()}
+                        />
+                        <Button
+                          onClick={handleSaveUsername}
+                          disabled={savingUsername || newUsername.length < 3}
+                          className="shrink-0"
+                        >
+                          {savingUsername ? (
+                            <div className="w-4 h-4 rounded-full border-2 border-background/30 border-t-background animate-spin" />
+                          ) : (
+                            <Check className="w-4 h-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
                   ) : (
                     <div 
-                      onClick={() => navigate('/dashboard')}
+                      onClick={() => setShowUsernameForm(true)}
                       className="glass rounded-2xl p-4 border border-yellow-500/30 cursor-pointer hover:border-yellow-500/50 transition-colors"
                     >
                       <div className="flex items-center gap-3">
