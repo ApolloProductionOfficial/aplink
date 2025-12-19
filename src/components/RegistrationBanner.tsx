@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, Sparkles, FileText, Chrome } from 'lucide-react';
+import { X, Sparkles, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useAuth } from '@/hooks/useAuth';
@@ -79,7 +79,7 @@ const RegistrationBanner = ({ className = '' }: RegistrationBannerProps) => {
             {loading ? (
               <div className="w-4 h-4 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
             ) : (
-              <Chrome className="w-4 h-4" />
+              <span className="text-sm font-bold">G</span>
             )}
           </Button>
         </div>
