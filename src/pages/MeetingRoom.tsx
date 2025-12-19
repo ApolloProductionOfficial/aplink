@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Copy, Check, Users, History, User, Sparkles } from "lucide-react";
+import { ArrowLeft, Copy, Check, Users, History, User, Sparkles, Mic, MicOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { usePresence } from "@/hooks/usePresence";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 import logoVideo from "@/assets/logo-video.mov";
 import CustomCursor from "@/components/CustomCursor";
 
@@ -34,6 +35,8 @@ const MeetingRoom = () => {
   const { toast } = useToast();
   const { user, isLoading: authLoading } = useAuth();
   const { sendNotification } = usePushNotifications();
+  const { isRecording, startRecording, stopRecording } = useAudioRecorder();
+  const [isTranscribing, setIsTranscribing] = useState(false);
 
   // Use room ID as-is for Jitsi (consistent room name)
   // Display with proper formatting (dashes to spaces)
@@ -136,8 +139,103 @@ const MeetingRoom = () => {
     }
   };
 
+  // Transcribe audio using ElevenLabs
+  const transcribeAudio = async (audioBlob: Blob): Promise<string> => {
+    try {
+      setIsTranscribing(true);
+      console.log('Transcribing audio, size:', audioBlob.size);
+      
+      const formData = new FormData();
+      formData.append('audio', audioBlob, 'recording.webm');
+      
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-transcribe`,
+        {
+          method: 'POST',
+          headers: {
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: formData,
+        }
+      );
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Transcription failed');
+      }
+      
+      const data = await response.json();
+      console.log('Transcription result:', data.text?.substring(0, 100));
+      return data.text || '';
+    } catch (error) {
+      console.error('Transcription error:', error);
+      throw error;
+    } finally {
+      setIsTranscribing(false);
+    }
+  };
+
+  // Toggle recording
+  const toggleRecording = async () => {
+    if (isRecording) {
+      const audioBlob = await stopRecording();
+      if (audioBlob && audioBlob.size > 0) {
+        toast({
+          title: "Запись остановлена",
+          description: "Транскрибируем аудио...",
+        });
+        try {
+          const transcript = await transcribeAudio(audioBlob);
+          if (transcript) {
+            transcriptRef.current.push(`[Транскрипция] ${userName}: ${transcript}`);
+            toast({
+              title: "Транскрипция готова",
+              description: transcript.length > 100 ? transcript.substring(0, 100) + '...' : transcript,
+            });
+          }
+        } catch (error) {
+          toast({
+            title: "Ошибка транскрипции",
+            description: "Не удалось транскрибировать аудио",
+            variant: "destructive",
+          });
+        }
+      }
+    } else {
+      try {
+        await startRecording();
+        toast({
+          title: "Запись началась",
+          description: "Говорите, ваш голос записывается",
+        });
+      } catch (error) {
+        toast({
+          title: "Ошибка",
+          description: "Не удалось получить доступ к микрофону",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
   // Save meeting transcript and summary
   const saveMeetingTranscript = async () => {
+    // Stop recording if active
+    if (isRecording) {
+      const audioBlob = await stopRecording();
+      if (audioBlob && audioBlob.size > 0) {
+        try {
+          const transcript = await transcribeAudio(audioBlob);
+          if (transcript) {
+            transcriptRef.current.push(`[Транскрипция] ${userName}: ${transcript}`);
+          }
+        } catch (error) {
+          console.error('Final transcription failed:', error);
+        }
+      }
+    }
+    
     // Only save if user is authenticated
     if (!user) {
       console.log('User not authenticated, skipping transcript save');
@@ -374,8 +472,24 @@ const MeetingRoom = () => {
       <header 
         className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-4 py-2 sm:py-3 bg-card/80 backdrop-blur-xl border-b border-border/50 z-50 absolute top-0 left-0 right-0 gap-2"
       >
-        {/* Mobile: Copy button on top */}
+        {/* Mobile: Buttons on top */}
         <div className="flex sm:hidden w-full justify-center gap-2">
+          {/* Mobile recording button */}
+          <Button
+            onClick={toggleRecording}
+            variant={isRecording ? "destructive" : "outline"}
+            size="sm"
+            disabled={isTranscribing}
+            className={isRecording ? "" : "border-primary/50 hover:bg-primary/10"}
+          >
+            {isTranscribing ? (
+              <div className="w-4 h-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+            ) : isRecording ? (
+              <MicOff className="w-4 h-4" />
+            ) : (
+              <Mic className="w-4 h-4" />
+            )}
+          </Button>
           <Button
             onClick={copyLink}
             variant="outline"
@@ -445,6 +559,32 @@ const MeetingRoom = () => {
         
         {/* Desktop: Buttons on right */}
         <div className="hidden sm:flex gap-2">
+          {/* Recording button */}
+          <Button
+            onClick={toggleRecording}
+            variant={isRecording ? "destructive" : "outline"}
+            size="sm"
+            disabled={isTranscribing}
+            className={isRecording ? "" : "border-primary/50 hover:bg-primary/10"}
+          >
+            {isTranscribing ? (
+              <>
+                <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                Транскрибируем...
+              </>
+            ) : isRecording ? (
+              <>
+                <MicOff className="w-4 h-4 mr-2" />
+                Остановить
+              </>
+            ) : (
+              <>
+                <Mic className="w-4 h-4 mr-2" />
+                Записать
+              </>
+            )}
+          </Button>
+          
           {user ? (
             <Button
               onClick={() => window.open('/dashboard', '_blank')}
