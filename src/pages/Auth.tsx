@@ -306,7 +306,7 @@ const Auth = () => {
                   onClick={handleGoogleSignIn}
                   disabled={loading}
                   variant="outline"
-                  className="w-full h-11 gap-2"
+                  className="w-full h-12 gap-2"
                 >
                   <Chrome className="w-5 h-5" />
                   {t.auth.continueWithGoogle}
@@ -399,10 +399,11 @@ const Auth = () => {
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full h-11"
+                variant="outline"
+                className="w-full h-12 border-primary/50 hover:bg-primary/10 hover:border-primary"
               >
                 {loading ? (
-                  <div className="w-5 h-5 rounded-full border-2 border-background/30 border-t-background animate-spin" />
+                  <div className="w-5 h-5 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
                 ) : authMode === 'login' ? t.auth.loginButton : 
                    authMode === 'register' ? t.auth.registerButton :
                    authMode === 'forgot' ? t.auth.sendResetLink :

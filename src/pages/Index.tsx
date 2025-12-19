@@ -228,9 +228,9 @@ const Index = () => {
                   variant="outline"
                   size="sm"
                   onClick={() => navigate('/auth?mode=register')}
-                  className="gap-1.5 h-9 px-3"
+                  className="gap-1.5 h-9 px-3 border-primary/50 hover:bg-primary/10 hover:border-primary"
                 >
-                  <UserPlus className="w-4 h-4" />
+                  <UserPlus className="w-4 h-4 text-primary" />
                   <span className="hidden sm:inline">{t.auth?.registerButton || 'Регистрация'}</span>
                 </Button>
               </div>
