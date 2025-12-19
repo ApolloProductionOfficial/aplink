@@ -144,11 +144,14 @@ const OscarWelcome = ({ onComplete }: OscarWelcomeProps) => {
             }}
             transition={{ duration: 1.5, repeat: Infinity }}
           >
-            <h1 className="text-6xl md:text-8xl font-bold bg-gradient-to-r from-blue-400 via-cyan-300 to-blue-400 bg-clip-text text-transparent mb-4">
-              WELCOME, OSCAR! ✨
+            <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-blue-400 via-cyan-300 to-blue-400 bg-clip-text text-transparent mb-4">
+              OSCAR, ТЫ ЛУЧШИЙ! ✨
             </h1>
-            <p className="text-2xl md:text-3xl text-cyan-300 font-semibold">
-              How wonderful to have you here! 🌟
+            <p className="text-xl md:text-2xl text-cyan-300 font-semibold mb-2">
+              Без тебя ничего бы не вышло! 🌟
+            </p>
+            <p className="text-lg md:text-xl text-blue-300 font-medium">
+              Очень рад, что мы работаем вместе! 💙
             </p>
           </motion.div>
 
