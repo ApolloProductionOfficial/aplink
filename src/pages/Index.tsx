@@ -16,6 +16,7 @@ import ParticleEffect from "@/components/ParticleEffect";
 import NeonGlow from "@/components/NeonGlow";
 import FloatingOrbs from "@/components/FloatingOrbs";
 import FavoriteContacts from "@/components/FavoriteContacts";
+import VideoBanner from "@/components/VideoBanner";
 import logoVideo from "@/assets/logo-video.mov";
 import {
   DropdownMenu,
@@ -413,6 +414,11 @@ const Index = () => {
                 <p className="text-sm text-muted-foreground">{feature.description}</p>
               </div>
             ))}
+          </div>
+          
+          {/* Video Banner */}
+          <div className="mt-16 max-w-5xl mx-auto">
+            <VideoBanner />
           </div>
         </div>
       </main>
