@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Video, Users, Globe, Shield, ArrowRight, Sparkles, MessageCircle, ExternalLink, User, LogOut, UserPlus, Chrome } from "lucide-react";
+import { Video, Users, Globe, Shield, ArrowRight, Sparkles, MessageCircle, ExternalLink, User, LogOut, UserPlus, Chrome, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
@@ -38,8 +38,10 @@ const Index = () => {
   };
   const [roomName, setRoomName] = useState(roomFromUrl);
   const [userName, setUserName] = useState("");
+  const [userUsername, setUserUsername] = useState<string | null>(null);
   const [bannerVisible, setBannerVisible] = useState(true);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
   const navigate = useNavigate();
   const { user, isAdmin, isLoading, signOut, signInWithGoogle } = useAuth();
   const { toast } = useToast();
@@ -61,7 +63,7 @@ const Index = () => {
         // First try to get from profiles table
         const { data: profileData } = await supabase
           .from('profiles')
-          .select('display_name')
+          .select('display_name, username')
           .eq('user_id', user.id)
           .maybeSingle();
         
@@ -71,6 +73,10 @@ const Index = () => {
           // Fallback to metadata or email
           const displayName = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || '';
           setUserName(displayName);
+        }
+        
+        if (profileData?.username) {
+          setUserUsername(profileData.username);
         }
       }
     };
@@ -111,6 +117,18 @@ const Index = () => {
       });
     }
     setGoogleLoading(false);
+  };
+
+  const handleCopyUsername = () => {
+    if (userUsername) {
+      navigator.clipboard.writeText(`@${userUsername}`);
+      setCopied(true);
+      toast({
+        title: 'Скопировано',
+        description: `@${userUsername} скопирован в буфер`,
+      });
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   const features = [
@@ -391,9 +409,56 @@ const Index = () => {
                 </div>
               )}
               
-              {/* Favorite Contacts for authenticated users */}
+              {/* Username card and Favorite Contacts for authenticated users */}
               {!isLoading && user && (
-                <FavoriteContacts />
+                <div className="space-y-4">
+                  {/* Username Card */}
+                  {userUsername ? (
+                    <div 
+                      onClick={handleCopyUsername}
+                      className="glass rounded-2xl p-4 border border-primary/20 cursor-pointer hover:border-primary/40 transition-colors group"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                            <User className="w-5 h-5 text-primary" />
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">Ваш @username</p>
+                            <p className="font-semibold text-primary text-lg">@{userUsername}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 text-muted-foreground group-hover:text-primary transition-colors">
+                          {copied ? (
+                            <Check className="w-5 h-5 text-green-500" />
+                          ) : (
+                            <Copy className="w-5 h-5" />
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Нажмите, чтобы скопировать и поделиться
+                      </p>
+                    </div>
+                  ) : (
+                    <div 
+                      onClick={() => navigate('/dashboard')}
+                      className="glass rounded-2xl p-4 border border-yellow-500/30 cursor-pointer hover:border-yellow-500/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center">
+                          <User className="w-5 h-5 text-yellow-500" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-yellow-500">Добавьте @username</p>
+                          <p className="text-xs text-muted-foreground">Чтобы вас могли найти и добавить в контакты</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <FavoriteContacts />
+                </div>
               )}
             </div>
           </div>
