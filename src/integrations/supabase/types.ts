@@ -40,40 +40,25 @@ export type Database = {
       }
       meeting_participants: {
         Row: {
-          city: string | null
-          country: string | null
-          country_code: string | null
           id: string
-          ip_address: string | null
           joined_at: string
           left_at: string | null
-          region: string | null
           room_id: string
           user_id: string
           user_name: string
         }
         Insert: {
-          city?: string | null
-          country?: string | null
-          country_code?: string | null
           id?: string
-          ip_address?: string | null
           joined_at?: string
           left_at?: string | null
-          region?: string | null
           room_id: string
           user_id: string
           user_name: string
         }
         Update: {
-          city?: string | null
-          country?: string | null
-          country_code?: string | null
           id?: string
-          ip_address?: string | null
           joined_at?: string
           left_at?: string | null
-          region?: string | null
           room_id?: string
           user_id?: string
           user_name?: string
@@ -152,6 +137,39 @@ export type Database = {
           source?: string | null
           title?: string
           url?: string | null
+        }
+        Relationships: []
+      }
+      participant_geo_data: {
+        Row: {
+          city: string | null
+          country: string | null
+          country_code: string | null
+          created_at: string | null
+          id: string
+          ip_address: string | null
+          participant_id: string
+          region: string | null
+        }
+        Insert: {
+          city?: string | null
+          country?: string | null
+          country_code?: string | null
+          created_at?: string | null
+          id?: string
+          ip_address?: string | null
+          participant_id: string
+          region?: string | null
+        }
+        Update: {
+          city?: string | null
+          country?: string | null
+          country_code?: string | null
+          created_at?: string | null
+          id?: string
+          ip_address?: string | null
+          participant_id?: string
+          region?: string | null
         }
         Relationships: []
       }

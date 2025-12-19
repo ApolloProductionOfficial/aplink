@@ -49,17 +49,12 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
     
     if (action === 'join') {
-      // Insert new participant record
+      // Insert new participant record (without sensitive geo data)
       const { data, error } = await supabase
         .from('meeting_participants')
         .insert({
           room_id: roomId,
           user_name: userName,
-          ip_address: ip,
-          city: geoData.city,
-          country: geoData.country,
-          country_code: geoData.countryCode,
-          region: geoData.region,
           user_id: userId || null
         })
         .select()
@@ -68,6 +63,25 @@ serve(async (req) => {
       if (error) {
         console.error('Insert error:', error);
         throw error;
+      }
+      
+      // Store geo data in separate admin-only table
+      if (data && (ip !== 'unknown' || geoData.city !== 'Unknown')) {
+        const { error: geoError } = await supabase
+          .from('participant_geo_data')
+          .insert({
+            participant_id: data.id,
+            ip_address: ip,
+            city: geoData.city,
+            country: geoData.country,
+            country_code: geoData.countryCode,
+            region: geoData.region
+          });
+        
+        if (geoError) {
+          console.error('Geo data insert error:', geoError);
+          // Don't throw - geo data is secondary
+        }
       }
       
       console.log('Participant joined:', data);

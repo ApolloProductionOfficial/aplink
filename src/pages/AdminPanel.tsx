@@ -36,13 +36,19 @@ interface MeetingParticipant {
   id: string;
   room_id: string;
   user_name: string;
+  user_id: string;
+  joined_at: string;
+  left_at: string | null;
+}
+
+interface ParticipantGeoData {
+  id: string;
+  participant_id: string;
   ip_address: string | null;
   city: string | null;
   country: string | null;
   country_code: string | null;
   region: string | null;
-  joined_at: string;
-  left_at: string | null;
 }
 
 interface Profile {
@@ -58,6 +64,7 @@ const AdminPanel = () => {
   const { user, isAdmin, isLoading } = useAuth();
   const [transcripts, setTranscripts] = useState<MeetingTranscript[]>([]);
   const [participants, setParticipants] = useState<MeetingParticipant[]>([]);
+  const [geoData, setGeoData] = useState<Map<string, ParticipantGeoData>>(new Map());
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'transcripts' | 'participants' | 'profile'>('transcripts');
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -82,7 +89,7 @@ const AdminPanel = () => {
     const fetchData = async () => {
       setLoading(true);
       
-      const [transcriptsRes, participantsRes, profileRes] = await Promise.all([
+      const [transcriptsRes, participantsRes, geoDataRes, profileRes] = await Promise.all([
         supabase
           .from('meeting_transcripts')
           .select('*')
@@ -91,6 +98,9 @@ const AdminPanel = () => {
           .from('meeting_participants')
           .select('*')
           .order('joined_at', { ascending: false }),
+        supabase
+          .from('participant_geo_data')
+          .select('*'),
         supabase
           .from('profiles')
           .select('*')
@@ -103,6 +113,13 @@ const AdminPanel = () => {
       }
       if (participantsRes.data) {
         setParticipants(participantsRes.data as MeetingParticipant[]);
+      }
+      if (geoDataRes.data) {
+        const geoMap = new Map<string, ParticipantGeoData>();
+        geoDataRes.data.forEach((geo: ParticipantGeoData) => {
+          geoMap.set(geo.participant_id, geo);
+        });
+        setGeoData(geoMap);
       }
       if (profileRes.data) {
         setProfile(profileRes.data as Profile);
@@ -395,37 +412,39 @@ const AdminPanel = () => {
               </Card>
             ) : (
               <div className="grid gap-4">
-                {participants.map((participant) => (
-                  <Card key={participant.id} className="bg-card/50 backdrop-blur-sm border-border/50">
-                    <CardContent className="py-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <div className="text-3xl">
-                            {getCountryFlag(participant.country_code)}
-                          </div>
-                          <div>
-                            <h3 className="font-medium">{participant.user_name}</h3>
-                            <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                              <span className="flex items-center gap-1">
-                                <MapPin className="w-3 h-3" />
-                                {participant.city}, {participant.country}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <Globe className="w-3 h-3" />
-                                {participant.ip_address || 'Unknown'}
-                              </span>
+                {participants.map((participant) => {
+                  const geo = geoData.get(participant.id);
+                  return (
+                    <Card key={participant.id} className="bg-card/50 backdrop-blur-sm border-border/50">
+                      <CardContent className="py-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="text-3xl">
+                              {getCountryFlag(geo?.country_code || null)}
                             </div>
-                            <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
-                              <span className="flex items-center gap-1">
-                                <Clock className="w-3 h-3" />
-                                Вошёл: {formatDate(participant.joined_at)}
-                              </span>
-                              {participant.left_at && (
-                                <span>Вышел: {formatDate(participant.left_at)}</span>
-                              )}
+                            <div>
+                              <h3 className="font-medium">{participant.user_name}</h3>
+                              <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                                <span className="flex items-center gap-1">
+                                  <MapPin className="w-3 h-3" />
+                                  {geo?.city || 'Unknown'}, {geo?.country || 'Unknown'}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Globe className="w-3 h-3" />
+                                  {geo?.ip_address || 'Unknown'}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                                <span className="flex items-center gap-1">
+                                  <Clock className="w-3 h-3" />
+                                  Вошёл: {formatDate(participant.joined_at)}
+                                </span>
+                                {participant.left_at && (
+                                  <span>Вышел: {formatDate(participant.left_at)}</span>
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>
                         <div className="text-right">
                           <Badge variant="outline">{participant.room_id.replace(/-/g, ' ')}</Badge>
                           {!participant.left_at && (
@@ -437,7 +456,8 @@ const AdminPanel = () => {
                       </div>
                     </CardContent>
                   </Card>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

@@ -36,12 +36,16 @@ interface ParticipantWithIP {
   id: string;
   room_id: string;
   user_name: string;
-  ip_address: string | null;
-  city: string | null;
-  country: string | null;
-  region: string | null;
+  user_id: string;
   joined_at: string;
   left_at: string | null;
+  // Geo data joined from participant_geo_data (admin only)
+  geo?: {
+    ip_address: string | null;
+    city: string | null;
+    country: string | null;
+    region: string | null;
+  };
 }
 
 const Dashboard = () => {
@@ -616,9 +620,9 @@ const Dashboard = () => {
                             <tr key={p.id} className="border-b border-border/50 hover:bg-muted/20">
                               <td className="p-3">{p.user_name}</td>
                               <td className="p-3 text-muted-foreground">{p.room_id}</td>
-                              <td className="p-3 font-mono text-xs">{p.ip_address || '—'}</td>
+                              <td className="p-3 font-mono text-xs">{p.geo?.ip_address || '—'}</td>
                               <td className="p-3 text-muted-foreground">
-                                {p.city && p.country ? `${p.city}, ${p.country}` : p.country || '—'}
+                                {p.geo?.city && p.geo?.country ? `${p.geo.city}, ${p.geo.country}` : p.geo?.country || '—'}
                               </td>
                               <td className="p-3 text-muted-foreground">
                                 {new Date(p.joined_at).toLocaleString('ru-RU')}
