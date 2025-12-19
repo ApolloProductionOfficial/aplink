@@ -134,11 +134,11 @@ const Dashboard = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={handleSignOut}
+              onClick={() => navigate('/')}
               className="gap-2"
             >
-              <LogOut className="w-4 h-4" />
-              Выйти
+              <ArrowLeft className="w-4 h-4" />
+              На главную
             </Button>
           </div>
         </div>
