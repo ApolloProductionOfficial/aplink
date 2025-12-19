@@ -183,12 +183,12 @@ const MeetingRoom = () => {
       if (audioBlob && audioBlob.size > 0) {
         toast({
           title: "Запись остановлена",
-          description: "Транскрибируем аудио...",
+          description: "Транскрибируем весь созвон...",
         });
         try {
           const transcript = await transcribeAudio(audioBlob);
           if (transcript) {
-            transcriptRef.current.push(`[Транскрипция] ${userName}: ${transcript}`);
+            transcriptRef.current.push(`[Транскрипция созвона]: ${transcript}`);
             toast({
               title: "Транскрипция готова",
               description: transcript.length > 100 ? transcript.substring(0, 100) + '...' : transcript,
@@ -206,13 +206,13 @@ const MeetingRoom = () => {
       try {
         await startRecording();
         toast({
-          title: "Запись началась",
-          description: "Говорите, ваш голос записывается",
+          title: "Выберите вкладку для записи",
+          description: "Выберите эту вкладку и включите 'Также разрешить доступ к звуку вкладки'",
         });
       } catch (error) {
         toast({
           title: "Ошибка",
-          description: "Не удалось получить доступ к микрофону",
+          description: "Не удалось начать запись. Попробуйте ещё раз и выберите вкладку со звуком.",
           variant: "destructive",
         });
       }
