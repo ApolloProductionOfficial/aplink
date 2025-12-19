@@ -174,13 +174,14 @@ const Header = () => {
                 </Button>
                 <Button
                   size="sm"
-                  className="gap-2 bg-gradient-to-br from-primary via-primary/90 to-primary text-primary-foreground font-bold shadow-lg shadow-primary/40 hover:shadow-2xl hover:shadow-primary/60 transition-all duration-300 hover:scale-105"
+                  variant="outline"
+                  className="gap-2 bg-gradient-to-br from-primary/10 to-transparent border-primary/30 hover:border-primary/50 hover:bg-primary/15 hover:shadow-lg hover:shadow-primary/20 transition-all duration-300"
                   onClick={() => {
                     playClickSound();
                     navigate('/auth?mode=register');
                   }}
                 >
-                  <UserPlus className="h-4 w-4" />
+                  <UserPlus className="h-4 w-4 text-primary" />
                   {t.auth?.registerButton || 'Регистрация'}
                 </Button>
               </>
