@@ -1,9 +1,14 @@
 import { useEffect, useRef } from 'react';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 const NeonGlow = () => {
   const glowRef = useRef<HTMLDivElement>(null);
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
+    // Disable mouse tracking on mobile for performance
+    if (reduceMotion) return;
+
     const handleMouseMove = (e: MouseEvent) => {
       if (!glowRef.current) return;
       
@@ -16,7 +21,12 @@ const NeonGlow = () => {
 
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
+  }, [reduceMotion]);
+
+  // Don't render on mobile (no mouse anyway)
+  if (reduceMotion) {
+    return null;
+  }
 
   return (
     <div 

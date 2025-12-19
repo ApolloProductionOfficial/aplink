@@ -1,9 +1,14 @@
 import { useEffect, useRef } from 'react';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 const StarField = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
+    // Don't render canvas animation on mobile for performance
+    if (reduceMotion) return;
+
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -83,7 +88,12 @@ const StarField = () => {
       window.removeEventListener('resize', handleResize);
       cancelAnimationFrame(animationFrameId);
     };
-  }, []);
+  }, [reduceMotion]);
+
+  // Don't render anything on mobile for maximum performance
+  if (reduceMotion) {
+    return null;
+  }
 
   return (
     <canvas

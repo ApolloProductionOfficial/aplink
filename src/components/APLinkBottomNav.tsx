@@ -51,9 +51,14 @@ const APLinkBottomNav = ({ onFavoritesClick, onCreateClick }: APLinkBottomNavPro
   };
 
   return (
-    <nav className={`md:hidden fixed bottom-0 left-0 right-0 z-50 pb-safe transition-all duration-500 ${
-      isVisible ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'
-    }`}>
+    <nav 
+      className="md:hidden fixed bottom-0 left-0 right-0 z-50 pb-safe"
+      style={{
+        transform: isVisible ? 'translateY(0)' : 'translateY(100%)',
+        opacity: isVisible ? 1 : 0,
+        transition: 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-out',
+      }}
+    >
       {/* Gradient background */}
       <div className="absolute inset-0 bg-gradient-to-t from-card via-card/98 to-card/90 backdrop-blur-xl" />
       <div className="absolute inset-0 bg-gradient-to-r from-primary/3 via-primary/8 to-primary/3" />
