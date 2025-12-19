@@ -194,12 +194,12 @@ const Index = () => {
                 </Button>
               </div>
             ) : (
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => navigate('/auth')}
-                  className="gap-1.5 h-8 px-3"
+                  className="gap-1.5 h-9 px-3"
                 >
                   <User className="w-4 h-4" />
                   <span className="hidden sm:inline">{t.auth?.loginButton || 'Войти'}</span>
@@ -207,7 +207,7 @@ const Index = () => {
                 <Button
                   size="sm"
                   onClick={() => navigate('/auth?mode=register')}
-                  className="gap-1.5 h-8 px-3 bg-primary hover:bg-primary/90"
+                  className="gap-1.5 h-9 px-3 bg-primary hover:bg-primary/90"
                 >
                   <UserPlus className="w-4 h-4" />
                   <span className="hidden sm:inline">{t.auth?.registerButton || 'Регистрация'}</span>
@@ -219,9 +219,9 @@ const Index = () => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button 
-                  variant="ghost" 
+                  variant="outline" 
                   size="sm"
-                  className="gap-1 h-8 px-2 hover:bg-primary/10"
+                  className="gap-1.5 h-9 px-2.5 border-border hover:bg-primary/10"
                 >
                   <Globe className="h-4 w-4 text-primary" />
                   <span className="text-base">{languages[language].flag}</span>
