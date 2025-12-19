@@ -25,7 +25,7 @@ export type Database = {
           left_at: string | null
           region: string | null
           room_id: string
-          user_id: string | null
+          user_id: string
           user_name: string
         }
         Insert: {
@@ -38,7 +38,7 @@ export type Database = {
           left_at?: string | null
           region?: string | null
           room_id: string
-          user_id?: string | null
+          user_id: string
           user_name: string
         }
         Update: {
@@ -51,7 +51,7 @@ export type Database = {
           left_at?: string | null
           region?: string | null
           room_id?: string
-          user_id?: string | null
+          user_id?: string
           user_name?: string
         }
         Relationships: []
