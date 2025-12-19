@@ -396,7 +396,7 @@ const MeetingRoom = () => {
           </Button>
           {user && (
             <Button
-              onClick={() => navigate('/dashboard')}
+              onClick={() => window.open('/dashboard', '_blank')}
               variant="outline"
               size="sm"
               className="border-primary/50 hover:bg-primary/10"
@@ -408,7 +408,7 @@ const MeetingRoom = () => {
         
         <div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-4">
           <button
-            onClick={() => navigate(user ? '/dashboard' : '/')}
+            onClick={() => window.open(user ? '/dashboard' : '/', '_blank')}
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -447,7 +447,7 @@ const MeetingRoom = () => {
         <div className="hidden sm:flex gap-2">
           {user ? (
             <Button
-              onClick={() => navigate('/dashboard')}
+              onClick={() => window.open('/dashboard', '_blank')}
               variant="outline"
               size="sm"
               className="border-primary/50 hover:bg-primary/10"
@@ -457,7 +457,7 @@ const MeetingRoom = () => {
             </Button>
           ) : (
             <Button
-              onClick={() => navigate('/auth')}
+              onClick={() => window.open('/auth', '_blank')}
               variant="outline"
               size="sm"
               className="border-primary/50 hover:bg-primary/10"
