@@ -619,7 +619,7 @@ const Index = () => {
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 py-8 border-t border-border/30">
+      <footer className="relative z-10 py-8 pb-24 md:pb-8 border-t border-border/30">
         <div className="container mx-auto px-4 text-center">
           <p className="text-muted-foreground text-sm">
             {t.aplink?.footer || '© 2025 APLink by'}{" "}
