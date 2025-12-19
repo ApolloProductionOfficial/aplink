@@ -274,27 +274,25 @@ const Index = () => {
             </div>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* External links - icons on mobile, full on desktop */}
-            <div className="flex items-center gap-1">
+            {/* External links - hidden on mobile, visible on desktop */}
+            <div className="hidden md:flex items-center gap-1">
               <a 
                 href="https://t.me/Apollo_Production" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors text-sm p-2 rounded-lg hover:bg-primary/10"
-                title="Telegram"
               >
                 <MessageCircle className="w-4 h-4" />
-                <span className="hidden md:inline">{t.aplink?.telegram || 'Telegram'}</span>
+                <span>{t.aplink?.telegram || 'Telegram'}</span>
               </a>
               <a 
                 href="https://apolloproduction.studio" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors text-sm p-2 rounded-lg hover:bg-primary/10"
-                title="Сайт"
               >
                 <ExternalLink className="w-4 h-4" />
-                <span className="hidden md:inline">{t.aplink?.website || 'Сайт'}</span>
+                <span>{t.aplink?.website || 'Сайт'}</span>
               </a>
             </div>
             
