@@ -23,7 +23,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import backgroundVideo from "@/assets/background-video.mp4";
+import promoVideo from "@/assets/promo-video.mp4";
 
 const Index = () => {
   const [searchParams] = useSearchParams();
@@ -161,7 +161,7 @@ const Index = () => {
           playsInline
           className="min-w-full min-h-full object-cover opacity-20"
         >
-          <source src={backgroundVideo} type="video/mp4" />
+          <source src={promoVideo} type="video/mp4" />
         </video>
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-background/60" />
       </div>
