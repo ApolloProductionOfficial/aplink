@@ -1,15 +1,18 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, ExternalLink, MessageCircle, Star, Video, Phone, LogIn } from "lucide-react";
+import { User, ExternalLink, MessageCircle, Star, Video, LogIn } from "lucide-react";
 import { useScrollVisibility } from "@/hooks/useScrollVisibility";
 import { useAuth } from "@/hooks/useAuth";
-import { useTranslation } from "@/hooks/useTranslation";
 
-const APLinkBottomNav = () => {
+interface APLinkBottomNavProps {
+  onFavoritesClick?: () => void;
+  onCreateClick?: () => void;
+}
+
+const APLinkBottomNav = ({ onFavoritesClick, onCreateClick }: APLinkBottomNavProps) => {
   const navigate = useNavigate();
   const isVisible = useScrollVisibility(true, 100);
   const { user, isAdmin } = useAuth();
-  const { t } = useTranslation();
   const [activeRipple, setActiveRipple] = useState<number | null>(null);
 
   const navItems = [
@@ -31,22 +34,12 @@ const APLinkBottomNav = () => {
     { 
       icon: Star, 
       label: 'Избранные', 
-      action: () => {
-        const favSection = document.getElementById('favorites-section');
-        if (favSection) {
-          favSection.scrollIntoView({ behavior: 'smooth' });
-        }
-      }
+      action: () => onFavoritesClick?.()
     },
     { 
       icon: Video, 
       label: 'Создать', 
-      action: () => {
-        const formSection = document.querySelector('.glass.rounded-2xl');
-        if (formSection) {
-          formSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      },
+      action: () => onCreateClick?.(),
       highlight: true
     },
   ];

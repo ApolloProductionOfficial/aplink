@@ -16,6 +16,7 @@ import NeonGlow from "@/components/NeonGlow";
 import FloatingOrbs from "@/components/FloatingOrbs";
 import FavoriteContacts from "@/components/FavoriteContacts";
 import APLinkBottomNav from "@/components/APLinkBottomNav";
+import FavoritesSheet from "@/components/FavoritesSheet";
 import logoVideo from "@/assets/logo-video.mov";
 import {
   DropdownMenu,
@@ -46,6 +47,8 @@ const Index = () => {
   const [showUsernameForm, setShowUsernameForm] = useState(false);
   const [newUsername, setNewUsername] = useState("");
   const [savingUsername, setSavingUsername] = useState(false);
+  const [favoritesOpen, setFavoritesOpen] = useState(false);
+  const [formHighlight, setFormHighlight] = useState(false);
   const navigate = useNavigate();
   const { user, isAdmin, isLoading, signOut, signInWithGoogle } = useAuth();
   const { toast } = useToast();
@@ -392,28 +395,39 @@ const Index = () => {
             </p>
 
             {/* Join Form */}
-            <div className="max-w-md mx-auto space-y-4 animate-slide-up" style={{ animationDelay: '200ms' }}>
-              <div className="glass rounded-2xl p-6 space-y-4">
+            <div id="create-room-form" className="max-w-md mx-auto space-y-4 animate-slide-up" style={{ animationDelay: '200ms' }}>
+              <div className={`glass rounded-2xl p-6 space-y-4 relative overflow-hidden transition-all duration-500 ${
+                formHighlight ? 'ring-2 ring-primary shadow-[0_0_30px_rgba(6,182,212,0.4)]' : ''
+              }`}>
+                {/* Animated border glow */}
+                {formHighlight && (
+                  <div className="absolute inset-0 pointer-events-none">
+                    <div className="absolute inset-0 rounded-2xl border-2 border-primary animate-pulse" />
+                    <div className="absolute -inset-1 bg-gradient-to-r from-primary/0 via-primary/30 to-primary/0 rounded-2xl animate-shimmer" />
+                  </div>
+                )}
                 <Input
                   type="text"
                   placeholder={t.aplink?.yourName || 'Ваше имя'}
                   value={userName}
                   onChange={(e) => setUserName(e.target.value)}
-                  className="bg-background/50 border-border/50 h-12 text-lg"
+                  className="bg-background/50 border-border/50 h-12 text-lg relative z-10"
                 />
                 <Input
                   type="text"
                   placeholder={t.aplink?.roomName || 'Название комнаты (или оставьте пустым)'}
                   value={roomName}
                   onChange={(e) => setRoomName(e.target.value)}
-                  className="bg-background/50 border-border/50 h-12 text-lg"
+                  className="bg-background/50 border-border/50 h-12 text-lg relative z-10"
                   onKeyDown={(e) => e.key === 'Enter' && (roomName ? handleJoinRoom() : handleCreateRoom())}
                 />
-                <div className="flex gap-3">
+                <div className="flex gap-3 relative z-10">
                   <Button
                     onClick={handleCreateRoom}
                     disabled={!userName.trim()}
-                    className="flex-1 h-12 text-lg bg-primary hover:bg-primary/90 transition-all duration-300 hover:scale-105"
+                    className={`flex-1 h-12 text-lg bg-primary hover:bg-primary/90 transition-all duration-300 hover:scale-105 ${
+                      formHighlight ? 'animate-pulse shadow-lg shadow-primary/50' : ''
+                    }`}
                   >
                     <Video className="w-5 h-5 mr-2" />
                     {t.aplink?.createRoom || 'Создать комнату'}
@@ -621,7 +635,20 @@ const Index = () => {
         </div>
       </footer>
       {/* Mobile Bottom Navigation */}
-      <APLinkBottomNav />
+      <APLinkBottomNav 
+        onFavoritesClick={() => setFavoritesOpen(true)}
+        onCreateClick={() => {
+          const formEl = document.getElementById('create-room-form');
+          if (formEl) {
+            formEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+          setFormHighlight(true);
+          setTimeout(() => setFormHighlight(false), 3000);
+        }}
+      />
+      
+      {/* Favorites Sheet */}
+      <FavoritesSheet open={favoritesOpen} onOpenChange={setFavoritesOpen} />
     </div>
   );
 };
