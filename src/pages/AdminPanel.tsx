@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, Users, Calendar, Clock, MapPin, Globe, Shield } from 'lucide-react';
+import { ArrowLeft, FileText, Users, Calendar, Clock, MapPin, Globe, Shield, User, Camera, Save } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { toast } from 'sonner';
 import CustomCursor from '@/components/CustomCursor';
 import AnimatedBackground from '@/components/AnimatedBackground';
 import logoVideo from '@/assets/logo-video.mov';
@@ -41,13 +45,25 @@ interface MeetingParticipant {
   left_at: string | null;
 }
 
+interface Profile {
+  id: string;
+  user_id: string;
+  display_name: string | null;
+  username: string | null;
+  avatar_url: string | null;
+}
+
 const AdminPanel = () => {
   const navigate = useNavigate();
   const { user, isAdmin, isLoading } = useAuth();
   const [transcripts, setTranscripts] = useState<MeetingTranscript[]>([]);
   const [participants, setParticipants] = useState<MeetingParticipant[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'transcripts' | 'participants'>('transcripts');
+  const [activeTab, setActiveTab] = useState<'transcripts' | 'participants' | 'profile'>('transcripts');
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [displayName, setDisplayName] = useState('');
+  const [username, setUsername] = useState('');
+  const [savingProfile, setSavingProfile] = useState(false);
 
   // Redirect if not admin
   useEffect(() => {
@@ -66,7 +82,7 @@ const AdminPanel = () => {
     const fetchData = async () => {
       setLoading(true);
       
-      const [transcriptsRes, participantsRes] = await Promise.all([
+      const [transcriptsRes, participantsRes, profileRes] = await Promise.all([
         supabase
           .from('meeting_transcripts')
           .select('*')
@@ -74,7 +90,12 @@ const AdminPanel = () => {
         supabase
           .from('meeting_participants')
           .select('*')
-          .order('joined_at', { ascending: false })
+          .order('joined_at', { ascending: false }),
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', user.id)
+          .single()
       ]);
       
       if (transcriptsRes.data) {
@@ -82,6 +103,11 @@ const AdminPanel = () => {
       }
       if (participantsRes.data) {
         setParticipants(participantsRes.data as MeetingParticipant[]);
+      }
+      if (profileRes.data) {
+        setProfile(profileRes.data as Profile);
+        setDisplayName(profileRes.data.display_name || '');
+        setUsername(profileRes.data.username || '');
       }
       
       setLoading(false);
@@ -107,6 +133,42 @@ const AdminPanel = () => {
       supabase.removeChannel(channel);
     };
   }, [user, isAdmin]);
+
+  const handleSaveProfile = async () => {
+    if (!user) return;
+    setSavingProfile(true);
+    
+    try {
+      if (profile) {
+        const { error } = await supabase
+          .from('profiles')
+          .update({
+            display_name: displayName,
+            username: username,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id);
+        
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('profiles')
+          .insert({
+            user_id: user.id,
+            display_name: displayName,
+            username: username
+          });
+        
+        if (error) throw error;
+      }
+      
+      toast.success('Профиль сохранён');
+    } catch (error: any) {
+      toast.error('Ошибка сохранения: ' + error.message);
+    } finally {
+      setSavingProfile(false);
+    }
+  };
 
 
   const formatDate = (dateStr: string) => {
@@ -186,6 +248,15 @@ const AdminPanel = () => {
             >
               <Users className="w-4 h-4" />
               IP-чекер
+            </Button>
+            <Button
+              variant={activeTab === 'profile' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setActiveTab('profile')}
+              className="gap-2"
+            >
+              <User className="w-4 h-4" />
+              Профиль
             </Button>
           </div>
         </div>
@@ -308,7 +379,7 @@ const AdminPanel = () => {
               </div>
             )}
           </div>
-        ) : (
+        ) : activeTab === 'participants' ? (
           <div className="space-y-6">
             <h1 className="text-2xl font-bold flex items-center gap-2">
               <Users className="w-6 h-6 text-primary" />
@@ -370,7 +441,77 @@ const AdminPanel = () => {
               </div>
             )}
           </div>
-        )}
+        ) : activeTab === 'profile' ? (
+          <div className="max-w-md mx-auto">
+            <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="w-5 h-5 text-primary" />
+                  Редактирование профиля
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex justify-center">
+                  <div className="relative">
+                    <Avatar className="w-24 h-24">
+                      <AvatarImage src={profile?.avatar_url || ''} />
+                      <AvatarFallback className="text-2xl bg-primary/20 text-primary">
+                        {displayName?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <Button
+                      size="icon"
+                      variant="secondary"
+                      className="absolute bottom-0 right-0 rounded-full w-8 h-8"
+                    >
+                      <Camera className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="displayName">Отображаемое имя</Label>
+                    <Input
+                      id="displayName"
+                      value={displayName}
+                      onChange={(e) => setDisplayName(e.target.value)}
+                      placeholder="Введите имя"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="username">Username</Label>
+                    <Input
+                      id="username"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      placeholder="@username"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>Email</Label>
+                    <Input
+                      value={user?.email || ''}
+                      disabled
+                      className="opacity-50"
+                    />
+                  </div>
+                </div>
+                
+                <Button 
+                  onClick={handleSaveProfile} 
+                  className="w-full gap-2"
+                  disabled={savingProfile}
+                >
+                  <Save className="w-4 h-4" />
+                  {savingProfile ? 'Сохранение...' : 'Сохранить'}
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        ) : null}
       </main>
     </div>
   );
