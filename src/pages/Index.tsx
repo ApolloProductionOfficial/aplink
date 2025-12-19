@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Video, Users, Globe, Shield, ArrowRight, Sparkles, MessageCircle, ExternalLink, User, LogOut, UserPlus, Chrome, Copy, Check } from "lucide-react";
+import { Video, Users, Globe, Shield, ArrowRight, Sparkles, MessageCircle, ExternalLink, User, LogOut, UserPlus, Copy, Check } from "lucide-react";
+import GoogleIcon from "@/components/icons/GoogleIcon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
@@ -494,7 +495,7 @@ const Index = () => {
                           {googleLoading ? (
                             <div className="w-4 h-4 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
                           ) : (
-                            <Chrome className="w-4 h-4" />
+                            <GoogleIcon className="w-4 h-4" />
                           )}
                           Google
                         </Button>
