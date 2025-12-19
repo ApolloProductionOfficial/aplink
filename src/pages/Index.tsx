@@ -62,29 +62,36 @@ const Index = () => {
   // Pre-fill username from profile (from database, not metadata)
   useEffect(() => {
     const loadUserName = async () => {
-      if (user && !userName) {
-        // First try to get from profiles table
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('display_name, username')
-          .eq('user_id', user.id)
-          .maybeSingle();
-        
+      if (!user) return;
+
+      // Get from profiles table
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('display_name, username')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      // Only set display name if user hasn't typed anything yet
+      if (!userName) {
         if (profileData?.display_name) {
           setUserName(profileData.display_name);
         } else {
-          // Fallback to metadata or email
-          const displayName = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || '';
+          const displayName =
+            user.user_metadata?.full_name ||
+            user.user_metadata?.name ||
+            user.email?.split('@')[0] ||
+            '';
           setUserName(displayName);
         }
-        
-        if (profileData?.username) {
-          setUserUsername(profileData.username);
-        }
       }
+
+      const uname = profileData?.username ?? null;
+      setUserUsername(uname);
+      setShowUsernameForm(!uname);
     };
-    
+
     loadUserName();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const handleJoinRoom = () => {
@@ -500,51 +507,60 @@ const Index = () => {
                         Нажмите, чтобы скопировать и поделиться
                       </p>
                     </div>
-                  ) : showUsernameForm ? (
-                    <div className="glass rounded-2xl p-4 border border-primary/30">
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                          <User className="w-5 h-5 text-primary" />
-                        </div>
-                        <div>
-                          <p className="font-medium">Создайте @username</p>
-                          <p className="text-xs text-muted-foreground">Только латиница, цифры и _</p>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Input
-                          type="text"
-                          placeholder="username"
-                          value={newUsername}
-                          onChange={(e) => setNewUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                          className="bg-background/50 border-border/50"
-                          onKeyDown={(e) => e.key === 'Enter' && handleSaveUsername()}
-                        />
-                        <Button
-                          onClick={handleSaveUsername}
-                          disabled={savingUsername || newUsername.length < 3}
-                          className="shrink-0"
-                        >
-                          {savingUsername ? (
-                            <div className="w-4 h-4 rounded-full border-2 border-background/30 border-t-background animate-spin" />
-                          ) : (
-                            <Check className="w-4 h-4" />
-                          )}
-                        </Button>
-                      </div>
-                    </div>
                   ) : (
-                    <div 
-                      onClick={() => setShowUsernameForm(true)}
-                      className="glass rounded-2xl p-4 border border-yellow-500/30 cursor-pointer hover:border-yellow-500/50 transition-colors"
+                    <div
+                      className="glass rounded-2xl p-4 border border-yellow-500/30"
+                      onClick={(e) => {
+                        // Safety: prevent any click-through/parent navigation
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
                     >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center shrink-0">
                           <User className="w-5 h-5 text-yellow-500" />
                         </div>
-                        <div>
+
+                        <div className="flex-1 min-w-0">
                           <p className="font-medium text-yellow-500">Добавьте @username</p>
-                          <p className="text-xs text-muted-foreground">Чтобы вас могли найти и добавить в контакты</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">Чтобы вас могли найти и добавить в контакты</p>
+
+                          <div className="mt-3 flex gap-2">
+                            <Input
+                              type="text"
+                              placeholder="username"
+                              value={newUsername}
+                              onChange={(e) =>
+                                setNewUsername(
+                                  e.target.value
+                                    .toLowerCase()
+                                    .replace(/[^a-z0-9_]/g, '')
+                                    .slice(0, 20)
+                                )
+                              }
+                              className="bg-background/50 border-border/50"
+                              onKeyDown={(e) => e.key === 'Enter' && handleSaveUsername()}
+                            />
+                            <Button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleSaveUsername();
+                              }}
+                              disabled={savingUsername || newUsername.trim().length < 3}
+                              className="shrink-0"
+                            >
+                              {savingUsername ? (
+                                <div className="w-4 h-4 rounded-full border-2 border-background/30 border-t-background animate-spin" />
+                              ) : (
+                                <Check className="w-4 h-4" />
+                              )}
+                            </Button>
+                          </div>
+
+                          <p className="mt-2 text-[11px] text-muted-foreground">
+                            3–20 символов: латиница, цифры, подчёркивание
+                          </p>
                         </div>
                       </div>
                     </div>
