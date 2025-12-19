@@ -160,11 +160,11 @@ const Index = () => {
           muted
           loop
           playsInline
-          className="min-w-full min-h-full object-cover opacity-20"
+          className="min-w-full min-h-full object-cover opacity-40"
         >
           <source src={promoVideo} type="video/mp4" />
         </video>
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-background/60" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent" />
       </div>
 
       {/* Header */}
