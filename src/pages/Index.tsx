@@ -12,11 +12,9 @@ import { usePresence } from "@/hooks/usePresence";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import StarField from "@/components/StarField";
 import CustomCursor from "@/components/CustomCursor";
-import ParticleEffect from "@/components/ParticleEffect";
 import NeonGlow from "@/components/NeonGlow";
 import FloatingOrbs from "@/components/FloatingOrbs";
 import FavoriteContacts from "@/components/FavoriteContacts";
-import VideoBanner from "@/components/VideoBanner";
 import logoVideo from "@/assets/logo-video.mov";
 import {
   DropdownMenu,
@@ -150,8 +148,6 @@ const Index = () => {
       {/* Neon Glow Effect */}
       <NeonGlow />
       
-      {/* Particle Effect */}
-      <ParticleEffect />
       
       {/* Video Background */}
       <div className="fixed inset-0 z-0 flex items-center justify-center overflow-hidden">
