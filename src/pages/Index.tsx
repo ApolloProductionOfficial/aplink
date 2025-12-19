@@ -150,12 +150,12 @@ const Index = () => {
               </span>
             </div>
           </div>
-          <div className="flex items-center gap-2 sm:gap-4">
+          <div className="flex items-center gap-3">
             <a 
               href="https://t.me/Apollo_Production" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors text-sm"
+              className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors text-sm"
             >
               <MessageCircle className="w-4 h-4" />
               <span className="hidden sm:inline">{t.aplink?.telegram || 'Telegram'}</span>
@@ -164,7 +164,7 @@ const Index = () => {
               href="https://apolloproduction.studio" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors text-sm"
+              className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors text-sm"
             >
               <ExternalLink className="w-4 h-4" />
               <span className="hidden sm:inline">{t.aplink?.website || 'Сайт'}</span>
@@ -174,12 +174,12 @@ const Index = () => {
             {isLoading ? (
               <div className="w-5 h-5 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
             ) : user ? (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => navigate(isAdmin ? '/admin' : '/dashboard')}
-                  className="gap-2"
+                  className="gap-1.5 h-8 px-3"
                 >
                   <User className="w-4 h-4" />
                   <span className="hidden sm:inline">{isAdmin ? (t.aplink?.admin || 'Админ') : (t.aplink?.cabinet || 'Кабинет')}</span>
@@ -188,17 +188,18 @@ const Index = () => {
                   variant="ghost"
                   size="sm"
                   onClick={handleSignOut}
+                  className="h-8 w-8 p-0"
                 >
                   <LogOut className="w-4 h-4" />
                 </Button>
               </div>
             ) : (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => navigate('/auth')}
-                  className="gap-2"
+                  className="gap-1.5 h-8 px-3"
                 >
                   <User className="w-4 h-4" />
                   <span className="hidden sm:inline">{t.auth?.loginButton || 'Войти'}</span>
@@ -206,7 +207,7 @@ const Index = () => {
                 <Button
                   size="sm"
                   onClick={() => navigate('/auth?mode=register')}
-                  className="gap-2 bg-primary hover:bg-primary/90"
+                  className="gap-1.5 h-8 px-3 bg-primary hover:bg-primary/90"
                 >
                   <UserPlus className="w-4 h-4" />
                   <span className="hidden sm:inline">{t.auth?.registerButton || 'Регистрация'}</span>
@@ -218,12 +219,12 @@ const Index = () => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button 
-                  variant="outline" 
+                  variant="ghost" 
                   size="sm"
-                  className="gap-2 bg-background/50 border-border/50 hover:bg-primary/10"
+                  className="gap-1 h-8 px-2 hover:bg-primary/10"
                 >
                   <Globe className="h-4 w-4 text-primary" />
-                  <span className="text-lg">{languages[language].flag}</span>
+                  <span className="text-base">{languages[language].flag}</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-44 bg-card/95 backdrop-blur-xl border-primary/20 shadow-xl">
