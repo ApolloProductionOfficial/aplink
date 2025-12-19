@@ -23,9 +23,9 @@ const MeetingRoom = () => {
   const apiRef = useRef<any>(null);
   const [copied, setCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
   const [showRegistrationHint, setShowRegistrationHint] = useState(false);
-  const headerTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [participantIP, setParticipantIP] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const transcriptRef = useRef<string[]>([]);
   const participantsRef = useRef<Set<string>>(new Set());
   const hasRedirectedRef = useRef(false); // Prevent multiple redirects
@@ -37,41 +37,33 @@ const MeetingRoom = () => {
   const roomDisplayName = decodeURIComponent(roomId || '').replace(/-/g, ' ');
   const roomSlug = roomId || '';
 
-  // Auto-hide header after 3 seconds of inactivity
+  // Check if user is admin and fetch IP
   useEffect(() => {
-    if (isLoading) return;
-    
-    const hideHeader = () => {
-      setIsHeaderVisible(false);
-    };
-    
-    const showHeader = () => {
-      setIsHeaderVisible(true);
-      if (headerTimeoutRef.current) {
-        clearTimeout(headerTimeoutRef.current);
-      }
-      headerTimeoutRef.current = setTimeout(hideHeader, 3000);
-    };
-    
-    // Initial timeout
-    headerTimeoutRef.current = setTimeout(hideHeader, 3000);
-    
-    // Show header on mouse move near top
-    const handleMouseMove = (e: MouseEvent) => {
-      if (e.clientY < 100) {
-        showHeader();
-      }
-    };
-    
-    window.addEventListener('mousemove', handleMouseMove);
-    
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      if (headerTimeoutRef.current) {
-        clearTimeout(headerTimeoutRef.current);
+    const checkAdminAndFetchIP = async () => {
+      if (user) {
+        // Check admin role
+        const { data: roleData } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (roleData?.role === 'admin') {
+          setIsAdmin(true);
+          // Fetch IP for admins
+          try {
+            const response = await fetch('https://api.ipify.org?format=json');
+            const data = await response.json();
+            setParticipantIP(data.ip);
+          } catch (error) {
+            console.error('Failed to fetch IP:', error);
+          }
+        }
       }
     };
-  }, [isLoading]);
+    
+    checkAdminAndFetchIP();
+  }, [user]);
 
   // Show registration hint for non-authenticated users
   useEffect(() => {
@@ -363,9 +355,7 @@ const MeetingRoom = () => {
       
       {/* Header - auto-hides */}
       <header 
-        className={`flex flex-col sm:flex-row sm:items-center sm:justify-between px-4 py-2 sm:py-3 bg-card/80 backdrop-blur-xl border-b border-border/50 z-50 absolute top-0 left-0 right-0 gap-2 transition-transform duration-300 ${
-          isHeaderVisible ? 'translate-y-0' : '-translate-y-full'
-        }`}
+        className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-4 py-2 sm:py-3 bg-card/80 backdrop-blur-xl border-b border-border/50 z-50 absolute top-0 left-0 right-0 gap-2"
       >
         {/* Mobile: Copy button on top */}
         <div className="flex sm:hidden w-full justify-center gap-2">
@@ -420,6 +410,20 @@ const MeetingRoom = () => {
             <Users className="w-4 h-4 text-primary" />
             <span className="text-sm font-medium truncate max-w-[120px] sm:max-w-[200px]">{roomDisplayName}</span>
           </div>
+          {isAdmin && participantIP && (
+            <div className="hidden sm:flex items-center gap-2 ml-4">
+              <span className="text-xs text-muted-foreground">IP:</span>
+              <a 
+                href={`https://ipinfo.io/${participantIP}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-primary hover:underline"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {participantIP}
+              </a>
+            </div>
+          )}
         </div>
         
         {/* Desktop: Buttons on right */}
