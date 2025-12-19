@@ -73,7 +73,7 @@ const RegistrationBanner = ({ className = '' }: RegistrationBannerProps) => {
             variant="outline"
             onClick={handleGoogleSignIn}
             disabled={loading}
-            className="h-9 w-9 p-0 flex-shrink-0"
+            className="h-9 w-9 p-0 flex-shrink-0 transition-all duration-300 hover:scale-110 hover:bg-primary hover:text-primary-foreground hover:border-primary"
             title="Войти через Google"
           >
             {loading ? (
