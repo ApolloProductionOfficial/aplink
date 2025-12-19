@@ -17,3 +17,6 @@ verify_jwt = true
 
 [functions.post-promotional-ads]
 verify_jwt = true
+
+[functions.elevenlabs-transcribe]
+verify_jwt = false
