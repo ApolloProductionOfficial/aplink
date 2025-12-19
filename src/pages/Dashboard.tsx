@@ -36,7 +36,7 @@ const Dashboard = () => {
   const { toast } = useToast();
   const [transcripts, setTranscripts] = useState<MeetingTranscript[]>([]);
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<{ display_name: string; email: string } | null>(null);
+  const [profile, setProfile] = useState<{ display_name: string | null } | null>(null);
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState('');
   const [savingName, setSavingName] = useState(false);
@@ -57,7 +57,7 @@ const Dashboard = () => {
       // Fetch user profile
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('display_name, email')
+        .select('display_name')
         .eq('user_id', user.id)
         .maybeSingle();
       

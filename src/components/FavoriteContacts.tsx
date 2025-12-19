@@ -20,7 +20,6 @@ interface Contact {
   nickname: string | null;
   profile?: {
     display_name: string | null;
-    email: string | null;
   };
   presence?: {
     is_online: boolean;
@@ -34,7 +33,7 @@ const FavoriteContacts = () => {
   const { toast } = useToast();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
-  const [addEmail, setAddEmail] = useState('');
+  const [searchName, setSearchName] = useState('');
   const [addNickname, setAddNickname] = useState('');
   const [adding, setAdding] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -84,7 +83,7 @@ const FavoriteContacts = () => {
         const [profileRes, presenceRes] = await Promise.all([
           supabase
             .from('profiles')
-            .select('display_name, email')
+            .select('display_name')
             .eq('user_id', contact.contact_user_id)
             .maybeSingle(),
           supabase
@@ -107,31 +106,23 @@ const FavoriteContacts = () => {
   };
 
   const addContact = async () => {
-    if (!user || !addEmail.trim()) return;
+    if (!user || !searchName.trim()) return;
     
     setAdding(true);
     
-    // Find user by email
+    // Find user by display_name
     const { data: profileData, error: profileError } = await supabase
       .from('profiles')
       .select('user_id')
-      .eq('email', addEmail.trim())
+      .ilike('display_name', `%${searchName.trim()}%`)
+      .neq('user_id', user.id)
+      .limit(1)
       .maybeSingle();
 
     if (profileError || !profileData) {
       toast({
         title: 'Пользователь не найден',
-        description: 'Проверьте email адрес',
-        variant: 'destructive',
-      });
-      setAdding(false);
-      return;
-    }
-
-    if (profileData.user_id === user.id) {
-      toast({
-        title: 'Ошибка',
-        description: 'Нельзя добавить себя в контакты',
+        description: 'Проверьте имя пользователя',
         variant: 'destructive',
       });
       setAdding(false);
@@ -161,8 +152,10 @@ const FavoriteContacts = () => {
       toast({
         title: 'Контакт добавлен',
       });
-      setAddEmail('');
+      setSearchName('');
       setAddNickname('');
+      setDialogOpen(false);
+      fetchContacts();
       setDialogOpen(false);
       fetchContacts();
     }
@@ -221,9 +214,9 @@ const FavoriteContacts = () => {
             </DialogHeader>
             <div className="space-y-4 pt-4">
               <Input
-                placeholder="Email пользователя"
-                value={addEmail}
-                onChange={(e) => setAddEmail(e.target.value)}
+                placeholder="Имя пользователя"
+                value={searchName}
+                onChange={(e) => setSearchName(e.target.value)}
               />
               <Input
                 placeholder="Никнейм (необязательно)"
@@ -232,7 +225,7 @@ const FavoriteContacts = () => {
               />
               <Button
                 onClick={addContact}
-                disabled={adding || !addEmail.trim()}
+                disabled={adding || !searchName.trim()}
                 className="w-full"
               >
                 {adding ? 'Добавление...' : 'Добавить'}
