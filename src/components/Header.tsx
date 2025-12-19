@@ -67,7 +67,7 @@ const Header = () => {
     <header className="sticky top-0 left-0 right-0 z-40 bg-gradient-to-r from-card/95 via-card/98 to-card/95 backdrop-blur-xl border-b border-primary/20 shadow-lg shadow-primary/5">
       <div className="container mx-auto px-6 md:px-8 lg:px-4 py-3">
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
+          <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-shrink-0">
             <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-primary/30 shadow-lg shadow-primary/20">
               <video 
                 src={logoVideo} 
@@ -79,9 +79,14 @@ const Header = () => {
                 className="w-full h-full object-cover scale-110"
               />
             </div>
-            <span className="text-xs sm:text-sm md:text-base font-bold animate-text-shimmer break-words line-clamp-2 min-w-0 bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text">
-              {t.header.title}
-            </span>
+            <div className="flex flex-col min-w-0">
+              <span className="text-sm sm:text-base md:text-lg font-bold bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent">
+                APLink
+              </span>
+              <span className="text-[10px] sm:text-xs text-muted-foreground">
+                by Apollo Production
+              </span>
+            </div>
           </div>
           
           <nav className="hidden lg:flex items-center gap-4">
