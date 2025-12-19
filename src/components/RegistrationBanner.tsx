@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, Sparkles, FileText } from 'lucide-react';
+import GoogleIcon from '@/components/icons/GoogleIcon';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useAuth } from '@/hooks/useAuth';
@@ -73,13 +74,13 @@ const RegistrationBanner = ({ className = '' }: RegistrationBannerProps) => {
             variant="outline"
             onClick={handleGoogleSignIn}
             disabled={loading}
-            className="h-9 w-9 p-0 flex-shrink-0 transition-all duration-300 hover:scale-110 hover:bg-primary hover:text-primary-foreground hover:border-primary"
+            className="h-9 w-9 p-0 flex-shrink-0 transition-all duration-300 hover:scale-105 hover:bg-muted/50"
             title="Войти через Google"
           >
             {loading ? (
               <div className="w-4 h-4 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
             ) : (
-              <span className="text-sm font-bold">G</span>
+              <GoogleIcon className="w-4 h-4" />
             )}
           </Button>
         </div>

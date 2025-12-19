@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Mail, Lock, User, Chrome, ArrowLeft, Globe } from 'lucide-react';
+import { Mail, Lock, User, ArrowLeft, Globe } from 'lucide-react';
+import GoogleIcon from '@/components/icons/GoogleIcon';
 import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -326,7 +327,7 @@ const Auth = () => {
                   variant="outline"
                   className="w-full h-12 gap-2"
                 >
-                  <Chrome className="w-5 h-5" />
+                  <GoogleIcon className="w-5 h-5" />
                   {t.auth.continueWithGoogle}
                 </Button>
                 
