@@ -57,6 +57,7 @@ const APLinkBottomNav = ({ onFavoritesClick, onCreateClick }: APLinkBottomNavPro
         transform: isVisible ? 'translateY(0)' : 'translateY(100%)',
         opacity: isVisible ? 1 : 0,
         transition: 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-out',
+        willChange: 'transform, opacity',
       }}
     >
       {/* Gradient background */}
