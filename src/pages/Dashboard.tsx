@@ -36,9 +36,10 @@ const Dashboard = () => {
   const { toast } = useToast();
   const [transcripts, setTranscripts] = useState<MeetingTranscript[]>([]);
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<{ display_name: string | null } | null>(null);
+  const [profile, setProfile] = useState<{ display_name: string | null; username: string | null } | null>(null);
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState('');
+  const [editedUsername, setEditedUsername] = useState('');
   const [savingName, setSavingName] = useState(false);
 
   // Redirect if not logged in
@@ -57,13 +58,14 @@ const Dashboard = () => {
       // Fetch user profile
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('display_name')
+        .select('display_name, username')
         .eq('user_id', user.id)
         .maybeSingle();
       
       if (profileData) {
         setProfile(profileData);
         setEditedName(profileData.display_name || '');
+        setEditedUsername(profileData.username || '');
       }
       
       // Fetch transcripts where user participated
@@ -90,26 +92,49 @@ const Dashboard = () => {
   const handleSaveName = async () => {
     if (!user || !editedName.trim()) return;
     
+    // Validate username format
+    if (editedUsername && !/^[a-z0-9_]{3,20}$/.test(editedUsername)) {
+      toast({
+        title: 'Ошибка',
+        description: 'Username должен содержать 3-20 символов (a-z, 0-9, _)',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     setSavingName(true);
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({ display_name: editedName.trim() })
+        .update({ 
+          display_name: editedName.trim(),
+          username: editedUsername || null
+        })
         .eq('user_id', user.id);
       
-      if (error) throw error;
+      if (error) {
+        if (error.code === '23505') {
+          toast({
+            title: 'Ошибка',
+            description: 'Этот @username уже занят',
+            variant: 'destructive',
+          });
+          return;
+        }
+        throw error;
+      }
       
-      setProfile(prev => prev ? { ...prev, display_name: editedName.trim() } : null);
+      setProfile(prev => prev ? { ...prev, display_name: editedName.trim(), username: editedUsername || null } : null);
       setIsEditingName(false);
       toast({
-        title: 'Имя сохранено',
-        description: 'Ваше имя успешно обновлено',
+        title: 'Профиль сохранён',
+        description: 'Ваши данные успешно обновлены',
       });
     } catch (error) {
-      console.error('Error saving name:', error);
+      console.error('Error saving profile:', error);
       toast({
         title: 'Ошибка',
-        description: 'Не удалось сохранить имя',
+        description: 'Не удалось сохранить профиль',
         variant: 'destructive',
       });
     } finally {
@@ -119,6 +144,7 @@ const Dashboard = () => {
 
   const handleCancelEdit = () => {
     setEditedName(profile?.display_name || '');
+    setEditedUsername(profile?.username || '');
     setIsEditingName(false);
   };
 
@@ -176,10 +202,21 @@ const Dashboard = () => {
                   <Input
                     value={editedName}
                     onChange={(e) => setEditedName(e.target.value)}
-                    className="h-8 w-40"
+                    className="h-8 w-32"
                     placeholder="Ваше имя"
                     disabled={savingName}
                   />
+                  <div className="relative">
+                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">@</span>
+                    <Input
+                      value={editedUsername}
+                      onChange={(e) => setEditedUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                      className="h-8 w-28 pl-6"
+                      placeholder="username"
+                      disabled={savingName}
+                      maxLength={20}
+                    />
+                  </div>
                   <Button
                     size="sm"
                     variant="ghost"
@@ -201,7 +238,12 @@ const Dashboard = () => {
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <span>{profile?.display_name || user.email}</span>
+                  <div className="flex flex-col">
+                    <span>{profile?.display_name || user.email}</span>
+                    {profile?.username && (
+                      <span className="text-xs text-primary">@{profile.username}</span>
+                    )}
+                  </div>
                   <Button
                     size="sm"
                     variant="ghost"

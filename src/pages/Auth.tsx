@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Mail, Lock, User, Chrome, ArrowLeft, Globe } from 'lucide-react';
 import { z } from 'zod';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -33,8 +34,9 @@ const Auth = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [username, setUsername] = useState('');
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string; name?: string; confirmPassword?: string }>({});
+  const [errors, setErrors] = useState<{ email?: string; password?: string; name?: string; username?: string; confirmPassword?: string }>({});
   
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -65,9 +67,13 @@ const Auth = () => {
   const emailSchema = z.string().email(t.auth.errors.invalidEmail);
   const passwordSchema = z.string().min(6, t.auth.errors.passwordMin);
   const nameSchema = z.string().min(2, t.auth.errors.nameMin).max(50, t.auth.errors.nameMax);
+  const usernameSchema = z.string()
+    .min(3, 'Юзернейм минимум 3 символа')
+    .max(20, 'Юзернейм максимум 20 символов')
+    .regex(/^[a-z0-9_]+$/, 'Только строчные буквы, цифры и _');
 
   const validateForm = () => {
-    const newErrors: { email?: string; password?: string; name?: string; confirmPassword?: string } = {};
+    const newErrors: { email?: string; password?: string; name?: string; username?: string; confirmPassword?: string } = {};
     
     if (authMode !== 'reset') {
       const emailResult = emailSchema.safeParse(email);
@@ -97,6 +103,11 @@ const Auth = () => {
       const nameResult = nameSchema.safeParse(displayName);
       if (!nameResult.success) {
         newErrors.name = nameResult.error.errors[0].message;
+      }
+      
+      const usernameResult = usernameSchema.safeParse(username);
+      if (!usernameResult.success) {
+        newErrors.username = usernameResult.error.errors[0].message;
       }
     }
     
@@ -136,7 +147,7 @@ const Auth = () => {
           navigate('/');
         }
       } else if (authMode === 'register') {
-        const { error } = await signUp(email, password, displayName);
+        const { error, data } = await signUp(email, password, displayName);
         if (error) {
           if (error.message.includes('already registered')) {
             toast({
@@ -152,6 +163,13 @@ const Auth = () => {
             });
           }
         } else {
+          // Update profile with username
+          if (data?.user) {
+            await supabase
+              .from('profiles')
+              .update({ username: username.toLowerCase() })
+              .eq('user_id', data.user.id);
+          }
           toast({
             title: t.auth.success.accountCreated,
             description: t.auth.success.welcomeToApp,
@@ -325,21 +343,42 @@ const Auth = () => {
             
             <form onSubmit={handleSubmit} className="space-y-4">
               {authMode === 'register' && (
-                <div>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                    <Input
-                      type="text"
-                      placeholder={t.auth.namePlaceholder}
-                      value={displayName}
-                      onChange={(e) => setDisplayName(e.target.value)}
-                      className="pl-10 h-12"
-                    />
+                <>
+                  <div>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                      <Input
+                        type="text"
+                        placeholder={t.auth.namePlaceholder}
+                        value={displayName}
+                        onChange={(e) => setDisplayName(e.target.value)}
+                        className="pl-10 h-12"
+                      />
+                    </div>
+                    {errors.name && (
+                      <p className="text-sm text-destructive mt-1">{errors.name}</p>
+                    )}
                   </div>
-                  {errors.name && (
-                    <p className="text-sm text-destructive mt-1">{errors.name}</p>
-                  )}
-                </div>
+                  <div>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">@</span>
+                      <Input
+                        type="text"
+                        placeholder="username"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                        className="pl-10 h-12"
+                        maxLength={20}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      По этому @username вас смогут найти и добавить в контакты
+                    </p>
+                    {errors.username && (
+                      <p className="text-sm text-destructive mt-1">{errors.username}</p>
+                    )}
+                  </div>
+                </>
               )}
               
               {authMode !== 'reset' && (

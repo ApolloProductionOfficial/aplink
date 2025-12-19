@@ -20,6 +20,7 @@ interface Contact {
   nickname: string | null;
   profile?: {
     display_name: string | null;
+    username: string | null;
   };
   presence?: {
     is_online: boolean;
@@ -83,7 +84,7 @@ const FavoriteContacts = () => {
         const [profileRes, presenceRes] = await Promise.all([
           supabase
             .from('profiles')
-            .select('display_name')
+            .select('display_name, username')
             .eq('user_id', contact.contact_user_id)
             .maybeSingle(),
           supabase
@@ -110,19 +111,21 @@ const FavoriteContacts = () => {
     
     setAdding(true);
     
-    // Find user by display_name
+    // Clean the username (remove @ if present)
+    const cleanUsername = searchName.trim().toLowerCase().replace(/^@/, '');
+    
+    // Find user by username
     const { data: profileData, error: profileError } = await supabase
       .from('profiles')
-      .select('user_id')
-      .ilike('display_name', `%${searchName.trim()}%`)
+      .select('user_id, display_name')
+      .eq('username', cleanUsername)
       .neq('user_id', user.id)
-      .limit(1)
       .maybeSingle();
 
     if (profileError || !profileData) {
       toast({
         title: 'Пользователь не найден',
-        description: 'Проверьте имя пользователя',
+        description: `Пользователь @${cleanUsername} не найден`,
         variant: 'destructive',
       });
       setAdding(false);
@@ -213,11 +216,15 @@ const FavoriteContacts = () => {
               <DialogTitle>Добавить контакт</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 pt-4">
-              <Input
-                placeholder="Имя пользователя"
-                value={searchName}
-                onChange={(e) => setSearchName(e.target.value)}
-              />
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">@</span>
+                <Input
+                  placeholder="username"
+                  value={searchName}
+                  onChange={(e) => setSearchName(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                  className="pl-8"
+                />
+              </div>
               <Input
                 placeholder="Никнейм (необязательно)"
                 value={addNickname}
@@ -270,6 +277,8 @@ const FavoriteContacts = () => {
                     {contact.nickname || contact.profile?.display_name || 'Пользователь'}
                   </p>
                   <p className="text-xs text-muted-foreground">
+                    {contact.profile?.username && <span className="text-primary">@{contact.profile.username}</span>}
+                    {contact.profile?.username && ' · '}
                     {contact.presence?.is_online
                       ? contact.presence.current_room
                         ? `В комнате: ${contact.presence.current_room}`
