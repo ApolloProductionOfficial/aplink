@@ -5,16 +5,32 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslation } from "@/hooks/useTranslation";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import StarField from "@/components/StarField";
 import CustomCursor from "@/components/CustomCursor";
 import logoVideo from "@/assets/logo-video.mov";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import promoVideo from "@/assets/promo-video.mp4";
 
 const Index = () => {
   const [searchParams] = useSearchParams();
   // Convert dashes back to spaces for room name from URL
   const roomFromUrl = (searchParams.get("room") || "").replace(/-/g, ' ');
+  const { language, setLanguage } = useLanguage();
+  const { t } = useTranslation();
+  
+  const languages = {
+    ru: { label: 'Русский', flag: '🇷🇺' },
+    en: { label: 'English', flag: '🇬🇧' },
+    uk: { label: 'Українська', flag: '🇺🇦' }
+  };
   const [roomName, setRoomName] = useState(roomFromUrl);
   const [userName, setUserName] = useState("");
   const [bannerVisible, setBannerVisible] = useState(true);
@@ -185,7 +201,7 @@ const Index = () => {
                   className="gap-2"
                 >
                   <User className="w-4 h-4" />
-                  <span className="hidden sm:inline">Войти</span>
+                  <span className="hidden sm:inline">{t.auth?.loginButton || 'Войти'}</span>
                 </Button>
                 <Button
                   size="sm"
@@ -193,10 +209,36 @@ const Index = () => {
                   className="gap-2 bg-primary hover:bg-primary/90"
                 >
                   <UserPlus className="w-4 h-4" />
-                  <span className="hidden sm:inline">Регистрация</span>
+                  <span className="hidden sm:inline">{t.auth?.registerButton || 'Регистрация'}</span>
                 </Button>
               </div>
             )}
+            
+            {/* Language Selector */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="gap-2 bg-background/50 border-border/50 hover:bg-primary/10"
+                >
+                  <Globe className="h-4 w-4 text-primary" />
+                  <span className="text-lg">{languages[language].flag}</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44 bg-card/95 backdrop-blur-xl border-primary/20 shadow-xl">
+                {Object.entries(languages).map(([code, { label, flag }]) => (
+                  <DropdownMenuItem
+                    key={code}
+                    onClick={() => setLanguage(code as 'ru' | 'en' | 'uk')}
+                    className={`${language === code ? 'bg-primary/20 border-l-2 border-primary' : ''} hover:bg-primary/10 cursor-pointer`}
+                  >
+                    <span className="mr-2 text-lg">{flag}</span>
+                    <span className={language === code ? 'font-semibold text-primary' : ''}>{label}</span>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </header>
