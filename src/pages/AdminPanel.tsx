@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, Users, Calendar, Clock, MapPin, Globe, LogOut, Shield } from 'lucide-react';
+import { ArrowLeft, FileText, Users, Calendar, Clock, MapPin, Globe, Home, Shield } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -43,7 +43,7 @@ interface MeetingParticipant {
 
 const AdminPanel = () => {
   const navigate = useNavigate();
-  const { user, isAdmin, isLoading, signOut } = useAuth();
+  const { user, isAdmin, isLoading } = useAuth();
   const [transcripts, setTranscripts] = useState<MeetingTranscript[]>([]);
   const [participants, setParticipants] = useState<MeetingParticipant[]>([]);
   const [loading, setLoading] = useState(true);
@@ -108,8 +108,7 @@ const AdminPanel = () => {
     };
   }, [user, isAdmin]);
 
-  const handleSignOut = async () => {
-    await signOut();
+  const handleGoHome = () => {
     navigate('/');
   };
 
@@ -194,10 +193,11 @@ const AdminPanel = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={handleSignOut}
+              onClick={handleGoHome}
               className="gap-2"
             >
-              <LogOut className="w-4 h-4" />
+              <Home className="w-4 h-4" />
+              На главную
             </Button>
           </div>
         </div>
