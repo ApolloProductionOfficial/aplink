@@ -3,17 +3,17 @@ project_id = "qnnvmdgrufsrvbcqkggo"
 [functions.track-participant]
 verify_jwt = false
 
-[functions.summarize-meeting]
-verify_jwt = false
-
 [functions.ai-chat]
 verify_jwt = false
 
+[functions.summarize-meeting]
+verify_jwt = true
+
 [functions.fetch-adult-news]
-verify_jwt = false
+verify_jwt = true
 
 [functions.post-product-news]
-verify_jwt = false
+verify_jwt = true
 
 [functions.post-promotional-ads]
-verify_jwt = false
+verify_jwt = true
