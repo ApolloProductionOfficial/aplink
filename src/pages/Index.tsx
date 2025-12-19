@@ -406,14 +406,14 @@ const Index = () => {
                   formHighlight ? 'opacity-100' : 'opacity-0'
                 }`}>
                   <div className="absolute inset-0 rounded-2xl border border-primary/50" />
-                  <div 
-                    className="absolute inset-0 rounded-2xl"
-                    style={{
-                      background: 'linear-gradient(90deg, transparent, rgba(6,182,212,0.3), transparent)',
-                      backgroundSize: '200% 100%',
-                      animation: formHighlight ? 'shimmer 2s ease-in-out infinite' : 'none'
-                    }}
-                  />
+                <div 
+                  className="absolute inset-0 rounded-2xl"
+                  style={{
+                    background: 'linear-gradient(90deg, transparent, rgba(6,182,212,0.3), transparent)',
+                    backgroundSize: '200% 100%',
+                    animation: formHighlight ? 'shimmer 4s ease-in-out infinite' : 'none'
+                  }}
+                />
                 </div>
                 <Input
                   type="text"
