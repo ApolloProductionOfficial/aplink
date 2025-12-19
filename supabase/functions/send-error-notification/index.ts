@@ -77,7 +77,7 @@ serve(async (req) => {
     `;
 
     const { data, error } = await resend.emails.send({
-      from: "Apollo Production <onboarding@resend.dev>",
+      from: "Apollo Production <alerts@aplink.live>",
       to: [ADMIN_EMAIL],
       subject: `⚠️ [${errorType || "ERROR"}] Apollo Production - ${source || "System"}`,
       html: htmlContent,
