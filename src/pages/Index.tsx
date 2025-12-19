@@ -415,11 +415,6 @@ const Index = () => {
               </div>
             ))}
           </div>
-          
-          {/* Video Banner */}
-          <div className="mt-16 max-w-5xl mx-auto">
-            <VideoBanner />
-          </div>
         </div>
       </main>
 
