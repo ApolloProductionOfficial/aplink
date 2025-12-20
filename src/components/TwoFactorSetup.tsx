@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Shield, Smartphone, Check, X, Loader2, Copy, QrCode } from 'lucide-react';
+import { Shield, Smartphone, Check, Loader2, Copy, Download, Key } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import {
   Dialog,
@@ -19,14 +18,37 @@ interface TwoFactorSetupProps {
   onSuccess?: () => void;
 }
 
+// Generate random backup codes
+const generateBackupCodes = (): string[] => {
+  const codes: string[] = [];
+  for (let i = 0; i < 10; i++) {
+    const code = Array.from({ length: 8 }, () => 
+      'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random() * 32)]
+    ).join('');
+    codes.push(`${code.slice(0, 4)}-${code.slice(4)}`);
+  }
+  return codes;
+};
+
+// Simple hash function for backup codes (client-side)
+const hashCode = async (code: string): Promise<string> => {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(code.replace('-', '').toUpperCase());
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+};
+
 export const TwoFactorSetup = ({ isOpen, onClose, onSuccess }: TwoFactorSetupProps) => {
-  const [step, setStep] = useState<'intro' | 'qr' | 'verify' | 'success'>('intro');
+  const [step, setStep] = useState<'intro' | 'qr' | 'verify' | 'backup' | 'success'>('intro');
   const [loading, setLoading] = useState(false);
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [secret, setSecret] = useState<string | null>(null);
   const [factorId, setFactorId] = useState<string | null>(null);
   const [verifyCode, setVerifyCode] = useState('');
   const [error, setError] = useState('');
+  const [backupCodes, setBackupCodes] = useState<string[]>([]);
+  const [copiedBackup, setCopiedBackup] = useState(false);
   const { toast } = useToast();
 
   const startEnrollment = async () => {
@@ -80,13 +102,34 @@ export const TwoFactorSetup = ({ isOpen, onClose, onSuccess }: TwoFactorSetupPro
       
       if (verifyError) throw verifyError;
       
-      setStep('success');
+      // Generate backup codes
+      const codes = generateBackupCodes();
+      setBackupCodes(codes);
+      
+      // Store hashed backup codes in database
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // Delete old backup codes
+        await supabase.from('backup_codes').delete().eq('user_id', user.id);
+        
+        // Insert new hashed codes
+        const hashedCodes = await Promise.all(
+          codes.map(async (code) => ({
+            user_id: user.id,
+            code_hash: await hashCode(code),
+            used: false,
+          }))
+        );
+        
+        await supabase.from('backup_codes').insert(hashedCodes);
+      }
+      
+      setStep('backup');
       toast({
         title: 'Успешно!',
         description: 'Двухфакторная аутентификация включена',
       });
       
-      onSuccess?.();
     } catch (err: any) {
       setError(err.message || 'Неверный код');
     } finally {
@@ -104,6 +147,39 @@ export const TwoFactorSetup = ({ isOpen, onClose, onSuccess }: TwoFactorSetupPro
     }
   };
 
+  const copyBackupCodes = async () => {
+    const text = backupCodes.join('\n');
+    await navigator.clipboard.writeText(text);
+    setCopiedBackup(true);
+    toast({
+      title: 'Скопировано',
+      description: 'Резервные коды скопированы',
+    });
+    setTimeout(() => setCopiedBackup(false), 2000);
+  };
+
+  const downloadBackupCodes = () => {
+    const text = `Резервные коды для APLink 2FA\n${'='.repeat(35)}\n\nСохраните эти коды в безопасном месте!\nКаждый код можно использовать только один раз.\n\n${backupCodes.map((code, i) => `${i + 1}. ${code}`).join('\n')}\n\nДата генерации: ${new Date().toLocaleString('ru-RU')}`;
+    
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'aplink-backup-codes.txt';
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: 'Скачано',
+      description: 'Файл с резервными кодами сохранён',
+    });
+  };
+
+  const finishSetup = () => {
+    onSuccess?.();
+    handleClose();
+  };
+
   const handleClose = () => {
     setStep('intro');
     setQrCode(null);
@@ -111,6 +187,8 @@ export const TwoFactorSetup = ({ isOpen, onClose, onSuccess }: TwoFactorSetupPro
     setFactorId(null);
     setVerifyCode('');
     setError('');
+    setBackupCodes([]);
+    setCopiedBackup(false);
     onClose();
   };
 
@@ -126,6 +204,7 @@ export const TwoFactorSetup = ({ isOpen, onClose, onSuccess }: TwoFactorSetupPro
             {step === 'intro' && 'Защитите свой аккаунт с помощью приложения-аутентификатора'}
             {step === 'qr' && 'Отсканируйте QR-код в приложении аутентификатора'}
             {step === 'verify' && 'Введите код из приложения для подтверждения'}
+            {step === 'backup' && 'Сохраните резервные коды в безопасном месте'}
             {step === 'success' && '2FA успешно настроена!'}
           </DialogDescription>
         </DialogHeader>
@@ -229,6 +308,60 @@ export const TwoFactorSetup = ({ isOpen, onClose, onSuccess }: TwoFactorSetupPro
                   )}
                 </Button>
               </div>
+            </>
+          )}
+
+          {step === 'backup' && (
+            <>
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 space-y-2">
+                <div className="flex items-start gap-2">
+                  <Key className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-amber-500">Важно!</p>
+                    <p className="text-sm text-muted-foreground">
+                      Эти коды позволят войти в аккаунт, если вы потеряете доступ к приложению-аутентификатору.
+                      Сохраните их в надёжном месте!
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-muted/30 rounded-lg p-4">
+                <div className="grid grid-cols-2 gap-2">
+                  {backupCodes.map((code, i) => (
+                    <div key={i} className="font-mono text-sm text-center py-1 px-2 bg-background/50 rounded">
+                      {code}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={copyBackupCodes}
+                  className="flex-1"
+                >
+                  {copiedBackup ? (
+                    <Check className="w-4 h-4 mr-2" />
+                  ) : (
+                    <Copy className="w-4 h-4 mr-2" />
+                  )}
+                  {copiedBackup ? 'Скопировано' : 'Копировать'}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={downloadBackupCodes}
+                  className="flex-1"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Скачать
+                </Button>
+              </div>
+              
+              <Button onClick={finishSetup} className="w-full">
+                Готово
+              </Button>
             </>
           )}
 

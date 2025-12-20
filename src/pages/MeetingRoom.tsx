@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePresence } from "@/hooks/usePresence";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
+import { useConnectionSounds } from "@/hooks/useConnectionSounds";
 import logoVideo from "@/assets/logo-video.mov";
 import CustomCursor from "@/components/CustomCursor";
 
@@ -43,6 +44,7 @@ const MeetingRoom = () => {
   const { user, isLoading: authLoading } = useAuth();
   const { sendNotification } = usePushNotifications();
   const { isRecording, startRecording, stopRecording } = useAudioRecorder();
+  const { playConnectedSound, playDisconnectedSound, playReconnectingSound } = useConnectionSounds();
   const [isTranscribing, setIsTranscribing] = useState(false);
 
   // Use room ID as-is for Jitsi (consistent room name)
@@ -398,6 +400,7 @@ const MeetingRoom = () => {
           console.log('Connected to conference');
           setConnectionStatus('connected');
           reconnectAttemptsRef.current = 0;
+          playConnectedSound();
           toast({
             title: "Подключено",
             description: "Вы успешно подключились к комнате",
@@ -410,11 +413,13 @@ const MeetingRoom = () => {
           if (!userInitiatedEndRef.current && !hasRedirectedRef.current) {
             console.log('Disconnected from conference');
             setConnectionStatus('disconnected');
+            playDisconnectedSound();
             
             // Attempt to reconnect
             if (reconnectAttemptsRef.current < maxReconnectAttempts) {
               reconnectAttemptsRef.current++;
               setConnectionStatus('reconnecting');
+              playReconnectingSound();
               toast({
                 title: "Переподключение...",
                 description: `Попытка ${reconnectAttemptsRef.current} из ${maxReconnectAttempts}`,
