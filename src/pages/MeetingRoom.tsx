@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Copy, Check, Users, History, User, Sparkles, Mic, MicOff, Wifi, WifiOff, RefreshCw } from "lucide-react";
+import { ArrowLeft, Copy, Check, Users, User, Sparkles, Mic, MicOff, Wifi, WifiOff, RefreshCw, Globe } from "lucide-react";
+import ParticipantsIPPanel from "@/components/ParticipantsIPPanel";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,6 +30,7 @@ const MeetingRoom = () => {
   const [showRegistrationHint, setShowRegistrationHint] = useState(false);
   const [participantIP, setParticipantIP] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [showIPPanel, setShowIPPanel] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'reconnecting'>('connecting');
   const reconnectAttemptsRef = useRef(0);
   const maxReconnectAttempts = 3;
@@ -547,6 +549,14 @@ const MeetingRoom = () => {
     <div className="h-screen w-screen bg-background flex flex-col overflow-hidden cursor-none">
       <CustomCursor />
       
+      {/* IP Panel for admins */}
+      {isAdmin && (
+        <ParticipantsIPPanel
+          roomId={roomSlug}
+          isOpen={showIPPanel}
+          onClose={() => setShowIPPanel(false)}
+        />
+      )}
       {/* Header - auto-hides */}
       <header 
         className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-4 py-2 sm:py-3 bg-card/80 backdrop-blur-xl border-b border-border/50 z-50 absolute top-0 left-0 right-0 gap-2"
@@ -587,14 +597,14 @@ const MeetingRoom = () => {
               </>
             )}
           </Button>
-          {user && (
+          {isAdmin && (
             <Button
-              onClick={() => window.open('/dashboard', '_blank')}
+              onClick={() => setShowIPPanel(!showIPPanel)}
               variant="outline"
               size="sm"
               className="border-primary/50 hover:bg-primary/10"
             >
-              <History className="w-4 h-4" />
+              <Globe className="w-4 h-4" />
             </Button>
           )}
         </div>
@@ -620,20 +630,6 @@ const MeetingRoom = () => {
             <Users className="w-4 h-4 text-primary" />
             <span className="text-sm font-medium truncate max-w-[120px] sm:max-w-[200px]">{roomDisplayName}</span>
           </div>
-          {isAdmin && participantIP && (
-            <div className="hidden sm:flex items-center gap-2 ml-4">
-              <span className="text-xs text-muted-foreground">IP:</span>
-              <a 
-                href={`https://ipinfo.io/${participantIP}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-primary hover:underline"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {participantIP}
-              </a>
-            </div>
-          )}
         </div>
         
         {/* Desktop: Buttons on right */}
@@ -664,25 +660,15 @@ const MeetingRoom = () => {
             )}
           </Button>
           
-          {user ? (
+          {isAdmin && (
             <Button
-              onClick={() => window.open('/dashboard', '_blank')}
-              variant="outline"
+              onClick={() => setShowIPPanel(!showIPPanel)}
+              variant={showIPPanel ? "default" : "outline"}
               size="sm"
-              className="border-primary/50 hover:bg-primary/10"
+              className={showIPPanel ? "" : "border-primary/50 hover:bg-primary/10"}
             >
-              <User className="w-4 h-4 mr-2" />
-              Кабинет
-            </Button>
-          ) : (
-            <Button
-              onClick={() => window.open('/auth', '_blank')}
-              variant="outline"
-              size="sm"
-              className="border-primary/50 hover:bg-primary/10"
-            >
-              <User className="w-4 h-4 mr-2" />
-              Войти
+              <Globe className="w-4 h-4 mr-2" />
+              IP Участников
             </Button>
           )}
           <Button
