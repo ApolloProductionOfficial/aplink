@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, Users, Calendar, Clock, MapPin, Globe, Shield, User, Camera, Save } from 'lucide-react';
+import { ArrowLeft, FileText, Users, Calendar, Clock, MapPin, Globe, Shield, User, Camera, Save, Trash2, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import CustomCursor from '@/components/CustomCursor';
 import AnimatedBackground from '@/components/AnimatedBackground';
+import TwoFactorSetup from '@/components/TwoFactorSetup';
 import logoVideo from '@/assets/logo-video.mov';
 
 interface MeetingTranscript {
@@ -71,6 +72,9 @@ const AdminPanel = () => {
   const [displayName, setDisplayName] = useState('');
   const [username, setUsername] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
+  const [show2FASetup, setShow2FASetup] = useState(false);
+  const [has2FA, setHas2FA] = useState(false);
+  const [disabling2FA, setDisabling2FA] = useState(false);
 
   // Redirect if not admin
   useEffect(() => {
@@ -150,6 +154,44 @@ const AdminPanel = () => {
       supabase.removeChannel(channel);
     };
   }, [user, isAdmin]);
+
+  // Check if user has 2FA enabled
+  useEffect(() => {
+    if (!user) return;
+    
+    const check2FAStatus = async () => {
+      const { data } = await supabase.auth.mfa.listFactors();
+      if (data?.totp && data.totp.length > 0) {
+        setHas2FA(true);
+      } else {
+        setHas2FA(false);
+      }
+    };
+    
+    check2FAStatus();
+  }, [user]);
+
+  const disable2FA = async () => {
+    setDisabling2FA(true);
+    try {
+      const { data: factorsData } = await supabase.auth.mfa.listFactors();
+      
+      if (factorsData?.totp?.[0]) {
+        const { error } = await supabase.auth.mfa.unenroll({
+          factorId: factorsData.totp[0].id,
+        });
+        
+        if (error) throw error;
+        
+        setHas2FA(false);
+        toast.success('2FA отключена');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Не удалось отключить 2FA');
+    } finally {
+      setDisabling2FA(false);
+    }
+  };
 
   const handleSaveProfile = async () => {
     if (!user) return;
@@ -528,11 +570,69 @@ const AdminPanel = () => {
                   <Save className="w-4 h-4" />
                   {savingProfile ? 'Сохранение...' : 'Сохранить'}
                 </Button>
+                
+                {/* 2FA Section */}
+                <div className="pt-4 border-t border-border/50 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Shield className="w-5 h-5 text-primary" />
+                      <span className="font-medium">Двухфакторная аутентификация</span>
+                    </div>
+                    {has2FA ? (
+                      <Badge className="bg-green-500/20 text-green-500 border-green-500/30">
+                        Включена
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-muted-foreground">
+                        Выключена
+                      </Badge>
+                    )}
+                  </div>
+                  
+                  <p className="text-sm text-muted-foreground">
+                    {has2FA 
+                      ? 'Ваш аккаунт защищён двухфакторной аутентификацией'
+                      : 'Добавьте дополнительный уровень защиты вашего аккаунта'
+                    }
+                  </p>
+                  
+                  {has2FA ? (
+                    <Button
+                      variant="outline"
+                      onClick={disable2FA}
+                      disabled={disabling2FA}
+                      className="w-full border-destructive/50 text-destructive hover:bg-destructive/10"
+                    >
+                      {disabling2FA ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4 mr-2" />
+                      )}
+                      Отключить 2FA
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      onClick={() => setShow2FASetup(true)}
+                      className="w-full border-primary/50 hover:bg-primary/10"
+                    >
+                      <Shield className="w-4 h-4 mr-2" />
+                      Настроить 2FA
+                    </Button>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </div>
         ) : null}
       </main>
+      
+      {/* 2FA Setup Dialog */}
+      <TwoFactorSetup
+        isOpen={show2FASetup}
+        onClose={() => setShow2FASetup(false)}
+        onSuccess={() => setHas2FA(true)}
+      />
     </div>
   );
 };
