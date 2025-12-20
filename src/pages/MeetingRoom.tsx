@@ -32,6 +32,8 @@ const MeetingRoom = () => {
   const transcriptRef = useRef<string[]>([]);
   const participantsRef = useRef<Set<string>>(new Set());
   const hasRedirectedRef = useRef(false); // Prevent multiple redirects
+  const userInitiatedEndRef = useRef(false); // Track if user clicked end call
+  const hasStartedRecordingRef = useRef(false); // Track if recording was started
   const { toast } = useToast();
   const { user, isLoading: authLoading } = useAuth();
   const { sendNotification } = usePushNotifications();
@@ -176,14 +178,14 @@ const MeetingRoom = () => {
     }
   };
 
-  // Toggle recording
+  // Toggle recording - using microphone instead of screen capture to prevent call exit
   const toggleRecording = async () => {
     if (isRecording) {
       const audioBlob = await stopRecording();
       if (audioBlob && audioBlob.size > 0) {
         toast({
           title: "Запись остановлена",
-          description: "Транскрибируем весь созвон...",
+          description: "Транскрибируем созвон...",
         });
         try {
           const transcript = await transcribeAudio(audioBlob);
@@ -204,23 +206,31 @@ const MeetingRoom = () => {
       }
     } else {
       try {
+        hasStartedRecordingRef.current = true; // Mark that recording was started
         await startRecording();
         toast({
-          title: "Выберите вкладку для записи",
-          description: "Выберите эту вкладку и включите 'Также разрешить доступ к звуку вкладки'",
+          title: "Запись начата",
+          description: "Записываем звук созвона",
         });
       } catch (error) {
+        hasStartedRecordingRef.current = false;
         toast({
           title: "Ошибка",
-          description: "Не удалось начать запись. Попробуйте ещё раз и выберите вкладку со звуком.",
+          description: "Не удалось начать запись",
           variant: "destructive",
         });
       }
     }
   };
 
-  // Save meeting transcript and summary
+  // Save meeting transcript and summary - only if recording was started
   const saveMeetingTranscript = async () => {
+    // Only save if user started recording
+    if (!hasStartedRecordingRef.current) {
+      console.log('Recording was not started, skipping transcript save');
+      return;
+    }
+    
     // Stop recording if active
     if (isRecording) {
       const audioBlob = await stopRecording();
@@ -242,10 +252,13 @@ const MeetingRoom = () => {
       return;
     }
     
-    // Even if no transcript, save basic meeting info with participants
-    const transcriptText = transcriptRef.current.length > 0 
-      ? transcriptRef.current.join('\n')
-      : `Созвон "${roomDisplayName}" с участниками: ${Array.from(participantsRef.current).join(', ')}`;
+    // Only save if there's actual transcript content
+    if (transcriptRef.current.length === 0) {
+      console.log('No transcript content, skipping save');
+      return;
+    }
+    
+    const transcriptText = transcriptRef.current.join('\n');
     
     try {
       const { data, error } = await supabase.functions.invoke('summarize-meeting', {
@@ -266,15 +279,29 @@ const MeetingRoom = () => {
     }
   };
 
-  // Handle call end - redirect only once
-  const handleCallEnd = async () => {
+  // Handle user-initiated call end - redirect only once
+  const handleUserEndCall = async () => {
     if (hasRedirectedRef.current) return;
     hasRedirectedRef.current = true;
+    userInitiatedEndRef.current = true;
     
     await saveMeetingTranscript();
-    // Open apolloproduction.studio in new tab, navigate to dashboard
+    
+    // Open apolloproduction.studio in new tab
     window.open('https://apolloproduction.studio', '_blank');
+    
+    // Navigate to dashboard
     navigate(user ? '/dashboard' : '/');
+  };
+  
+  // Handle Jitsi events - only redirect if user initiated end
+  const handleJitsiClose = () => {
+    // Only process if user clicked hangup button
+    if (!userInitiatedEndRef.current) {
+      console.log('Ignoring automatic close event - user did not initiate');
+      return;
+    }
+    handleUserEndCall();
   };
 
   useEffect(() => {
@@ -436,9 +463,13 @@ const MeetingRoom = () => {
         setTimeout(injectCustomStyles, 2000);
         setTimeout(injectCustomStyles, 4000);
 
-        // Handle call end - save transcript and redirect (only once)
-        apiRef.current.addEventListener("readyToClose", handleCallEnd);
-        apiRef.current.addEventListener("videoConferenceLeft", handleCallEnd);
+        // Handle hangup button click - user initiated end
+        apiRef.current.addEventListener("readyToClose", () => {
+          userInitiatedEndRef.current = true;
+          handleUserEndCall();
+        });
+        
+        // Don't auto-redirect on videoConferenceLeft - this fires when switching tabs
 
       } catch (error) {
         console.error("Failed to initialize Jitsi:", error);
@@ -522,7 +553,7 @@ const MeetingRoom = () => {
         
         <div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-4">
           <button
-            onClick={() => window.open(user ? '/dashboard' : '/', '_blank')}
+            onClick={() => navigate('/')}
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />

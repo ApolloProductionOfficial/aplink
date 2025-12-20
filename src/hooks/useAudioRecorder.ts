@@ -16,60 +16,19 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
 
   const startRecording = useCallback(async () => {
     try {
-      // Request tab audio capture (includes all audio from the tab - both your mic and others' audio)
-      const displayStream = await navigator.mediaDevices.getDisplayMedia({
-        video: true, // Required but we only use audio
+      // Use only microphone - avoid getDisplayMedia which can cause call to exit
+      const micStream = await navigator.mediaDevices.getUserMedia({
         audio: {
-          echoCancellation: false,
-          noiseSuppression: false,
-          autoGainControl: false,
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
         }
       });
 
-      // Also get microphone for local voice
-      let micStream: MediaStream | null = null;
-      try {
-        micStream = await navigator.mediaDevices.getUserMedia({
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true,
-          }
-        });
-      } catch (e) {
-        console.log('Microphone not available, using only tab audio');
-      }
+      streamsRef.current.push(micStream);
 
-      // Create AudioContext to mix streams
-      const audioContext = new AudioContext();
-      const destination = audioContext.createMediaStreamDestination();
-
-      // Add tab audio if available
-      const displayAudioTracks = displayStream.getAudioTracks();
-      if (displayAudioTracks.length > 0) {
-        const displaySource = audioContext.createMediaStreamSource(
-          new MediaStream(displayAudioTracks)
-        );
-        displaySource.connect(destination);
-      }
-
-      // Add microphone audio if available
-      if (micStream) {
-        const micSource = audioContext.createMediaStreamSource(micStream);
-        micSource.connect(destination);
-        streamsRef.current.push(micStream);
-      }
-
-      streamsRef.current.push(displayStream);
-
-      // Use combined audio stream
-      const combinedStream = destination.stream;
-
-      // Stop video track immediately (we only need audio)
-      displayStream.getVideoTracks().forEach(track => track.stop());
-
-      // Create MediaRecorder
-      const mediaRecorder = new MediaRecorder(combinedStream, {
+      // Create MediaRecorder directly from mic stream
+      const mediaRecorder = new MediaRecorder(micStream, {
         mimeType: 'audio/webm;codecs=opus'
       });
 
@@ -93,8 +52,8 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
         streamsRef.current = [];
       };
 
-      // Handle when user stops sharing
-      displayStream.getAudioTracks().forEach(track => {
+      // Handle when user stops microphone
+      micStream.getAudioTracks().forEach(track => {
         track.onended = () => {
           if (mediaRecorderRef.current?.state === 'recording') {
             mediaRecorderRef.current.stop();
@@ -107,7 +66,7 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
       mediaRecorder.start(1000); // Collect data every second
       setIsRecording(true);
       
-      console.log('Full meeting audio recording started');
+      console.log('Microphone recording started');
     } catch (error) {
       console.error('Failed to start recording:', error);
       throw error;
