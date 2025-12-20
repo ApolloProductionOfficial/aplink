@@ -20,6 +20,7 @@ import {
 import AnimatedBackground from '@/components/AnimatedBackground';
 import StarField from '@/components/StarField';
 import CustomCursor from '@/components/CustomCursor';
+import TwoFactorVerify from '@/components/TwoFactorVerify';
 import logoVideo from '@/assets/logo-video.mov';
 
 const Auth = () => {
@@ -38,6 +39,7 @@ const Auth = () => {
   const [username, setUsername] = useState('');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string; name?: string; username?: string; confirmPassword?: string }>({});
+  const [requires2FA, setRequires2FA] = useState(false);
   
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -141,11 +143,18 @@ const Auth = () => {
             });
           }
         } else {
-          toast({
-            title: t.auth.success.welcome,
-            description: t.auth.success.loginSuccess,
-          });
-          navigate('/');
+          // Check if 2FA is required
+          const { data: factorsData } = await supabase.auth.mfa.listFactors();
+          if (factorsData?.totp && factorsData.totp.length > 0) {
+            // User has 2FA enabled, show verification
+            setRequires2FA(true);
+          } else {
+            toast({
+              title: t.auth.success.welcome,
+              description: t.auth.success.loginSuccess,
+            });
+            navigate('/');
+          }
         }
       } else if (authMode === 'register') {
         const { error, data } = await signUp(email, password, displayName);
@@ -307,8 +316,23 @@ const Auth = () => {
         </div>
       </header>
 
-      {/* Auth Form */}
+      {/* Auth Form or 2FA Verification */}
       <main className="relative z-10 min-h-screen flex items-center justify-center px-4 pt-20">
+        {requires2FA ? (
+          <TwoFactorVerify
+            onSuccess={() => {
+              toast({
+                title: t.auth.success.welcome,
+                description: t.auth.success.loginSuccess,
+              });
+              navigate('/');
+            }}
+            onCancel={() => {
+              setRequires2FA(false);
+              supabase.auth.signOut();
+            }}
+          />
+        ) : (
         <Card className="w-full max-w-md bg-card/80 backdrop-blur-xl border-border/50">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-bold">
@@ -499,6 +523,7 @@ const Auth = () => {
             </div>
           </CardContent>
         </Card>
+        )}
       </main>
     </div>
   );

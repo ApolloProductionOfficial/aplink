@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, Users, Calendar, User, Camera, Loader2, Check, Globe } from 'lucide-react';
+import { ArrowLeft, FileText, Users, Calendar, User, Camera, Loader2, Check, Globe, Shield, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { useToast } from '@/hooks/use-toast';
 import CustomCursor from '@/components/CustomCursor';
 import AnimatedBackground from '@/components/AnimatedBackground';
+import TwoFactorSetup from '@/components/TwoFactorSetup';
 import logoVideo from '@/assets/logo-video.mov';
 
 interface MeetingTranscript {
@@ -64,6 +65,9 @@ const Dashboard = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [participants, setParticipants] = useState<ParticipantWithIP[]>([]);
   const [loadingParticipants, setLoadingParticipants] = useState(false);
+  const [show2FASetup, setShow2FASetup] = useState(false);
+  const [has2FA, setHas2FA] = useState(false);
+  const [disabling2FA, setDisabling2FA] = useState(false);
 
   // Redirect if not logged in
   useEffect(() => {
@@ -127,6 +131,51 @@ const Dashboard = () => {
     
     fetchParticipants();
   }, [user, isAdmin, activeTab]);
+
+  // Check if user has 2FA enabled
+  useEffect(() => {
+    if (!user) return;
+    
+    const check2FAStatus = async () => {
+      const { data } = await supabase.auth.mfa.listFactors();
+      if (data?.totp && data.totp.length > 0) {
+        setHas2FA(true);
+      } else {
+        setHas2FA(false);
+      }
+    };
+    
+    check2FAStatus();
+  }, [user]);
+
+  const disable2FA = async () => {
+    setDisabling2FA(true);
+    try {
+      const { data: factorsData } = await supabase.auth.mfa.listFactors();
+      
+      if (factorsData?.totp?.[0]) {
+        const { error } = await supabase.auth.mfa.unenroll({
+          factorId: factorsData.totp[0].id,
+        });
+        
+        if (error) throw error;
+        
+        setHas2FA(false);
+        toast({
+          title: 'Успешно',
+          description: '2FA отключена',
+        });
+      }
+    } catch (err: any) {
+      toast({
+        title: 'Ошибка',
+        description: err.message || 'Не удалось отключить 2FA',
+        variant: 'destructive',
+      });
+    } finally {
+      setDisabling2FA(false);
+    }
+  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -579,6 +628,57 @@ const Dashboard = () => {
                       </>
                     )}
                   </Button>
+                  
+                  {/* 2FA Section */}
+                  <div className="pt-4 border-t border-border/50 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Shield className="w-5 h-5 text-primary" />
+                        <span className="font-medium">Двухфакторная аутентификация</span>
+                      </div>
+                      {has2FA ? (
+                        <Badge className="bg-green-500/20 text-green-500 border-green-500/30">
+                          Включена
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-muted-foreground">
+                          Выключена
+                        </Badge>
+                      )}
+                    </div>
+                    
+                    <p className="text-sm text-muted-foreground">
+                      {has2FA 
+                        ? 'Ваш аккаунт защищён двухфакторной аутентификацией'
+                        : 'Добавьте дополнительный уровень защиты вашего аккаунта'
+                      }
+                    </p>
+                    
+                    {has2FA ? (
+                      <Button
+                        variant="outline"
+                        onClick={disable2FA}
+                        disabled={disabling2FA}
+                        className="w-full border-destructive/50 text-destructive hover:bg-destructive/10"
+                      >
+                        {disabling2FA ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-4 h-4 mr-2" />
+                        )}
+                        Отключить 2FA
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        onClick={() => setShow2FASetup(true)}
+                        className="w-full border-primary/50 hover:bg-primary/10"
+                      >
+                        <Shield className="w-4 h-4 mr-2" />
+                        Настроить 2FA
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -639,6 +739,13 @@ const Dashboard = () => {
           )}
         </Tabs>
       </main>
+      
+      {/* 2FA Setup Dialog */}
+      <TwoFactorSetup
+        isOpen={show2FASetup}
+        onClose={() => setShow2FASetup(false)}
+        onSuccess={() => setHas2FA(true)}
+      />
     </div>
   );
 };
