@@ -307,6 +307,10 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      is_room_participant: {
+        Args: { check_room_id: string; check_user_id: string }
+        Returns: boolean
+      }
       search_profile_by_username: {
         Args: { search_username: string }
         Returns: {
