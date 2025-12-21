@@ -26,3 +26,9 @@ verify_jwt = false
 
 [functions.send-error-notification]
 verify_jwt = false
+
+[functions.realtime-translate]
+verify_jwt = false
+
+[functions.create-user]
+verify_jwt = false

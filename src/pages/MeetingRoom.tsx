@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Copy, Check, Users, User, Sparkles, Mic, MicOff, Wifi, WifiOff, RefreshCw, Globe } from "lucide-react";
+import { ArrowLeft, Copy, Check, Users, User, Sparkles, Mic, MicOff, Wifi, WifiOff, RefreshCw, Globe, Languages } from "lucide-react";
 import ParticipantsIPPanel from "@/components/ParticipantsIPPanel";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -10,6 +10,7 @@ import { usePresence } from "@/hooks/usePresence";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 import { useConnectionSounds } from "@/hooks/useConnectionSounds";
+import { RealtimeTranslator } from "@/components/RealtimeTranslator";
 import logoVideo from "@/assets/logo-video.mov";
 import CustomCursor from "@/components/CustomCursor";
 
@@ -46,6 +47,7 @@ const MeetingRoom = () => {
   const { isRecording, startRecording, stopRecording } = useAudioRecorder();
   const { playConnectedSound, playDisconnectedSound, playReconnectingSound } = useConnectionSounds();
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [showTranslator, setShowTranslator] = useState(false);
 
   // Use room ID as-is for Jitsi (consistent room name)
   // Display with proper formatting (dashes to spaces)
@@ -554,6 +556,12 @@ const MeetingRoom = () => {
     <div className="h-screen w-screen bg-background flex flex-col overflow-hidden cursor-none">
       <CustomCursor />
       
+      {/* Realtime Translator */}
+      <RealtimeTranslator
+        isActive={showTranslator}
+        onToggle={() => setShowTranslator(false)}
+      />
+      
       {/* IP Panel for admins */}
       {isAdmin && (
         <ParticipantsIPPanel
@@ -583,6 +591,15 @@ const MeetingRoom = () => {
             ) : (
               <Mic className="w-4 h-4" />
             )}
+          </Button>
+          {/* Mobile translator button */}
+          <Button
+            onClick={() => setShowTranslator(!showTranslator)}
+            variant={showTranslator ? "default" : "outline"}
+            size="sm"
+            className={showTranslator ? "" : "border-primary/50 hover:bg-primary/10"}
+          >
+            <Languages className="w-4 h-4" />
           </Button>
           <Button
             onClick={copyLink}
@@ -663,6 +680,17 @@ const MeetingRoom = () => {
                 Записать
               </>
             )}
+          </Button>
+          
+          {/* Translator button */}
+          <Button
+            onClick={() => setShowTranslator(!showTranslator)}
+            variant={showTranslator ? "default" : "outline"}
+            size="sm"
+            className={showTranslator ? "" : "border-primary/50 hover:bg-primary/10"}
+          >
+            <Languages className="w-4 h-4 mr-2" />
+            Переводчик
           </Button>
           
           {isAdmin && (
