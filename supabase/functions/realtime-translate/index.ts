@@ -37,20 +37,41 @@ const LANGUAGE_NAMES: Record<string, string> = {
   'ar': 'Arabic',
 };
 
-// Voice IDs for different languages
-const VOICE_IDS: Record<string, string> = {
-  'en': 'EXAVITQu4vr4xnSDxMaL', // Sarah - English
-  'ru': 'onwK4e9ZLuTAKqWW03F9', // Daniel - works well for Russian
-  'uk': 'onwK4e9ZLuTAKqWW03F9', // Daniel
-  'es': 'EXAVITQu4vr4xnSDxMaL', // Sarah
-  'de': 'JBFqnCBsd6RMkjVDRZzb', // George
-  'fr': 'XrExE9yKIg1WjnnlVkGX', // Matilda
-  'it': 'EXAVITQu4vr4xnSDxMaL', // Sarah
-  'pt': 'EXAVITQu4vr4xnSDxMaL', // Sarah
-  'zh': 'EXAVITQu4vr4xnSDxMaL', // Sarah
-  'ja': 'EXAVITQu4vr4xnSDxMaL', // Sarah
-  'ko': 'EXAVITQu4vr4xnSDxMaL', // Sarah
-  'ar': 'onwK4e9ZLuTAKqWW03F9', // Daniel
+// Available voices with categories
+const VOICES = {
+  // Female voices
+  'female-sarah': { id: 'EXAVITQu4vr4xnSDxMaL', name: 'Sarah', gender: 'female' },
+  'female-laura': { id: 'FGY2WhTYpPnrIDTdsKH5', name: 'Laura', gender: 'female' },
+  'female-alice': { id: 'Xb7hH8MSUJpSbSDYk0k2', name: 'Alice', gender: 'female' },
+  'female-matilda': { id: 'XrExE9yKIg1WjnnlVkGX', name: 'Matilda', gender: 'female' },
+  'female-lily': { id: 'pFZP5JQG7iQjIQuC4Bku', name: 'Lily', gender: 'female' },
+  'female-jessica': { id: 'cgSgspJ2msm6clMCkdW9', name: 'Jessica', gender: 'female' },
+  // Male voices
+  'male-daniel': { id: 'onwK4e9ZLuTAKqWW03F9', name: 'Daniel', gender: 'male' },
+  'male-george': { id: 'JBFqnCBsd6RMkjVDRZzb', name: 'George', gender: 'male' },
+  'male-charlie': { id: 'IKne3meq5aSn9XLyUdCD', name: 'Charlie', gender: 'male' },
+  'male-liam': { id: 'TX3LPaxmHKxFdv7VOQHJ', name: 'Liam', gender: 'male' },
+  'male-brian': { id: 'nPczCjzI2devNBz1zQrb', name: 'Brian', gender: 'male' },
+  'male-chris': { id: 'iP95p4xoKVk53GoZ742B', name: 'Chris', gender: 'male' },
+  // Neutral voices
+  'neutral-river': { id: 'SAz9YHcvj6GT2YYXdXww', name: 'River', gender: 'neutral' },
+  'neutral-alloy': { id: 'CwhRBWXzGAHq8TQ4Fs17', name: 'Roger', gender: 'neutral' },
+};
+
+// Default voice per language (fallback)
+const DEFAULT_VOICE_BY_LANG: Record<string, string> = {
+  'en': 'female-sarah',
+  'ru': 'male-daniel',
+  'uk': 'male-daniel',
+  'es': 'female-sarah',
+  'de': 'male-george',
+  'fr': 'female-matilda',
+  'it': 'female-sarah',
+  'pt': 'female-sarah',
+  'zh': 'female-sarah',
+  'ja': 'female-sarah',
+  'ko': 'female-sarah',
+  'ar': 'male-daniel',
 };
 
 serve(async (req) => {
@@ -63,13 +84,14 @@ serve(async (req) => {
     const audioFile = formData.get("audio") as File;
     const targetLanguage = formData.get("targetLanguage") as string || 'ru';
     const sourceLanguage = formData.get("sourceLanguage") as string | null;
+    const voiceKey = formData.get("voiceId") as string | null;
 
     if (!audioFile) {
       throw new Error("No audio file provided");
     }
 
     console.log(`Received audio file: ${audioFile.name}, size: ${audioFile.size}`);
-    console.log(`Target language: ${targetLanguage}, Source language: ${sourceLanguage || 'auto'}`);
+    console.log(`Target language: ${targetLanguage}, Source language: ${sourceLanguage || 'auto'}, Voice: ${voiceKey || 'default'}`);
 
     const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -119,7 +141,8 @@ serve(async (req) => {
           originalText: '', 
           translatedText: '', 
           audioContent: null,
-          detectedLanguage: null
+          detectedLanguage: null,
+          voiceId: null
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -174,7 +197,14 @@ Rules:
 
     // Step 3: Synthesize speech using ElevenLabs TTS
     console.log("Step 3: Synthesizing speech...");
-    const voiceId = VOICE_IDS[targetLanguage] || VOICE_IDS['en'];
+    
+    // Get voice ID - use provided voice or default for language
+    const defaultVoiceKey = DEFAULT_VOICE_BY_LANG[targetLanguage] || 'female-sarah';
+    const selectedVoiceKey = voiceKey && VOICES[voiceKey as keyof typeof VOICES] ? voiceKey : defaultVoiceKey;
+    const voiceConfig = VOICES[selectedVoiceKey as keyof typeof VOICES] || VOICES['female-sarah'];
+    const voiceId = voiceConfig.id;
+    
+    console.log(`Using voice: ${voiceConfig.name} (${voiceConfig.gender})`);
     
     const ttsResponse = await fetch(
       `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
@@ -217,6 +247,7 @@ Rules:
         audioContent: audioBase64,
         detectedLanguage,
         targetLanguage,
+        voiceId: selectedVoiceKey,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
