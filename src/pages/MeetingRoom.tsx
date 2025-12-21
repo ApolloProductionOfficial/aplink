@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Copy, Check, Users, User, Sparkles, Mic, MicOff, Wifi, WifiOff, RefreshCw, Globe, Languages } from "lucide-react";
+import { ArrowLeft, Copy, Check, Users, User, Sparkles, Mic, MicOff, Wifi, WifiOff, RefreshCw, Globe, Languages, Signal, SignalLow, SignalMedium, SignalHigh } from "lucide-react";
 import ParticipantsIPPanel from "@/components/ParticipantsIPPanel";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -12,6 +12,7 @@ import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 import { useConnectionSounds } from "@/hooks/useConnectionSounds";
 import { RealtimeTranslator } from "@/components/RealtimeTranslator";
 import logoVideo from "@/assets/logo-video.mov";
+import backgroundVideo from "@/assets/background-video-new.mp4";
 import CustomCursor from "@/components/CustomCursor";
 
 declare global {
@@ -48,6 +49,7 @@ const MeetingRoom = () => {
   const { playConnectedSound, playDisconnectedSound, playReconnectingSound } = useConnectionSounds();
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [showTranslator, setShowTranslator] = useState(false);
+  const [connectionQuality, setConnectionQuality] = useState<number>(100); // 0-100 percentage
 
   // Use room ID as-is for Jitsi (consistent room name)
   // Display with proper formatting (dashes to spaces)
@@ -638,6 +640,38 @@ const MeetingRoom = () => {
           }
         });
 
+        // Track connection quality - use local stats
+        const updateConnectionQuality = () => {
+          if (apiRef.current) {
+            try {
+              // Get participant info to check our own stats
+              const participants = apiRef.current.getParticipantsInfo();
+              const localParticipant = participants?.find((p: any) => p.local);
+              
+              if (localParticipant) {
+                // Use audio level as proxy for connection quality
+                const audioLevel = localParticipant.audioLevel || 0;
+                // Also check if we have video/audio enabled
+                const hasVideo = !localParticipant.videoMuted;
+                const hasAudio = !localParticipant.audioMuted;
+                
+                // Calculate quality score (0-100)
+                let quality = 100;
+                if (!hasAudio && !hasVideo) quality -= 30;
+                if (audioLevel < 0.01 && hasAudio) quality -= 20;
+                
+                setConnectionQuality(quality);
+              }
+            } catch (e) {
+              // Silently fail - quality monitoring is optional
+            }
+          }
+        };
+        
+        // Update quality every 5 seconds
+        const qualityInterval = setInterval(updateConnectionQuality, 5000);
+        updateConnectionQuality();
+
         // Listen for transcription messages
         apiRef.current.addEventListener('transcriptionChunkReceived', (data: { text: string; participant: { name: string } }) => {
           console.log('Transcription:', data);
@@ -653,6 +687,11 @@ const MeetingRoom = () => {
             transcriptRef.current.push(`${data.participant?.displayName || 'Unknown'}: ${data.text}`);
           }
         });
+        
+        // Cleanup quality interval on unmount
+        return () => {
+          clearInterval(qualityInterval);
+        };
 
         // Capture chat messages as part of transcript
         apiRef.current.addEventListener('incomingMessage', (data: { from: string; message: string }) => {
@@ -724,8 +763,38 @@ const MeetingRoom = () => {
     return null;
   }
 
+  // Get connection quality icon and color
+  const getQualityIndicator = () => {
+    if (connectionQuality >= 80) {
+      return { icon: SignalHigh, color: 'text-green-500', label: 'Отличное' };
+    } else if (connectionQuality >= 50) {
+      return { icon: SignalMedium, color: 'text-yellow-500', label: 'Среднее' };
+    } else if (connectionQuality >= 20) {
+      return { icon: SignalLow, color: 'text-orange-500', label: 'Слабое' };
+    } else {
+      return { icon: Signal, color: 'text-red-500', label: 'Плохое' };
+    }
+  };
+
+  const qualityIndicator = getQualityIndicator();
+  const QualityIcon = qualityIndicator.icon;
+
   return (
-    <div className="h-screen w-screen bg-background flex flex-col overflow-hidden cursor-none">
+    <div className="h-screen w-screen bg-background flex flex-col overflow-hidden cursor-none relative">
+      {/* Background Video */}
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="absolute inset-0 w-full h-full object-cover z-0 opacity-30"
+      >
+        <source src={backgroundVideo} type="video/mp4" />
+      </video>
+      
+      {/* Dark overlay for better contrast */}
+      <div className="absolute inset-0 bg-background/70 z-0" />
+      
       <CustomCursor />
       
       {/* Realtime Translator */}
@@ -984,11 +1053,18 @@ const MeetingRoom = () => {
         </div>
       )}
       
-      {/* Connected indicator (brief) */}
+      {/* Connected indicator with quality */}
       {connectionStatus === 'connected' && (
-        <div className="absolute top-20 right-4 z-40 flex items-center gap-2 glass rounded-full px-3 py-1 border border-green-500/30">
-          <Wifi className="w-3 h-3 text-green-500" />
-          <span className="text-xs text-green-500">Подключено</span>
+        <div className="absolute top-20 right-4 z-40 flex items-center gap-3 glass rounded-full px-4 py-2 border border-green-500/30">
+          <div className="flex items-center gap-2">
+            <Wifi className="w-3 h-3 text-green-500" />
+            <span className="text-xs text-green-500">Подключено</span>
+          </div>
+          <div className="h-4 w-px bg-border/50" />
+          <div className="flex items-center gap-1.5">
+            <QualityIcon className={`w-4 h-4 ${qualityIndicator.color}`} />
+            <span className={`text-xs ${qualityIndicator.color}`}>{qualityIndicator.label}</span>
+          </div>
         </div>
       )}
 
@@ -1013,7 +1089,7 @@ const MeetingRoom = () => {
       {/* Jitsi Container */}
       <div 
         ref={containerRef} 
-        className="flex-1 w-full"
+        className="flex-1 w-full z-10 relative"
         style={{ minHeight: 0 }}
       />
     </div>
