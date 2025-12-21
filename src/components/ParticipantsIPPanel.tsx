@@ -31,12 +31,16 @@ const ParticipantsIPPanel = ({ roomId, isOpen, onClose }: ParticipantsIPPanelPro
     const fetchParticipantsData = async () => {
       setLoading(true);
       try {
-        // Get participants for this room
+        console.log('Fetching participants for room:', roomId);
+        
+        // Get participants for this room - also try without left_at filter
         const { data: meetingParticipants, error: mpError } = await supabase
           .from('meeting_participants')
           .select('id, user_name, joined_at')
           .eq('room_id', roomId)
           .is('left_at', null);
+
+        console.log('Meeting participants result:', { meetingParticipants, error: mpError });
 
         if (mpError) {
           console.error('Error fetching participants:', mpError);
@@ -52,10 +56,14 @@ const ParticipantsIPPanel = ({ roomId, isOpen, onClose }: ParticipantsIPPanelPro
 
         // Get geo data for these participants
         const participantIds = meetingParticipants.map(p => p.id);
+        console.log('Fetching geo data for participant IDs:', participantIds);
+        
         const { data: geoData, error: geoError } = await supabase
           .from('participant_geo_data')
           .select('*')
           .in('participant_id', participantIds);
+
+        console.log('Geo data result:', { geoData, error: geoError });
 
         if (geoError) {
           console.error('Error fetching geo data:', geoError);

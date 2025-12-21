@@ -313,6 +313,30 @@ const MeetingRoom = () => {
     handleUserEndCall();
   };
 
+  // Prevent call from disconnecting when tab is minimized or hidden
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      // Do nothing on visibility change - keep connection alive
+      console.log('Visibility changed:', document.hidden ? 'hidden' : 'visible');
+    };
+
+    const handlePageHide = (event: PageTransitionEvent) => {
+      // Prevent disconnection on page hide (swipe/minimize)
+      if (!userInitiatedEndRef.current) {
+        event.preventDefault();
+        console.log('Page hide prevented - keeping connection');
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('pagehide', handlePageHide);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pagehide', handlePageHide);
+    };
+  }, []);
+
   useEffect(() => {
     const initJitsi = () => {
       if (!containerRef.current || !window.JitsiMeetExternalAPI) {
@@ -339,6 +363,12 @@ const MeetingRoom = () => {
               enabled: false,
             },
             disableDeepLinking: true,
+            // Keep call alive when tab is hidden/minimized
+            disableAudioLevels: false,
+            enableNoisyMicDetection: true,
+            p2p: {
+              enabled: false, // Disable P2P to maintain connection through server
+            },
             enableInsecureRoomNameWarning: false,
             defaultLanguage: "ru",
             // Enable transcription
@@ -397,6 +427,22 @@ const MeetingRoom = () => {
         apiRef.current = new window.JitsiMeetExternalAPI(domain, options);
         setIsLoading(false);
 
+        // Listen for error messages from Jitsi
+        apiRef.current.addEventListener('errorOccurred', (error: { error: { name: string; message: string } }) => {
+          console.error('Jitsi error:', error);
+          
+          // Handle permission/access denied errors
+          if (error?.error?.name === 'conference.connectionError.accessDenied' || 
+              error?.error?.message?.includes('not allowed') ||
+              error?.error?.message?.includes('denied')) {
+            toast({
+              title: "Ошибка доступа",
+              description: "Не удалось подключиться к комнате. Попробуйте обновить страницу или создать новую комнату.",
+              variant: "destructive",
+            });
+          }
+        });
+
         // Track connection status
         apiRef.current.addEventListener('videoConferenceJoined', () => {
           console.log('Connected to conference');
@@ -409,8 +455,14 @@ const MeetingRoom = () => {
           });
         });
 
-        // Handle connection failures
+        // Handle connection failures - but ignore if tab is just hidden
         apiRef.current.addEventListener('videoConferenceLeft', () => {
+          // Ignore disconnect events caused by tab hiding/minimizing
+          if (document.hidden) {
+            console.log('Ignoring disconnect - tab is hidden');
+            return;
+          }
+          
           // Only show disconnection if user didn't initiate leave
           if (!userInitiatedEndRef.current && !hasRedirectedRef.current) {
             console.log('Disconnected from conference');

@@ -4,7 +4,7 @@ export const translations = {
     aplink: {
       badge: "Видеозвонки нового поколения",
       title: "Созвоны без границ",
-      description: "Приватные видеозвонки с коллегами и партнёрами из любой точки мира. Никаких ограничений по IP — работает везде.",
+      description: "Приватные видеозвонки с коллегами и партнёрами из любой точки мира. Никаких ограничений по IP — работает везде. Каждый созвон автоматически сохраняется с AI-выжимкой ключевых моментов. Переводчик в реальном времени — общайтесь на любых языках без барьеров!",
       yourName: "Ваше имя",
       roomName: "Название комнаты (или оставьте пустым)",
       createRoom: "Создать комнату",
@@ -716,7 +716,7 @@ export const translations = {
     aplink: {
       badge: "Next Generation Video Calls",
       title: "Calls Without Borders",
-      description: "Private video calls with colleagues and partners from anywhere in the world. No IP restrictions — works everywhere.",
+      description: "Private video calls with colleagues and partners from anywhere in the world. No IP restrictions — works everywhere. Every call is automatically saved with AI-powered summaries of key moments. Real-time translator — communicate in any language without barriers!",
       yourName: "Your name",
       roomName: "Room name (or leave empty)",
       createRoom: "Create Room",
