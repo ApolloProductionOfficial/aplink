@@ -391,9 +391,21 @@ const Index = () => {
               </span>
             </h1>
             
-            <p className="text-xl text-muted-foreground mb-12 max-w-2xl mx-auto animate-slide-up" style={{ animationDelay: '100ms' }}>
-              {t.aplink?.description || 'Приватные видеозвонки с коллегами и партнёрами из любой точки мира. Никаких ограничений по IP — работает везде.'}
-            </p>
+            {/* Feature Cards */}
+            <div className="flex flex-wrap justify-center gap-4 mb-12 animate-slide-up" style={{ animationDelay: '100ms' }}>
+              <div className="glass px-5 py-3 rounded-xl flex items-center gap-3 hover:scale-105 transition-transform duration-300 hover:border-primary/50 border border-transparent">
+                <Globe className="w-5 h-5 text-primary" />
+                <span className="text-muted-foreground">Без ограничений по IP</span>
+              </div>
+              <div className="glass px-5 py-3 rounded-xl flex items-center gap-3 hover:scale-105 transition-transform duration-300 hover:border-primary/50 border border-transparent" style={{ animationDelay: '150ms' }}>
+                <Sparkles className="w-5 h-5 text-primary" />
+                <span className="text-muted-foreground">AI-конспекты встреч</span>
+              </div>
+              <div className="glass px-5 py-3 rounded-xl flex items-center gap-3 hover:scale-105 transition-transform duration-300 hover:border-primary/50 border border-transparent" style={{ animationDelay: '200ms' }}>
+                <MessageCircle className="w-5 h-5 text-primary" />
+                <span className="text-muted-foreground">Переводчик в реальном времени</span>
+              </div>
+            </div>
 
             {/* Join Form */}
             <div id="create-room-form" className="max-w-md mx-auto space-y-4 animate-slide-up" style={{ animationDelay: '200ms' }}>
