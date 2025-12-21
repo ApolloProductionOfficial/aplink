@@ -315,27 +315,129 @@ const MeetingRoom = () => {
 
   // Prevent call from disconnecting when tab is minimized or hidden
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      // Do nothing on visibility change - keep connection alive
-      console.log('Visibility changed:', document.hidden ? 'hidden' : 'visible');
-    };
+    let wakeLock: WakeLockSentinel | null = null;
+    let keepAliveInterval: ReturnType<typeof setInterval> | null = null;
 
-    const handlePageHide = (event: PageTransitionEvent) => {
-      // Prevent disconnection on page hide (swipe/minimize)
-      if (!userInitiatedEndRef.current) {
-        event.preventDefault();
-        console.log('Page hide prevented - keeping connection');
+    // Request Wake Lock to prevent screen from sleeping
+    const requestWakeLock = async () => {
+      try {
+        if ('wakeLock' in navigator) {
+          wakeLock = await (navigator as any).wakeLock.request('screen');
+          console.log('Wake Lock acquired');
+          
+          wakeLock.addEventListener('release', () => {
+            console.log('Wake Lock released, re-acquiring...');
+            // Try to re-acquire when released
+            if (!userInitiatedEndRef.current) {
+              requestWakeLock();
+            }
+          });
+        }
+      } catch (err) {
+        console.log('Wake Lock not available:', err);
       }
     };
 
+    // Keep WebSocket connections alive with periodic activity
+    const startKeepAlive = () => {
+      keepAliveInterval = setInterval(() => {
+        if (apiRef.current && !userInitiatedEndRef.current) {
+          // Send a small message to keep the connection alive
+          try {
+            // Get Jitsi connection and send a ping
+            apiRef.current.executeCommand('sendEndpointTextMessage', '', 'keep-alive');
+          } catch (e) {
+            // Fallback: just log that we're still alive
+            console.log('Keep-alive ping at', new Date().toISOString());
+          }
+        }
+      }, 15000); // Every 15 seconds
+    };
+
+    const handleVisibilityChange = async () => {
+      console.log('Visibility changed:', document.hidden ? 'hidden' : 'visible');
+      
+      if (!document.hidden) {
+        // Tab became visible again
+        await requestWakeLock();
+        
+        // If disconnected, try to reconnect
+        if (connectionStatus === 'disconnected' && apiRef.current && !userInitiatedEndRef.current) {
+          console.log('Tab visible and disconnected - attempting reconnect');
+          setConnectionStatus('reconnecting');
+          playReconnectingSound();
+          
+          // Re-initialize Jitsi
+          if (apiRef.current) {
+            apiRef.current.dispose();
+            apiRef.current = null;
+          }
+        }
+      }
+    };
+
+    // Handle freeze/resume events for mobile browsers
+    const handleFreeze = () => {
+      console.log('Page frozen');
+      // Store state if needed
+    };
+
+    const handleResume = async () => {
+      console.log('Page resumed');
+      await requestWakeLock();
+      
+      // Check if still connected
+      if (apiRef.current && !userInitiatedEndRef.current) {
+        try {
+          const participants = apiRef.current.getParticipantsInfo();
+          console.log('Resuming - participants:', participants?.length);
+        } catch (e) {
+          console.log('Connection may need refresh after resume');
+        }
+      }
+    };
+
+    const handlePageHide = (event: PageTransitionEvent) => {
+      // Don't prevent normal navigation, but log the event
+      if (!userInitiatedEndRef.current && !event.persisted) {
+        console.log('Page hide - persisted:', event.persisted);
+      }
+    };
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      // Only warn if user didn't initiate leave
+      if (!userInitiatedEndRef.current && connectionStatus === 'connected') {
+        event.preventDefault();
+        event.returnValue = '';
+      }
+    };
+
+    // Initialize
+    requestWakeLock();
+    startKeepAlive();
+
+    // Add event listeners
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener('freeze', handleFreeze);
+    document.addEventListener('resume', handleResume);
     window.addEventListener('pagehide', handlePageHide);
+    window.addEventListener('beforeunload', handleBeforeUnload);
 
     return () => {
+      // Cleanup
+      if (wakeLock) {
+        wakeLock.release();
+      }
+      if (keepAliveInterval) {
+        clearInterval(keepAliveInterval);
+      }
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      document.removeEventListener('freeze', handleFreeze);
+      document.removeEventListener('resume', handleResume);
       window.removeEventListener('pagehide', handlePageHide);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, []);
+  }, [connectionStatus, playReconnectingSound]);
 
   useEffect(() => {
     const initJitsi = () => {
@@ -367,7 +469,7 @@ const MeetingRoom = () => {
             disableAudioLevels: false,
             enableNoisyMicDetection: true,
             p2p: {
-              enabled: false, // Disable P2P to maintain connection through server
+              enabled: false, // Disable P2P to maintain connection through JVB server
             },
             enableInsecureRoomNameWarning: false,
             defaultLanguage: "ru",
@@ -375,6 +477,24 @@ const MeetingRoom = () => {
             transcription: {
               enabled: true,
               autoTranscribeOnRecord: true,
+            },
+            // Prevent disconnection on tab switch/minimize
+            disableSuspendVideo: true,
+            channelLastN: -1, // Receive all video streams
+            enableLayerSuspension: false,
+            // WebSocket keep-alive settings
+            websocket: {
+              keepAlive: true,
+              keepAliveInterval: 10000,
+            },
+            // Connection quality settings
+            connectionQuality: {
+              minWeight: 0.5,
+            },
+            // Audio settings to maintain connection
+            audioQuality: {
+              stereo: false,
+              opusMaxAverageBitrate: 20000,
             },
             toolbarButtons: [
               'camera',
