@@ -26,7 +26,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import backgroundVideo from "@/assets/background-video.mp4";
+import backgroundVideo from "@/assets/background-video-new.mp4";
 
 const Index = () => {
   const [searchParams] = useSearchParams();
