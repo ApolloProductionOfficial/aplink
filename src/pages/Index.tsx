@@ -19,6 +19,7 @@ import FavoriteContacts from "@/components/FavoriteContacts";
 import APLinkBottomNav from "@/components/APLinkBottomNav";
 import FavoritesSheet from "@/components/FavoritesSheet";
 import logoVideo from "@/assets/logo-video.mov";
+import apolloLogo from "@/assets/apollo-logo.mp4";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -385,7 +386,15 @@ const Index = () => {
               <span className="text-sm text-muted-foreground">{t.aplink?.badge || 'Видеозвонки нового поколения'}</span>
             </div>
             
-            <h1 className="text-5xl md:text-7xl font-bold mb-6 animate-slide-up">
+            <h1 className="text-5xl md:text-7xl font-bold mb-6 animate-slide-up flex items-center justify-center gap-4">
+              <video
+                src={apolloLogo}
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-16 h-16 md:w-20 md:h-20 object-contain rounded-lg"
+              />
               <span className="bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent animate-text-shimmer">
                 {t.aplink?.title || 'Созвоны без границ'}
               </span>
