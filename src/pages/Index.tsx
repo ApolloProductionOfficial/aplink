@@ -261,16 +261,18 @@ const Index = () => {
       <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="relative">
-              <div className="absolute inset-0 rounded-full bg-primary/30 blur-lg animate-pulse" />
-              <video 
-                src={apolloLogo} 
-                autoPlay 
-                loop 
-                muted 
-                playsInline
-                className="relative w-10 h-10 object-cover rounded-full ring-2 ring-primary/50 shadow-[0_0_15px_rgba(var(--primary),0.5)]"
-              />
+            <div className="relative w-10 h-10">
+              <div className="absolute inset-0 rounded-full bg-primary/40 blur-md animate-pulse" />
+              <div className="relative w-10 h-10 rounded-full overflow-hidden ring-2 ring-primary/50 shadow-[0_0_20px_hsl(var(--primary)/0.6)]">
+                <video 
+                  src={apolloLogo} 
+                  autoPlay 
+                  loop 
+                  muted 
+                  playsInline
+                  className="w-[200%] h-[200%] object-cover -translate-x-1/4 -translate-y-1/4 scale-110"
+                />
+              </div>
             </div>
             <div className="flex flex-col">
               <span className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent">
