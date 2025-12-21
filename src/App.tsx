@@ -19,9 +19,9 @@ const queryClient = new QueryClient();
 
 function App() {
   return (
-    <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <LanguageProvider>
+    <QueryClientProvider client={queryClient}>
+      <LanguageProvider>
+        <ErrorBoundary>
           <TooltipProvider>
             <Toaster />
             <Sonner />
@@ -38,9 +38,9 @@ function App() {
               </Routes>
             </BrowserRouter>
           </TooltipProvider>
-        </LanguageProvider>
-      </QueryClientProvider>
-    </ErrorBoundary>
+        </ErrorBoundary>
+      </LanguageProvider>
+    </QueryClientProvider>
   );
 }
 

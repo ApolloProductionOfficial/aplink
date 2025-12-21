@@ -7,20 +7,16 @@ interface ErrorNotificationParams {
   source: string;
 }
 
-export const sendErrorNotification = async ({
-  errorType,
-  errorMessage,
-  details,
-  source,
-}: ErrorNotificationParams): Promise<boolean> => {
+// Rate limiting: track last send time and queue
+let lastSendTime = 0;
+const MIN_INTERVAL_MS = 1000; // 1 second between requests
+let pendingNotification: ErrorNotificationParams | null = null;
+let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+const sendNotificationInternal = async (params: ErrorNotificationParams): Promise<boolean> => {
   try {
     const { data, error } = await supabase.functions.invoke("send-error-notification", {
-      body: {
-        errorType,
-        errorMessage,
-        details,
-        source,
-      },
+      body: params,
     });
 
     if (error) {
@@ -34,6 +30,44 @@ export const sendErrorNotification = async ({
     console.error("Error sending notification:", err);
     return false;
   }
+};
+
+export const sendErrorNotification = async ({
+  errorType,
+  errorMessage,
+  details,
+  source,
+}: ErrorNotificationParams): Promise<boolean> => {
+  const now = Date.now();
+  const timeSinceLastSend = now - lastSendTime;
+  
+  const params = { errorType, errorMessage, details, source };
+  
+  // If we're within the rate limit window, queue this notification
+  if (timeSinceLastSend < MIN_INTERVAL_MS) {
+    // Store only the latest pending notification (discard previous if any)
+    pendingNotification = params;
+    
+    // Set up a delayed send if not already scheduled
+    if (!timeoutId) {
+      const delay = MIN_INTERVAL_MS - timeSinceLastSend;
+      timeoutId = setTimeout(async () => {
+        timeoutId = null;
+        if (pendingNotification) {
+          const toSend = pendingNotification;
+          pendingNotification = null;
+          lastSendTime = Date.now();
+          await sendNotificationInternal(toSend);
+        }
+      }, delay);
+    }
+    
+    return true; // Queued successfully
+  }
+  
+  // Send immediately
+  lastSendTime = now;
+  return sendNotificationInternal(params);
 };
 
 // Specific error types
