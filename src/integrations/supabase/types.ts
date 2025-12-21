@@ -230,6 +230,42 @@ export type Database = {
         }
         Relationships: []
       }
+      translation_history: {
+        Row: {
+          created_at: string
+          id: string
+          original_text: string
+          room_id: string | null
+          source_language: string | null
+          target_language: string
+          translated_text: string
+          user_id: string
+          voice_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          original_text: string
+          room_id?: string | null
+          source_language?: string | null
+          target_language: string
+          translated_text: string
+          user_id: string
+          voice_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          original_text?: string
+          room_id?: string | null
+          source_language?: string | null
+          target_language?: string
+          translated_text?: string
+          user_id?: string
+          voice_id?: string | null
+        }
+        Relationships: []
+      }
       user_presence: {
         Row: {
           current_room: string | null

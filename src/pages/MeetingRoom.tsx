@@ -560,6 +560,7 @@ const MeetingRoom = () => {
       <RealtimeTranslator
         isActive={showTranslator}
         onToggle={() => setShowTranslator(false)}
+        roomId={roomSlug}
       />
       
       {/* IP Panel for admins */}
