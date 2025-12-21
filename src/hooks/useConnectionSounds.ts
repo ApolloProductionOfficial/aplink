@@ -14,8 +14,8 @@ const createSound = (frequency: number, duration: number, type: 'success' | 'err
     oscillator.type = type === 'success' ? 'sine' : type === 'error' ? 'square' : 'triangle';
     oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
     
-    // Volume envelope
-    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    // Volume envelope - reduced volume (was 0.3, now 0.08)
+    gainNode.gain.setValueAtTime(0.08, audioContext.currentTime);
     gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
     
     oscillator.start(audioContext.currentTime);
