@@ -3,12 +3,10 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
-  Languages, Mic, MicOff, Volume2, VolumeX, Loader2, X, Minimize2, Maximize2, 
-  Monitor, Download, History, Trash2, User
+  Languages, Mic, MicOff, Volume2, Loader2, X, Minimize2, Maximize2, 
+  Download, History, Trash2, User, Play
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -68,8 +66,6 @@ const VOICES = [
   { id: 'neutral-alloy', name: 'Roger', gender: 'neutral', icon: '🧑‍🦱' },
 ];
 
-type AudioSource = 'microphone' | 'system';
-
 export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
   isActive,
   onToggle,
@@ -77,19 +73,17 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
   className,
 }) => {
   const { user } = useAuth();
-  const [targetLanguage, setTargetLanguage] = useState('ru');
+  const [targetLanguage, setTargetLanguage] = useState('en');
   const [sourceLanguage, setSourceLanguage] = useState('auto');
   const [selectedVoice, setSelectedVoice] = useState('female-sarah');
-  const [audioSource, setAudioSource] = useState<AudioSource>('microphone');
   const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [translations, setTranslations] = useState<TranslationEntry[]>([]);
-  const [autoPlayAudio, setAutoPlayAudio] = useState(true);
-  const [saveToHistory, setSaveToHistory] = useState(true);
   const [isMinimized, setIsMinimized] = useState(false);
   const [activeTab, setActiveTab] = useState('translate');
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyItems, setHistoryItems] = useState<TranslationEntry[]>([]);
+  const [isPreviewingVoice, setIsPreviewingVoice] = useState(false);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -152,7 +146,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
   };
 
   const saveTranslation = async (entry: TranslationEntry) => {
-    if (!user || !saveToHistory) return;
+    if (!user) return;
 
     try {
       await supabase.from('translation_history').insert({
@@ -216,6 +210,64 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
     toast.success('История экспортирована');
   };
 
+  // Preview selected voice
+  const previewVoice = async () => {
+    if (isPreviewingVoice) return;
+    
+    setIsPreviewingVoice(true);
+    try {
+      const targetLang = LANGUAGES.find(l => l.code === targetLanguage);
+      const sampleText = targetLanguage === 'ru' 
+        ? 'Привет! Это пример моего голоса.' 
+        : targetLanguage === 'en'
+        ? 'Hello! This is a sample of my voice.'
+        : targetLanguage === 'es'
+        ? 'Hola! Este es un ejemplo de mi voz.'
+        : targetLanguage === 'de'
+        ? 'Hallo! Dies ist ein Beispiel meiner Stimme.'
+        : targetLanguage === 'fr'
+        ? 'Bonjour! Ceci est un exemple de ma voix.'
+        : 'Hello! This is a sample of my voice.';
+
+      const formData = new FormData();
+      // Create a small audio blob with silence just to trigger TTS
+      const silentBlob = new Blob([new Uint8Array(1000)], { type: 'audio/webm' });
+      formData.append('audio', silentBlob, 'audio.webm');
+      formData.append('targetLanguage', targetLanguage);
+      formData.append('voiceId', selectedVoice);
+      formData.append('previewText', sampleText);
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/realtime-translate`,
+        {
+          method: 'POST',
+          headers: {
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: formData,
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Preview failed');
+      }
+
+      const result = await response.json();
+      
+      if (result.audioContent) {
+        const audioUrl = `data:audio/mpeg;base64,${result.audioContent}`;
+        const audio = new Audio(audioUrl);
+        await audio.play();
+      }
+    } catch (error) {
+      console.error('Voice preview error:', error);
+      toast.error('Не удалось воспроизвести голос');
+    } finally {
+      setIsPreviewingVoice(false);
+    }
+  };
+
   const playNextAudio = useCallback(async () => {
     if (isPlayingRef.current || audioQueueRef.current.length === 0) return;
     
@@ -241,7 +293,8 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
   }, []);
 
   const processAudioChunk = useCallback(async (audioBlob: Blob) => {
-    if (audioBlob.size < 1000) {
+    // Increased minimum size to ensure we have meaningful audio
+    if (audioBlob.size < 2000) {
       console.log('Audio chunk too small, skipping...');
       return;
     }
@@ -286,8 +339,8 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
           voiceId: result.voiceId,
         };
 
-        // Create audio URL if available
-        if (result.audioContent && autoPlayAudio) {
+        // Create audio URL if available - always play
+        if (result.audioContent) {
           const audioUrl = `data:audio/mpeg;base64,${result.audioContent}`;
           entry.audioUrl = audioUrl;
           audioQueueRef.current.push(audioUrl);
@@ -296,15 +349,17 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
 
         setTranslations(prev => [...prev.slice(-19), entry]);
         
-        // Save to database
-        await saveTranslation(entry);
+        // Save to database if user is logged in
+        if (user) {
+          await saveTranslation(entry);
+        }
       }
     } catch (error) {
       console.error('Translation error:', error);
     } finally {
       setIsProcessing(false);
     }
-  }, [targetLanguage, sourceLanguage, selectedVoice, autoPlayAudio, playNextAudio, saveToHistory, user, roomId]);
+  }, [targetLanguage, sourceLanguage, selectedVoice, playNextAudio, user, roomId]);
 
   const startRecordingChunk = useCallback(() => {
     if (!streamRef.current) return;
@@ -329,15 +384,15 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
     mediaRecorderRef.current = mediaRecorder;
     mediaRecorder.start();
 
-    // Stop after 4 seconds to process
+    // Stop after 6 seconds to give user more time to finish speaking
     setTimeout(() => {
       if (mediaRecorder.state === 'recording') {
         mediaRecorder.stop();
       }
-    }, 4000);
+    }, 6000);
   }, [processAudioChunk]);
 
-  const startListeningMicrophone = useCallback(async () => {
+  const startListening = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -350,74 +405,21 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
 
       streamRef.current = stream;
       setIsListening(true);
-      toast.success('Переводчик активирован (микрофон)');
+      toast.success('Переводчик активирован');
 
       startRecordingChunk();
+      // Increased interval to 7 seconds for better speech capture
       recordingIntervalRef.current = setInterval(() => {
         if (streamRef.current) {
           startRecordingChunk();
         }
-      }, 5000);
+      }, 7000);
 
     } catch (error) {
       console.error('Error accessing microphone:', error);
       toast.error('Не удалось получить доступ к микрофону');
     }
   }, [startRecordingChunk]);
-
-  const startListeningSystem = useCallback(async () => {
-    try {
-      // Request screen/window share with audio
-      const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: true, // Required, but we'll ignore video
-        audio: {
-          echoCancellation: false,
-          noiseSuppression: false,
-          autoGainControl: false,
-        } as MediaTrackConstraints,
-      });
-
-      // Check if audio track is available
-      const audioTracks = stream.getAudioTracks();
-      if (audioTracks.length === 0) {
-        stream.getTracks().forEach(track => track.stop());
-        toast.error('Не удалось захватить системный звук. Убедитесь, что выбрали вкладку с аудио и включили "Поделиться звуком".');
-        return;
-      }
-
-      // Stop video track - we only need audio
-      stream.getVideoTracks().forEach(track => track.stop());
-
-      // Create audio-only stream
-      const audioStream = new MediaStream(audioTracks);
-      streamRef.current = audioStream;
-      setIsListening(true);
-      toast.success('Переводчик активирован (системный звук)');
-
-      startRecordingChunk();
-      recordingIntervalRef.current = setInterval(() => {
-        if (streamRef.current) {
-          startRecordingChunk();
-        }
-      }, 5000);
-
-    } catch (error) {
-      console.error('Error accessing system audio:', error);
-      if ((error as Error).name === 'NotAllowedError') {
-        toast.error('Доступ к экрану отклонён');
-      } else {
-        toast.error('Не удалось захватить системный звук');
-      }
-    }
-  }, [startRecordingChunk]);
-
-  const startListening = useCallback(async () => {
-    if (audioSource === 'microphone') {
-      await startListeningMicrophone();
-    } else {
-      await startListeningSystem();
-    }
-  }, [audioSource, startListeningMicrophone, startListeningSystem]);
 
   const stopListening = useCallback(() => {
     if (recordingIntervalRef.current) {
@@ -462,7 +464,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
             <Languages className="h-4 w-4 text-primary" />
             {isListening && (
               <Badge variant="destructive" className="animate-pulse">
-                {audioSource === 'system' ? <Monitor className="h-3 w-3 mr-1" /> : <Mic className="h-3 w-3 mr-1" />}
+                <Mic className="h-3 w-3 mr-1" />
                 LIVE
               </Badge>
             )}
@@ -480,7 +482,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
 
   return (
     <Card className={cn(
-      "fixed bottom-4 right-4 z-50 w-[420px] max-h-[70vh] bg-background/95 backdrop-blur border-primary/20 shadow-lg flex flex-col",
+      "fixed bottom-4 right-4 z-50 w-[400px] max-h-[70vh] bg-background/95 backdrop-blur border-primary/20 shadow-lg flex flex-col",
       className
     )}>
       <CardContent className="p-4 flex flex-col gap-3 flex-1 overflow-hidden">
@@ -488,10 +490,10 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Languages className="h-5 w-5 text-primary" />
-            <span className="font-semibold text-sm">Синхронный перевод</span>
+            <span className="font-semibold text-sm">Переводчик</span>
             {isListening && (
               <Badge variant="destructive" className="animate-pulse text-xs">
-                {audioSource === 'system' ? 'СИСТЕМА' : 'МИК'}
+                LIVE
               </Badge>
             )}
             {isProcessing && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
@@ -516,37 +518,10 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
           </TabsList>
 
           <TabsContent value="translate" className="flex-1 flex flex-col gap-3 overflow-hidden mt-3">
-            {/* Audio source selector */}
-            <div className="flex items-center gap-2">
-              <Label className="text-xs text-muted-foreground">Источник:</Label>
-              <div className="flex gap-1">
-                <Button
-                  variant={audioSource === 'microphone' ? 'default' : 'outline'}
-                  size="sm"
-                  className="h-7 text-xs gap-1"
-                  onClick={() => setAudioSource('microphone')}
-                  disabled={isListening}
-                >
-                  <Mic className="h-3 w-3" />
-                  Микрофон
-                </Button>
-                <Button
-                  variant={audioSource === 'system' ? 'default' : 'outline'}
-                  size="sm"
-                  className="h-7 text-xs gap-1"
-                  onClick={() => setAudioSource('system')}
-                  disabled={isListening}
-                >
-                  <Monitor className="h-3 w-3" />
-                  Система
-                </Button>
-              </div>
-            </div>
-
             {/* Language selectors */}
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Исходный</Label>
+                <label className="text-xs text-muted-foreground">Исходный</label>
                 <Select value={sourceLanguage} onValueChange={setSourceLanguage} disabled={isListening}>
                   <SelectTrigger className="h-8 text-xs">
                     <SelectValue />
@@ -562,7 +537,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
                 </Select>
               </div>
               <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Перевод на</Label>
+                <label className="text-xs text-muted-foreground">Перевод на</label>
                 <Select value={targetLanguage} onValueChange={setTargetLanguage} disabled={isListening}>
                   <SelectTrigger className="h-8 text-xs">
                     <SelectValue />
@@ -578,90 +553,91 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
               </div>
             </div>
 
-            {/* Voice selector */}
+            {/* Voice selector with preview */}
             <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground flex items-center gap-1">
+              <label className="text-xs text-muted-foreground flex items-center gap-1">
                 <User className="h-3 w-3" />
                 Голос озвучки
-              </Label>
-              <Select value={selectedVoice} onValueChange={setSelectedVoice} disabled={isListening}>
-                <SelectTrigger className="h-8 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="header-female" disabled className="text-xs text-muted-foreground font-semibold">
-                    — Женские голоса —
-                  </SelectItem>
-                  {VOICES.filter(v => v.gender === 'female').map(voice => (
-                    <SelectItem key={voice.id} value={voice.id}>
-                      {voice.icon} {voice.name}
+              </label>
+              <div className="flex gap-2">
+                <Select value={selectedVoice} onValueChange={setSelectedVoice} disabled={isListening}>
+                  <SelectTrigger className="h-8 text-xs flex-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="header-female" disabled className="text-xs text-muted-foreground font-semibold">
+                      — Женские голоса —
                     </SelectItem>
-                  ))}
-                  <SelectItem value="header-male" disabled className="text-xs text-muted-foreground font-semibold">
-                    — Мужские голоса —
-                  </SelectItem>
-                  {VOICES.filter(v => v.gender === 'male').map(voice => (
-                    <SelectItem key={voice.id} value={voice.id}>
-                      {voice.icon} {voice.name}
+                    {VOICES.filter(v => v.gender === 'female').map(voice => (
+                      <SelectItem key={voice.id} value={voice.id}>
+                        {voice.icon} {voice.name}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="header-male" disabled className="text-xs text-muted-foreground font-semibold">
+                      — Мужские голоса —
                     </SelectItem>
-                  ))}
-                  <SelectItem value="header-neutral" disabled className="text-xs text-muted-foreground font-semibold">
-                    — Нейтральные голоса —
-                  </SelectItem>
-                  {VOICES.filter(v => v.gender === 'neutral').map(voice => (
-                    <SelectItem key={voice.id} value={voice.id}>
-                      {voice.icon} {voice.name}
+                    {VOICES.filter(v => v.gender === 'male').map(voice => (
+                      <SelectItem key={voice.id} value={voice.id}>
+                        {voice.icon} {voice.name}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="header-neutral" disabled className="text-xs text-muted-foreground font-semibold">
+                      — Нейтральные голоса —
                     </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                    {VOICES.filter(v => v.gender === 'neutral').map(voice => (
+                      <SelectItem key={voice.id} value={voice.id}>
+                        {voice.icon} {voice.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-3"
+                  onClick={previewVoice}
+                  disabled={isPreviewingVoice || isListening}
+                  title="Прослушать голос"
+                >
+                  {isPreviewingVoice ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Play className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
             </div>
 
-            {/* Controls */}
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1">
-                  <Switch id="autoplay" checked={autoPlayAudio} onCheckedChange={setAutoPlayAudio} className="scale-75" />
-                  <Label htmlFor="autoplay" className="text-xs cursor-pointer flex items-center gap-1">
-                    {autoPlayAudio ? <Volume2 className="h-3 w-3" /> : <VolumeX className="h-3 w-3" />}
-                  </Label>
-                </div>
-                {user && (
-                  <div className="flex items-center gap-1">
-                    <Switch id="saveHistory" checked={saveToHistory} onCheckedChange={setSaveToHistory} className="scale-75" />
-                    <Label htmlFor="saveHistory" className="text-xs cursor-pointer">
-                      <History className="h-3 w-3" />
-                    </Label>
-                  </div>
-                )}
-              </div>
-              <Button
-                variant={isListening ? "destructive" : "default"}
-                size="sm"
-                onClick={toggleListening}
-                className="gap-2"
-              >
-                {isListening ? (
-                  <>
-                    <MicOff className="h-4 w-4" />
-                    Стоп
-                  </>
-                ) : (
-                  <>
-                    {audioSource === 'system' ? <Monitor className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-                    Старт
-                  </>
-                )}
-              </Button>
-            </div>
+            {/* Start/Stop button */}
+            <Button
+              variant={isListening ? "destructive" : "default"}
+              onClick={toggleListening}
+              className="gap-2 h-10"
+            >
+              {isListening ? (
+                <>
+                  <MicOff className="h-4 w-4" />
+                  Остановить
+                </>
+              ) : (
+                <>
+                  <Mic className="h-4 w-4" />
+                  Начать перевод
+                </>
+              )}
+            </Button>
+
+            {/* Info text */}
+            <p className="text-xs text-muted-foreground text-center">
+              Говорите в микрофон — перевод воспроизводится автоматически. 
+              Только вы слышите озвучку перевода.
+            </p>
 
             {/* Subtitles area */}
-            <div className="flex-1 overflow-y-auto min-h-[100px] max-h-[180px] border rounded-lg bg-muted/30 p-2 space-y-2">
+            <div className="flex-1 overflow-y-auto min-h-[80px] max-h-[150px] border rounded-lg bg-muted/30 p-2 space-y-2">
               {translations.length === 0 ? (
-                <div className="text-center text-muted-foreground text-xs py-6">
-                  {isListening ? 'Слушаю...' : audioSource === 'system' 
-                    ? 'Выберите вкладку браузера с Zoom/Teams и включите "Поделиться звуком"' 
-                    : 'Нажмите "Старт" для начала'}
+                <div className="text-center text-muted-foreground text-xs py-4">
+                  {isListening ? 'Слушаю... говорите чётко' : 'Нажмите "Начать перевод"'}
                 </div>
               ) : (
                 translations.map((entry) => (
@@ -691,7 +667,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
           <TabsContent value="history" className="flex-1 flex flex-col gap-3 overflow-hidden mt-3">
             {!user ? (
               <div className="text-center text-muted-foreground text-xs py-8">
-                Войдите для сохранения истории переводов
+                Войдите для просмотра истории переводов
               </div>
             ) : historyLoading ? (
               <div className="flex items-center justify-center py-8">

@@ -85,13 +85,7 @@ serve(async (req) => {
     const targetLanguage = formData.get("targetLanguage") as string || 'ru';
     const sourceLanguage = formData.get("sourceLanguage") as string | null;
     const voiceKey = formData.get("voiceId") as string | null;
-
-    if (!audioFile) {
-      throw new Error("No audio file provided");
-    }
-
-    console.log(`Received audio file: ${audioFile.name}, size: ${audioFile.size}`);
-    console.log(`Target language: ${targetLanguage}, Source language: ${sourceLanguage || 'auto'}, Voice: ${voiceKey || 'default'}`);
+    const previewText = formData.get("previewText") as string | null;
 
     const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -100,9 +94,66 @@ serve(async (req) => {
       throw new Error("ELEVENLABS_API_KEY is not configured");
     }
 
+    // If previewText is provided, skip transcription and translation - just generate TTS
+    if (previewText) {
+      console.log(`Voice preview requested for voice: ${voiceKey}`);
+      
+      const defaultVoiceKey = DEFAULT_VOICE_BY_LANG[targetLanguage] || 'female-sarah';
+      const selectedVoiceKey = voiceKey && VOICES[voiceKey as keyof typeof VOICES] ? voiceKey : defaultVoiceKey;
+      const voiceConfig = VOICES[selectedVoiceKey as keyof typeof VOICES] || VOICES['female-sarah'];
+      const voiceId = voiceConfig.id;
+      
+      const ttsResponse = await fetch(
+        `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
+        {
+          method: "POST",
+          headers: {
+            "xi-api-key": ELEVENLABS_API_KEY,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            text: previewText,
+            model_id: "eleven_turbo_v2_5",
+            output_format: "mp3_44100_128",
+            voice_settings: {
+              stability: 0.5,
+              similarity_boost: 0.75,
+              style: 0.3,
+              use_speaker_boost: true,
+              speed: 1.0,
+            },
+          }),
+        }
+      );
+
+      if (!ttsResponse.ok) {
+        throw new Error(`TTS preview failed: ${ttsResponse.status}`);
+      }
+
+      const audioBuffer = await ttsResponse.arrayBuffer();
+      const audioBase64 = base64Encode(audioBuffer);
+
+      return new Response(
+        JSON.stringify({
+          originalText: previewText,
+          translatedText: previewText,
+          audioContent: audioBase64,
+          voiceId: selectedVoiceKey,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!audioFile) {
+      throw new Error("No audio file provided");
+    }
+
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
+
+    console.log(`Received audio file: ${audioFile.name}, size: ${audioFile.size}`);
+    console.log(`Target language: ${targetLanguage}, Source language: ${sourceLanguage || 'auto'}, Voice: ${voiceKey || 'default'}`);
 
     // Step 1: Transcribe audio using ElevenLabs Scribe
     console.log("Step 1: Transcribing audio...");

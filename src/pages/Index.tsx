@@ -393,16 +393,16 @@ const Index = () => {
             
             {/* Feature Cards */}
             <div className="flex flex-wrap justify-center gap-4 mb-12 animate-slide-up" style={{ animationDelay: '100ms' }}>
-              <div className="glass px-5 py-3 rounded-xl flex items-center gap-3 hover:scale-105 transition-transform duration-300 hover:border-primary/50 border border-transparent">
-                <Globe className="w-5 h-5 text-primary" />
+              <div className="glass px-5 py-3 rounded-xl flex items-center gap-3 hover:scale-105 transition-transform duration-300 hover:border-primary/50 border border-transparent animate-[pulse_2s_ease-in-out_3]">
+                <Globe className="w-5 h-5 text-primary animate-[pulse_1.5s_ease-in-out_infinite]" />
                 <span className="text-muted-foreground">Без ограничений по IP</span>
               </div>
-              <div className="glass px-5 py-3 rounded-xl flex items-center gap-3 hover:scale-105 transition-transform duration-300 hover:border-primary/50 border border-transparent" style={{ animationDelay: '150ms' }}>
-                <Sparkles className="w-5 h-5 text-primary" />
+              <div className="glass px-5 py-3 rounded-xl flex items-center gap-3 hover:scale-105 transition-transform duration-300 hover:border-primary/50 border border-transparent animate-[pulse_2s_ease-in-out_3]" style={{ animationDelay: '200ms' }}>
+                <Sparkles className="w-5 h-5 text-primary animate-[pulse_1.5s_ease-in-out_infinite]" style={{ animationDelay: '200ms' }} />
                 <span className="text-muted-foreground">AI-конспекты встреч</span>
               </div>
-              <div className="glass px-5 py-3 rounded-xl flex items-center gap-3 hover:scale-105 transition-transform duration-300 hover:border-primary/50 border border-transparent" style={{ animationDelay: '200ms' }}>
-                <MessageCircle className="w-5 h-5 text-primary" />
+              <div className="glass px-5 py-3 rounded-xl flex items-center gap-3 hover:scale-105 transition-transform duration-300 hover:border-primary/50 border border-transparent animate-[pulse_2s_ease-in-out_3]" style={{ animationDelay: '400ms' }}>
+                <MessageCircle className="w-5 h-5 text-primary animate-[pulse_1.5s_ease-in-out_infinite]" style={{ animationDelay: '400ms' }} />
                 <span className="text-muted-foreground">Переводчик в реальном времени</span>
               </div>
             </div>
