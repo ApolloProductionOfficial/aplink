@@ -261,14 +261,17 @@ const Index = () => {
       <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <video 
-              src={logoVideo} 
-              autoPlay 
-              loop 
-              muted 
-              playsInline
-              className="w-10 h-10 object-cover rounded-full"
-            />
+            <div className="relative">
+              <div className="absolute inset-0 rounded-full bg-primary/30 blur-lg animate-pulse" />
+              <video 
+                src={apolloLogo} 
+                autoPlay 
+                loop 
+                muted 
+                playsInline
+                className="relative w-10 h-10 object-cover rounded-full ring-2 ring-primary/50 shadow-[0_0_15px_rgba(var(--primary),0.5)]"
+              />
+            </div>
             <div className="flex flex-col">
               <span className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent">
                 APLink
@@ -386,15 +389,7 @@ const Index = () => {
               <span className="text-sm text-muted-foreground">{t.aplink?.badge || 'Видеозвонки нового поколения'}</span>
             </div>
             
-            <h1 className="text-5xl md:text-7xl font-bold mb-6 animate-slide-up flex items-center justify-center gap-4">
-              <video
-                src={apolloLogo}
-                autoPlay
-                loop
-                muted
-                playsInline
-                className="w-16 h-16 md:w-20 md:h-20 object-contain rounded-lg"
-              />
+            <h1 className="text-5xl md:text-7xl font-bold mb-6 animate-slide-up">
               <span className="bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent animate-text-shimmer">
                 {t.aplink?.title || 'Созвоны без границ'}
               </span>
