@@ -21,7 +21,7 @@ const FloatingOrbs = () => {
   // Static version for mobile
   if (reduceMotion) {
     return (
-      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0" style={{ contain: 'strict' }}>
         {orbs.map((orb, index) => (
           <div
             key={index}
@@ -41,7 +41,7 @@ const FloatingOrbs = () => {
 
   // Animated version for desktop
   return (
-    <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+    <div className="fixed inset-0 overflow-hidden pointer-events-none z-0" style={{ contain: 'strict' }}>
       {orbs.map((orb, index) => (
         <motion.div
           key={index}

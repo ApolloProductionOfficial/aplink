@@ -5,7 +5,15 @@ import { useState, useEffect } from 'react';
  * Returns true if animations should be reduced/disabled
  */
 export const useReducedMotion = () => {
-  const [shouldReduceMotion, setShouldReduceMotion] = useState(false);
+  const [shouldReduceMotion, setShouldReduceMotion] = useState(() => {
+    // Initial check on mount (SSR safe)
+    if (typeof window === 'undefined') return false;
+    
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const isMobile = window.innerWidth < 768;
+    
+    return prefersReducedMotion || isMobile;
+  });
 
   useEffect(() => {
     // Check for user preference
@@ -20,8 +28,22 @@ export const useReducedMotion = () => {
     // Check hardware concurrency (fewer cores = less power)
     const hasLowCores = navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4;
     
+    // Check for battery saver mode (if available)
+    const checkBattery = async () => {
+      try {
+        const battery = await (navigator as any).getBattery?.();
+        if (battery && battery.level < 0.2 && !battery.charging) {
+          setShouldReduceMotion(true);
+        }
+      } catch {
+        // Battery API not available
+      }
+    };
+    checkBattery();
+    
     // Reduce motion on mobile or low-power devices
-    setShouldReduceMotion(prefersReducedMotion || (isMobile && (hasLowMemory || hasLowCores)) || isMobile);
+    const shouldReduce = prefersReducedMotion || isMobile || hasLowMemory || hasLowCores;
+    setShouldReduceMotion(shouldReduce);
 
     // Listen for changes in preference
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -31,17 +53,22 @@ export const useReducedMotion = () => {
 
     mediaQuery.addEventListener('change', handleChange);
 
-    // Also update on resize
+    // Also update on resize (debounced)
+    let resizeTimeout: ReturnType<typeof setTimeout>;
     const handleResize = () => {
-      const nowMobile = window.innerWidth < 768;
-      setShouldReduceMotion(prefersReducedMotion || nowMobile);
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        const nowMobile = window.innerWidth < 768;
+        setShouldReduceMotion(prefersReducedMotion || nowMobile);
+      }, 150);
     };
 
-    window.addEventListener('resize', handleResize);
+    window.addEventListener('resize', handleResize, { passive: true });
 
     return () => {
       mediaQuery.removeEventListener('change', handleChange);
       window.removeEventListener('resize', handleResize);
+      clearTimeout(resizeTimeout);
     };
   }, []);
 
