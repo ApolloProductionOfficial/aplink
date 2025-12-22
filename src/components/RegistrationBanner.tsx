@@ -49,14 +49,12 @@ const RegistrationBanner = ({ className = '' }: RegistrationBannerProps) => {
         </div>
         
         <div className="space-y-2">
-          <h3 className="font-semibold text-base">{t.auth?.register || 'Регистрация'}</h3>
+          <h3 className="font-semibold text-base">{(t as any).registrationBanner?.title || t.auth?.register || 'Регистрация'}</h3>
           <p className="text-xs text-muted-foreground leading-relaxed max-w-[200px]">
-            {t.auth?.registerDescription || 'Создайте аккаунт для записи созвонов'}
+            {(t as any).registrationBanner?.description || t.auth?.registerDescription || 'Создайте аккаунт для записи созвонов'}
           </p>
-          <p className="text-xs text-primary/80">
-            ✓ AI-конспект звонков<br/>
-            ✓ История встреч<br/>
-            ✓ Синхронизация
+          <p className="text-xs text-primary/80 whitespace-pre-line">
+            {(t as any).registrationBanner?.benefits || '✓ AI-конспект звонков\n✓ История встреч\n✓ Синхронизация'}
           </p>
         </div>
         
@@ -67,7 +65,7 @@ const RegistrationBanner = ({ className = '' }: RegistrationBannerProps) => {
             className="flex-1 h-9 text-xs"
           >
             <FileText className="w-3 h-3 mr-1" />
-            {t.auth?.registerButton || 'Регистрация'}
+            {(t as any).registrationBanner?.registerButton || t.auth?.registerButton || 'Регистрация'}
           </Button>
           <Button
             size="sm"
@@ -75,7 +73,7 @@ const RegistrationBanner = ({ className = '' }: RegistrationBannerProps) => {
             onClick={handleGoogleSignIn}
             disabled={loading}
             className="h-9 w-9 p-0 flex-shrink-0 transition-all duration-300 hover:scale-105 hover:bg-muted/50"
-            title="Войти через Google"
+            title={(t as any).registrationBanner?.googleSignIn || "Войти через Google"}
           >
             {loading ? (
               <div className="w-4 h-4 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />

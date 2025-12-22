@@ -940,8 +940,10 @@ const MeetingRoom = () => {
               setConnectionStatus('reconnecting');
               playReconnectingSound();
               toast({
-                title: "Переподключение...",
-                description: `Попытка ${reconnectAttemptsRef.current} из ${maxReconnectAttempts}`,
+                title: t.meetingRoom.reconnecting || "Переподключение...",
+                description: (t.meetingRoom.reconnectingAttempt || "Попытка {attempt} из {max}")
+                  .replace('{attempt}', String(reconnectAttemptsRef.current))
+                  .replace('{max}', String(maxReconnectAttempts)),
               });
               
               // Dispose current API and reinitialize
@@ -955,8 +957,8 @@ const MeetingRoom = () => {
               }, 2000);
             } else {
               toast({
-                title: "Соединение потеряно",
-                description: "Нажмите кнопку переподключения или обновите страницу",
+                title: t.meetingRoom.disconnected || "Соединение потеряно",
+                description: t.meetingRoom.reconnect ? `${t.meetingRoom.reconnect}` : "Нажмите кнопку переподключения или обновите страницу",
                 variant: "destructive",
               });
             }
@@ -1331,7 +1333,7 @@ const MeetingRoom = () => {
         <div className="absolute inset-0 flex items-center justify-center bg-background z-20">
           <div className="text-center">
             <div className="w-16 h-16 rounded-full border-4 border-primary/30 border-t-primary animate-spin mx-auto mb-4" />
-            <p className="text-muted-foreground">Подключение к комнате...</p>
+            <p className="text-muted-foreground">{t.meetingRoom.connectingToRoom || "Подключение к комнате..."}</p>
           </div>
         </div>
       )}
@@ -1346,7 +1348,7 @@ const MeetingRoom = () => {
           {connectionStatus === 'disconnected' ? (
             <>
               <WifiOff className="w-4 h-4 text-red-500" />
-              <span className="text-sm font-medium text-red-500">Отключено</span>
+              <span className="text-sm font-medium text-red-500">{t.meetingRoom.disconnected || "Отключено"}</span>
               <Button
                 size="sm"
                 variant="ghost"
@@ -1365,18 +1367,18 @@ const MeetingRoom = () => {
                 }}
               >
                 <RefreshCw className="w-3 h-3 mr-1" />
-                Переподключить
+                {t.meetingRoom.reconnect || "Переподключить"}
               </Button>
             </>
           ) : connectionStatus === 'reconnecting' ? (
             <>
               <RefreshCw className="w-4 h-4 text-yellow-500 animate-spin" />
-              <span className="text-sm font-medium text-yellow-500">Переподключение...</span>
+              <span className="text-sm font-medium text-yellow-500">{t.meetingRoom.reconnecting || "Переподключение..."}</span>
             </>
           ) : (
             <>
               <Wifi className="w-4 h-4 text-primary animate-pulse" />
-              <span className="text-sm font-medium text-primary">Подключение...</span>
+              <span className="text-sm font-medium text-primary">{t.meetingRoom.connecting || "Подключение..."}</span>
             </>
           )}
         </div>
@@ -1387,7 +1389,7 @@ const MeetingRoom = () => {
         <div className="absolute top-20 right-4 z-40 flex items-center gap-3 glass rounded-full px-4 py-2 border border-green-500/30">
           <div className="flex items-center gap-2">
             <Wifi className="w-3 h-3 text-green-500" />
-            <span className="text-xs text-green-500">Подключено</span>
+            <span className="text-xs text-green-500">{t.meetingRoom.done || "Подключено"}</span>
           </div>
           <div className="h-4 w-px bg-border/50" />
           <div className="flex items-center gap-1.5">
