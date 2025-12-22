@@ -418,12 +418,12 @@ const Index = () => {
                 {(t.aplink as any)?.realtimeTranslator || 'Real-time Translator'}
               </span>
               <span className="px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-sm text-muted-foreground flex items-center gap-2">
-                <Globe className="w-4 h-4 text-primary" />
-                {(t.aplink as any)?.noIPRestrictions || 'No IP Restrictions'}
-              </span>
-              <span className="px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-sm text-muted-foreground flex items-center gap-2">
                 <Video className="w-4 h-4 text-primary" />
                 {(t.aplink as any)?.aiMeetingSummaries || 'AI Meeting Summaries'}
+              </span>
+              <span className="px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-sm text-muted-foreground flex items-center gap-2">
+                <Globe className="w-4 h-4 text-primary" />
+                {(t.aplink as any)?.noIPRestrictions || 'No IP Restrictions'}
               </span>
             </div>
 
