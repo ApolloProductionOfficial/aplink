@@ -33,21 +33,18 @@ const CustomCursor = () => {
         a, button, [role="button"] { cursor: pointer !important; }
       `}</style>
 
-      {/* Glow cursor with visible center dot */}
+      {/* Glow cursor - soft light like apolloproduction.studio */}
       <div
         ref={glowRef}
         className="fixed top-0 left-0 pointer-events-none z-[9999]"
         style={{ willChange: 'transform' }}
       >
-        {/* Outer glow */}
         <div 
-          className="w-32 h-32 rounded-full absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+          className="w-48 h-48 rounded-full -translate-x-1/2 -translate-y-1/2"
           style={{
-            background: 'radial-gradient(circle, hsla(199, 89%, 48%, 0.25) 0%, hsla(199, 89%, 48%, 0.08) 40%, transparent 70%)',
+            background: 'radial-gradient(circle, hsla(199, 89%, 55%, 0.35) 0%, hsla(199, 89%, 50%, 0.15) 30%, hsla(199, 89%, 48%, 0.05) 50%, transparent 70%)',
           }}
         />
-        {/* Visible center dot */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-sky-400 shadow-[0_0_12px_4px_hsla(199,89%,48%,0.6)]" />
       </div>
     </div>
   );
