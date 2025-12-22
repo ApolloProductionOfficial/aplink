@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, FileText, Users, Calendar, Clock, MapPin, Globe, Shield, User, Camera, Save, Trash2, Loader2, BarChart3, Languages, MousePointer, TrendingUp, Eye } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useTranslation } from '@/hooks/useTranslation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -83,6 +84,8 @@ interface RegisteredUser {
 const AdminPanel = () => {
   const navigate = useNavigate();
   const { user, isAdmin, isLoading } = useAuth();
+  const { t } = useTranslation();
+  const admin = (t as any).adminPanel || {};
   const [transcripts, setTranscripts] = useState<MeetingTranscript[]>([]);
   const [participants, setParticipants] = useState<MeetingParticipant[]>([]);
   const [geoData, setGeoData] = useState<Map<string, ParticipantGeoData>>(new Map());
@@ -253,7 +256,7 @@ const AdminPanel = () => {
         });
       } catch (error) {
         console.error('Error loading analytics:', error);
-        toast.error('Не удалось загрузить аналитику');
+        toast.error(admin.loadAnalyticsError || 'Не удалось загрузить аналитику');
       } finally {
         setAnalyticsLoading(false);
       }
@@ -278,7 +281,7 @@ const AdminPanel = () => {
         setRegisteredUsers(data || []);
       } catch (error) {
         console.error('Error loading users:', error);
-        toast.error('Не удалось загрузить пользователей');
+        toast.error(admin.loadUsersError || 'Не удалось загрузить пользователей');
       } finally {
         setUsersLoading(false);
       }
@@ -316,10 +319,10 @@ const AdminPanel = () => {
         if (error) throw error;
         
         setHas2FA(false);
-        toast.success('2FA отключена');
+        toast.success(admin.twoFADisabled || '2FA отключена');
       }
     } catch (err: any) {
-      toast.error(err.message || 'Не удалось отключить 2FA');
+      toast.error(err.message || admin.twoFADisableError || 'Не удалось отключить 2FA');
     } finally {
       setDisabling2FA(false);
     }
@@ -353,9 +356,9 @@ const AdminPanel = () => {
         if (error) throw error;
       }
       
-      toast.success('Профиль сохранён');
+      toast.success(admin.profileSaved || 'Профиль сохранён');
     } catch (error: any) {
-      toast.error('Ошибка сохранения: ' + error.message);
+      toast.error((admin.profileSaveError || 'Ошибка сохранения:') + ' ' + error.message);
     } finally {
       setSavingProfile(false);
     }
@@ -370,12 +373,12 @@ const AdminPanel = () => {
     if (!file || !user) return;
 
     if (!file.type.startsWith('image/')) {
-      toast.error('Пожалуйста, выберите изображение');
+      toast.error(admin.selectImage || 'Пожалуйста, выберите изображение');
       return;
     }
 
     if (file.size > 2 * 1024 * 1024) {
-      toast.error('Максимальный размер файла 2MB');
+      toast.error(admin.maxFileSize || 'Максимальный размер файла 2MB');
       return;
     }
 
@@ -389,7 +392,7 @@ const AdminPanel = () => {
       .upload(fileName, file, { upsert: true });
 
     if (uploadError) {
-      toast.error('Не удалось загрузить аватар');
+      toast.error(admin.avatarUploadError || 'Не удалось загрузить аватар');
       setUploadingAvatar(false);
       return;
     }
@@ -406,10 +409,10 @@ const AdminPanel = () => {
       .eq('user_id', user.id);
 
     if (updateError) {
-      toast.error('Не удалось обновить профиль');
+      toast.error(admin.avatarUpdateError || 'Не удалось обновить профиль');
     } else {
       setProfile(prev => prev ? { ...prev, avatar_url: newAvatarUrl } : null);
-      toast.success('Аватар обновлён');
+      toast.success(admin.avatarUpdated || 'Аватар обновлён');
     }
 
     setUploadingAvatar(false);
@@ -470,7 +473,7 @@ const AdminPanel = () => {
             </Button>
             <Badge variant="secondary" className="gap-1">
               <Shield className="w-3 h-3" />
-              Админ-панель
+              {admin.title || 'Админ-панель'}
             </Badge>
           </div>
           
@@ -482,7 +485,7 @@ const AdminPanel = () => {
               className="gap-2"
             >
               <BarChart3 className="w-4 h-4" />
-              Статистика
+              {admin.analytics || 'Статистика'}
             </Button>
             <Button
               variant={activeTab === 'transcripts' ? 'default' : 'outline'}
@@ -491,7 +494,7 @@ const AdminPanel = () => {
               className="gap-2"
             >
               <FileText className="w-4 h-4" />
-              Записи
+              {admin.transcripts || 'Записи'}
             </Button>
             <Button
               variant={activeTab === 'participants' ? 'default' : 'outline'}
@@ -500,7 +503,7 @@ const AdminPanel = () => {
               className="gap-2"
             >
               <Users className="w-4 h-4" />
-              IP-чекер
+              {admin.ipChecker || 'IP-чекер'}
             </Button>
             <Button
               variant={activeTab === 'users' ? 'default' : 'outline'}
@@ -509,7 +512,7 @@ const AdminPanel = () => {
               className="gap-2"
             >
               <Users className="w-4 h-4" />
-              Пользователи
+              {admin.users || 'Пользователи'}
             </Button>
             <Button
               variant={activeTab === 'profile' ? 'default' : 'outline'}
@@ -518,7 +521,7 @@ const AdminPanel = () => {
               className="gap-2"
             >
               <User className="w-4 h-4" />
-              Профиль
+              {admin.profile || 'Профиль'}
             </Button>
           </div>
         </div>
@@ -533,7 +536,7 @@ const AdminPanel = () => {
           <div className="space-y-6">
             <h1 className="text-2xl font-bold flex items-center gap-2">
               <BarChart3 className="w-6 h-6 text-primary" />
-              Аналитика сайта
+              {admin.siteAnalytics || 'Аналитика сайта'}
             </h1>
             
             {analyticsLoading ? (
@@ -552,7 +555,7 @@ const AdminPanel = () => {
                         </div>
                         <div>
                           <p className="text-2xl font-bold">{analyticsStats.totalPageViews}</p>
-                          <p className="text-xs text-muted-foreground">Просмотров</p>
+                          <p className="text-xs text-muted-foreground">{admin.pageViews || 'Просмотров'}</p>
                         </div>
                       </div>
                     </CardContent>
@@ -566,7 +569,7 @@ const AdminPanel = () => {
                         </div>
                         <div>
                           <p className="text-2xl font-bold">{analyticsStats.totalTranslations}</p>
-                          <p className="text-xs text-muted-foreground">Переводов</p>
+                          <p className="text-xs text-muted-foreground">{admin.translations || 'Переводов'}</p>
                         </div>
                       </div>
                     </CardContent>
