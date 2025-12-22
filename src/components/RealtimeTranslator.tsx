@@ -4,9 +4,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { 
   Languages, Mic, MicOff, Volume2, Loader2, X, Minimize2, Maximize2, 
-  Download, History, Trash2, User, Play
+  Download, History, Trash2, Play, Keyboard
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -47,23 +49,23 @@ const LANGUAGES = [
 ];
 
 const VOICES = [
-  // Female voices
-  { id: 'female-sarah', name: 'Sarah', gender: 'female', icon: '👩' },
-  { id: 'female-laura', name: 'Laura', gender: 'female', icon: '👩‍🦰' },
-  { id: 'female-alice', name: 'Alice', gender: 'female', icon: '👱‍♀️' },
-  { id: 'female-matilda', name: 'Matilda', gender: 'female', icon: '👩‍🦳' },
-  { id: 'female-lily', name: 'Lily', gender: 'female', icon: '👧' },
-  { id: 'female-jessica', name: 'Jessica', gender: 'female', icon: '👩‍💼' },
+  // Female voices - using audio wave icons
+  { id: 'female-sarah', name: 'Sarah', gender: 'female', color: 'bg-pink-500' },
+  { id: 'female-laura', name: 'Laura', gender: 'female', color: 'bg-rose-500' },
+  { id: 'female-alice', name: 'Alice', gender: 'female', color: 'bg-fuchsia-500' },
+  { id: 'female-matilda', name: 'Matilda', gender: 'female', color: 'bg-purple-500' },
+  { id: 'female-lily', name: 'Lily', gender: 'female', color: 'bg-violet-500' },
+  { id: 'female-jessica', name: 'Jessica', gender: 'female', color: 'bg-indigo-500' },
   // Male voices
-  { id: 'male-daniel', name: 'Daniel', gender: 'male', icon: '👨' },
-  { id: 'male-george', name: 'George', gender: 'male', icon: '👨‍🦰' },
-  { id: 'male-charlie', name: 'Charlie', gender: 'male', icon: '👱' },
-  { id: 'male-liam', name: 'Liam', gender: 'male', icon: '👨‍🦳' },
-  { id: 'male-brian', name: 'Brian', gender: 'male', icon: '🧔' },
-  { id: 'male-chris', name: 'Chris', gender: 'male', icon: '👨‍💼' },
+  { id: 'male-daniel', name: 'Daniel', gender: 'male', color: 'bg-blue-500' },
+  { id: 'male-george', name: 'George', gender: 'male', color: 'bg-cyan-500' },
+  { id: 'male-charlie', name: 'Charlie', gender: 'male', color: 'bg-teal-500' },
+  { id: 'male-liam', name: 'Liam', gender: 'male', color: 'bg-emerald-500' },
+  { id: 'male-brian', name: 'Brian', gender: 'male', color: 'bg-green-500' },
+  { id: 'male-chris', name: 'Chris', gender: 'male', color: 'bg-lime-500' },
   // Neutral voices
-  { id: 'neutral-river', name: 'River', gender: 'neutral', icon: '🧑' },
-  { id: 'neutral-alloy', name: 'Roger', gender: 'neutral', icon: '🧑‍🦱' },
+  { id: 'neutral-river', name: 'River', gender: 'neutral', color: 'bg-amber-500' },
+  { id: 'neutral-alloy', name: 'Roger', gender: 'neutral', color: 'bg-orange-500' },
 ];
 
 export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
@@ -84,6 +86,8 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyItems, setHistoryItems] = useState<TranslationEntry[]>([]);
   const [isPreviewingVoice, setIsPreviewingVoice] = useState(false);
+  const [pushToTalkMode, setPushToTalkMode] = useState(false);
+  const [isPushToTalkActive, setIsPushToTalkActive] = useState(false);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -92,6 +96,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
   const isPlayingRef = useRef(false);
   const translationsEndRef = useRef<HTMLDivElement>(null);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const pushToTalkRecordingRef = useRef(false);
 
   // Auto-scroll to latest translation
   useEffect(() => {
@@ -363,6 +368,8 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
 
   const startRecordingChunk = useCallback(() => {
     if (!streamRef.current) return;
+    // In push-to-talk mode, don't start auto chunks
+    if (pushToTalkMode && !pushToTalkRecordingRef.current) return;
 
     audioChunksRef.current = [];
     
@@ -384,13 +391,80 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
     mediaRecorderRef.current = mediaRecorder;
     mediaRecorder.start();
 
-    // Stop after 6 seconds to give user more time to finish speaking
-    setTimeout(() => {
-      if (mediaRecorder.state === 'recording') {
-        mediaRecorder.stop();
+    // In auto mode: stop after 10 seconds to give user more time to finish speaking
+    // In push-to-talk mode: don't auto-stop (user controls via key release)
+    if (!pushToTalkMode) {
+      setTimeout(() => {
+        if (mediaRecorder.state === 'recording') {
+          mediaRecorder.stop();
+        }
+      }, 10000);
+    }
+  }, [processAudioChunk, pushToTalkMode]);
+
+  // Push-to-talk: start recording on key down
+  const startPushToTalk = useCallback(() => {
+    if (!streamRef.current || pushToTalkRecordingRef.current) return;
+    
+    pushToTalkRecordingRef.current = true;
+    setIsPushToTalkActive(true);
+    
+    audioChunksRef.current = [];
+    
+    const mediaRecorder = new MediaRecorder(streamRef.current, {
+      mimeType: 'audio/webm;codecs=opus',
+    });
+
+    mediaRecorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        audioChunksRef.current.push(event.data);
       }
-    }, 6000);
+    };
+
+    mediaRecorder.onstop = async () => {
+      pushToTalkRecordingRef.current = false;
+      setIsPushToTalkActive(false);
+      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+      await processAudioChunk(audioBlob);
+    };
+
+    mediaRecorderRef.current = mediaRecorder;
+    mediaRecorder.start();
   }, [processAudioChunk]);
+
+  // Push-to-talk: stop recording on key up
+  const stopPushToTalk = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop();
+    }
+  }, []);
+
+  // Keyboard listener for push-to-talk (Space key)
+  useEffect(() => {
+    if (!isListening || !pushToTalkMode) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === 'Space' && !e.repeat && e.target === document.body) {
+        e.preventDefault();
+        startPushToTalk();
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        stopPushToTalk();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [isListening, pushToTalkMode, startPushToTalk, stopPushToTalk]);
 
   const startListening = useCallback(async () => {
     try {
@@ -405,21 +479,25 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
 
       streamRef.current = stream;
       setIsListening(true);
-      toast.success('Переводчик активирован');
-
-      startRecordingChunk();
-      // Increased interval to 7 seconds for better speech capture
-      recordingIntervalRef.current = setInterval(() => {
-        if (streamRef.current) {
-          startRecordingChunk();
-        }
-      }, 7000);
+      
+      if (pushToTalkMode) {
+        toast.success('Удерживайте Пробел для записи');
+      } else {
+        toast.success('Переводчик активирован');
+        startRecordingChunk();
+        // Increased interval to 12 seconds for better speech capture (less interruption)
+        recordingIntervalRef.current = setInterval(() => {
+          if (streamRef.current && !pushToTalkMode) {
+            startRecordingChunk();
+          }
+        }, 12000);
+      }
 
     } catch (error) {
       console.error('Error accessing microphone:', error);
       toast.error('Не удалось получить доступ к микрофону');
     }
-  }, [startRecordingChunk]);
+  }, [startRecordingChunk, pushToTalkMode]);
 
   const stopListening = useCallback(() => {
     if (recordingIntervalRef.current) {
@@ -518,34 +596,51 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
           </TabsList>
 
           <TabsContent value="translate" className="flex-1 flex flex-col gap-3 overflow-hidden mt-3">
-            {/* Language selectors */}
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">Исходный</label>
+            {/* Language selectors - improved styling */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                  <Languages className="h-3 w-3" />
+                  Исходный
+                </label>
                 <Select value={sourceLanguage} onValueChange={setSourceLanguage} disabled={isListening}>
-                  <SelectTrigger className="h-8 text-xs">
+                  <SelectTrigger className="h-9 text-sm bg-muted/30 border-border/50 hover:bg-muted/50 transition-colors">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="auto">🌐 Авто</SelectItem>
+                    <SelectItem value="auto" className="text-sm">
+                      <span className="flex items-center gap-2">
+                        <span className="text-base">🌍</span>
+                        <span>Авто-определение</span>
+                      </span>
+                    </SelectItem>
                     {LANGUAGES.map(lang => (
-                      <SelectItem key={lang.code} value={lang.code}>
-                        {lang.flag} {lang.name}
+                      <SelectItem key={lang.code} value={lang.code} className="text-sm">
+                        <span className="flex items-center gap-2">
+                          <span className="text-base">{lang.flag}</span>
+                          <span>{lang.name}</span>
+                        </span>
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">Перевод на</label>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                  <Languages className="h-3 w-3" />
+                  Перевод на
+                </label>
                 <Select value={targetLanguage} onValueChange={setTargetLanguage} disabled={isListening}>
-                  <SelectTrigger className="h-8 text-xs">
+                  <SelectTrigger className="h-9 text-sm bg-muted/30 border-border/50 hover:bg-muted/50 transition-colors">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {LANGUAGES.map(lang => (
-                      <SelectItem key={lang.code} value={lang.code}>
-                        {lang.flag} {lang.name}
+                      <SelectItem key={lang.code} value={lang.code} className="text-sm">
+                        <span className="flex items-center gap-2">
+                          <span className="text-base">{lang.flag}</span>
+                          <span>{lang.name}</span>
+                        </span>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -553,40 +648,49 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
               </div>
             </div>
 
-            {/* Voice selector with preview */}
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground flex items-center gap-1">
-                <User className="h-3 w-3" />
+            {/* Voice selector with preview - improved styling */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                <Volume2 className="h-3 w-3" />
                 Голос озвучки
               </label>
               <div className="flex gap-2">
                 <Select value={selectedVoice} onValueChange={setSelectedVoice} disabled={isListening}>
-                  <SelectTrigger className="h-8 text-xs flex-1">
+                  <SelectTrigger className="h-9 text-sm flex-1 bg-muted/30 border-border/50 hover:bg-muted/50 transition-colors">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="header-female" disabled className="text-xs text-muted-foreground font-semibold">
-                      — Женские голоса —
-                    </SelectItem>
+                  <SelectContent className="max-h-[300px]">
+                    <div className="px-2 py-1.5 text-xs font-semibold text-pink-500/80 bg-pink-500/5">
+                      Женские голоса
+                    </div>
                     {VOICES.filter(v => v.gender === 'female').map(voice => (
-                      <SelectItem key={voice.id} value={voice.id}>
-                        {voice.icon} {voice.name}
+                      <SelectItem key={voice.id} value={voice.id} className="text-sm">
+                        <span className="flex items-center gap-2.5">
+                          <span className={cn("w-2.5 h-2.5 rounded-full shadow-sm", voice.color)} />
+                          <span>{voice.name}</span>
+                        </span>
                       </SelectItem>
                     ))}
-                    <SelectItem value="header-male" disabled className="text-xs text-muted-foreground font-semibold">
-                      — Мужские голоса —
-                    </SelectItem>
+                    <div className="px-2 py-1.5 text-xs font-semibold text-blue-500/80 bg-blue-500/5 mt-1">
+                      Мужские голоса
+                    </div>
                     {VOICES.filter(v => v.gender === 'male').map(voice => (
-                      <SelectItem key={voice.id} value={voice.id}>
-                        {voice.icon} {voice.name}
+                      <SelectItem key={voice.id} value={voice.id} className="text-sm">
+                        <span className="flex items-center gap-2.5">
+                          <span className={cn("w-2.5 h-2.5 rounded-full shadow-sm", voice.color)} />
+                          <span>{voice.name}</span>
+                        </span>
                       </SelectItem>
                     ))}
-                    <SelectItem value="header-neutral" disabled className="text-xs text-muted-foreground font-semibold">
-                      — Нейтральные голоса —
-                    </SelectItem>
+                    <div className="px-2 py-1.5 text-xs font-semibold text-amber-500/80 bg-amber-500/5 mt-1">
+                      Нейтральные голоса
+                    </div>
                     {VOICES.filter(v => v.gender === 'neutral').map(voice => (
-                      <SelectItem key={voice.id} value={voice.id}>
-                        {voice.icon} {voice.name}
+                      <SelectItem key={voice.id} value={voice.id} className="text-sm">
+                        <span className="flex items-center gap-2.5">
+                          <span className={cn("w-2.5 h-2.5 rounded-full shadow-sm", voice.color)} />
+                          <span>{voice.name}</span>
+                        </span>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -594,7 +698,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-8 px-3"
+                  className="h-9 px-3 bg-muted/30 border-border/50 hover:bg-muted/50"
                   onClick={previewVoice}
                   disabled={isPreviewingVoice || isListening}
                   title="Прослушать голос"
@@ -608,11 +712,27 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
               </div>
             </div>
 
+            {/* Push-to-talk toggle */}
+            <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/50 border border-border/50">
+              <div className="flex items-center gap-2">
+                <Keyboard className="h-4 w-4 text-muted-foreground" />
+                <Label htmlFor="ptt-mode" className="text-xs cursor-pointer">
+                  Push-to-talk (Пробел)
+                </Label>
+              </div>
+              <Switch
+                id="ptt-mode"
+                checked={pushToTalkMode}
+                onCheckedChange={setPushToTalkMode}
+                disabled={isListening}
+              />
+            </div>
+
             {/* Start/Stop button */}
             <Button
               variant={isListening ? "destructive" : "default"}
               onClick={toggleListening}
-              className="gap-2 h-10"
+              className={cn("gap-2 h-10", isPushToTalkActive && "ring-2 ring-primary ring-offset-2 ring-offset-background")}
             >
               {isListening ? (
                 <>
@@ -629,8 +749,9 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
 
             {/* Info text */}
             <p className="text-xs text-muted-foreground text-center">
-              Говорите в микрофон — перевод воспроизводится автоматически. 
-              Только вы слышите озвучку перевода.
+              {pushToTalkMode 
+                ? 'Удерживайте Пробел и говорите — отпустите для перевода.'
+                : 'Говорите в микрофон — перевод воспроизводится автоматически.'}
             </p>
 
             {/* Subtitles area */}
