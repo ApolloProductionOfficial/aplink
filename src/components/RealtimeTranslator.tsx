@@ -800,252 +800,223 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="translate" className="flex-1 flex flex-col gap-3 overflow-hidden mt-3">
-            {/* Language selectors - improved styling */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                  <Languages className="h-3 w-3" />
-                  Исходный
-                </label>
-                <Select value={sourceLanguage} onValueChange={setSourceLanguage} disabled={isListening}>
-                  <SelectTrigger className="h-9 text-sm bg-muted/30 border-border/50 hover:bg-muted/50 transition-colors min-w-0">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="auto" className="text-sm">
-                      <span className="flex items-center gap-2 whitespace-nowrap">
-                        <span className="text-base">🌍</span>
-                        <span>Автоопределение</span>
+          <TabsContent value="translate" className="flex-1 flex flex-col gap-2.5 overflow-hidden mt-3">
+            {/* Language selectors - unified compact style */}
+            <div className="grid grid-cols-2 gap-2">
+              <Select value={sourceLanguage} onValueChange={setSourceLanguage} disabled={isListening}>
+                <SelectTrigger className="h-10 text-sm bg-muted/40 border-border/40 hover:bg-muted/60 transition-colors">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-base shrink-0">
+                      {sourceLanguage === 'auto' ? '🌍' : LANGUAGES.find(l => l.code === sourceLanguage)?.flag || '🌍'}
+                    </span>
+                    <span className="truncate">
+                      {sourceLanguage === 'auto' ? 'Автоопределение' : LANGUAGES.find(l => l.code === sourceLanguage)?.name}
+                    </span>
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="auto">
+                    <span className="flex items-center gap-2">
+                      <span className="text-base">🌍</span>
+                      <span>Автоопределение</span>
+                    </span>
+                  </SelectItem>
+                  {LANGUAGES.map(lang => (
+                    <SelectItem key={lang.code} value={lang.code}>
+                      <span className="flex items-center gap-2">
+                        <span className="text-base">{lang.flag}</span>
+                        <span>{lang.name}</span>
                       </span>
                     </SelectItem>
-                    {LANGUAGES.map(lang => (
-                      <SelectItem key={lang.code} value={lang.code} className="text-sm">
-                        <span className="flex items-center gap-2">
-                          <span className="text-base">{lang.flag}</span>
-                          <span>{lang.name}</span>
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                  <Languages className="h-3 w-3" />
-                  Перевод на
-                </label>
-                <Select value={targetLanguage} onValueChange={setTargetLanguage} disabled={isListening}>
-                  <SelectTrigger className="h-9 text-sm bg-muted/30 border-border/50 hover:bg-muted/50 transition-colors min-w-0">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {LANGUAGES.map(lang => (
-                      <SelectItem key={lang.code} value={lang.code} className="text-sm">
-                        <span className="flex items-center gap-2">
-                          <span className="text-base">{lang.flag}</span>
-                          <span>{lang.name}</span>
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+                  ))}
+                </SelectContent>
+              </Select>
 
-            {/* Voice selector with preview - improved styling */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                <Volume2 className="h-3 w-3" />
-                Голос озвучки
-              </label>
-              <div className="flex gap-2">
-                <Select value={selectedVoice} onValueChange={setSelectedVoice} disabled={isListening}>
-                  <SelectTrigger className="h-9 text-sm flex-1 min-w-0 bg-muted/30 border-border/50 hover:bg-muted/50 transition-colors">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-[300px]">
-                    <div className="px-2 py-1.5 text-xs font-semibold text-pink-500/80 bg-pink-500/5">
-                      Женские голоса
-                    </div>
-                    {VOICES.filter(v => v.gender === 'female').map(voice => (
-                      <SelectItem key={voice.id} value={voice.id} className="text-sm">
-                        <span className="flex items-center gap-2.5">
-                          <span className={cn("w-2.5 h-2.5 rounded-full shadow-sm", voice.color)} />
-                          <span>{voice.name}</span>
-                        </span>
-                      </SelectItem>
-                    ))}
-                    <div className="px-2 py-1.5 text-xs font-semibold text-blue-500/80 bg-blue-500/5 mt-1">
-                      Мужские голоса
-                    </div>
-                    {VOICES.filter(v => v.gender === 'male').map(voice => (
-                      <SelectItem key={voice.id} value={voice.id} className="text-sm">
-                        <span className="flex items-center gap-2.5">
-                          <span className={cn("w-2.5 h-2.5 rounded-full shadow-sm", voice.color)} />
-                          <span>{voice.name}</span>
-                        </span>
-                      </SelectItem>
-                    ))}
-                    <div className="px-2 py-1.5 text-xs font-semibold text-amber-500/80 bg-amber-500/5 mt-1">
-                      Нейтральные голоса
-                    </div>
-                    {VOICES.filter(v => v.gender === 'neutral').map(voice => (
-                      <SelectItem key={voice.id} value={voice.id} className="text-sm">
-                        <span className="flex items-center gap-2.5">
-                          <span className={cn("w-2.5 h-2.5 rounded-full shadow-sm", voice.color)} />
-                          <span>{voice.name}</span>
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-9 px-3 bg-muted/30 border-border/50 hover:bg-muted/50"
-                  onClick={previewVoice}
-                  disabled={isPreviewingVoice || isListening}
-                  title="Прослушать голос"
-                >
-                  {isPreviewingVoice ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Play className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-            </div>
-
-            {/* VAD settings (VAD is always enabled) */}
-            <Collapsible open={vadSettingsOpen} onOpenChange={setVadSettingsOpen}>
-              <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/50 border border-border/50">
-                <div className="flex items-center gap-2 flex-1">
-                  <Activity className={cn("h-4 w-4", isSpeaking && isListening ? "text-green-500 animate-pulse" : "text-muted-foreground")} />
-                  <span className="text-xs">VAD (определение речи)</span>
-                  {isSpeaking && isListening && (
-                    <Badge variant="outline" className="text-[10px] h-4 px-1 border-green-500/50 text-green-500">
-                      Говорите...
-                    </Badge>
-                  )}
-                </div>
-                <CollapsibleTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-6 w-6">
-                    <Settings2 className="h-3.5 w-3.5" />
-                  </Button>
-                </CollapsibleTrigger>
-              </div>
-              
-              <CollapsibleContent className="mt-2 space-y-3 px-3 py-2 rounded-lg bg-muted/30 border border-border/30">
-                {/* Audio level indicator */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-muted-foreground">Уровень звука</span>
-                    <span className="text-[10px] text-muted-foreground">{Math.round(audioLevel)}%</span>
+              <Select value={targetLanguage} onValueChange={setTargetLanguage} disabled={isListening}>
+                <SelectTrigger className="h-10 text-sm bg-muted/40 border-border/40 hover:bg-muted/60 transition-colors">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-base shrink-0">
+                      {LANGUAGES.find(l => l.code === targetLanguage)?.flag || '🌍'}
+                    </span>
+                    <span className="truncate">
+                      {LANGUAGES.find(l => l.code === targetLanguage)?.name}
+                    </span>
                   </div>
-                  <div className="h-2 bg-muted rounded-full overflow-hidden">
-                    <div 
-                      className={cn(
-                        "h-full transition-all duration-75 rounded-full",
-                        audioLevel > vadThreshold * 500 ? "bg-green-500" : "bg-primary/50"
+                </SelectTrigger>
+                <SelectContent>
+                  {LANGUAGES.map(lang => (
+                    <SelectItem key={lang.code} value={lang.code}>
+                      <span className="flex items-center gap-2">
+                        <span className="text-base">{lang.flag}</span>
+                        <span>{lang.name}</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Voice selector - unified style */}
+            <div className="flex gap-2">
+              <Select value={selectedVoice} onValueChange={setSelectedVoice} disabled={isListening}>
+                <SelectTrigger className="h-10 text-sm flex-1 bg-muted/40 border-border/40 hover:bg-muted/60 transition-colors">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Volume2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <span className="truncate">{VOICES.find(v => v.id === selectedVoice)?.name || 'Голос'}</span>
+                  </div>
+                </SelectTrigger>
+                <SelectContent className="max-h-[280px]">
+                  <div className="px-2 py-1 text-[10px] font-semibold text-pink-500/80 uppercase tracking-wide">Женские</div>
+                  {VOICES.filter(v => v.gender === 'female').map(voice => (
+                    <SelectItem key={voice.id} value={voice.id}>
+                      <span className="flex items-center gap-2">
+                        <span className={cn("w-2 h-2 rounded-full", voice.color)} />
+                        <span>{voice.name}</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                  <div className="px-2 py-1 text-[10px] font-semibold text-blue-500/80 uppercase tracking-wide mt-1">Мужские</div>
+                  {VOICES.filter(v => v.gender === 'male').map(voice => (
+                    <SelectItem key={voice.id} value={voice.id}>
+                      <span className="flex items-center gap-2">
+                        <span className={cn("w-2 h-2 rounded-full", voice.color)} />
+                        <span>{voice.name}</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                  <div className="px-2 py-1 text-[10px] font-semibold text-amber-500/80 uppercase tracking-wide mt-1">Нейтральные</div>
+                  {VOICES.filter(v => v.gender === 'neutral').map(voice => (
+                    <SelectItem key={voice.id} value={voice.id}>
+                      <span className="flex items-center gap-2">
+                        <span className={cn("w-2 h-2 rounded-full", voice.color)} />
+                        <span>{voice.name}</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-10 w-10 shrink-0 bg-muted/40 border-border/40 hover:bg-muted/60"
+                onClick={previewVoice}
+                disabled={isPreviewingVoice || isListening}
+                title="Прослушать голос"
+              >
+                {isPreviewingVoice ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+              </Button>
+            </div>
+
+            {/* Mode selector - unified style */}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => !isListening && setPushToTalkMode(false)}
+                disabled={isListening}
+                className={cn(
+                  "h-10 px-3 text-sm font-medium rounded-md transition-all flex items-center justify-center gap-2",
+                  !pushToTalkMode 
+                    ? "bg-primary text-primary-foreground shadow-sm" 
+                    : "bg-muted/40 text-muted-foreground border border-border/40 hover:bg-muted/60 disabled:opacity-50"
+                )}
+              >
+                <Activity className="h-4 w-4" />
+                Авто
+              </button>
+              <button
+                type="button"
+                onClick={() => !isListening && setPushToTalkMode(true)}
+                disabled={isListening}
+                className={cn(
+                  "h-10 px-3 text-sm font-medium rounded-md transition-all flex items-center justify-center gap-2",
+                  pushToTalkMode 
+                    ? "bg-primary text-primary-foreground shadow-sm" 
+                    : "bg-muted/40 text-muted-foreground border border-border/40 hover:bg-muted/60 disabled:opacity-50"
+                )}
+              >
+                <Keyboard className="h-4 w-4" />
+                Пробел
+              </button>
+            </div>
+
+            {/* VAD settings - compact, hidden by default behind gear icon */}
+            {!pushToTalkMode && (
+              <Collapsible open={vadSettingsOpen} onOpenChange={setVadSettingsOpen}>
+                <CollapsibleTrigger asChild>
+                  <button 
+                    type="button"
+                    className="w-full flex items-center justify-between py-1.5 px-2 text-xs text-muted-foreground hover:text-foreground transition-colors rounded"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <Settings2 className="h-3 w-3" />
+                      <span>Настройки VAD</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      {isSpeaking && isListening && (
+                        <span className="flex items-center gap-1 text-green-500 text-[10px]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                          Говорите
+                        </span>
                       )}
-                      style={{ width: `${audioLevel}%` }}
+                      <Settings2 className={cn("h-3 w-3 transition-transform", vadSettingsOpen && "rotate-90")} />
+                    </div>
+                  </button>
+                </CollapsibleTrigger>
+                
+                <CollapsibleContent className="mt-1.5 space-y-2 p-2 rounded-md bg-muted/30 border border-border/30">
+                  {/* Audio level indicator */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                      <span>Уровень</span>
+                      <span>{Math.round(audioLevel)}%</span>
+                    </div>
+                    <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                      <div 
+                        className={cn(
+                          "h-full transition-all duration-75 rounded-full",
+                          audioLevel > vadThreshold * 500 ? "bg-green-500" : "bg-primary/50"
+                        )}
+                        style={{ width: `${audioLevel}%` }}
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Threshold slider */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                      <span>Порог</span>
+                      <span className="font-mono">{(vadThreshold * 100).toFixed(1)}%</span>
+                    </div>
+                    <Slider
+                      value={[vadThreshold * 100]}
+                      onValueChange={([v]) => setVadThreshold(v / 100)}
+                      min={0.5}
+                      max={10}
+                      step={0.1}
+                      className="h-3"
+                      disabled={isListening}
                     />
                   </div>
-                  <div 
-                    className="relative h-0.5 -mt-1"
-                    style={{ marginLeft: `${Math.min(100, vadThreshold * 500)}%` }}
-                  >
-                    <div className="absolute w-0.5 h-3 -top-1 bg-destructive rounded" title="Порог" />
+                  
+                  {/* Silence duration slider */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                      <span>Пауза</span>
+                      <span className="font-mono">{(silenceDuration / 1000).toFixed(1)}с</span>
+                    </div>
+                    <Slider
+                      value={[silenceDuration]}
+                      onValueChange={([v]) => setSilenceDuration(v)}
+                      min={500}
+                      max={4000}
+                      step={100}
+                      className="h-3"
+                      disabled={isListening}
+                    />
                   </div>
-                </div>
-                
-                {/* Threshold slider */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-muted-foreground">Порог громкости</span>
-                    <span className="text-[10px] font-mono text-muted-foreground">{(vadThreshold * 100).toFixed(1)}%</span>
-                  </div>
-                  <Slider
-                    value={[vadThreshold * 100]}
-                    onValueChange={([v]) => setVadThreshold(v / 100)}
-                    min={0.5}
-                    max={10}
-                    step={0.1}
-                    className="h-4"
-                    disabled={isListening}
-                  />
-                </div>
-                
-                {/* Silence duration slider */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-muted-foreground">Пауза для отправки</span>
-                    <span className="text-[10px] font-mono text-muted-foreground">{(silenceDuration / 1000).toFixed(1)}с</span>
-                  </div>
-                  <Slider
-                    value={[silenceDuration]}
-                    onValueChange={([v]) => setSilenceDuration(v)}
-                    min={500}
-                    max={4000}
-                    step={100}
-                    className="h-4"
-                    disabled={isListening}
-                  />
-                </div>
-                
-                {/* Min speech duration slider */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-muted-foreground">Мин. длит. речи</span>
-                    <span className="text-[10px] font-mono text-muted-foreground">{minSpeechDuration}мс</span>
-                  </div>
-                  <Slider
-                    value={[minSpeechDuration]}
-                    onValueChange={([v]) => setMinSpeechDuration(v)}
-                    min={100}
-                    max={1000}
-                    step={50}
-                    className="h-4"
-                    disabled={isListening}
-                  />
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-
-            {/* Mode selector */}
-            <div className="rounded-lg border border-border/50 overflow-hidden">
-              <div className="grid grid-cols-2">
-                <button
-                  type="button"
-                  onClick={() => !isListening && setPushToTalkMode(false)}
-                  disabled={isListening}
-                  className={cn(
-                    "py-2.5 px-3 text-xs font-medium transition-colors flex items-center justify-center gap-1.5",
-                    !pushToTalkMode 
-                      ? "bg-primary text-primary-foreground" 
-                      : "bg-muted/50 text-muted-foreground hover:bg-muted disabled:opacity-50"
-                  )}
-                >
-                  <Activity className="h-3.5 w-3.5" />
-                  Авто (VAD)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => !isListening && setPushToTalkMode(true)}
-                  disabled={isListening}
-                  className={cn(
-                    "py-2.5 px-3 text-xs font-medium transition-colors flex items-center justify-center gap-1.5",
-                    pushToTalkMode 
-                      ? "bg-primary text-primary-foreground" 
-                      : "bg-muted/50 text-muted-foreground hover:bg-muted disabled:opacity-50"
-                  )}
-                >
-                  <Keyboard className="h-3.5 w-3.5" />
-                  Пробел (PTT)
-                </button>
-              </div>
-            </div>
+                </CollapsibleContent>
+              </Collapsible>
+            )}
 
             {/* Live audio level bar when listening (VAD mode) */}
             {isListening && !pushToTalkMode && (
