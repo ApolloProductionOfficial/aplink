@@ -52,7 +52,11 @@ const MeetingRoom = () => {
   const { toast } = useToast();
   const { user, isLoading: authLoading } = useAuth();
   const { sendNotification } = usePushNotifications();
-  const { isRecording, startRecording, stopRecording } = useAudioRecorder();
+  const { isRecording, startRecording, stopRecording, getAudioBlob } = useAudioRecorder();
+  const isRecordingRef = useRef(false);
+  useEffect(() => {
+    isRecordingRef.current = isRecording;
+  }, [isRecording]);
   const { playConnectedSound, playDisconnectedSound, playReconnectingSound } = useConnectionSounds();
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [showTranslator, setShowTranslator] = useState(false);
@@ -259,26 +263,17 @@ const MeetingRoom = () => {
       const formData = new FormData();
       formData.append('audio', audioBlob, 'recording.webm');
       
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-transcribe`,
-        {
-          method: 'POST',
-          headers: {
-            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: formData,
-        }
-      );
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Transcription failed');
+      const { data, error } = await supabase.functions.invoke('elevenlabs-transcribe', {
+        body: formData,
+      });
+
+      if (error) {
+        throw error;
       }
-      
-      const data = await response.json();
-      console.log('Transcription result:', data.text?.substring(0, 100));
-      return data.text || '';
+
+      const text = (data as any)?.text || '';
+      console.log('Transcription result:', text?.substring(0, 100));
+      return text;
     } catch (error) {
       console.error('Transcription error:', error);
       throw error;
@@ -334,57 +329,57 @@ const MeetingRoom = () => {
 
   // Save meeting transcript and summary - always stop recording if active
   const saveMeetingTranscript = async () => {
-    // Always stop recording if it's active, even if hasStartedRecordingRef wasn't set
-    if (isRecording) {
+    // If recording was started, try to get audio even if the recorder already stopped (e.g., hangup ends tracks)
+    let audioBlob: Blob | null = null;
+
+    if (isRecordingRef.current) {
       console.log('Recording is active, stopping and transcribing...');
-      const audioBlob = await stopRecording();
-      if (audioBlob && audioBlob.size > 0) {
-        toast({
-          title: "Запись остановлена",
-          description: "Транскрибируем созвон...",
-        });
-        try {
-          const transcript = await transcribeAudio(audioBlob);
-          if (transcript) {
-            transcriptRef.current.push(`[Транскрипция] ${userName}: ${transcript}`);
-            toast({
-              title: "Транскрипция готова",
-              description: "Конспект сохранён",
-            });
-          }
-        } catch (error) {
-          console.error('Final transcription failed:', error);
-          toast({
-            title: "Ошибка транскрипции",
-            description: "Не удалось транскрибировать аудио",
-            variant: "destructive",
-          });
-        }
-      }
-      // Mark that recording was processed
-      hasStartedRecordingRef.current = true;
+      audioBlob = await stopRecording();
+    } else if (hasStartedRecordingRef.current) {
+      audioBlob = getAudioBlob();
     }
-    
+
+    if (audioBlob && audioBlob.size > 0) {
+      toast({
+        title: 'Запись обрабатывается',
+        description: 'Транскрибируем созвон...',
+      });
+
+      try {
+        const transcript = await transcribeAudio(audioBlob);
+        if (transcript) {
+          transcriptRef.current.push(`[Транскрипция] ${userName}: ${transcript}`);
+        }
+      } catch (error) {
+        console.error('Final transcription failed:', error);
+        toast({
+          title: 'Ошибка транскрипции',
+          description: 'Не удалось транскрибировать аудио',
+          variant: 'destructive',
+        });
+      }
+    }
+
     // Only save if user started recording at some point
     if (!hasStartedRecordingRef.current) {
       console.log('Recording was not started, skipping transcript save');
       return;
     }
-    
+
     // Only save if user is authenticated
     if (!user) {
       console.log('User not authenticated, skipping transcript save');
       return;
     }
-    
+
     // Only save if there's actual transcript content
     if (transcriptRef.current.length === 0) {
       console.log('No transcript content, skipping save');
       return;
     }
-    
+
     const transcriptText = transcriptRef.current.join('\n');
-    
+
     try {
       const { data, error } = await supabase.functions.invoke('summarize-meeting', {
         body: {
@@ -392,19 +387,24 @@ const MeetingRoom = () => {
           roomName: roomDisplayName,
           transcript: transcriptText,
           participants: Array.from(participantsRef.current),
-          userId: user.id
-        }
+          userId: user.id,
+        },
       });
-      
+
       if (error) throw error;
-      
+
       console.log('Meeting saved:', data);
       toast({
-        title: "Встреча сохранена",
-        description: "Конспект доступен в личном кабинете",
+        title: 'Встреча сохранена',
+        description: 'Конспект доступен в личном кабинете',
       });
     } catch (error) {
       console.error('Failed to save meeting:', error);
+      toast({
+        title: 'Ошибка сохранения',
+        description: 'Не удалось сохранить созвон. Попробуйте ещё раз.',
+        variant: 'destructive',
+      });
     }
   };
 
