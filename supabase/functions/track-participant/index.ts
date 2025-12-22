@@ -49,9 +49,11 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
     
     if (action === 'join') {
-      // For guests without userId, generate a temporary guest ID
-      const finalUserId = userId || `guest-${crypto.randomUUID()}`;
-      
+      // Validate userId is a proper UUID; for guests generate a valid UUID
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const isValidUUID = userId && uuidRegex.test(userId);
+      const finalUserId = isValidUUID ? userId : crypto.randomUUID();
+
       // Insert new participant record
       const { data, error } = await supabase
         .from('meeting_participants')
@@ -62,7 +64,7 @@ serve(async (req) => {
         })
         .select()
         .single();
-      
+
       if (error) {
         console.error('Insert error:', error);
         throw error;
