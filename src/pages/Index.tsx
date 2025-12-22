@@ -19,7 +19,7 @@ import SplashScreen from "@/components/SplashScreen";
 import HowItWorks from "@/components/HowItWorks";
 import FeatureCards from "@/components/FeatureCards";
 import PerformanceMonitor from "@/components/PerformanceMonitor";
-import apolloLogo from "@/assets/apollo-logo.mp4";
+import logoVideo from "@/assets/logo-video.mov";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -260,7 +260,7 @@ const Index = () => {
                 <div className="absolute inset-0 rounded-full bg-primary/40 blur-md animate-pulse" />
                 <div className="relative w-10 h-10 md:w-12 md:h-12 rounded-full overflow-hidden ring-2 ring-primary/50 shadow-[0_0_20px_hsl(var(--primary)/0.6)]">
                   <video 
-                    src={apolloLogo} 
+                    src={logoVideo} 
                     autoPlay 
                     loop 
                     muted 

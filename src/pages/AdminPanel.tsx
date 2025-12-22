@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, FileText, Users, Calendar, Clock, MapPin, Globe, Shield, User, Camera, Save, Trash2, Loader2, BarChart3, Languages, MousePointer, TrendingUp, Eye } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -99,6 +99,8 @@ const AdminPanel = () => {
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [registeredUsers, setRegisteredUsers] = useState<RegisteredUser[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Redirect if not admin
   useEffect(() => {
@@ -359,6 +361,59 @@ const AdminPanel = () => {
     }
   };
 
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Пожалуйста, выберите изображение');
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Максимальный размер файла 2MB');
+      return;
+    }
+
+    setUploadingAvatar(true);
+
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${user.id}/avatar.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(fileName, file, { upsert: true });
+
+    if (uploadError) {
+      toast.error('Не удалось загрузить аватар');
+      setUploadingAvatar(false);
+      return;
+    }
+
+    const { data: urlData } = supabase.storage
+      .from('avatars')
+      .getPublicUrl(fileName);
+
+    const newAvatarUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ avatar_url: newAvatarUrl })
+      .eq('user_id', user.id);
+
+    if (updateError) {
+      toast.error('Не удалось обновить профиль');
+    } else {
+      setProfile(prev => prev ? { ...prev, avatar_url: newAvatarUrl } : null);
+      toast.success('Аватар обновлён');
+    }
+
+    setUploadingAvatar(false);
+  };
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('ru-RU', {
@@ -884,21 +939,31 @@ const AdminPanel = () => {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="flex justify-center">
-                  <div className="relative">
+                  <div
+                    onClick={handleAvatarClick}
+                    className="relative w-24 h-24 cursor-pointer group"
+                  >
                     <Avatar className="w-24 h-24">
                       <AvatarImage src={profile?.avatar_url || ''} />
                       <AvatarFallback className="text-2xl bg-primary/20 text-primary">
                         {displayName?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'}
                       </AvatarFallback>
                     </Avatar>
-                    <Button
-                      size="icon"
-                      variant="secondary"
-                      className="absolute bottom-0 right-0 rounded-full w-8 h-8"
-                    >
-                      <Camera className="w-4 h-4" />
-                    </Button>
+                    <div className="absolute inset-0 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      {uploadingAvatar ? (
+                        <Loader2 className="w-6 h-6 animate-spin text-white" />
+                      ) : (
+                        <Camera className="w-6 h-6 text-white" />
+                      )}
+                    </div>
                   </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarChange}
+                    className="hidden"
+                  />
                 </div>
                 
                 <div className="space-y-4">

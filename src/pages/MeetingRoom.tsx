@@ -11,7 +11,7 @@ import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 import { useConnectionSounds } from "@/hooks/useConnectionSounds";
 import { RealtimeTranslator } from "@/components/RealtimeTranslator";
-import apolloLogo from "@/assets/apollo-logo.mp4";
+import logoVideo from "@/assets/logo-video.mov";
 import CustomCursor from "@/components/CustomCursor";
 
 declare global {
@@ -1224,7 +1224,7 @@ const MeetingRoom = () => {
               <div className="absolute inset-0 rounded-full bg-primary/40 blur-md animate-pulse" />
               <div className="relative w-12 h-12 rounded-full overflow-hidden ring-2 ring-primary/50 shadow-[0_0_20px_hsl(var(--primary)/0.6)]">
                 <video 
-                  src={apolloLogo} 
+                  src={logoVideo} 
                   autoPlay 
                   loop 
                   muted 
