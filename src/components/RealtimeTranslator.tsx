@@ -4,7 +4,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { 
   Languages, Mic, MicOff, Volume2, Loader2, X, Minimize2, Maximize2, 
@@ -564,6 +563,12 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
       pushToTalkRecordingRef.current = false;
       setIsPushToTalkActive(false);
       const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+      
+      // In PTT mode, stop mic after each recording so user knows it's not always on
+      if (pushToTalkMode && streamRef.current) {
+        stopListeningInternal();
+      }
+      
       await processAudioChunk(audioBlob);
     };
 
@@ -658,18 +663,14 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
     };
   }, [pushToTalkMode, isListening, startListening, startPushToTalk, stopPushToTalk]);
 
-  const stopListening = useCallback(() => {
+  // Internal stop (doesn't process current audio, just cleans up)
+  const stopListeningInternal = useCallback(() => {
     if (recordingIntervalRef.current) {
       clearInterval(recordingIntervalRef.current);
       recordingIntervalRef.current = null;
     }
 
-    // Stop VAD
     stopVad();
-
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-      mediaRecorderRef.current.stop();
-    }
 
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
@@ -678,6 +679,13 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
 
     setIsListening(false);
   }, [stopVad]);
+
+  const stopListening = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop();
+    }
+    stopListeningInternal();
+  }, [stopListeningInternal]);
 
   const toggleListening = useCallback(() => {
     if (isListening) {
@@ -702,8 +710,14 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
         <CardContent className="p-3 flex items-center gap-3">
           <div className="flex items-center gap-2">
             <Languages className="h-4 w-4 text-primary" />
-            {isListening && (
+            {pushToTalkMode && isPushToTalkActive && (
               <Badge variant="destructive" className="animate-pulse">
+                <Mic className="h-3 w-3 mr-1" />
+                REC
+              </Badge>
+            )}
+            {!pushToTalkMode && isListening && (
+              <Badge variant="default" className="bg-green-600">
                 <Mic className="h-3 w-3 mr-1" />
                 LIVE
               </Badge>
@@ -731,8 +745,13 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
           <div className="flex items-center gap-2">
             <Languages className="h-5 w-5 text-primary" />
             <span className="font-semibold text-sm">Переводчик</span>
-            {isListening && (
+            {pushToTalkMode && isPushToTalkActive && (
               <Badge variant="destructive" className="animate-pulse text-xs">
+                REC
+              </Badge>
+            )}
+            {!pushToTalkMode && isListening && (
+              <Badge variant="default" className="text-xs bg-green-600">
                 LIVE
               </Badge>
             )}
@@ -970,34 +989,44 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
               </CollapsibleContent>
             </Collapsible>
 
-            {/* Push-to-talk toggle */}
-            <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/50 border border-border/50">
-              <div className="flex items-center gap-2">
-                <Keyboard className={cn("h-4 w-4", isPushToTalkActive ? "text-green-500 animate-pulse" : "text-muted-foreground")} />
-                <Label htmlFor="ptt-mode" className="text-xs cursor-pointer">
-                  Удерживайте Пробел, чтобы говорить
-                </Label>
-                {isPushToTalkActive && (
-                  <Badge variant="outline" className="text-[10px] h-4 px-1 border-green-500/50 text-green-500">
-                    Запись...
-                  </Badge>
-                )}
+            {/* Mode selector */}
+            <div className="rounded-lg border border-border/50 overflow-hidden">
+              <div className="grid grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => !isListening && setPushToTalkMode(false)}
+                  disabled={isListening}
+                  className={cn(
+                    "py-2.5 px-3 text-xs font-medium transition-colors flex items-center justify-center gap-1.5",
+                    !pushToTalkMode 
+                      ? "bg-primary text-primary-foreground" 
+                      : "bg-muted/50 text-muted-foreground hover:bg-muted disabled:opacity-50"
+                  )}
+                >
+                  <Activity className="h-3.5 w-3.5" />
+                  Авто (VAD)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => !isListening && setPushToTalkMode(true)}
+                  disabled={isListening}
+                  className={cn(
+                    "py-2.5 px-3 text-xs font-medium transition-colors flex items-center justify-center gap-1.5",
+                    pushToTalkMode 
+                      ? "bg-primary text-primary-foreground" 
+                      : "bg-muted/50 text-muted-foreground hover:bg-muted disabled:opacity-50"
+                  )}
+                >
+                  <Keyboard className="h-3.5 w-3.5" />
+                  Пробел (PTT)
+                </button>
               </div>
-              <Switch
-                id="ptt-mode"
-                checked={pushToTalkMode}
-                onCheckedChange={setPushToTalkMode}
-                disabled={isListening}
-              />
             </div>
 
-            {/* Live audio level bar when listening */}
-            {isListening && (
+            {/* Live audio level bar when listening (VAD mode) */}
+            {isListening && !pushToTalkMode && (
               <div className="flex items-center gap-2 px-1">
-                <Mic className={cn(
-                  "h-3.5 w-3.5 shrink-0",
-                  pushToTalkMode ? (isPushToTalkActive ? "text-green-500" : "text-muted-foreground") : (isSpeaking ? "text-green-500" : "text-muted-foreground")
-                )} />
+                <Mic className={cn("h-3.5 w-3.5 shrink-0", isSpeaking ? "text-green-500" : "text-muted-foreground")} />
                 <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
                   <div 
                     className={cn(
@@ -1010,31 +1039,40 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
               </div>
             )}
 
-            {/* Start/Stop button */}
-            <Button
-              variant={isListening ? "destructive" : "default"}
-              onClick={toggleListening}
-              className={cn("gap-2 h-10", isPushToTalkActive && "ring-2 ring-primary ring-offset-2 ring-offset-background")}
-            >
-              {isListening ? (
-                <>
-                  <MicOff className="h-4 w-4" />
-                  Остановить
-                </>
-              ) : (
-                <>
-                  <Mic className="h-4 w-4" />
-                  Начать перевод
-                </>
-              )}
-            </Button>
+            {/* PTT visual feedback when recording */}
+            {pushToTalkMode && isPushToTalkActive && (
+              <div className="flex items-center justify-center gap-2 py-3 rounded-lg bg-green-500/10 border border-green-500/30">
+                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
+                <span className="text-sm font-medium text-green-600">Записываю...</span>
+              </div>
+            )}
 
-            {/* Info text */}
-            <p className="text-xs text-muted-foreground text-center">
-              {pushToTalkMode 
-                ? 'Удерживайте Пробел и говорите — отпустите для перевода.'
-                : 'Говорите — VAD автоматически определит паузы и переведёт.'}
-            </p>
+            {/* Start/Stop button or PTT instructions */}
+            {pushToTalkMode ? (
+              <div className="text-center py-3 px-4 rounded-lg bg-muted/30 border border-dashed border-border">
+                <Keyboard className="h-6 w-6 mx-auto mb-1.5 text-muted-foreground" />
+                <p className="text-sm font-medium">Зажмите Пробел для записи</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Отпустите — и речь будет переведена</p>
+              </div>
+            ) : (
+              <Button
+                variant={isListening ? "destructive" : "default"}
+                onClick={toggleListening}
+                className="gap-2 h-10"
+              >
+                {isListening ? (
+                  <>
+                    <MicOff className="h-4 w-4" />
+                    Остановить
+                  </>
+                ) : (
+                  <>
+                    <Mic className="h-4 w-4" />
+                    Начать перевод
+                  </>
+                )}
+              </Button>
+            )}
 
             {/* Subtitles area */}
             <div className="flex-1 overflow-y-auto min-h-[80px] max-h-[150px] border rounded-lg bg-muted/30 p-2 space-y-2">
