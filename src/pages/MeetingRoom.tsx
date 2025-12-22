@@ -27,6 +27,8 @@ const MeetingRoom = () => {
   const userName = searchParams.get("name");
   const containerRef = useRef<HTMLDivElement>(null);
   const apiRef = useRef<any>(null);
+  const initJitsiRef = useRef<null | (() => void)>(null);
+  const pendingReconnectRef = useRef(false);
   const [copied, setCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showRegistrationHint, setShowRegistrationHint] = useState(false);
@@ -412,7 +414,25 @@ const MeetingRoom = () => {
       if (!document.hidden) {
         // Tab became visible again - immediately try to restore connection
         await requestWakeLock();
-        
+
+        const reinitJitsiIfPossible = () => {
+          if (!initJitsiRef.current) return;
+          if (apiRef.current) {
+            apiRef.current.dispose();
+            apiRef.current = null;
+          }
+          initJitsiRef.current();
+        };
+
+        // If conference was dropped while hidden, rejoin immediately on return
+        if (pendingReconnectRef.current && !userInitiatedEndRef.current) {
+          console.log('Pending reconnect detected - rejoining now');
+          pendingReconnectRef.current = false;
+          setConnectionStatus('reconnecting');
+          reinitJitsiIfPossible();
+          return;
+        }
+
         // Check if Jitsi is still connected
         if (apiRef.current && !userInitiatedEndRef.current) {
           try {
@@ -422,18 +442,13 @@ const MeetingRoom = () => {
             console.log('Could not send restore message:', e);
           }
         }
-        
-        // If disconnected, try to reconnect
-        if (connectionStatus === 'disconnected' && apiRef.current && !userInitiatedEndRef.current) {
-          console.log('Tab visible and disconnected - attempting reconnect');
+
+        // If we know we are disconnected, reinitialize immediately
+        if (connectionStatus === 'disconnected' && !userInitiatedEndRef.current) {
+          console.log('Visible and disconnected - reinitializing Jitsi');
           setConnectionStatus('reconnecting');
           playReconnectingSound();
-          
-          // Re-initialize Jitsi
-          if (apiRef.current) {
-            apiRef.current.dispose();
-            apiRef.current = null;
-          }
+          reinitJitsiIfPossible();
         }
       } else {
         // Tab is being hidden - send a keep-alive immediately
@@ -472,6 +487,20 @@ const MeetingRoom = () => {
       }
       // Re-acquire wake lock
       await requestWakeLock();
+
+      // If conference dropped while app was in background, rejoin immediately
+      if (pendingReconnectRef.current && !userInitiatedEndRef.current) {
+        console.log('Focus restored with pending reconnect - rejoining now');
+        pendingReconnectRef.current = false;
+        setConnectionStatus('reconnecting');
+        if (apiRef.current) {
+          apiRef.current.dispose();
+          apiRef.current = null;
+        }
+        initJitsiRef.current?.();
+        return;
+      }
+
       // Check connection
       if (apiRef.current && !userInitiatedEndRef.current) {
         try {
@@ -704,12 +733,15 @@ const MeetingRoom = () => {
 
         // Handle connection failures - but ignore if tab is just hidden
         apiRef.current.addEventListener('videoConferenceLeft', () => {
-          // Ignore disconnect events caused by tab hiding/minimizing
-          if (document.hidden) {
-            console.log('Ignoring disconnect - tab is hidden');
-            return;
-          }
-          
+        // If the page became hidden (app switch / background), we can't reliably keep WebRTC alive.
+        // Mark a pending reconnect and rejoin immediately once the user returns.
+        if (document.hidden) {
+          console.log('Conference left while hidden - will rejoin on focus/visibility');
+          pendingReconnectRef.current = true;
+          setConnectionStatus('reconnecting');
+          return;
+        }
+
           // Only show disconnection if user didn't initiate leave
           if (!userInitiatedEndRef.current && !hasRedirectedRef.current) {
             console.log('Disconnected from conference');
@@ -874,6 +906,7 @@ const MeetingRoom = () => {
       }
     };
 
+    initJitsiRef.current = initJitsi;
     initJitsi();
 
     return () => {
