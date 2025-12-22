@@ -8,7 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { 
   Languages, Mic, MicOff, Volume2, Loader2, X, Minimize2, Maximize2, 
-  Download, History, Trash2, Play, Keyboard
+  Download, History, Trash2, Play, Keyboard, Activity
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -88,6 +88,8 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
   const [isPreviewingVoice, setIsPreviewingVoice] = useState(false);
   const [pushToTalkMode, setPushToTalkMode] = useState(false);
   const [isPushToTalkActive, setIsPushToTalkActive] = useState(false);
+  const [vadEnabled, setVadEnabled] = useState(true);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -97,6 +99,19 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
   const translationsEndRef = useRef<HTMLDivElement>(null);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const pushToTalkRecordingRef = useRef(false);
+  
+  // VAD (Voice Activity Detection) refs
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const vadIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const silenceStartRef = useRef<number | null>(null);
+  const speechStartRef = useRef<number | null>(null);
+  const vadRecordingRef = useRef(false);
+  
+  // VAD settings
+  const VAD_THRESHOLD = 0.02; // Volume threshold to detect speech
+  const SILENCE_DURATION = 1500; // ms of silence before sending (1.5 seconds)
+  const MIN_SPEECH_DURATION = 300; // minimum speech duration to record (300ms)
 
   // Auto-scroll to latest translation
   useEffect(() => {
@@ -366,10 +381,121 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
     }
   }, [targetLanguage, sourceLanguage, selectedVoice, playNextAudio, user, roomId]);
 
+  // VAD: Start recording when speech detected
+  const startVadRecording = useCallback(() => {
+    if (!streamRef.current || vadRecordingRef.current) return;
+    
+    vadRecordingRef.current = true;
+    audioChunksRef.current = [];
+    
+    const mediaRecorder = new MediaRecorder(streamRef.current, {
+      mimeType: 'audio/webm;codecs=opus',
+    });
+
+    mediaRecorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        audioChunksRef.current.push(event.data);
+      }
+    };
+
+    mediaRecorder.onstop = async () => {
+      vadRecordingRef.current = false;
+      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+      await processAudioChunk(audioBlob);
+    };
+
+    mediaRecorderRef.current = mediaRecorder;
+    mediaRecorder.start();
+  }, [processAudioChunk]);
+
+  // VAD: Stop recording after silence
+  const stopVadRecording = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop();
+    }
+  }, []);
+
+  // VAD: Analyze audio levels
+  const startVad = useCallback(() => {
+    if (!streamRef.current || !vadEnabled || pushToTalkMode) return;
+
+    // Create audio context for analysis
+    audioContextRef.current = new AudioContext();
+    analyserRef.current = audioContextRef.current.createAnalyser();
+    analyserRef.current.fftSize = 512;
+    analyserRef.current.smoothingTimeConstant = 0.4;
+
+    const source = audioContextRef.current.createMediaStreamSource(streamRef.current);
+    source.connect(analyserRef.current);
+
+    const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+
+    vadIntervalRef.current = setInterval(() => {
+      if (!analyserRef.current) return;
+
+      analyserRef.current.getByteFrequencyData(dataArray);
+      
+      // Calculate RMS volume
+      let sum = 0;
+      for (let i = 0; i < dataArray.length; i++) {
+        sum += (dataArray[i] / 255) ** 2;
+      }
+      const rms = Math.sqrt(sum / dataArray.length);
+
+      const now = Date.now();
+
+      if (rms > VAD_THRESHOLD) {
+        // Speech detected
+        silenceStartRef.current = null;
+        
+        if (!speechStartRef.current) {
+          speechStartRef.current = now;
+        }
+        
+        // Start recording if speech has been detected for minimum duration
+        if (!vadRecordingRef.current && (now - speechStartRef.current) >= MIN_SPEECH_DURATION) {
+          setIsSpeaking(true);
+          startVadRecording();
+        }
+      } else {
+        // Silence detected
+        if (speechStartRef.current && !silenceStartRef.current) {
+          silenceStartRef.current = now;
+        }
+        
+        // If silence has lasted long enough, stop recording
+        if (vadRecordingRef.current && silenceStartRef.current && (now - silenceStartRef.current) >= SILENCE_DURATION) {
+          setIsSpeaking(false);
+          stopVadRecording();
+          speechStartRef.current = null;
+          silenceStartRef.current = null;
+        }
+      }
+    }, 50); // Check every 50ms
+  }, [vadEnabled, pushToTalkMode, startVadRecording, stopVadRecording]);
+
+  // Stop VAD
+  const stopVad = useCallback(() => {
+    if (vadIntervalRef.current) {
+      clearInterval(vadIntervalRef.current);
+      vadIntervalRef.current = null;
+    }
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+    analyserRef.current = null;
+    silenceStartRef.current = null;
+    speechStartRef.current = null;
+    setIsSpeaking(false);
+  }, []);
+
   const startRecordingChunk = useCallback(() => {
     if (!streamRef.current) return;
     // In push-to-talk mode, don't start auto chunks
     if (pushToTalkMode && !pushToTalkRecordingRef.current) return;
+    // In VAD mode, don't use fixed intervals
+    if (vadEnabled) return;
 
     audioChunksRef.current = [];
     
@@ -391,16 +517,13 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
     mediaRecorderRef.current = mediaRecorder;
     mediaRecorder.start();
 
-    // In auto mode: stop after 10 seconds to give user more time to finish speaking
-    // In push-to-talk mode: don't auto-stop (user controls via key release)
-    if (!pushToTalkMode) {
-      setTimeout(() => {
-        if (mediaRecorder.state === 'recording') {
-          mediaRecorder.stop();
-        }
-      }, 10000);
-    }
-  }, [processAudioChunk, pushToTalkMode]);
+    // In auto mode without VAD: stop after 10 seconds
+    setTimeout(() => {
+      if (mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+      }
+    }, 10000);
+  }, [processAudioChunk, pushToTalkMode, vadEnabled]);
 
   // Push-to-talk: start recording on key down
   const startPushToTalk = useCallback(() => {
@@ -482,12 +605,14 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
       
       if (pushToTalkMode) {
         toast.success('Удерживайте Пробел для записи');
+      } else if (vadEnabled) {
+        toast.success('VAD активирован - говорите, перевод начнётся автоматически');
+        startVad();
       } else {
         toast.success('Переводчик активирован');
         startRecordingChunk();
-        // Increased interval to 12 seconds for better speech capture (less interruption)
         recordingIntervalRef.current = setInterval(() => {
-          if (streamRef.current && !pushToTalkMode) {
+          if (streamRef.current && !pushToTalkMode && !vadEnabled) {
             startRecordingChunk();
           }
         }, 12000);
@@ -497,13 +622,16 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
       console.error('Error accessing microphone:', error);
       toast.error('Не удалось получить доступ к микрофону');
     }
-  }, [startRecordingChunk, pushToTalkMode]);
+  }, [startRecordingChunk, pushToTalkMode, vadEnabled, startVad]);
 
   const stopListening = useCallback(() => {
     if (recordingIntervalRef.current) {
       clearInterval(recordingIntervalRef.current);
       recordingIntervalRef.current = null;
     }
+
+    // Stop VAD
+    stopVad();
 
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
       mediaRecorderRef.current.stop();
@@ -515,7 +643,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
     }
 
     setIsListening(false);
-  }, []);
+  }, [stopVad]);
 
   const toggleListening = useCallback(() => {
     if (isListening) {
@@ -712,6 +840,27 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
               </div>
             </div>
 
+            {/* VAD toggle */}
+            <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/50 border border-border/50">
+              <div className="flex items-center gap-2">
+                <Activity className={cn("h-4 w-4", isSpeaking && vadEnabled && isListening ? "text-green-500 animate-pulse" : "text-muted-foreground")} />
+                <Label htmlFor="vad-mode" className="text-xs cursor-pointer">
+                  VAD (определение речи)
+                </Label>
+                {isSpeaking && vadEnabled && isListening && (
+                  <Badge variant="outline" className="text-[10px] h-4 px-1 border-green-500/50 text-green-500">
+                    Говорите...
+                  </Badge>
+                )}
+              </div>
+              <Switch
+                id="vad-mode"
+                checked={vadEnabled}
+                onCheckedChange={setVadEnabled}
+                disabled={isListening || pushToTalkMode}
+              />
+            </div>
+
             {/* Push-to-talk toggle */}
             <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/50 border border-border/50">
               <div className="flex items-center gap-2">
@@ -723,7 +872,10 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
               <Switch
                 id="ptt-mode"
                 checked={pushToTalkMode}
-                onCheckedChange={setPushToTalkMode}
+                onCheckedChange={(checked) => {
+                  setPushToTalkMode(checked);
+                  if (checked) setVadEnabled(false);
+                }}
                 disabled={isListening}
               />
             </div>
@@ -751,7 +903,9 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
             <p className="text-xs text-muted-foreground text-center">
               {pushToTalkMode 
                 ? 'Удерживайте Пробел и говорите — отпустите для перевода.'
-                : 'Говорите в микрофон — перевод воспроизводится автоматически.'}
+                : vadEnabled 
+                ? 'Говорите — VAD автоматически определит паузы и переведёт.'
+                : 'Говорите в микрофон — перевод каждые 10 сек.'}
             </p>
 
             {/* Subtitles area */}
