@@ -59,21 +59,6 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
     }
   }, [stage]);
 
-  // Text reveal animation - left to right
-  const textRevealVariants = {
-    hidden: {
-      clipPath: "inset(0 100% 0 0)",
-      opacity: 0,
-    },
-    visible: {
-      clipPath: "inset(0 0% 0 0)",
-      opacity: 1,
-      transition: {
-        duration: 1.2,
-        ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number],
-      },
-    },
-  };
 
   return (
     <AnimatePresence>
@@ -175,19 +160,25 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
             
             {/* APLink logo with left-to-right reveal from shadow */}
             <motion.div
-              className="relative mb-6 overflow-hidden"
-              initial="hidden"
-              animate={stage >= 1 ? "visible" : "hidden"}
-              variants={textRevealVariants}
+              className="relative mb-6"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ 
+                opacity: stage >= 1 ? 1 : 0, 
+                scale: stage >= 1 ? 1 : 0.8 
+              }}
+              transition={{ delay: 0.6, duration: 0.8, ease: [0.34, 1.56, 0.64, 1] }}
             >
-              {/* Shadow/glow behind text */}
+              {/* Sweeping glow effect */}
               <motion.div
-                className="absolute inset-0 blur-2xl bg-primary/30"
-                initial={{ x: "-100%" }}
-                animate={{ x: stage >= 1 ? "100%" : "-100%" }}
-                transition={{ delay: 0.6, duration: 1.5, ease: "easeInOut" }}
+                className="absolute inset-0 blur-2xl bg-primary/40 rounded-full"
+                initial={{ x: "-150%", opacity: 0 }}
+                animate={{ 
+                  x: stage >= 1 ? "150%" : "-150%",
+                  opacity: stage >= 1 ? [0, 1, 0] : 0
+                }}
+                transition={{ delay: 0.8, duration: 1.5, ease: "easeInOut" }}
               />
-              <h1 className="text-6xl sm:text-8xl font-bold relative">
+              <h1 className="text-6xl sm:text-8xl font-bold relative z-10">
                 <span className="bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text text-transparent bg-[length:200%_auto] animate-shimmer">
                   APLink
                 </span>
