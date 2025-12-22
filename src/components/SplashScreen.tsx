@@ -6,12 +6,28 @@ interface SplashScreenProps {
   onComplete: () => void;
 }
 
+const SPLASH_SESSION_KEY = 'aplink_splash_shown';
+
 const SplashScreen = ({ onComplete }: SplashScreenProps) => {
   const [stage, setStage] = useState(0);
+  const [shouldShow, setShouldShow] = useState(false);
   const soundPlayedRef = useRef(false);
   // 0 = video reveals, 1 = text appears, 2 = fade out
 
   useEffect(() => {
+    // Check if splash was already shown this session
+    const splashShown = sessionStorage.getItem(SPLASH_SESSION_KEY);
+    
+    if (splashShown) {
+      // Skip splash, complete immediately
+      onComplete();
+      return;
+    }
+    
+    // Mark splash as shown for this session
+    sessionStorage.setItem(SPLASH_SESSION_KEY, 'true');
+    setShouldShow(true);
+    
     const timers = [
       setTimeout(() => setStage(1), 800),    // Show text
       setTimeout(() => setStage(2), 5000),   // Start fade out (~5 sec)
@@ -22,6 +38,9 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
       timers.forEach(clearTimeout);
     };
   }, [onComplete]);
+  
+  // Don't render anything if not showing
+  if (!shouldShow) return null;
 
   // Play sound when logo appears
   useEffect(() => {

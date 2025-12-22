@@ -45,6 +45,7 @@ const Index = () => {
   const [roomName, setRoomName] = useState(roomFromUrl);
   const [userName, setUserName] = useState("");
   const [userUsername, setUserUsername] = useState<string | null>(null);
+  const [userAvatarUrl, setUserAvatarUrl] = useState<string | null>(null);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showUsernameForm, setShowUsernameForm] = useState(false);
@@ -71,7 +72,7 @@ const Index = () => {
 
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('display_name, username')
+        .select('display_name, username, avatar_url')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -90,6 +91,7 @@ const Index = () => {
 
       const uname = profileData?.username ?? null;
       setUserUsername(uname);
+      setUserAvatarUrl(profileData?.avatar_url ?? null);
       setShowUsernameForm(!uname);
     };
 
@@ -554,6 +556,7 @@ const Index = () => {
                 {!isLoading && user && (
                   <ProfileCard
                     userUsername={userUsername}
+                    userAvatarUrl={userAvatarUrl}
                     showUsernameForm={showUsernameForm}
                     newUsername={newUsername}
                     setNewUsername={setNewUsername}
@@ -570,8 +573,8 @@ const Index = () => {
             <FeatureCards features={features} />
           </div>
           
-          {/* How It Works Section */}
-          <HowItWorks />
+          {/* How It Works Section - only for non-authenticated users */}
+          {!user && <HowItWorks />}
         </main>
 
         {/* Footer */}

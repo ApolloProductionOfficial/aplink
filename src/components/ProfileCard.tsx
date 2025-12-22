@@ -32,6 +32,7 @@ interface Contact {
 
 interface ProfileCardProps {
   userUsername: string | null;
+  userAvatarUrl: string | null;
   showUsernameForm: boolean;
   newUsername: string;
   setNewUsername: (val: string) => void;
@@ -43,6 +44,7 @@ interface ProfileCardProps {
 
 const ProfileCard = ({
   userUsername,
+  userAvatarUrl,
   showUsernameForm,
   newUsername,
   setNewUsername,
@@ -244,8 +246,16 @@ const ProfileCard = ({
       <div className="p-4 border-b border-border/30">
         <div className="flex items-center gap-4">
           <div className="relative">
-            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center ring-2 ring-primary/30">
-              <User className="w-7 h-7 text-primary" />
+            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center ring-2 ring-primary/30 overflow-hidden">
+              {userAvatarUrl ? (
+                <img 
+                  src={userAvatarUrl} 
+                  alt="Avatar" 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User className="w-7 h-7 text-primary" />
+              )}
             </div>
             <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-green-500 border-2 border-background" />
           </div>
