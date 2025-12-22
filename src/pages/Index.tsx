@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Video, Users, Globe, Shield, ArrowRight, MessageCircle, ExternalLink, User, LogOut, UserPlus, Check, Languages, Zap } from "lucide-react";
+import { Video, Users, Globe, Shield, ArrowRight, MessageCircle, ExternalLink, User, LogOut, UserPlus, Check, Languages } from "lucide-react";
 import GoogleIcon from "@/components/icons/GoogleIcon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -490,19 +490,6 @@ const Index = () => {
                       </Button>
                     )}
                   </div>
-                  
-                  {/* Quick actions for logged in users */}
-                  {!isLoading && user && (
-                    <div className="flex items-center justify-center gap-4 pt-2 border-t border-border/30">
-                      <button 
-                        onClick={() => setFavoritesOpen(true)}
-                        className="text-xs text-muted-foreground hover:text-primary transition-colors flex items-center gap-1.5"
-                      >
-                        <Zap className="w-3.5 h-3.5" />
-                        {(t.aplink as any)?.quickCall || 'Быстрый звонок'}
-                      </button>
-                    </div>
-                  )}
                 </div>
                 
                 {/* Registration banner for non-authenticated users */}
@@ -569,8 +556,8 @@ const Index = () => {
               </motion.div>
             </div>
 
-            {/* Feature Cards with animations */}
-            <FeatureCards features={features} />
+            {/* Feature Cards with animations - only for non-authenticated users */}
+            {!user && <FeatureCards features={features} />}
           </div>
           
           {/* How It Works Section - only for non-authenticated users */}
