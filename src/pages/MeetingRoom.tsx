@@ -11,7 +11,7 @@ import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 import { useConnectionSounds } from "@/hooks/useConnectionSounds";
 import { RealtimeTranslator } from "@/components/RealtimeTranslator";
-import logoVideo from "@/assets/logo-video.mov";
+import apolloLogo from "@/assets/apollo-logo.mp4";
 import CustomCursor from "@/components/CustomCursor";
 
 declare global {
@@ -1200,14 +1200,16 @@ const MeetingRoom = () => {
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
-            <video 
-              src={logoVideo} 
-              autoPlay 
-              loop 
-              muted 
-              playsInline
-              className="w-8 h-8 object-cover rounded-full"
-            />
+            <div className="relative w-10 h-10 rounded-full overflow-hidden ring-2 ring-primary/50 shadow-[0_0_15px_hsl(var(--primary)/0.5)]">
+              <video 
+                src={apolloLogo} 
+                autoPlay 
+                loop 
+                muted 
+                playsInline
+                className="w-full h-full object-cover"
+              />
+            </div>
             <span className="hidden sm:inline font-semibold">APLink</span>
           </button>
           <div className="h-6 w-px bg-border/50 hidden sm:block" />

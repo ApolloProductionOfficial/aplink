@@ -1,123 +1,98 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { cn } from '@/lib/utils';
+import { useCallback, useEffect, useRef } from 'react';
 
-type TrailDot = {
-  id: number;
-  x: number;
-  y: number;
-  opacity: number;
-};
-
-const TRAIL_LENGTH = 20;
-const TRAIL_FADE_SPEED = 0.06;
+const TRAIL_LENGTH = 25;
 
 const CustomCursor = () => {
-  const [isText, setIsText] = useState(false);
-  const [trails, setTrails] = useState<TrailDot[]>([]);
-
   const cursorRef = useRef<HTMLDivElement>(null);
-  const positionRef = useRef({ x: 0, y: 0 });
+  const trailRef = useRef<HTMLDivElement[]>([]);
+  const positionRef = useRef({ x: -100, y: -100 });
+  const trailPositions = useRef<{ x: number; y: number }[]>(
+    Array(TRAIL_LENGTH).fill({ x: -100, y: -100 })
+  );
+  const isTextRef = useRef(false);
   const rafRef = useRef<number | null>(null);
-  const trailIdRef = useRef(0);
-  const lastTrailPosRef = useRef({ x: 0, y: 0 });
 
-  const updateCursorPosition = useCallback(() => {
-    if (cursorRef.current) {
-      cursorRef.current.style.left = `${positionRef.current.x}px`;
-      cursorRef.current.style.top = `${positionRef.current.y}px`;
+  const animate = useCallback(() => {
+    // Update trail positions - each follows the one before it with lerp
+    for (let i = TRAIL_LENGTH - 1; i > 0; i--) {
+      const prev = trailPositions.current[i - 1];
+      const curr = trailPositions.current[i];
+      const ease = 0.35 - (i * 0.01); // Slower at the end for comet effect
+      trailPositions.current[i] = {
+        x: curr.x + (prev.x - curr.x) * ease,
+        y: curr.y + (prev.y - curr.y) * ease,
+      };
     }
-    rafRef.current = null;
-  }, []);
+    
+    // First trail dot follows cursor
+    const pos = positionRef.current;
+    trailPositions.current[0] = {
+      x: trailPositions.current[0].x + (pos.x - trailPositions.current[0].x) * 0.5,
+      y: trailPositions.current[0].y + (pos.y - trailPositions.current[0].y) * 0.5,
+    };
 
-  // Fade out trails smoothly
-  useEffect(() => {
-    const fadeInterval = setInterval(() => {
-      setTrails((prev) => 
-        prev
-          .map((t) => ({ ...t, opacity: t.opacity - TRAIL_FADE_SPEED }))
-          .filter((t) => t.opacity > 0)
-      );
-    }, 16);
+    // Update DOM
+    if (cursorRef.current) {
+      cursorRef.current.style.transform = `translate(${pos.x}px, ${pos.y}px) translate(-50%, -50%)`;
+    }
+    
+    trailRef.current.forEach((el, i) => {
+      if (el) {
+        const tp = trailPositions.current[i];
+        el.style.transform = `translate(${tp.x}px, ${tp.y}px) translate(-50%, -50%)`;
+      }
+    });
 
-    return () => clearInterval(fadeInterval);
+    rafRef.current = requestAnimationFrame(animate);
   }, []);
 
   useEffect(() => {
     const handlePointerMove = (e: PointerEvent | MouseEvent) => {
-      const x = e.clientX;
-      const y = e.clientY;
-      positionRef.current = { x, y };
+      positionRef.current = { x: e.clientX, y: e.clientY };
 
-      if (!rafRef.current) {
-        rafRef.current = requestAnimationFrame(updateCursorPosition);
-      }
-
-      // Check for text input
       const target = e.target as HTMLElement | null;
       if (target) {
-        const isTextInput = !!target.closest('input, textarea, [contenteditable="true"]');
-        setIsText(isTextInput);
-      }
-
-      // Add trail dot if moved enough distance
-      const lastPos = lastTrailPosRef.current;
-      const dx = x - lastPos.x;
-      const dy = y - lastPos.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-
-      if (distance > 8) {
-        lastTrailPosRef.current = { x, y };
-        trailIdRef.current += 1;
-
-        setTrails((prev) => {
-          const newTrail: TrailDot = {
-            id: trailIdRef.current,
-            x,
-            y,
-            opacity: 0.6,
-          };
-          return [newTrail, ...prev].slice(0, TRAIL_LENGTH);
-        });
+        isTextRef.current = !!target.closest('input, textarea, [contenteditable="true"]');
       }
     };
 
     window.addEventListener('pointermove', handlePointerMove as EventListener, { capture: true, passive: true });
     window.addEventListener('mousemove', handlePointerMove as EventListener, { capture: true, passive: true } as AddEventListenerOptions);
+    
+    rafRef.current = requestAnimationFrame(animate);
 
     return () => {
       window.removeEventListener('pointermove', handlePointerMove as EventListener, { capture: true } as EventListenerOptions);
       window.removeEventListener('mousemove', handlePointerMove as EventListener, { capture: true } as EventListenerOptions);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, [updateCursorPosition]);
-
-  if (isText) {
-    return (
-      <style>{`
-        body { cursor: auto !important; }
-        * { cursor: inherit; }
-        input, textarea { cursor: text !important; }
-      `}</style>
-    );
-  }
+  }, [animate]);
 
   return (
     <div className="hidden md:block">
-      {/* Comet trail */}
-      {trails.map((t, index) => {
-        const size = Math.max(2, 6 - index * 0.25);
+      <style>{`
+        body { cursor: none !important; }
+        * { cursor: none !important; }
+        input, textarea, [contenteditable="true"] { cursor: text !important; }
+      `}</style>
+
+      {/* Comet trail - particles getting smaller and more transparent */}
+      {Array.from({ length: TRAIL_LENGTH }).map((_, i) => {
+        const size = Math.max(1, 8 - i * 0.3);
+        const opacity = Math.max(0.05, 0.6 - i * 0.025);
+        const blur = i * 0.15;
+        
         return (
           <div
-            key={t.id}
-            className="fixed pointer-events-none z-[9998] rounded-full bg-primary"
+            key={i}
+            ref={(el) => { if (el) trailRef.current[i] = el; }}
+            className="fixed top-0 left-0 pointer-events-none z-[9998] rounded-full bg-primary"
             style={{
-              left: `${t.x}px`,
-              top: `${t.y}px`,
               width: `${size}px`,
               height: `${size}px`,
-              opacity: t.opacity,
-              transform: 'translate(-50%, -50%)',
-              filter: `blur(${Math.min(index * 0.3, 2)}px)`,
+              opacity,
+              filter: `blur(${blur}px)`,
+              willChange: 'transform',
             }}
           />
         );
@@ -126,17 +101,13 @@ const CustomCursor = () => {
       {/* Main cursor */}
       <div
         ref={cursorRef}
-        className="fixed pointer-events-none z-[9999] will-change-[left,top]"
-        style={{
-          left: `${positionRef.current.x}px`,
-          top: `${positionRef.current.y}px`,
-          transform: 'translate(-50%, -50%)',
-        }}
+        className="fixed top-0 left-0 pointer-events-none z-[9999]"
+        style={{ willChange: 'transform' }}
       >
-        <div className="relative w-2 h-2">
-          <div className="absolute inset-0 rounded-full bg-primary/80" />
-          <div className="absolute -inset-1 rounded-full bg-primary/50 blur-[4px]" />
-          <div className="absolute -inset-3 rounded-full bg-primary/30 blur-[8px]" />
+        <div className="relative w-3 h-3">
+          <div className="absolute inset-0 rounded-full bg-primary" />
+          <div className="absolute -inset-1 rounded-full bg-primary/60 blur-[3px]" />
+          <div className="absolute -inset-2 rounded-full bg-primary/30 blur-[6px]" />
         </div>
       </div>
     </div>
