@@ -12,9 +12,8 @@ import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useToast } from '@/hooks/use-toast';
 import CustomCursor from '@/components/CustomCursor';
-import AnimatedBackground from '@/components/AnimatedBackground';
 import TwoFactorSetup from '@/components/TwoFactorSetup';
-import logoVideo from '@/assets/logo-video.mov';
+import apolloLogo from '@/assets/apollo-logo.mp4';
 
 interface MeetingTranscript {
   id: string;
@@ -349,15 +348,25 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background cursor-none">
+    <div className="min-h-screen bg-background">
       <CustomCursor />
-      <AnimatedBackground />
       
       {/* Header */}
       <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-xl border-b border-border/50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            {/* Logo - same style as main page */}
+          <div className="flex items-center gap-3">
+            {/* Back button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/')}
+              className="h-9 w-9 rounded-full hover:bg-primary/10"
+              title="На главную"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            
+            {/* Logo - same as main page */}
             <div 
               onClick={() => navigate('/')}
               className="flex items-center gap-2 md:gap-3 cursor-pointer group"
@@ -366,14 +375,13 @@ const Dashboard = () => {
                 <div className="absolute inset-0 rounded-full bg-primary/40 blur-md animate-pulse" />
                 <div className="relative w-10 h-10 md:w-12 md:h-12 rounded-full overflow-hidden ring-2 ring-primary/50 shadow-[0_0_20px_hsl(var(--primary)/0.6)]">
                   <video 
-                    src={logoVideo} 
+                    src={apolloLogo} 
                     autoPlay 
                     loop 
                     muted 
                     playsInline
                     preload="metadata"
                     className="absolute inset-0 w-full h-full object-cover scale-[1.3] origin-center"
-                    style={{ willChange: 'transform' }}
                   />
                 </div>
               </div>

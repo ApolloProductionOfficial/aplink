@@ -2,17 +2,15 @@ import { useEffect, useRef } from 'react';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 const CustomCursor = () => {
-  const cursorRef = useRef<HTMLDivElement>(null);
-  const positionRef = useRef({ x: -100, y: -100 });
+  const glowRef = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
 
   useEffect(() => {
     if (reduceMotion) return;
 
     const handlePointerMove = (e: PointerEvent | MouseEvent) => {
-      positionRef.current = { x: e.clientX, y: e.clientY };
-      if (cursorRef.current) {
-        cursorRef.current.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0) translate(-50%, -50%)`;
+      if (glowRef.current) {
+        glowRef.current.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0) translate(-50%, -50%)`;
       }
     };
 
@@ -32,18 +30,21 @@ const CustomCursor = () => {
       <style>{`
         body, body * { cursor: none !important; }
         input, textarea, [contenteditable="true"] { cursor: text !important; }
+        a, button, [role="button"] { cursor: pointer !important; }
       `}</style>
 
-      {/* Simple cursor - no canvas, no trail */}
+      {/* Glow cursor - like apolloproduction.studio */}
       <div
-        ref={cursorRef}
+        ref={glowRef}
         className="fixed top-0 left-0 pointer-events-none z-[9999]"
         style={{ willChange: 'transform' }}
       >
-        <div className="relative w-3 h-3">
-          <div className="absolute inset-0 rounded-full bg-sky-400" />
-          <div className="absolute -inset-0.5 rounded-full bg-sky-300/40" />
-        </div>
+        <div 
+          className="w-40 h-40 rounded-full"
+          style={{
+            background: 'radial-gradient(circle, hsla(199, 89%, 48%, 0.15) 0%, hsla(199, 89%, 48%, 0.05) 40%, transparent 70%)',
+          }}
+        />
       </div>
     </div>
   );
