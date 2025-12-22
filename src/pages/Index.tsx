@@ -405,30 +405,49 @@ const Index = () => {
       <main className="relative z-10 pt-24 pb-16">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass mb-8 animate-pulse-glow">
-              <Sparkles className="w-4 h-4 text-primary" />
-              <span className="text-sm text-muted-foreground">{t.aplink?.badge || 'Видеозвонки нового поколения'}</span>
-            </div>
+            {/* Animated Badge */}
+            <motion.div 
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full glass mb-8 border border-primary/30"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+            >
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+              >
+                <Sparkles className="w-4 h-4 text-primary" />
+              </motion.div>
+              <span className="text-sm bg-gradient-to-r from-muted-foreground to-primary bg-clip-text text-transparent font-medium">
+                {t.aplink?.badge || 'Next Generation Video Calls'}
+              </span>
+              <motion.div
+                animate={{ rotate: -360 }}
+                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+              >
+                <Sparkles className="w-4 h-4 text-primary" />
+              </motion.div>
+            </motion.div>
             
             <h1 className="text-5xl md:text-7xl font-bold mb-6 animate-slide-up">
               <span className="bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent animate-text-shimmer">
-                {t.aplink?.title || 'Созвоны без границ'}
+                {t.aplink?.title || 'Calls Without Borders'}
               </span>
             </h1>
             
-            {/* Feature Cards */}
+            {/* Feature Cards - Reordered: Translator first, then IP, then AI */}
             <div className="flex flex-wrap justify-center gap-4 mb-12 animate-slide-up" style={{ animationDelay: '100ms' }}>
               <div className="glass px-5 py-3 rounded-xl flex items-center gap-3 hover:scale-105 transition-transform duration-300 hover:border-primary/50 border border-transparent animate-[pulse_2s_ease-in-out_3]">
-                <Globe className="w-5 h-5 text-primary animate-[pulse_1.5s_ease-in-out_infinite]" />
-                <span className="text-muted-foreground">{(t.aplink as any)?.noIPRestrictions || 'No IP Restrictions'}</span>
+                <MessageCircle className="w-5 h-5 text-primary animate-[pulse_1.5s_ease-in-out_infinite]" />
+                <span className="text-muted-foreground">{(t.aplink as any)?.realtimeTranslator || 'Real-time Translator'}</span>
               </div>
               <div className="glass px-5 py-3 rounded-xl flex items-center gap-3 hover:scale-105 transition-transform duration-300 hover:border-primary/50 border border-transparent animate-[pulse_2s_ease-in-out_3]" style={{ animationDelay: '200ms' }}>
-                <Sparkles className="w-5 h-5 text-primary animate-[pulse_1.5s_ease-in-out_infinite]" style={{ animationDelay: '200ms' }} />
-                <span className="text-muted-foreground">{(t.aplink as any)?.aiMeetingSummaries || 'AI Meeting Summaries'}</span>
+                <Globe className="w-5 h-5 text-primary animate-[pulse_1.5s_ease-in-out_infinite]" style={{ animationDelay: '200ms' }} />
+                <span className="text-muted-foreground">{(t.aplink as any)?.noIPRestrictions || 'No IP Restrictions'}</span>
               </div>
               <div className="glass px-5 py-3 rounded-xl flex items-center gap-3 hover:scale-105 transition-transform duration-300 hover:border-primary/50 border border-transparent animate-[pulse_2s_ease-in-out_3]" style={{ animationDelay: '400ms' }}>
-                <MessageCircle className="w-5 h-5 text-primary animate-[pulse_1.5s_ease-in-out_infinite]" style={{ animationDelay: '400ms' }} />
-                <span className="text-muted-foreground">{(t.aplink as any)?.realtimeTranslator || 'Real-time Translator'}</span>
+                <Sparkles className="w-5 h-5 text-primary animate-[pulse_1.5s_ease-in-out_infinite]" style={{ animationDelay: '400ms' }} />
+                <span className="text-muted-foreground">{(t.aplink as any)?.aiMeetingSummaries || 'AI Meeting Summaries'}</span>
               </div>
             </div>
 
