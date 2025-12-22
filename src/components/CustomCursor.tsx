@@ -28,21 +28,19 @@ const CustomCursor = () => {
   return (
     <div className="hidden md:block">
       <style>{`
-        body, body * { cursor: none !important; }
-        input, textarea, [contenteditable="true"] { cursor: text !important; }
-        a, button, [role="button"] { cursor: pointer !important; }
+        *, *::before, *::after { cursor: none !important; }
       `}</style>
 
-      {/* Glow cursor - soft light like apolloproduction.studio */}
+      {/* Bright glow cursor */}
       <div
         ref={glowRef}
         className="fixed top-0 left-0 pointer-events-none z-[9999]"
         style={{ willChange: 'transform' }}
       >
         <div 
-          className="w-48 h-48 rounded-full -translate-x-1/2 -translate-y-1/2"
+          className="w-44 h-44 rounded-full -translate-x-1/2 -translate-y-1/2"
           style={{
-            background: 'radial-gradient(circle, hsla(199, 89%, 55%, 0.35) 0%, hsla(199, 89%, 50%, 0.15) 30%, hsla(199, 89%, 48%, 0.05) 50%, transparent 70%)',
+            background: 'radial-gradient(circle, hsla(199, 89%, 60%, 0.5) 0%, hsla(199, 89%, 55%, 0.25) 25%, hsla(199, 89%, 50%, 0.1) 45%, transparent 65%)',
           }}
         />
       </div>
