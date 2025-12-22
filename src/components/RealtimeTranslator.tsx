@@ -7,8 +7,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { 
   Languages, Mic, MicOff, Volume2, Loader2, X, Minimize2, Maximize2, 
-  Download, History, Trash2, Play, Keyboard, Activity, Settings2
+  Download, History, Trash2, Play, Keyboard, Activity, Settings2, ArrowRight, HelpCircle
 } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Slider } from '@/components/ui/slider';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from 'sonner';
@@ -823,7 +824,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Languages className="h-5 w-5 text-primary" />
-            <span className="font-semibold text-sm">Переводчик</span>
+            <span className="font-semibold text-sm">Translator</span>
             {pushToTalkMode && isPushToTalkActive && (
               <Badge variant="destructive" className="animate-pulse text-xs">
                 REC
@@ -850,25 +851,25 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
           <TabsList className="grid w-full grid-cols-2 h-9">
             <TabsTrigger value="translate" className="text-xs flex items-center gap-1.5">
               <Languages className="h-3.5 w-3.5" />
-              Перевод
+              Translate
             </TabsTrigger>
             <TabsTrigger value="history" className="text-xs flex items-center gap-1.5">
               <History className="h-3.5 w-3.5" />
-              История
+              History
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="translate" className="flex-1 flex flex-col gap-2.5 overflow-hidden mt-3">
-            {/* Language selectors - unified compact style */}
-            <div className="grid grid-cols-2 gap-2">
+            {/* Language selectors with arrow */}
+            <div className="flex items-center gap-1">
               <Select value={sourceLanguage} onValueChange={setSourceLanguage} disabled={isListening}>
-                <SelectTrigger className="h-10 text-sm bg-muted/40 border-border/40 hover:bg-muted/60 transition-colors">
+                <SelectTrigger className="h-10 text-sm bg-muted/40 border-border/40 hover:bg-muted/60 transition-colors flex-1">
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="text-base shrink-0">
                       {sourceLanguage === 'auto' ? '🌍' : LANGUAGES.find(l => l.code === sourceLanguage)?.flag || '🌍'}
                     </span>
-                    <span className="truncate">
-                      {sourceLanguage === 'auto' ? 'Автоопределение' : LANGUAGES.find(l => l.code === sourceLanguage)?.name}
+                    <span className="truncate text-xs">
+                      {sourceLanguage === 'auto' ? 'Auto' : LANGUAGES.find(l => l.code === sourceLanguage)?.name}
                     </span>
                   </div>
                 </SelectTrigger>
@@ -876,7 +877,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
                   <SelectItem value="auto">
                     <span className="flex items-center gap-2">
                       <span className="text-base">🌍</span>
-                      <span>Автоопределение</span>
+                      <span>Auto-detect</span>
                     </span>
                   </SelectItem>
                   {LANGUAGES.map(lang => (
@@ -890,13 +891,17 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
                 </SelectContent>
               </Select>
 
+              <div className="shrink-0 px-1">
+                <ArrowRight className="h-4 w-4 text-muted-foreground" />
+              </div>
+
               <Select value={targetLanguage} onValueChange={setTargetLanguage} disabled={isListening}>
-                <SelectTrigger className="h-10 text-sm bg-muted/40 border-border/40 hover:bg-muted/60 transition-colors">
+                <SelectTrigger className="h-10 text-sm bg-muted/40 border-border/40 hover:bg-muted/60 transition-colors flex-1">
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="text-base shrink-0">
                       {LANGUAGES.find(l => l.code === targetLanguage)?.flag || '🌍'}
                     </span>
-                    <span className="truncate">
+                    <span className="truncate text-xs">
                       {LANGUAGES.find(l => l.code === targetLanguage)?.name}
                     </span>
                   </div>
@@ -959,7 +964,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
                 className="h-10 w-10 shrink-0 bg-muted/40 border-border/40 hover:bg-muted/60"
                 onClick={previewVoice}
                 disabled={isPreviewingVoice || isListening}
-                title="Прослушать голос"
+                title="Preview voice"
               >
                 {isPreviewingVoice ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
               </Button>
@@ -979,7 +984,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
                 )}
               >
                 <Activity className="h-4 w-4" />
-                Авто
+                Auto
               </button>
               <button
                 type="button"
@@ -993,87 +998,109 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
                 )}
               >
                 <Keyboard className="h-4 w-4" />
-                Пробел
+                Space
               </button>
             </div>
 
-            {/* VAD settings - compact, hidden by default behind gear icon */}
+            {/* Mic settings - compact, hidden by default behind gear icon */}
             {!pushToTalkMode && (
-              <Collapsible open={vadSettingsOpen} onOpenChange={setVadSettingsOpen}>
-                <CollapsibleTrigger asChild>
-                  <button 
-                    type="button"
-                    className="w-full flex items-center justify-between py-1.5 px-2 text-xs text-muted-foreground hover:text-foreground transition-colors rounded"
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <Settings2 className="h-3 w-3" />
-                      <span>Настройки VAD</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      {isSpeaking && isListening && (
-                        <span className="flex items-center gap-1 text-green-500 text-[10px]">
-                          <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                          Говорите
-                        </span>
-                      )}
-                      <Settings2 className={cn("h-3 w-3 transition-transform", vadSettingsOpen && "rotate-90")} />
-                    </div>
-                  </button>
-                </CollapsibleTrigger>
-                
-                <CollapsibleContent className="mt-1.5 space-y-2 p-2 rounded-md bg-muted/30 border border-border/30">
-                  {/* Audio level indicator */}
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                      <span>Уровень</span>
-                      <span>{Math.round(audioLevel)}%</span>
-                    </div>
-                    <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                      <div 
-                        className={cn(
-                          "h-full transition-all duration-75 rounded-full",
-                          audioLevel > vadThreshold * 500 ? "bg-green-500" : "bg-primary/50"
+              <TooltipProvider delayDuration={200}>
+                <Collapsible open={vadSettingsOpen} onOpenChange={setVadSettingsOpen}>
+                  <CollapsibleTrigger asChild>
+                    <button 
+                      type="button"
+                      className="w-full flex items-center justify-between py-1.5 px-2 text-xs text-muted-foreground hover:text-foreground transition-colors rounded"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <Settings2 className="h-3 w-3" />
+                        <span>Mic Settings</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        {isSpeaking && isListening && (
+                          <span className="flex items-center gap-1 text-green-500 text-[10px]">
+                            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                            Speaking
+                          </span>
                         )}
-                        style={{ width: `${audioLevel}%` }}
+                        <Settings2 className={cn("h-3 w-3 transition-transform", vadSettingsOpen && "rotate-90")} />
+                      </div>
+                    </button>
+                  </CollapsibleTrigger>
+                  
+                  <CollapsibleContent className="mt-1.5 space-y-2 p-2 rounded-md bg-muted/30 border border-border/30">
+                    {/* Audio level indicator */}
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                        <span>Level</span>
+                        <span>{Math.round(audioLevel)}%</span>
+                      </div>
+                      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                        <div 
+                          className={cn(
+                            "h-full transition-all duration-75 rounded-full",
+                            audioLevel > vadThreshold * 500 ? "bg-green-500" : "bg-primary/50"
+                          )}
+                          style={{ width: `${audioLevel}%` }}
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Threshold slider with tooltip */}
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <span>Sensitivity</span>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <HelpCircle className="h-3 w-3 cursor-help opacity-60 hover:opacity-100" />
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-[200px] text-xs">
+                              Minimum audio level to detect speech. Lower = more sensitive (catches quiet speech), higher = needs louder voice.
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                        <span className="font-mono">{(vadThreshold * 100).toFixed(1)}%</span>
+                      </div>
+                      <Slider
+                        value={[vadThreshold * 100]}
+                        onValueChange={([v]) => setVadThreshold(v / 100)}
+                        min={0.5}
+                        max={10}
+                        step={0.1}
+                        className="h-3"
+                        disabled={isListening}
                       />
                     </div>
-                  </div>
-                  
-                  {/* Threshold slider */}
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                      <span>Порог</span>
-                      <span className="font-mono">{(vadThreshold * 100).toFixed(1)}%</span>
+                    
+                    {/* Silence duration slider with tooltip */}
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <span>Pause</span>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <HelpCircle className="h-3 w-3 cursor-help opacity-60 hover:opacity-100" />
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-[200px] text-xs">
+                              How long to wait after you stop speaking before translating. Longer = waits for longer pauses.
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                        <span className="font-mono">{(silenceDuration / 1000).toFixed(1)}s</span>
+                      </div>
+                      <Slider
+                        value={[silenceDuration]}
+                        onValueChange={([v]) => setSilenceDuration(v)}
+                        min={500}
+                        max={4000}
+                        step={100}
+                        className="h-3"
+                        disabled={isListening}
+                      />
                     </div>
-                    <Slider
-                      value={[vadThreshold * 100]}
-                      onValueChange={([v]) => setVadThreshold(v / 100)}
-                      min={0.5}
-                      max={10}
-                      step={0.1}
-                      className="h-3"
-                      disabled={isListening}
-                    />
-                  </div>
-                  
-                  {/* Silence duration slider */}
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                      <span>Пауза</span>
-                      <span className="font-mono">{(silenceDuration / 1000).toFixed(1)}с</span>
-                    </div>
-                    <Slider
-                      value={[silenceDuration]}
-                      onValueChange={([v]) => setSilenceDuration(v)}
-                      min={500}
-                      max={4000}
-                      step={100}
-                      className="h-3"
-                      disabled={isListening}
-                    />
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
+                  </CollapsibleContent>
+                </Collapsible>
+              </TooltipProvider>
             )}
 
             {/* Live audio level bar when listening (VAD mode) */}
@@ -1107,7 +1134,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
             {pushToTalkMode && isPushToTalkActive && (
               <div className="flex items-center justify-center gap-2 py-3 rounded-lg bg-green-500/10 border border-green-500/30">
                 <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
-                <span className="text-sm font-medium text-green-600">Записываю...</span>
+                <span className="text-sm font-medium text-green-600">Recording...</span>
               </div>
             )}
 
@@ -1115,8 +1142,8 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
             {pushToTalkMode ? (
               <div className="text-center py-3 px-4 rounded-lg bg-muted/30 border border-dashed border-border">
                 <Keyboard className="h-6 w-6 mx-auto mb-1.5 text-muted-foreground" />
-                <p className="text-sm font-medium">Зажмите Пробел для записи</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Отпустите — и речь будет переведена</p>
+                <p className="text-sm font-medium">Hold Space to record</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Release to translate</p>
               </div>
             ) : (
               <Button
@@ -1127,12 +1154,12 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
                 {isListening ? (
                   <>
                     <MicOff className="h-4 w-4" />
-                    Остановить
+                    Stop
                   </>
                 ) : (
                   <>
                     <Mic className="h-4 w-4" />
-                    Начать перевод
+                    Start Translation
                   </>
                 )}
               </Button>
@@ -1142,7 +1169,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
             <div className="flex-1 overflow-y-auto min-h-[80px] max-h-[150px] border rounded-lg bg-muted/30 p-2 space-y-2">
               {translations.length === 0 ? (
                 <div className="text-center text-muted-foreground text-xs py-4">
-                  {isListening ? 'Слушаю... говорите чётко' : 'Нажмите "Начать перевод"'}
+                  {isListening ? 'Listening... speak clearly' : 'Press "Start Translation"'}
                 </div>
               ) : (
                 translations.map((entry) => (
@@ -1159,7 +1186,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
             {translations.length > 0 && (
               <div className="flex gap-2">
                 <Button variant="ghost" size="sm" className="text-xs flex-1" onClick={clearTranslations}>
-                  Очистить
+                  Clear
                 </Button>
                 <Button variant="outline" size="sm" className="text-xs gap-1" onClick={exportHistory}>
                   <Download className="h-3 w-3" />
@@ -1172,7 +1199,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
           <TabsContent value="history" className="flex-1 flex flex-col gap-3 overflow-hidden mt-3">
             {!user ? (
               <div className="text-center text-muted-foreground text-xs py-8">
-                Войдите для просмотра истории переводов
+                Sign in to view translation history
               </div>
             ) : historyLoading ? (
               <div className="flex items-center justify-center py-8">
@@ -1183,7 +1210,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
                 <div className="flex-1 overflow-y-auto min-h-[150px] max-h-[250px] border rounded-lg bg-muted/30 p-2 space-y-2">
                   {historyItems.length === 0 ? (
                     <div className="text-center text-muted-foreground text-xs py-8">
-                      История переводов пуста
+                      No translation history
                     </div>
                   ) : (
                     historyItems.map((entry) => (
@@ -1205,11 +1232,11 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
                   <div className="flex gap-2">
                     <Button variant="destructive" size="sm" className="text-xs flex-1 gap-1" onClick={clearHistory}>
                       <Trash2 className="h-3 w-3" />
-                      Очистить
+                      Clear
                     </Button>
                     <Button variant="outline" size="sm" className="text-xs flex-1 gap-1" onClick={exportHistory}>
                       <Download className="h-3 w-3" />
-                      Экспорт CSV
+                      Export CSV
                     </Button>
                   </div>
                 )}
