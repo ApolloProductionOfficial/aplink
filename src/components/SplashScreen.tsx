@@ -158,7 +158,7 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
               представляет
             </motion.p>
             
-            {/* APLink logo - letter by letter from left to right */}
+            {/* APLink logo - letter by letter from shadow, left to right with gradient */}
             <div className="relative mb-6">
               {/* Sweeping glow effect */}
               <motion.div
@@ -171,25 +171,45 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
                 transition={{ delay: 0.6, duration: 2, ease: "easeInOut" }}
               />
               <h1 className="text-6xl sm:text-8xl font-bold relative z-10 flex justify-center">
-                {"APLink".split("").map((letter, index) => (
-                  <motion.span
-                    key={index}
-                    className="text-primary inline-block"
-                    initial={{ opacity: 0, y: 20, scale: 0.5 }}
-                    animate={{ 
-                      opacity: stage >= 1 ? 1 : 0, 
-                      y: stage >= 1 ? 0 : 20,
-                      scale: stage >= 1 ? 1 : 0.5
-                    }}
-                    transition={{ 
-                      delay: 0.6 + index * 0.12, 
-                      duration: 0.4,
-                      ease: [0.34, 1.56, 0.64, 1]
-                    }}
-                  >
-                    {letter}
-                  </motion.span>
-                ))}
+                {"APLink".split("").map((letter, index) => {
+                  // Gradient colors matching main page: from-primary via-foreground to-primary
+                  const colors = [
+                    "hsl(var(--primary))",      // A
+                    "hsl(var(--primary))",      // P
+                    "hsl(var(--foreground))",   // L
+                    "hsl(var(--foreground))",   // i
+                    "hsl(var(--primary))",      // n
+                    "hsl(var(--primary))",      // k
+                  ];
+                  return (
+                    <motion.span
+                      key={index}
+                      className="inline-block relative"
+                      style={{ color: colors[index] }}
+                      initial={{ 
+                        opacity: 0, 
+                        x: -30,
+                        filter: "blur(8px)",
+                        textShadow: "0 0 0px transparent"
+                      }}
+                      animate={{ 
+                        opacity: stage >= 1 ? 1 : 0, 
+                        x: stage >= 1 ? 0 : -30,
+                        filter: stage >= 1 ? "blur(0px)" : "blur(8px)",
+                        textShadow: stage >= 1 
+                          ? "0 0 30px hsl(var(--primary) / 0.5)" 
+                          : "0 0 0px transparent"
+                      }}
+                      transition={{ 
+                        delay: 0.6 + index * 0.15, 
+                        duration: 0.5,
+                        ease: [0.25, 0.46, 0.45, 0.94]
+                      }}
+                    >
+                      {letter}
+                    </motion.span>
+                  );
+                })}
               </h1>
             </div>
             
