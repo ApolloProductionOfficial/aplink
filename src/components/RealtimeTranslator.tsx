@@ -69,6 +69,32 @@ const VOICES = [
   { id: 'neutral-alloy', name: 'Roger', gender: 'neutral', color: 'bg-orange-500' },
 ];
 
+const STORAGE_KEY = 'translator-settings';
+
+interface StoredSettings {
+  sourceLanguage: string;
+  targetLanguage: string;
+  selectedVoice: string;
+  pushToTalkMode: boolean;
+}
+
+const loadStoredSettings = (): Partial<StoredSettings> => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored ? JSON.parse(stored) : {};
+  } catch {
+    return {};
+  }
+};
+
+const saveSettings = (settings: StoredSettings) => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+  } catch {
+    // Ignore localStorage errors
+  }
+};
+
 export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
   isActive,
   onToggle,
@@ -76,9 +102,13 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
   className,
 }) => {
   const { user } = useAuth();
-  const [targetLanguage, setTargetLanguage] = useState('en');
-  const [sourceLanguage, setSourceLanguage] = useState('auto');
-  const [selectedVoice, setSelectedVoice] = useState('female-sarah');
+  
+  // Load initial values from localStorage
+  const storedSettings = loadStoredSettings();
+  
+  const [targetLanguage, setTargetLanguage] = useState(storedSettings.targetLanguage || 'en');
+  const [sourceLanguage, setSourceLanguage] = useState(storedSettings.sourceLanguage || 'auto');
+  const [selectedVoice, setSelectedVoice] = useState(storedSettings.selectedVoice || 'female-sarah');
   const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [translations, setTranslations] = useState<TranslationEntry[]>([]);
@@ -87,7 +117,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyItems, setHistoryItems] = useState<TranslationEntry[]>([]);
   const [isPreviewingVoice, setIsPreviewingVoice] = useState(false);
-  const [pushToTalkMode, setPushToTalkMode] = useState(false);
+  const [pushToTalkMode, setPushToTalkMode] = useState(storedSettings.pushToTalkMode ?? false);
   const [isPushToTalkActive, setIsPushToTalkActive] = useState(false);
   // VAD is always enabled (no toggle needed)
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -98,6 +128,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
   const [vadThreshold, setVadThreshold] = useState(0.02);
   const [silenceDuration, setSilenceDuration] = useState(2000);
   const [minSpeechDuration, setMinSpeechDuration] = useState(300);
+  const [isVadRecording, setIsVadRecording] = useState(false);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -136,6 +167,16 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
       stopListening();
     };
   }, []);
+
+  // Save settings to localStorage when they change
+  useEffect(() => {
+    saveSettings({
+      sourceLanguage,
+      targetLanguage,
+      selectedVoice,
+      pushToTalkMode,
+    });
+  }, [sourceLanguage, targetLanguage, selectedVoice, pushToTalkMode]);
 
   const loadHistory = async () => {
     if (!user) return;
@@ -397,6 +438,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
     
     console.log('VAD Recording: Starting new recording');
     vadRecordingRef.current = true;
+    setIsVadRecording(true);
     audioChunksRef.current = [];
     
     const mediaRecorder = new MediaRecorder(streamRef.current, {
@@ -412,6 +454,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
     mediaRecorder.onstop = async () => {
       console.log('VAD Recording: Stopped, processing audio');
       vadRecordingRef.current = false;
+      setIsVadRecording(false);
       const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
       await processAudioChunk(audioBlob);
     };
@@ -792,10 +835,13 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-          <TabsList className="grid w-full grid-cols-2 h-8">
-            <TabsTrigger value="translate" className="text-xs">Перевод</TabsTrigger>
-            <TabsTrigger value="history" className="text-xs flex items-center gap-1">
-              <History className="h-3 w-3" />
+          <TabsList className="grid w-full grid-cols-2 h-9">
+            <TabsTrigger value="translate" className="text-xs flex items-center gap-1.5">
+              <Languages className="h-3.5 w-3.5" />
+              Перевод
+            </TabsTrigger>
+            <TabsTrigger value="history" className="text-xs flex items-center gap-1.5">
+              <History className="h-3.5 w-3.5" />
               История
             </TabsTrigger>
           </TabsList>
@@ -1021,16 +1067,27 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
             {/* Live audio level bar when listening (VAD mode) */}
             {isListening && !pushToTalkMode && (
               <div className="flex items-center gap-2 px-1">
-                <Mic className={cn("h-3.5 w-3.5 shrink-0", isSpeaking ? "text-green-500" : "text-muted-foreground")} />
-                <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                <Mic className={cn(
+                  "h-3.5 w-3.5 shrink-0 transition-all",
+                  isSpeaking ? "text-green-500" : "text-muted-foreground",
+                  isVadRecording && "animate-pulse"
+                )} />
+                <div className={cn(
+                  "flex-1 h-1.5 bg-muted rounded-full overflow-hidden relative",
+                  isVadRecording && "ring-1 ring-green-500/50 ring-offset-1 ring-offset-background"
+                )}>
                   <div 
                     className={cn(
                       "h-full transition-all duration-75 rounded-full",
-                      audioLevel > vadThreshold * 500 ? "bg-green-500" : "bg-primary/40"
+                      audioLevel > vadThreshold * 500 ? "bg-green-500" : "bg-primary/40",
+                      isVadRecording && audioLevel > vadThreshold * 500 && "animate-pulse"
                     )}
                     style={{ width: `${audioLevel}%` }}
                   />
                 </div>
+                {isVadRecording && (
+                  <span className="text-[10px] text-green-500 font-medium animate-pulse">REC</span>
+                )}
               </div>
             )}
 
