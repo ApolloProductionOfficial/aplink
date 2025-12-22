@@ -318,6 +318,9 @@ const MeetingRoom = () => {
   useEffect(() => {
     let wakeLock: WakeLockSentinel | null = null;
     let keepAliveInterval: ReturnType<typeof setInterval> | null = null;
+    let audioContextKeepAlive: AudioContext | null = null;
+    let silentAudioInterval: ReturnType<typeof setInterval> | null = null;
+    let connectionCheckInterval: ReturnType<typeof setInterval> | null = null;
 
     // Request Wake Lock to prevent screen from sleeping
     const requestWakeLock = async () => {
@@ -339,6 +342,33 @@ const MeetingRoom = () => {
       }
     };
 
+    // Create silent audio to prevent browser from suspending WebRTC
+    const startSilentAudio = () => {
+      try {
+        audioContextKeepAlive = new AudioContext();
+        const oscillator = audioContextKeepAlive.createOscillator();
+        const gainNode = audioContextKeepAlive.createGain();
+        
+        // Set volume to 0 (silent)
+        gainNode.gain.value = 0;
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContextKeepAlive.destination);
+        oscillator.start();
+        
+        // Periodically resume audio context to prevent suspension
+        silentAudioInterval = setInterval(() => {
+          if (audioContextKeepAlive?.state === 'suspended') {
+            audioContextKeepAlive.resume().catch(() => {});
+          }
+        }, 5000);
+        
+        console.log('Silent audio started for connection keep-alive');
+      } catch (e) {
+        console.log('Silent audio not available:', e);
+      }
+    };
+
     // Keep WebSocket connections alive with periodic activity
     const startKeepAlive = () => {
       keepAliveInterval = setInterval(() => {
@@ -352,15 +382,46 @@ const MeetingRoom = () => {
             console.log('Keep-alive ping at', new Date().toISOString());
           }
         }
-      }, 15000); // Every 15 seconds
+      }, 10000); // Every 10 seconds (more frequent)
+    };
+
+    // Periodically check connection status
+    const startConnectionCheck = () => {
+      connectionCheckInterval = setInterval(() => {
+        if (apiRef.current && !userInitiatedEndRef.current) {
+          try {
+            const participants = apiRef.current.getParticipantsInfo();
+            if (participants) {
+              console.log('Connection check OK, participants:', participants.length);
+            }
+          } catch (e) {
+            console.log('Connection check failed:', e);
+          }
+        }
+      }, 20000); // Every 20 seconds
     };
 
     const handleVisibilityChange = async () => {
       console.log('Visibility changed:', document.hidden ? 'hidden' : 'visible');
       
+      // Resume audio context immediately when visibility changes
+      if (audioContextKeepAlive?.state === 'suspended') {
+        audioContextKeepAlive.resume().catch(() => {});
+      }
+      
       if (!document.hidden) {
-        // Tab became visible again
+        // Tab became visible again - immediately try to restore connection
         await requestWakeLock();
+        
+        // Check if Jitsi is still connected
+        if (apiRef.current && !userInitiatedEndRef.current) {
+          try {
+            // Trigger a check to ensure connection is active
+            apiRef.current.executeCommand('sendEndpointTextMessage', '', 'visibility-restore');
+          } catch (e) {
+            console.log('Could not send restore message:', e);
+          }
+        }
         
         // If disconnected, try to reconnect
         if (connectionStatus === 'disconnected' && apiRef.current && !userInitiatedEndRef.current) {
@@ -374,6 +435,51 @@ const MeetingRoom = () => {
             apiRef.current = null;
           }
         }
+      } else {
+        // Tab is being hidden - send a keep-alive immediately
+        if (apiRef.current && !userInitiatedEndRef.current) {
+          try {
+            apiRef.current.executeCommand('sendEndpointTextMessage', '', 'pre-hide-keepalive');
+          } catch (e) {
+            // Ignore
+          }
+        }
+      }
+    };
+
+    // Handle focus/blur at window level (catches app switching on macOS)
+    const handleWindowBlur = () => {
+      console.log('Window lost focus (app switch)');
+      // Resume audio context to prevent suspension
+      if (audioContextKeepAlive?.state === 'suspended') {
+        audioContextKeepAlive.resume().catch(() => {});
+      }
+      // Send immediate keep-alive
+      if (apiRef.current && !userInitiatedEndRef.current) {
+        try {
+          apiRef.current.executeCommand('sendEndpointTextMessage', '', 'blur-keepalive');
+        } catch (e) {
+          // Ignore
+        }
+      }
+    };
+
+    const handleWindowFocus = async () => {
+      console.log('Window gained focus (app switch back)');
+      // Resume audio context
+      if (audioContextKeepAlive?.state === 'suspended') {
+        audioContextKeepAlive.resume().catch(() => {});
+      }
+      // Re-acquire wake lock
+      await requestWakeLock();
+      // Check connection
+      if (apiRef.current && !userInitiatedEndRef.current) {
+        try {
+          const participants = apiRef.current.getParticipantsInfo();
+          console.log('Focus restored, participants:', participants?.length);
+        } catch (e) {
+          console.log('Focus restored but connection may need refresh');
+        }
       }
     };
 
@@ -386,6 +492,11 @@ const MeetingRoom = () => {
     const handleResume = async () => {
       console.log('Page resumed');
       await requestWakeLock();
+      
+      // Resume audio context
+      if (audioContextKeepAlive?.state === 'suspended') {
+        audioContextKeepAlive.resume().catch(() => {});
+      }
       
       // Check if still connected
       if (apiRef.current && !userInitiatedEndRef.current) {
@@ -413,9 +524,11 @@ const MeetingRoom = () => {
       }
     };
 
-    // Initialize
+    // Initialize all keep-alive mechanisms
     requestWakeLock();
     startKeepAlive();
+    startSilentAudio();
+    startConnectionCheck();
 
     // Add event listeners
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -423,6 +536,8 @@ const MeetingRoom = () => {
     document.addEventListener('resume', handleResume);
     window.addEventListener('pagehide', handlePageHide);
     window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('blur', handleWindowBlur);
+    window.addEventListener('focus', handleWindowFocus);
 
     return () => {
       // Cleanup
@@ -432,11 +547,22 @@ const MeetingRoom = () => {
       if (keepAliveInterval) {
         clearInterval(keepAliveInterval);
       }
+      if (silentAudioInterval) {
+        clearInterval(silentAudioInterval);
+      }
+      if (connectionCheckInterval) {
+        clearInterval(connectionCheckInterval);
+      }
+      if (audioContextKeepAlive) {
+        audioContextKeepAlive.close();
+      }
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       document.removeEventListener('freeze', handleFreeze);
       document.removeEventListener('resume', handleResume);
       window.removeEventListener('pagehide', handlePageHide);
       window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('blur', handleWindowBlur);
+      window.removeEventListener('focus', handleWindowFocus);
     };
   }, [connectionStatus, playReconnectingSound]);
 
