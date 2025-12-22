@@ -809,14 +809,14 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
                   Исходный
                 </label>
                 <Select value={sourceLanguage} onValueChange={setSourceLanguage} disabled={isListening}>
-                  <SelectTrigger className="h-9 text-sm bg-muted/30 border-border/50 hover:bg-muted/50 transition-colors">
+                  <SelectTrigger className="h-9 text-sm bg-muted/30 border-border/50 hover:bg-muted/50 transition-colors min-w-0">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="auto" className="text-sm">
-                      <span className="flex items-center gap-2">
+                      <span className="flex items-center gap-2 whitespace-nowrap">
                         <span className="text-base">🌍</span>
-                        <span>Авто-определение</span>
+                        <span>Автоопределение</span>
                       </span>
                     </SelectItem>
                     {LANGUAGES.map(lang => (
@@ -836,7 +836,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
                   Перевод на
                 </label>
                 <Select value={targetLanguage} onValueChange={setTargetLanguage} disabled={isListening}>
-                  <SelectTrigger className="h-9 text-sm bg-muted/30 border-border/50 hover:bg-muted/50 transition-colors">
+                  <SelectTrigger className="h-9 text-sm bg-muted/30 border-border/50 hover:bg-muted/50 transition-colors min-w-0">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -861,7 +861,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
               </label>
               <div className="flex gap-2">
                 <Select value={selectedVoice} onValueChange={setSelectedVoice} disabled={isListening}>
-                  <SelectTrigger className="h-9 text-sm flex-1 bg-muted/30 border-border/50 hover:bg-muted/50 transition-colors">
+                  <SelectTrigger className="h-9 text-sm flex-1 min-w-0 bg-muted/30 border-border/50 hover:bg-muted/50 transition-colors">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="max-h-[300px]">
