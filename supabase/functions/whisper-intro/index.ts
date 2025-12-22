@@ -17,9 +17,11 @@ serve(async (req) => {
       throw new Error("ELEVENLABS_API_KEY not configured");
     }
 
-    // Use a soft female voice - "Lily" is good for whisper-like delivery
-    const voiceId = "pFZP5JQG7iQjIQuC4Bku"; // Lily
+    // Use Sarah voice - very soft and feminine
+    const voiceId = "EXAVITQu4vr4xnSDxMaL"; // Sarah - soft female voice
     const text = "By Apollo Production";
+
+    console.log("Generating whisper audio...");
 
     const response = await fetch(
       `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
@@ -34,11 +36,11 @@ serve(async (req) => {
           model_id: "eleven_multilingual_v2",
           output_format: "mp3_44100_128",
           voice_settings: {
-            stability: 0.3,        // Lower = more expressive/whisper-like
-            similarity_boost: 0.75,
-            style: 0.7,            // More stylized for whisper effect
+            stability: 0.15,         // Very low = breathy whisper
+            similarity_boost: 0.5,
+            style: 0.9,              // High style for sensual delivery
             use_speaker_boost: false,
-            speed: 0.85,           // Slightly slower for sensual delivery
+            speed: 0.7,              // Much slower for intimate whisper
           },
         }),
       }
@@ -51,12 +53,13 @@ serve(async (req) => {
     }
 
     const audioBuffer = await response.arrayBuffer();
+    console.log("Audio generated successfully, size:", audioBuffer.byteLength);
 
     return new Response(audioBuffer, {
       headers: {
         ...corsHeaders,
         "Content-Type": "audio/mpeg",
-        "Cache-Control": "public, max-age=86400", // Cache for 24h
+        "Cache-Control": "public, max-age=86400",
       },
     });
   } catch (error: unknown) {
