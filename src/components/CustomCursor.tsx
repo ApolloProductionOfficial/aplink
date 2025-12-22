@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 
-const TRAIL_LENGTH = 15; // Reduced from 25 for performance
+const TRAIL_LENGTH = 12; // Optimized trail length
+const THROTTLE_MS = 16; // ~60fps throttle
 
 const CustomCursor = () => {
   const cursorRef = useRef<HTMLDivElement>(null);
@@ -11,14 +12,24 @@ const CustomCursor = () => {
     Array(TRAIL_LENGTH).fill({ x: -100, y: -100 })
   );
   const rafRef = useRef<number | null>(null);
+  const lastMoveRef = useRef(0);
   const reduceMotion = useReducedMotion();
 
   const animate = useCallback(() => {
-    // Update trail positions - each follows the one before it with lerp
+    const now = performance.now();
+    
+    // Throttle animation updates
+    if (now - lastMoveRef.current < THROTTLE_MS) {
+      rafRef.current = requestAnimationFrame(animate);
+      return;
+    }
+    lastMoveRef.current = now;
+
+    // Update trail positions with optimized lerp
     for (let i = TRAIL_LENGTH - 1; i > 0; i--) {
       const prev = trailPositions.current[i - 1];
       const curr = trailPositions.current[i];
-      const ease = 0.35 - (i * 0.015);
+      const ease = 0.3 - (i * 0.02);
       trailPositions.current[i] = {
         x: curr.x + (prev.x - curr.x) * ease,
         y: curr.y + (prev.y - curr.y) * ease,
@@ -28,46 +39,46 @@ const CustomCursor = () => {
     // First trail point follows cursor
     const pos = positionRef.current;
     trailPositions.current[0] = {
-      x: trailPositions.current[0].x + (pos.x - trailPositions.current[0].x) * 0.5,
-      y: trailPositions.current[0].y + (pos.y - trailPositions.current[0].y) * 0.5,
+      x: trailPositions.current[0].x + (pos.x - trailPositions.current[0].x) * 0.4,
+      y: trailPositions.current[0].y + (pos.y - trailPositions.current[0].y) * 0.4,
     };
 
-    // Update main cursor DOM
+    // Update main cursor with GPU-accelerated transform
     if (cursorRef.current) {
-      cursorRef.current.style.transform = `translate(${pos.x}px, ${pos.y}px) translate(-50%, -50%)`;
+      cursorRef.current.style.transform = `translate3d(${pos.x}px, ${pos.y}px, 0) translate(-50%, -50%)`;
     }
     
     // Draw comet trail on canvas
     const canvas = trailCanvasRef.current;
     if (canvas) {
-      const ctx = canvas.getContext('2d');
+      const ctx = canvas.getContext('2d', { alpha: true });
       if (ctx) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
         const points = trailPositions.current;
-        if (points.length > 1) {
-          // Draw gradient line from cursor to tail
+        if (points.length > 1 && points[0].x > 0) {
           ctx.beginPath();
           ctx.moveTo(points[0].x, points[0].y);
           
-          for (let i = 1; i < points.length; i++) {
-            ctx.lineTo(points[i].x, points[i].y);
+          // Use quadratic curves for smoother, faster rendering
+          for (let i = 1; i < points.length - 1; i++) {
+            const xc = (points[i].x + points[i + 1].x) / 2;
+            const yc = (points[i].y + points[i + 1].y) / 2;
+            ctx.quadraticCurveTo(points[i].x, points[i].y, xc, yc);
           }
           
-          // Create gradient along the line
+          // Simplified gradient with fewer stops
           const gradient = ctx.createLinearGradient(
             points[0].x, points[0].y,
             points[points.length - 1].x, points[points.length - 1].y
           );
-          gradient.addColorStop(0, 'hsla(199, 89%, 70%, 0.8)');
-          gradient.addColorStop(0.3, 'hsla(199, 89%, 75%, 0.4)');
-          gradient.addColorStop(0.6, 'hsla(199, 89%, 80%, 0.15)');
+          gradient.addColorStop(0, 'hsla(199, 89%, 70%, 0.7)');
+          gradient.addColorStop(0.5, 'hsla(199, 89%, 75%, 0.25)');
           gradient.addColorStop(1, 'hsla(0, 0%, 100%, 0)');
           
           ctx.strokeStyle = gradient;
-          ctx.lineWidth = 3;
+          ctx.lineWidth = 2;
           ctx.lineCap = 'round';
-          ctx.lineJoin = 'round';
           ctx.stroke();
         }
       }
@@ -77,23 +88,42 @@ const CustomCursor = () => {
   }, []);
 
   useEffect(() => {
-    // Don't run cursor effects on mobile/Safari/reduced motion
     if (reduceMotion) return;
     
-    // Set canvas size
     const canvas = trailCanvasRef.current;
     if (canvas) {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      // Use device pixel ratio for crisp rendering but cap it for performance
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = window.innerWidth * dpr;
+      canvas.height = window.innerHeight * dpr;
+      canvas.style.width = `${window.innerWidth}px`;
+      canvas.style.height = `${window.innerHeight}px`;
+      
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.scale(dpr, dpr);
+      }
       
       const handleResize = () => {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+        const newDpr = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.width = window.innerWidth * newDpr;
+        canvas.height = window.innerHeight * newDpr;
+        canvas.style.width = `${window.innerWidth}px`;
+        canvas.style.height = `${window.innerHeight}px`;
+        const resizeCtx = canvas.getContext('2d');
+        if (resizeCtx) {
+          resizeCtx.scale(newDpr, newDpr);
+        }
       };
       window.addEventListener('resize', handleResize, { passive: true });
     }
 
+    // Throttled mouse move handler
+    let lastMove = 0;
     const handlePointerMove = (e: PointerEvent | MouseEvent) => {
+      const now = performance.now();
+      if (now - lastMove < 8) return; // Throttle to ~120hz max
+      lastMove = now;
       positionRef.current = { x: e.clientX, y: e.clientY };
     };
 
@@ -107,7 +137,6 @@ const CustomCursor = () => {
     };
   }, [animate, reduceMotion]);
 
-  // Don't render on mobile/Safari for performance
   if (reduceMotion) {
     return null;
   }
@@ -115,27 +144,34 @@ const CustomCursor = () => {
   return (
     <div className="hidden md:block">
       <style>{`
-        body { cursor: none !important; }
-        * { cursor: none !important; }
+        body, body * { cursor: none !important; }
         input, textarea, [contenteditable="true"] { cursor: text !important; }
       `}</style>
 
-      {/* Canvas for comet trail */}
+      {/* Canvas for comet trail - GPU accelerated */}
       <canvas
         ref={trailCanvasRef}
         className="fixed top-0 left-0 pointer-events-none z-[9998]"
-        style={{ width: '100vw', height: '100vh' }}
+        style={{ 
+          width: '100vw', 
+          height: '100vh',
+          willChange: 'auto',
+          contain: 'strict'
+        }}
       />
 
-      {/* Main cursor */}
+      {/* Main cursor - GPU accelerated */}
       <div
         ref={cursorRef}
         className="fixed top-0 left-0 pointer-events-none z-[9999]"
-        style={{ willChange: 'transform' }}
+        style={{ 
+          willChange: 'transform',
+          contain: 'layout style'
+        }}
       >
         <div className="relative w-3 h-3">
           <div className="absolute inset-0 rounded-full bg-sky-400" />
-          <div className="absolute -inset-1 rounded-full bg-sky-300/60 blur-[3px]" />
+          <div className="absolute -inset-0.5 rounded-full bg-sky-300/50" />
         </div>
       </div>
     </div>
