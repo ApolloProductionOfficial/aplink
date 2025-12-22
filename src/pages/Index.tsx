@@ -435,20 +435,20 @@ const Index = () => {
               </span>
             </h1>
             
-            {/* Feature Cards - Reordered: Translator first, then IP, then AI */}
-            <div className="flex flex-wrap justify-center gap-4 mb-12 animate-slide-up" style={{ animationDelay: '100ms' }}>
-              <div className="glass px-5 py-3 rounded-xl flex items-center gap-3 hover:scale-105 transition-transform duration-300 hover:border-primary/50 border border-transparent animate-[pulse_2s_ease-in-out_3]">
-                <MessageCircle className="w-5 h-5 text-primary animate-[pulse_1.5s_ease-in-out_infinite]" />
-                <span className="text-muted-foreground">{(t.aplink as any)?.realtimeTranslator || 'Real-time Translator'}</span>
-              </div>
-              <div className="glass px-5 py-3 rounded-xl flex items-center gap-3 hover:scale-105 transition-transform duration-300 hover:border-primary/50 border border-transparent animate-[pulse_2s_ease-in-out_3]" style={{ animationDelay: '200ms' }}>
-                <Globe className="w-5 h-5 text-primary animate-[pulse_1.5s_ease-in-out_infinite]" style={{ animationDelay: '200ms' }} />
-                <span className="text-muted-foreground">{(t.aplink as any)?.noIPRestrictions || 'No IP Restrictions'}</span>
-              </div>
-              <div className="glass px-5 py-3 rounded-xl flex items-center gap-3 hover:scale-105 transition-transform duration-300 hover:border-primary/50 border border-transparent animate-[pulse_2s_ease-in-out_3]" style={{ animationDelay: '400ms' }}>
-                <Sparkles className="w-5 h-5 text-primary animate-[pulse_1.5s_ease-in-out_infinite]" style={{ animationDelay: '400ms' }} />
-                <span className="text-muted-foreground">{(t.aplink as any)?.aiMeetingSummaries || 'AI Meeting Summaries'}</span>
-              </div>
+            {/* Feature Pills - Compact inline badges */}
+            <div className="flex flex-wrap justify-center gap-3 mb-12 animate-slide-up" style={{ animationDelay: '100ms' }}>
+              <span className="px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-sm text-muted-foreground flex items-center gap-2">
+                <MessageCircle className="w-4 h-4 text-primary" />
+                {(t.aplink as any)?.realtimeTranslator || 'Real-time Translator'}
+              </span>
+              <span className="px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-sm text-muted-foreground flex items-center gap-2">
+                <Globe className="w-4 h-4 text-primary" />
+                {(t.aplink as any)?.noIPRestrictions || 'No IP Restrictions'}
+              </span>
+              <span className="px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-sm text-muted-foreground flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-primary" />
+                {(t.aplink as any)?.aiMeetingSummaries || 'AI Meeting Summaries'}
+              </span>
             </div>
 
             {/* Join Form */}
@@ -665,19 +665,19 @@ const Index = () => {
             </div>
           </div>
 
-          {/* Features */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+          {/* Features - 2 columns on mobile, 4 on desktop */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 max-w-6xl mx-auto">
             {features.map((feature, index) => (
               <div
                 key={feature.title}
-                className="glass rounded-2xl p-6 text-center hover:scale-105 transition-all duration-300 animate-slide-up group"
+                className="glass rounded-xl md:rounded-2xl p-4 md:p-6 text-center hover:scale-105 transition-all duration-300 animate-slide-up group"
                 style={{ animationDelay: `${300 + index * 100}ms` }}
               >
-                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mx-auto mb-4 group-hover:from-primary/30 group-hover:to-primary/10 transition-all duration-300">
-                  <feature.icon className="w-7 h-7 text-primary" />
+                <div className="w-10 h-10 md:w-14 md:h-14 rounded-lg md:rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mx-auto mb-3 md:mb-4 group-hover:from-primary/30 group-hover:to-primary/10 transition-all duration-300">
+                  <feature.icon className="w-5 h-5 md:w-7 md:h-7 text-primary" />
                 </div>
-                <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
-                <p className="text-sm text-muted-foreground">{feature.description}</p>
+                <h3 className="text-sm md:text-lg font-semibold mb-1 md:mb-2">{feature.title}</h3>
+                <p className="text-xs md:text-sm text-muted-foreground leading-tight">{feature.description}</p>
               </div>
             ))}
           </div>
