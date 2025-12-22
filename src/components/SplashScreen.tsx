@@ -12,27 +12,39 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
   // 0 = video reveals, 1 = text appears, 2 = fade out
 
   useEffect(() => {
-    // Check if splash was already shown this session
-    const hasSeenSplash = sessionStorage.getItem("aplink-splash-seen");
-    if (hasSeenSplash) {
-      onComplete();
-      return;
-    }
+    // Play whisper intro sound
+    const playWhisper = async () => {
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/whisper-intro`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            },
+          }
+        );
+        
+        if (response.ok) {
+          const audioBlob = await response.blob();
+          const audioUrl = URL.createObjectURL(audioBlob);
+          audioRef.current = new Audio(audioUrl);
+          audioRef.current.volume = 0.5;
+          audioRef.current.play().catch(() => {});
+        }
+      } catch (error) {
+        console.log("Could not play whisper intro");
+      }
+    };
 
-    // Play welcome sound
-    audioRef.current = new Audio("/audio/oscar-welcome.mp3");
-    audioRef.current.volume = 0.3;
-    audioRef.current.play().catch(() => {
-      // Autoplay blocked - that's ok
-    });
+    playWhisper();
 
     const timers = [
       setTimeout(() => setStage(1), 1200),   // Show text after video reveals
       setTimeout(() => setStage(2), 4000),   // Start fade out
-      setTimeout(() => {
-        sessionStorage.setItem("aplink-splash-seen", "true");
-        onComplete();
-      }, 4800), // Complete
+      setTimeout(() => onComplete(), 4800),  // Complete
     ];
 
     return () => {
@@ -43,10 +55,6 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
       }
     };
   }, [onComplete]);
-
-  // Don't render if already seen
-  const hasSeenSplash = typeof window !== "undefined" && sessionStorage.getItem("aplink-splash-seen");
-  if (hasSeenSplash) return null;
 
   return (
     <AnimatePresence>
