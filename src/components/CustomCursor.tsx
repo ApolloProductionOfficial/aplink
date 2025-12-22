@@ -1,13 +1,28 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 
 const CustomCursor = () => {
-  const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isPointer, setIsPointer] = useState(false);
   const [isText, setIsText] = useState(false);
+  const cursorRef = useRef<HTMLDivElement>(null);
+  const positionRef = useRef({ x: 0, y: 0 });
+  const rafRef = useRef<number | null>(null);
+
+  const updateCursorPosition = useCallback(() => {
+    if (cursorRef.current) {
+      cursorRef.current.style.left = `${positionRef.current.x}px`;
+      cursorRef.current.style.top = `${positionRef.current.y}px`;
+    }
+    rafRef.current = null;
+  }, []);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      setPosition({ x: e.clientX, y: e.clientY });
+      positionRef.current = { x: e.clientX, y: e.clientY };
+
+      // Use requestAnimationFrame for smooth updates
+      if (!rafRef.current) {
+        rafRef.current = requestAnimationFrame(updateCursorPosition);
+      }
 
       // Check if hovering over clickable element
       const target = e.target as HTMLElement;
@@ -22,8 +37,11 @@ const CustomCursor = () => {
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+      }
     };
-  }, []);
+  }, [updateCursorPosition]);
 
   // Don't show custom cursor over text inputs - let browser handle it
   if (isText) {
@@ -40,13 +58,15 @@ const CustomCursor = () => {
     <div className="hidden md:block">
       {/* Main cursor - Soft glow only */}
       <div
-        className={`fixed pointer-events-none z-[9999] transition-transform duration-100 ${
+        ref={cursorRef}
+        className={`fixed pointer-events-none z-[9999] will-change-[left,top] ${
           isPointer ? 'scale-150' : 'scale-100'
         }`}
         style={{
-          left: `${position.x}px`,
-          top: `${position.y}px`,
+          left: `${positionRef.current.x}px`,
+          top: `${positionRef.current.y}px`,
           transform: 'translate(-50%, -50%)',
+          transition: 'transform 0.1s ease-out',
         }}
       >
         {/* Core */}
