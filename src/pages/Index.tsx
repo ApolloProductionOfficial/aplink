@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Video, Users, Globe, Shield, ArrowRight, Sparkles, MessageCircle, ExternalLink, User, LogOut, UserPlus, Copy, Check } from "lucide-react";
+import { Video, Users, Globe, Shield, ArrowRight, MessageCircle, ExternalLink, User, LogOut, UserPlus, Copy, Check, Languages } from "lucide-react";
 import GoogleIcon from "@/components/icons/GoogleIcon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -405,40 +405,16 @@ const Index = () => {
       <main className="relative z-10 pt-24 pb-16">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center mb-16">
-            {/* Animated Badge */}
-            <motion.div 
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full glass mb-8 border border-primary/30"
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-            >
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-              >
-                <Sparkles className="w-4 h-4 text-primary" />
-              </motion.div>
-              <span className="text-sm bg-gradient-to-r from-muted-foreground to-primary bg-clip-text text-transparent font-medium">
-                {t.aplink?.badge || 'Next Generation Video Calls'}
-              </span>
-              <motion.div
-                animate={{ rotate: -360 }}
-                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-              >
-                <Sparkles className="w-4 h-4 text-primary" />
-              </motion.div>
-            </motion.div>
-            
             <h1 className="text-5xl md:text-7xl font-bold mb-6 animate-slide-up">
               <span className="bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent animate-text-shimmer">
-                {t.aplink?.title || 'Calls Without Borders'}
+                {t.aplink?.badge || 'Видеозвонки нового поколения'}
               </span>
             </h1>
             
             {/* Feature Pills - Compact inline badges */}
             <div className="flex flex-wrap justify-center gap-3 mb-12 animate-slide-up" style={{ animationDelay: '100ms' }}>
               <span className="px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-sm text-muted-foreground flex items-center gap-2">
-                <MessageCircle className="w-4 h-4 text-primary" />
+                <Languages className="w-4 h-4 text-primary" />
                 {(t.aplink as any)?.realtimeTranslator || 'Real-time Translator'}
               </span>
               <span className="px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-sm text-muted-foreground flex items-center gap-2">
@@ -446,7 +422,7 @@ const Index = () => {
                 {(t.aplink as any)?.noIPRestrictions || 'No IP Restrictions'}
               </span>
               <span className="px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-sm text-muted-foreground flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-primary" />
+                <Video className="w-4 h-4 text-primary" />
                 {(t.aplink as any)?.aiMeetingSummaries || 'AI Meeting Summaries'}
               </span>
             </div>
@@ -524,7 +500,7 @@ const Index = () => {
                   
                   <div className="flex flex-col sm:flex-row items-center gap-4">
                     <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center flex-shrink-0">
-                      <Sparkles className="w-7 h-7 text-primary" />
+                      <UserPlus className="w-7 h-7 text-primary" />
                     </div>
                     
                     <div className="flex-1 text-center sm:text-left">

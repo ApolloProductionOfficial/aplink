@@ -59,6 +59,22 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
     }
   }, [stage]);
 
+  // Text reveal animation - left to right
+  const textRevealVariants = {
+    hidden: {
+      clipPath: "inset(0 100% 0 0)",
+      opacity: 0,
+    },
+    visible: {
+      clipPath: "inset(0 0% 0 0)",
+      opacity: 1,
+      transition: {
+        duration: 1.2,
+        ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number],
+      },
+    },
+  };
+
   return (
     <AnimatePresence>
       {stage < 2 && (
@@ -157,19 +173,26 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
               представляет
             </motion.p>
             
-            <motion.h1
-              className="text-6xl sm:text-8xl font-bold mb-6 relative"
-              initial={{ opacity: 0, scale: 0.7 }}
-              animate={{ 
-                opacity: stage >= 1 ? 1 : 0, 
-                scale: stage >= 1 ? 1 : 0.7 
-              }}
-              transition={{ delay: 0.6, duration: 0.8, ease: [0.34, 1.56, 0.64, 1] }}
+            {/* APLink logo with left-to-right reveal from shadow */}
+            <motion.div
+              className="relative mb-6 overflow-hidden"
+              initial="hidden"
+              animate={stage >= 1 ? "visible" : "hidden"}
+              variants={textRevealVariants}
             >
-              <span className="bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text text-transparent bg-[length:200%_auto] animate-shimmer">
-                APLink
-              </span>
-            </motion.h1>
+              {/* Shadow/glow behind text */}
+              <motion.div
+                className="absolute inset-0 blur-2xl bg-primary/30"
+                initial={{ x: "-100%" }}
+                animate={{ x: stage >= 1 ? "100%" : "-100%" }}
+                transition={{ delay: 0.6, duration: 1.5, ease: "easeInOut" }}
+              />
+              <h1 className="text-6xl sm:text-8xl font-bold relative">
+                <span className="bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text text-transparent bg-[length:200%_auto] animate-shimmer">
+                  APLink
+                </span>
+              </h1>
+            </motion.div>
             
             <motion.p
               className="text-xl sm:text-2xl text-foreground/80 font-light tracking-wide"
@@ -177,7 +200,7 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
               animate={{ opacity: stage >= 1 ? 1 : 0, y: stage >= 1 ? 0 : 10 }}
               transition={{ delay: 0.9, duration: 0.5 }}
             >
-              Созвоны без границ
+              Видеозвонки нового поколения
             </motion.p>
 
             {/* Decorative line bottom */}
