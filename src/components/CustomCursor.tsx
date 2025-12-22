@@ -57,10 +57,10 @@ const CustomCursor = () => {
             points[0].x, points[0].y,
             points[points.length - 1].x, points[points.length - 1].y
           );
-          gradient.addColorStop(0, 'hsla(271, 91%, 65%, 0.8)');
-          gradient.addColorStop(0.3, 'hsla(271, 91%, 65%, 0.4)');
-          gradient.addColorStop(0.6, 'hsla(271, 91%, 65%, 0.15)');
-          gradient.addColorStop(1, 'hsla(271, 91%, 65%, 0)');
+          gradient.addColorStop(0, 'hsla(199, 89%, 70%, 0.8)');
+          gradient.addColorStop(0.3, 'hsla(199, 89%, 75%, 0.4)');
+          gradient.addColorStop(0.6, 'hsla(199, 89%, 80%, 0.15)');
+          gradient.addColorStop(1, 'hsla(0, 0%, 100%, 0)');
           
           ctx.strokeStyle = gradient;
           ctx.lineWidth = 3;
@@ -79,9 +79,9 @@ const CustomCursor = () => {
             points[0].x, points[0].y,
             points[points.length - 1].x, points[points.length - 1].y
           );
-          glowGradient.addColorStop(0, 'hsla(271, 91%, 65%, 0.3)');
-          glowGradient.addColorStop(0.5, 'hsla(271, 91%, 65%, 0.1)');
-          glowGradient.addColorStop(1, 'hsla(271, 91%, 65%, 0)');
+          glowGradient.addColorStop(0, 'hsla(199, 89%, 70%, 0.3)');
+          glowGradient.addColorStop(0.5, 'hsla(199, 89%, 80%, 0.1)');
+          glowGradient.addColorStop(1, 'hsla(0, 0%, 100%, 0)');
           
           ctx.strokeStyle = glowGradient;
           ctx.lineWidth = 8;
@@ -147,9 +147,9 @@ const CustomCursor = () => {
         style={{ willChange: 'transform' }}
       >
         <div className="relative w-3 h-3">
-          <div className="absolute inset-0 rounded-full bg-primary" />
-          <div className="absolute -inset-1 rounded-full bg-primary/60 blur-[3px]" />
-          <div className="absolute -inset-2 rounded-full bg-primary/30 blur-[6px]" />
+          <div className="absolute inset-0 rounded-full bg-sky-400" />
+          <div className="absolute -inset-1 rounded-full bg-sky-300/60 blur-[3px]" />
+          <div className="absolute -inset-2 rounded-full bg-white/30 blur-[6px]" />
         </div>
       </div>
     </div>

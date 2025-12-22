@@ -1200,15 +1200,20 @@ const MeetingRoom = () => {
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
-            <div className="relative w-10 h-10 rounded-full overflow-hidden ring-2 ring-primary/50 shadow-[0_0_15px_hsl(var(--primary)/0.5)]">
-              <video 
-                src={apolloLogo} 
-                autoPlay 
-                loop 
-                muted 
-                playsInline
-                className="w-full h-full object-cover"
-              />
+            <div className="relative w-12 h-12">
+              <div className="absolute inset-0 rounded-full bg-primary/40 blur-md animate-pulse" />
+              <div className="relative w-12 h-12 rounded-full overflow-hidden ring-2 ring-primary/50 shadow-[0_0_20px_hsl(var(--primary)/0.6)]">
+                <video 
+                  src={apolloLogo} 
+                  autoPlay 
+                  loop 
+                  muted 
+                  playsInline
+                  preload="metadata"
+                  className="absolute inset-0 w-full h-full object-cover scale-[1.3] origin-center"
+                  style={{ willChange: 'transform' }}
+                />
+              </div>
             </div>
             <span className="hidden sm:inline font-semibold">APLink</span>
           </button>
