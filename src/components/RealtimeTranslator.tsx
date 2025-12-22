@@ -90,14 +90,13 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
   const [pushToTalkMode, setPushToTalkMode] = useState(false);
   const [isPushToTalkActive, setIsPushToTalkActive] = useState(false);
   // VAD is always enabled (no toggle needed)
-  const vadEnabled = true;
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [audioLevel, setAudioLevel] = useState(0);
   const [vadSettingsOpen, setVadSettingsOpen] = useState(false);
   
   // VAD configurable settings
   const [vadThreshold, setVadThreshold] = useState(0.02);
-  const [silenceDuration, setSilenceDuration] = useState(1500);
+  const [silenceDuration, setSilenceDuration] = useState(2000);
   const [minSpeechDuration, setMinSpeechDuration] = useState(300);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -444,38 +443,49 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
     // Create audio context for analysis
     audioContextRef.current = new AudioContext();
     analyserRef.current = audioContextRef.current.createAnalyser();
-    analyserRef.current.fftSize = 512;
-    analyserRef.current.smoothingTimeConstant = 0.4;
+    analyserRef.current.fftSize = 1024;
+    analyserRef.current.smoothingTimeConstant = 0.2;
 
     const source = audioContextRef.current.createMediaStreamSource(streamRef.current);
     source.connect(analyserRef.current);
 
-    const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+    const timeData = new Uint8Array(analyserRef.current.fftSize);
+    let lastSpeaking = false;
 
     vadIntervalRef.current = setInterval(() => {
       if (!analyserRef.current) return;
 
-      analyserRef.current.getByteFrequencyData(dataArray);
+      // Time-domain RMS is more reliable for VAD than frequency bins
+      analyserRef.current.getByteTimeDomainData(timeData);
 
-      // Calculate RMS volume
       let sum = 0;
-      for (let i = 0; i < dataArray.length; i++) {
-        sum += (dataArray[i] / 255) ** 2;
+      for (let i = 0; i < timeData.length; i++) {
+        const v = (timeData[i] - 128) / 128;
+        sum += v * v;
       }
-      const rms = Math.sqrt(sum / dataArray.length);
+      const rms = Math.sqrt(sum / timeData.length);
 
       // Update audio level for visual indicator (0-100)
       setAudioLevel(Math.min(100, rms * 500));
 
       // In push-to-talk mode we only need the mic level meter, skip VAD logic
       if (pushToTalkMode) {
+        if (lastSpeaking) {
+          lastSpeaking = false;
+          setIsSpeaking(false);
+        }
         return;
+      }
+
+      const isAbove = rms > vadThreshold;
+      if (isAbove !== lastSpeaking) {
+        lastSpeaking = isAbove;
+        setIsSpeaking(isAbove);
       }
 
       const now = Date.now();
 
-      if (rms > vadThreshold) {
-        // Speech detected
+      if (isAbove) {
         silenceStartRef.current = null;
 
         if (!speechStartRef.current) {
@@ -486,19 +496,15 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
         // Start recording if speech has been detected for minimum duration
         if (!vadRecordingRef.current && (now - speechStartRef.current) >= minSpeechDuration) {
           console.log('VAD: Starting recording');
-          setIsSpeaking(true);
           startVadRecording();
         }
       } else {
-        // Silence detected
         if (speechStartRef.current && !silenceStartRef.current) {
           silenceStartRef.current = now;
         }
 
-        // If silence has lasted long enough, stop recording
         if (vadRecordingRef.current && silenceStartRef.current && (now - silenceStartRef.current) >= silenceDuration) {
           console.log('VAD: Silence detected, stopping recording');
-          setIsSpeaking(false);
           stopVadRecording();
           speechStartRef.current = null;
           silenceStartRef.current = null;
@@ -528,11 +534,10 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
     if (!streamRef.current) return;
     // In push-to-talk mode, don't start auto chunks
     if (pushToTalkMode && !pushToTalkRecordingRef.current) return;
-    // In VAD mode, don't use fixed intervals
-    if (vadEnabled) return;
 
+    // Legacy fixed-interval chunking (kept for fallback/debugging)
     audioChunksRef.current = [];
-    
+
     const mediaRecorder = new MediaRecorder(streamRef.current, {
       mimeType: 'audio/webm;codecs=opus',
     });
@@ -551,13 +556,13 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
     mediaRecorderRef.current = mediaRecorder;
     mediaRecorder.start();
 
-    // In auto mode without VAD: stop after 10 seconds
+    // Stop after 10 seconds
     setTimeout(() => {
       if (mediaRecorder.state === 'recording') {
         mediaRecorder.stop();
       }
     }, 10000);
-  }, [processAudioChunk, pushToTalkMode, vadEnabled]);
+  }, [processAudioChunk, pushToTalkMode]);
 
   // Push-to-talk: start recording on key down
   const startPushToTalk = useCallback(() => {
