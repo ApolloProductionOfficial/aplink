@@ -11,11 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslation } from "@/hooks/useTranslation";
 import { usePresence } from "@/hooks/usePresence";
-import AnimatedBackground from "@/components/AnimatedBackground";
-import StarField from "@/components/StarField";
 import CustomCursor from "@/components/CustomCursor";
-import NeonGlow from "@/components/NeonGlow";
-import FloatingOrbs from "@/components/FloatingOrbs";
 import ProfileCard from "@/components/ProfileCard";
 import APLinkBottomNav from "@/components/APLinkBottomNav";
 import FavoritesSheet from "@/components/FavoritesSheet";
@@ -238,29 +234,22 @@ const Index = () => {
         animate={{ opacity: showSplash ? 0 : 1 }}
         transition={{ duration: 0.5, delay: 0.2 }}
       >
-        <AnimatedBackground />
-        <StarField />
         <CustomCursor />
       
-        <FloatingOrbs />
-        <NeonGlow />
-      
-        {/* Video Background */}
-        <div className="fixed inset-0 z-0 flex items-center justify-center overflow-hidden bg-background">
+        {/* Video Background - optimized */}
+        <div className="fixed inset-0 z-0 overflow-hidden bg-background">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-primary/5" />
           <video
             autoPlay
             muted
             loop
             playsInline
-            preload="metadata"
-            poster=""
-            className="min-w-full min-h-full object-cover opacity-45 relative z-10"
-            style={{ willChange: 'transform' }}
+            preload="none"
+            className="absolute inset-0 w-full h-full object-cover opacity-30"
           >
             <source src={backgroundVideo} type="video/mp4" />
           </video>
-          <div className="absolute inset-0 z-20 bg-gradient-to-t from-background via-background/80 to-background/60" />
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-background/60" />
         </div>
 
         {/* Header */}
