@@ -12,7 +12,6 @@ import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 import { useConnectionSounds } from "@/hooks/useConnectionSounds";
 import { RealtimeTranslator } from "@/components/RealtimeTranslator";
 import logoVideo from "@/assets/logo-video.mov";
-import backgroundVideo from "@/assets/background-video-new.mp4";
 import CustomCursor from "@/components/CustomCursor";
 
 declare global {
@@ -781,22 +780,6 @@ const MeetingRoom = () => {
 
   return (
     <div className="h-screen w-screen bg-background flex flex-col overflow-hidden cursor-none relative">
-      {/* Background Video - Optimized */}
-      <video
-        autoPlay
-        loop
-        muted
-        playsInline
-        preload="metadata"
-        className="absolute inset-0 w-full h-full object-cover z-0 opacity-30"
-        style={{ willChange: 'transform' }}
-      >
-        <source src={backgroundVideo} type="video/mp4" />
-      </video>
-      
-      {/* Dark overlay for better contrast */}
-      <div className="absolute inset-0 bg-background/70 z-0" />
-      
       <CustomCursor />
       
       {/* Realtime Translator */}
