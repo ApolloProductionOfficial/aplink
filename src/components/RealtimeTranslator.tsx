@@ -8,8 +8,10 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { 
   Languages, Mic, MicOff, Volume2, Loader2, X, Minimize2, Maximize2, 
-  Download, History, Trash2, Play, Keyboard, Activity
+  Download, History, Trash2, Play, Keyboard, Activity, Settings2
 } from 'lucide-react';
+import { Slider } from '@/components/ui/slider';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -90,6 +92,13 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
   const [isPushToTalkActive, setIsPushToTalkActive] = useState(false);
   const [vadEnabled, setVadEnabled] = useState(true);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [audioLevel, setAudioLevel] = useState(0);
+  const [vadSettingsOpen, setVadSettingsOpen] = useState(false);
+  
+  // VAD configurable settings
+  const [vadThreshold, setVadThreshold] = useState(0.02);
+  const [silenceDuration, setSilenceDuration] = useState(1500);
+  const [minSpeechDuration, setMinSpeechDuration] = useState(300);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -107,11 +116,6 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
   const silenceStartRef = useRef<number | null>(null);
   const speechStartRef = useRef<number | null>(null);
   const vadRecordingRef = useRef(false);
-  
-  // VAD settings
-  const VAD_THRESHOLD = 0.02; // Volume threshold to detect speech
-  const SILENCE_DURATION = 1500; // ms of silence before sending (1.5 seconds)
-  const MIN_SPEECH_DURATION = 300; // minimum speech duration to record (300ms)
 
   // Auto-scroll to latest translation
   useEffect(() => {
@@ -441,10 +445,13 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
         sum += (dataArray[i] / 255) ** 2;
       }
       const rms = Math.sqrt(sum / dataArray.length);
+      
+      // Update audio level for visual indicator (0-100)
+      setAudioLevel(Math.min(100, rms * 500));
 
       const now = Date.now();
 
-      if (rms > VAD_THRESHOLD) {
+      if (rms > vadThreshold) {
         // Speech detected
         silenceStartRef.current = null;
         
@@ -453,7 +460,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
         }
         
         // Start recording if speech has been detected for minimum duration
-        if (!vadRecordingRef.current && (now - speechStartRef.current) >= MIN_SPEECH_DURATION) {
+        if (!vadRecordingRef.current && (now - speechStartRef.current) >= minSpeechDuration) {
           setIsSpeaking(true);
           startVadRecording();
         }
@@ -464,7 +471,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
         }
         
         // If silence has lasted long enough, stop recording
-        if (vadRecordingRef.current && silenceStartRef.current && (now - silenceStartRef.current) >= SILENCE_DURATION) {
+        if (vadRecordingRef.current && silenceStartRef.current && (now - silenceStartRef.current) >= silenceDuration) {
           setIsSpeaking(false);
           stopVadRecording();
           speechStartRef.current = null;
@@ -472,7 +479,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
         }
       }
     }, 50); // Check every 50ms
-  }, [vadEnabled, pushToTalkMode, startVadRecording, stopVadRecording]);
+  }, [vadEnabled, pushToTalkMode, startVadRecording, stopVadRecording, vadThreshold, silenceDuration, minSpeechDuration]);
 
   // Stop VAD
   const stopVad = useCallback(() => {
@@ -488,6 +495,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
     silenceStartRef.current = null;
     speechStartRef.current = null;
     setIsSpeaking(false);
+    setAudioLevel(0);
   }, []);
 
   const startRecordingChunk = useCallback(() => {
@@ -840,26 +848,111 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
               </div>
             </div>
 
-            {/* VAD toggle */}
-            <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/50 border border-border/50">
-              <div className="flex items-center gap-2">
-                <Activity className={cn("h-4 w-4", isSpeaking && vadEnabled && isListening ? "text-green-500 animate-pulse" : "text-muted-foreground")} />
-                <Label htmlFor="vad-mode" className="text-xs cursor-pointer">
-                  VAD (определение речи)
-                </Label>
-                {isSpeaking && vadEnabled && isListening && (
-                  <Badge variant="outline" className="text-[10px] h-4 px-1 border-green-500/50 text-green-500">
-                    Говорите...
-                  </Badge>
-                )}
+            {/* VAD toggle with settings */}
+            <Collapsible open={vadSettingsOpen} onOpenChange={setVadSettingsOpen}>
+              <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/50 border border-border/50">
+                <div className="flex items-center gap-2 flex-1">
+                  <Activity className={cn("h-4 w-4", isSpeaking && vadEnabled && isListening ? "text-green-500 animate-pulse" : "text-muted-foreground")} />
+                  <Label htmlFor="vad-mode" className="text-xs cursor-pointer">
+                    VAD (определение речи)
+                  </Label>
+                  {isSpeaking && vadEnabled && isListening && (
+                    <Badge variant="outline" className="text-[10px] h-4 px-1 border-green-500/50 text-green-500">
+                      Говорите...
+                    </Badge>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-6 w-6" disabled={!vadEnabled}>
+                      <Settings2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </CollapsibleTrigger>
+                  <Switch
+                    id="vad-mode"
+                    checked={vadEnabled}
+                    onCheckedChange={setVadEnabled}
+                    disabled={isListening || pushToTalkMode}
+                  />
+                </div>
               </div>
-              <Switch
-                id="vad-mode"
-                checked={vadEnabled}
-                onCheckedChange={setVadEnabled}
-                disabled={isListening || pushToTalkMode}
-              />
-            </div>
+              
+              <CollapsibleContent className="mt-2 space-y-3 px-3 py-2 rounded-lg bg-muted/30 border border-border/30">
+                {/* Audio level indicator */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-muted-foreground">Уровень звука</span>
+                    <span className="text-[10px] text-muted-foreground">{Math.round(audioLevel)}%</span>
+                  </div>
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <div 
+                      className={cn(
+                        "h-full transition-all duration-75 rounded-full",
+                        audioLevel > vadThreshold * 500 ? "bg-green-500" : "bg-primary/50"
+                      )}
+                      style={{ width: `${audioLevel}%` }}
+                    />
+                  </div>
+                  <div 
+                    className="relative h-0.5 -mt-1"
+                    style={{ marginLeft: `${Math.min(100, vadThreshold * 500)}%` }}
+                  >
+                    <div className="absolute w-0.5 h-3 -top-1 bg-destructive rounded" title="Порог" />
+                  </div>
+                </div>
+                
+                {/* Threshold slider */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-muted-foreground">Порог громкости</span>
+                    <span className="text-[10px] font-mono text-muted-foreground">{(vadThreshold * 100).toFixed(1)}%</span>
+                  </div>
+                  <Slider
+                    value={[vadThreshold * 100]}
+                    onValueChange={([v]) => setVadThreshold(v / 100)}
+                    min={0.5}
+                    max={10}
+                    step={0.1}
+                    className="h-4"
+                    disabled={isListening}
+                  />
+                </div>
+                
+                {/* Silence duration slider */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-muted-foreground">Пауза для отправки</span>
+                    <span className="text-[10px] font-mono text-muted-foreground">{(silenceDuration / 1000).toFixed(1)}с</span>
+                  </div>
+                  <Slider
+                    value={[silenceDuration]}
+                    onValueChange={([v]) => setSilenceDuration(v)}
+                    min={500}
+                    max={4000}
+                    step={100}
+                    className="h-4"
+                    disabled={isListening}
+                  />
+                </div>
+                
+                {/* Min speech duration slider */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-muted-foreground">Мин. длит. речи</span>
+                    <span className="text-[10px] font-mono text-muted-foreground">{minSpeechDuration}мс</span>
+                  </div>
+                  <Slider
+                    value={[minSpeechDuration]}
+                    onValueChange={([v]) => setMinSpeechDuration(v)}
+                    min={100}
+                    max={1000}
+                    step={50}
+                    className="h-4"
+                    disabled={isListening}
+                  />
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
 
             {/* Push-to-talk toggle */}
             <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/50 border border-border/50">
@@ -879,6 +972,22 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
                 disabled={isListening}
               />
             </div>
+
+            {/* Live audio level bar when listening */}
+            {isListening && vadEnabled && (
+              <div className="flex items-center gap-2 px-1">
+                <Mic className={cn("h-3.5 w-3.5 shrink-0", isSpeaking ? "text-green-500" : "text-muted-foreground")} />
+                <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                  <div 
+                    className={cn(
+                      "h-full transition-all duration-75 rounded-full",
+                      audioLevel > vadThreshold * 500 ? "bg-green-500" : "bg-primary/40"
+                    )}
+                    style={{ width: `${audioLevel}%` }}
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Start/Stop button */}
             <Button
