@@ -49,10 +49,10 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
     
     if (action === 'join') {
-      // Validate userId is a proper UUID; for guests generate a valid UUID
+      // Validate userId is a proper UUID; if missing/invalid, store NULL (guest)
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       const isValidUUID = userId && uuidRegex.test(userId);
-      const finalUserId = isValidUUID ? userId : crypto.randomUUID();
+      const finalUserId = isValidUUID ? userId : null;
 
       // Insert new participant record
       const { data, error } = await supabase
@@ -121,7 +121,20 @@ serve(async (req) => {
     
   } catch (error: unknown) {
     console.error('Error:', error);
-    const message = error instanceof Error ? error.message : 'Unknown error';
+
+    const message = (() => {
+      if (error instanceof Error) return error.message;
+      if (typeof error === 'string') return error;
+      if (error && typeof error === 'object' && 'message' in error) {
+        return String((error as any).message);
+      }
+      try {
+        return JSON.stringify(error);
+      } catch {
+        return 'Unknown error';
+      }
+    })();
+
     return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
