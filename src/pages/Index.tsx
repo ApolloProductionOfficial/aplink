@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect, useCallback } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Video, Users, Globe, Shield, ArrowRight, Sparkles, MessageCircle, ExternalLink, User, LogOut, UserPlus, Copy, Check } from "lucide-react";
 import GoogleIcon from "@/components/icons/GoogleIcon";
@@ -19,6 +19,7 @@ import FloatingOrbs from "@/components/FloatingOrbs";
 import FavoriteContacts from "@/components/FavoriteContacts";
 import APLinkBottomNav from "@/components/APLinkBottomNav";
 import FavoritesSheet from "@/components/FavoritesSheet";
+import SplashScreen from "@/components/SplashScreen";
 import logoVideo from "@/assets/logo-video.mov";
 import apolloLogo from "@/assets/apollo-logo.mp4";
 import {
@@ -52,6 +53,7 @@ const Index = () => {
   const [savingUsername, setSavingUsername] = useState(false);
   const [favoritesOpen, setFavoritesOpen] = useState(false);
   const [formHighlight, setFormHighlight] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
   const navigate = useNavigate();
   const { user, isAdmin, isLoading, signOut, signInWithGoogle } = useAuth();
   const { toast } = useToast();
@@ -228,11 +230,23 @@ const Index = () => {
     }
   ];
 
+  const handleSplashComplete = useCallback(() => {
+    setShowSplash(false);
+  }, []);
+
   return (
-    <div className="min-h-screen bg-background text-foreground relative overflow-hidden">
-      <AnimatedBackground />
-      <StarField />
-      <CustomCursor />
+    <>
+      {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
+      
+      <motion.div 
+        className="min-h-screen bg-background text-foreground relative overflow-hidden"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: showSplash ? 0 : 1 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+      >
+        <AnimatedBackground />
+        <StarField />
+        <CustomCursor />
       
       {/* Floating Orbs Background */}
       <FloatingOrbs />
@@ -263,28 +277,9 @@ const Index = () => {
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <motion.div 
-            className="flex items-center gap-3"
-            initial={{ opacity: 0, scale: 0.5, rotate: -180 }}
-            animate={{ opacity: 1, scale: 1, rotate: 0 }}
-            transition={{ 
-              duration: 0.8, 
-              ease: [0.34, 1.56, 0.64, 1],
-              delay: 0.2 
-            }}
-          >
-            <motion.div 
-              className="relative w-12 h-12"
-              initial={{ boxShadow: "0 0 0px hsl(var(--primary)/0)" }}
-              animate={{ boxShadow: "0 0 30px hsl(var(--primary)/0.8)" }}
-              transition={{ duration: 1.2, delay: 0.8 }}
-            >
-              <motion.div 
-                className="absolute inset-0 rounded-full bg-primary/40 blur-md"
-                initial={{ opacity: 0, scale: 0 }}
-                animate={{ opacity: 1, scale: 1.2 }}
-                transition={{ duration: 0.6, delay: 0.5 }}
-              />
+          <div className="flex items-center gap-3">
+            <div className="relative w-12 h-12">
+              <div className="absolute inset-0 rounded-full bg-primary/40 blur-md animate-pulse" />
               <div className="relative w-12 h-12 rounded-full overflow-hidden ring-2 ring-primary/50 shadow-[0_0_20px_hsl(var(--primary)/0.6)]">
                 <video 
                   src={apolloLogo} 
@@ -297,21 +292,16 @@ const Index = () => {
                   style={{ willChange: 'transform' }}
                 />
               </div>
-            </motion.div>
-            <motion.div 
-              className="flex flex-col"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.6 }}
-            >
+            </div>
+            <div className="flex flex-col">
               <span className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent">
                 APLink
               </span>
               <span className="text-[10px] sm:text-xs text-muted-foreground -mt-1">
                 by Apollo Production
               </span>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
           <div className="flex items-center gap-2 sm:gap-3">
             {/* External links - hidden on mobile, visible on desktop */}
             <div className="hidden md:flex items-center gap-1">
@@ -706,7 +696,8 @@ const Index = () => {
       
       {/* Favorites Sheet */}
       <FavoritesSheet open={favoritesOpen} onOpenChange={setFavoritesOpen} />
-    </div>
+      </motion.div>
+    </>
   );
 };
 
