@@ -37,6 +37,11 @@ const MeetingRoom = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [showIPPanel, setShowIPPanel] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'reconnecting'>('connecting');
+  const connectionStatusRef = useRef(connectionStatus);
+  useEffect(() => {
+    connectionStatusRef.current = connectionStatus;
+  }, [connectionStatus]);
+
   const reconnectAttemptsRef = useRef(0);
   const maxReconnectAttempts = 3;
   const transcriptRef = useRef<string[]>([]);
@@ -472,7 +477,7 @@ const MeetingRoom = () => {
         }
 
         // If we know we are disconnected, reinitialize immediately
-        if (connectionStatus === 'disconnected' && !userInitiatedEndRef.current) {
+        if (connectionStatusRef.current === 'disconnected' && !userInitiatedEndRef.current) {
           console.log('Visible and disconnected - reinitializing Jitsi');
           setConnectionStatus('reconnecting');
           playReconnectingSound();
@@ -635,7 +640,7 @@ const MeetingRoom = () => {
       window.removeEventListener('blur', handleWindowBlur);
       window.removeEventListener('focus', handleWindowFocus);
     };
-  }, [connectionStatus, playReconnectingSound]);
+  }, [playReconnectingSound]);
 
   useEffect(() => {
     let qualityInterval: ReturnType<typeof setInterval> | null = null;
@@ -734,10 +739,19 @@ const MeetingRoom = () => {
         apiRef.current = new window.JitsiMeetExternalAPI(domain, options);
         setIsLoading(false);
 
+        const logJitsiEvent = (name: string, payload?: unknown) => {
+          console.log(`[JITSI:${name}]`, {
+            hidden: document.hidden,
+            visibilityState: document.visibilityState,
+            payload,
+          });
+        };
+
         // Listen for error messages from Jitsi
         apiRef.current.addEventListener('errorOccurred', (error: { error: { name: string; message: string } }) => {
           console.error('Jitsi error:', error);
-          
+          logJitsiEvent('errorOccurred', error);
+
           // Handle permission/access denied errors
           if (error?.error?.name === 'conference.connectionError.accessDenied' || 
               error?.error?.message?.includes('not allowed') ||
@@ -749,6 +763,11 @@ const MeetingRoom = () => {
             });
           }
         });
+
+        // Extra diagnostics for background disconnects
+        apiRef.current.addEventListener('conferenceFailed', (e: unknown) => logJitsiEvent('conferenceFailed', e));
+        apiRef.current.addEventListener('connectionInterrupted', (e: unknown) => logJitsiEvent('connectionInterrupted', e));
+        apiRef.current.addEventListener('connectionRestored', (e: unknown) => logJitsiEvent('connectionRestored', e));
 
         // Track connection status
         apiRef.current.addEventListener('videoConferenceJoined', () => {
