@@ -530,6 +530,7 @@ const MeetingRoom = () => {
             const isVideoMuted = (await apiRef.current.isVideoMuted?.()) ?? true;
             if (prev.videoMuted === false && isVideoMuted === true) {
               console.log('Restoring video state after background');
+              logDiagnostic('background-video-restore', { action: 'toggleVideo' });
               apiRef.current.executeCommand('toggleVideo');
             }
           } catch (e) {
@@ -586,11 +587,10 @@ const MeetingRoom = () => {
 
             mediaStateOnHideRef.current = { audioMuted, videoMuted };
 
-            // Mute video while in background to reduce CPU/network pressure; we restore on return.
-            if (!videoMuted) {
-              console.log('Backgrounding: muting video to improve stability');
-              apiRef.current.executeCommand('toggleVideo');
-            }
+            // NOTE: Do NOT auto-mute video on background.
+            // It makes the user experience feel like the video "disappears" when minimizing.
+            // We only keep a snapshot of current mute state for diagnostics / future restore logic.
+            logDiagnostic('background-state-captured', { audioMuted, videoMuted });
 
             // Send a keep-alive immediately
             apiRef.current.executeCommand('sendEndpointTextMessage', '', 'pre-hide-keepalive');
