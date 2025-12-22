@@ -216,6 +216,7 @@ const Profile = () => {
             variant="ghost"
             size="icon"
             onClick={() => navigate(-1)}
+            className="focus-visible:ring-0 ring-0"
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
@@ -319,7 +320,7 @@ const Profile = () => {
           <Button
             onClick={handleSave}
             disabled={saving}
-            className="w-full"
+            className="w-full focus-visible:ring-0 ring-0"
           >
             {saving ? (
               <>

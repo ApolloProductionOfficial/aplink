@@ -1194,7 +1194,7 @@ const MeetingRoom = () => {
                   variant={isRecording ? "destructive" : "outline"}
                   size="sm"
                   disabled={isTranscribing}
-                  className={`flex flex-col sm:flex-row items-center justify-center gap-1 h-auto py-2 px-2 sm:px-3 focus-visible:ring-0 ${isRecording ? "animate-pulse ring-0" : "border-primary/50 hover:bg-primary/10 ring-0"}`}
+                  className={`flex flex-col sm:flex-row items-center justify-center gap-1 h-auto py-2 px-2 sm:px-3 focus-visible:ring-0 ring-0 transition-all duration-300 ${isRecording ? "scale-105 shadow-lg shadow-destructive/30" : "border-primary/50 hover:bg-primary/10"}`}
                 >
                   {isTranscribing ? (
                     <>
@@ -1203,15 +1203,17 @@ const MeetingRoom = () => {
                     </>
                   ) : isRecording ? (
                     <>
-                      <div className="relative">
-                        <MicOff className="w-5 h-5" />
-                        <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-ping" />
+                      <div className="relative animate-fade-in">
+                        <MicOff className="w-5 h-5 animate-pulse" />
+                        <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full">
+                          <span className="absolute inset-0 w-full h-full bg-red-500 rounded-full animate-ping opacity-75" />
+                        </span>
                       </div>
-                      <span className="text-[10px] sm:text-xs font-medium">{t.meetingRoom.stop}</span>
+                      <span className="text-[10px] sm:text-xs font-medium animate-fade-in">{t.meetingRoom.stop}</span>
                     </>
                   ) : (
                     <>
-                      <Mic className="w-5 h-5" />
+                      <Mic className="w-5 h-5 transition-transform duration-200" />
                       <span className="text-[10px] sm:text-xs font-medium">{t.meetingRoom.record}</span>
                     </>
                   )}
