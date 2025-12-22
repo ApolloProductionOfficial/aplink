@@ -3,37 +3,27 @@ import { useState, useEffect } from 'react';
 /**
  * Hook to detect if user prefers reduced motion or is on a low-power device
  * Returns true if animations should be reduced/disabled
+ * Note: Safari is NOT disabled - we use optimizations instead
  */
 export const useReducedMotion = () => {
   const [shouldReduceMotion, setShouldReduceMotion] = useState(() => {
-    // Initial check on mount (SSR safe)
     if (typeof window === 'undefined') return false;
     
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const isMobile = window.innerWidth < 768;
-    // Safari detection - Safari has performance issues with blur/backdrop-filter
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
     
-    return prefersReducedMotion || isMobile || isSafari;
+    // Only disable on mobile or explicit user preference - NOT Safari
+    return prefersReducedMotion || isMobile;
   });
 
   useEffect(() => {
-    // Check for user preference
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    
-    // Check if on mobile (likely lower performance)
     const isMobile = window.innerWidth < 768;
-    
-    // Safari detection - Safari struggles with blur effects
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
     
     // Check device memory if available (Chrome only)
     const hasLowMemory = (navigator as any).deviceMemory && (navigator as any).deviceMemory < 4;
     
-    // Check hardware concurrency (fewer cores = less power)
-    const hasLowCores = navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4;
-    
-    // Check for battery saver mode (if available)
+    // Check for battery saver mode
     const checkBattery = async () => {
       try {
         const battery = await (navigator as any).getBattery?.();
@@ -46,25 +36,23 @@ export const useReducedMotion = () => {
     };
     checkBattery();
     
-    // Reduce motion on mobile, low-power devices, or Safari
-    const shouldReduce = prefersReducedMotion || isMobile || isSafari || hasLowMemory || hasLowCores;
+    // Reduce motion on mobile, low-power devices, or user preference - but NOT Safari
+    const shouldReduce = prefersReducedMotion || isMobile || hasLowMemory;
     setShouldReduceMotion(shouldReduce);
 
-    // Listen for changes in preference
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     const handleChange = (e: MediaQueryListEvent) => {
-      setShouldReduceMotion(e.matches || isMobile || isSafari);
+      setShouldReduceMotion(e.matches || isMobile);
     };
 
     mediaQuery.addEventListener('change', handleChange);
 
-    // Also update on resize (debounced)
     let resizeTimeout: ReturnType<typeof setTimeout>;
     const handleResize = () => {
       clearTimeout(resizeTimeout);
       resizeTimeout = setTimeout(() => {
         const nowMobile = window.innerWidth < 768;
-        setShouldReduceMotion(prefersReducedMotion || nowMobile || isSafari);
+        setShouldReduceMotion(prefersReducedMotion || nowMobile);
       }, 150);
     };
 
