@@ -387,8 +387,16 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
 
   // VAD: Start recording when speech detected
   const startVadRecording = useCallback(() => {
-    if (!streamRef.current || vadRecordingRef.current) return;
+    if (!streamRef.current) {
+      console.log('VAD Recording: No stream');
+      return;
+    }
+    if (vadRecordingRef.current) {
+      console.log('VAD Recording: Already recording');
+      return;
+    }
     
+    console.log('VAD Recording: Starting new recording');
     vadRecordingRef.current = true;
     audioChunksRef.current = [];
     
@@ -403,6 +411,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
     };
 
     mediaRecorder.onstop = async () => {
+      console.log('VAD Recording: Stopped, processing audio');
       vadRecordingRef.current = false;
       const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
       await processAudioChunk(audioBlob);
@@ -421,8 +430,16 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
 
   // VAD: Analyze audio levels (and always run mic level meter)
   const startVad = useCallback(() => {
-    if (!streamRef.current || !vadEnabled) return;
-    if (vadIntervalRef.current) return;
+    if (!streamRef.current) {
+      console.log('VAD: No stream available');
+      return;
+    }
+    if (vadIntervalRef.current) {
+      console.log('VAD: Already running');
+      return;
+    }
+
+    console.log('VAD: Starting audio analysis, pushToTalkMode:', pushToTalkMode);
 
     // Create audio context for analysis
     audioContextRef.current = new AudioContext();
@@ -450,9 +467,8 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
       // Update audio level for visual indicator (0-100)
       setAudioLevel(Math.min(100, rms * 500));
 
-      // In push-to-talk mode we only need the mic level meter
+      // In push-to-talk mode we only need the mic level meter, skip VAD logic
       if (pushToTalkMode) {
-        setIsSpeaking(false);
         return;
       }
 
@@ -464,10 +480,12 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
 
         if (!speechStartRef.current) {
           speechStartRef.current = now;
+          console.log('VAD: Speech started');
         }
 
         // Start recording if speech has been detected for minimum duration
         if (!vadRecordingRef.current && (now - speechStartRef.current) >= minSpeechDuration) {
+          console.log('VAD: Starting recording');
           setIsSpeaking(true);
           startVadRecording();
         }
@@ -479,6 +497,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
 
         // If silence has lasted long enough, stop recording
         if (vadRecordingRef.current && silenceStartRef.current && (now - silenceStartRef.current) >= silenceDuration) {
+          console.log('VAD: Silence detected, stopping recording');
           setIsSpeaking(false);
           stopVadRecording();
           speechStartRef.current = null;
@@ -486,7 +505,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
         }
       }
     }, 50); // Check every 50ms
-  }, [vadEnabled, pushToTalkMode, startVadRecording, stopVadRecording, vadThreshold, silenceDuration, minSpeechDuration]);
+  }, [pushToTalkMode, startVadRecording, stopVadRecording, vadThreshold, silenceDuration, minSpeechDuration]);
 
   // Stop VAD
   const stopVad = useCallback(() => {
