@@ -71,7 +71,7 @@ export type Database = {
           joined_at: string
           left_at: string | null
           room_id: string
-          user_id: string
+          user_id: string | null
           user_name: string
         }
         Insert: {
@@ -79,7 +79,7 @@ export type Database = {
           joined_at?: string
           left_at?: string | null
           room_id: string
-          user_id: string
+          user_id?: string | null
           user_name: string
         }
         Update: {
@@ -87,7 +87,7 @@ export type Database = {
           joined_at?: string
           left_at?: string | null
           room_id?: string
-          user_id?: string
+          user_id?: string | null
           user_name?: string
         }
         Relationships: []
