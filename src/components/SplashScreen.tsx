@@ -6,7 +6,7 @@ interface SplashScreenProps {
   onComplete: () => void;
 }
 
-const SPLASH_SESSION_KEY = 'aplink_splash_shown';
+const SPLASH_SESSION_KEY = "aplink_splash_state_v2";
 
 const SplashScreen = ({ onComplete }: SplashScreenProps) => {
   const [stage, setStage] = useState(0);
@@ -15,23 +15,25 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
   // 0 = video reveals, 1 = text appears, 2 = fade out
 
   useEffect(() => {
-    // Check if splash was already shown this session
-    const splashShown = sessionStorage.getItem(SPLASH_SESSION_KEY);
-    
-    if (splashShown) {
-      // Skip splash, complete immediately
+    // sessionStorage: null -> not shown, in_progress -> started but not finished, done -> fully shown
+    const splashState = sessionStorage.getItem(SPLASH_SESSION_KEY);
+
+    if (splashState === "done") {
       onComplete();
       return;
     }
-    
-    // Mark splash as shown for this session
-    sessionStorage.setItem(SPLASH_SESSION_KEY, 'true');
+
+    // Mark as in progress so React StrictMode double-invocation doesn't permanently skip the splash
+    sessionStorage.setItem(SPLASH_SESSION_KEY, "in_progress");
     setShouldShow(true);
-    
+
     const timers = [
-      setTimeout(() => setStage(1), 800),    // Show text
-      setTimeout(() => setStage(2), 5000),   // Start fade out (~5 sec)
-      setTimeout(() => onComplete(), 5800),  // Complete
+      setTimeout(() => setStage(1), 800), // Show text
+      setTimeout(() => setStage(2), 5000), // Start fade out (~5 sec)
+      setTimeout(() => {
+        sessionStorage.setItem(SPLASH_SESSION_KEY, "done");
+        onComplete();
+      }, 5800),
     ];
 
     return () => {
