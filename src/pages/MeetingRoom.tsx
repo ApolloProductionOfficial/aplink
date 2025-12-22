@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Copy, Check, Users, User, Sparkles, Mic, MicOff, Wifi, WifiOff, RefreshCw, Globe, Languages, Signal, SignalLow, SignalMedium, SignalHigh, Bug, ClipboardCopy } from "lucide-react";
+import { ArrowLeft, Copy, Check, Users, User, Sparkles, Mic, MicOff, Wifi, WifiOff, RefreshCw, Globe, Languages, Signal, SignalLow, SignalMedium, SignalHigh, Bug, ClipboardCopy, Link2 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import ParticipantsIPPanel from "@/components/ParticipantsIPPanel";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -1145,7 +1146,7 @@ const MeetingRoom = () => {
       )}
       {/* Header - auto-hides */}
       <header 
-        className="flex flex-col px-4 py-2 sm:py-3 bg-card/80 backdrop-blur-xl border-b border-border/50 z-50 absolute top-0 left-0 right-0 gap-2"
+        className="flex flex-col px-3 sm:px-4 py-2 sm:py-3 bg-card/90 backdrop-blur-xl border-b border-border/50 z-50 absolute top-0 left-0 right-0 gap-3"
       >
         {/* Top row: Logo and room name */}
         <div className="flex items-center justify-between w-full">
@@ -1172,94 +1173,124 @@ const MeetingRoom = () => {
             <span className="font-semibold text-sm sm:text-base">APLink</span>
           </button>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 bg-background/50 px-3 py-1.5 rounded-full border border-border/30">
             <Users className="w-4 h-4 text-primary" />
-            <span className="text-sm font-medium truncate max-w-[120px] sm:max-w-[200px]">{roomDisplayName}</span>
+            <span className="text-sm font-medium truncate max-w-[100px] sm:max-w-[200px]">{roomDisplayName}</span>
           </div>
         </div>
         
-        {/* Bottom row: Control buttons with labels */}
-        <div className="flex w-full justify-center gap-2 flex-wrap">
-          {/* Recording button */}
-          <Button
-            onClick={toggleRecording}
-            variant={isRecording ? "destructive" : "outline"}
-            size="sm"
-            disabled={isTranscribing}
-            className={`flex items-center gap-1.5 ${isRecording ? "" : "border-primary/50 hover:bg-primary/10"}`}
-          >
-            {isTranscribing ? (
-              <>
-                <div className="w-4 h-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                <span className="text-xs">Обработка...</span>
-              </>
-            ) : isRecording ? (
-              <>
-                <MicOff className="w-4 h-4" />
-                <span className="text-xs">Стоп</span>
-              </>
-            ) : (
-              <>
-                <Mic className="w-4 h-4" />
-                <span className="text-xs">Запись</span>
-              </>
-            )}
-          </Button>
-          
-          {/* Translator button */}
-          <Button
-            onClick={() => setShowTranslator(!showTranslator)}
-            variant={showTranslator ? "default" : "outline"}
-            size="sm"
-            className={`flex items-center gap-1.5 ${showTranslator ? "" : "border-primary/50 hover:bg-primary/10"}`}
-          >
-            <Languages className="w-4 h-4" />
-            <span className="text-xs">Переводчик</span>
-          </Button>
-          
-          {/* Copy link button */}
-          <Button
-            onClick={copyLink}
-            variant="outline"
-            size="sm"
-            className="border-primary/50 hover:bg-primary/10 flex items-center gap-1.5"
-          >
-            {copied ? (
-              <>
-                <Check className="w-4 h-4 text-green-500" />
-                <span className="text-xs">Скопировано</span>
-              </>
-            ) : (
-              <>
-                <Copy className="w-4 h-4" />
-                <span className="text-xs">Ссылка</span>
-              </>
-            )}
-          </Button>
-          
-          {isAdmin && (
-            <Button
-              onClick={() => setShowIPPanel(!showIPPanel)}
-              variant={showIPPanel ? "default" : "outline"}
-              size="sm"
-              className={`flex items-center gap-1.5 ${showIPPanel ? "" : "border-primary/50 hover:bg-primary/10"}`}
-            >
-              <Globe className="w-4 h-4" />
-              <span className="text-xs hidden sm:inline">IP Участников</span>
-            </Button>
-          )}
-          
-          {/* Diagnostics button */}
-          <Button
-            onClick={copyDiagnostics}
-            variant="outline"
-            size="sm"
-            className="border-yellow-500/50 hover:bg-yellow-500/10 text-yellow-500 flex items-center gap-1.5"
-            title="Скопировать отчёт диагностики"
-          >
-            {diagnosticsCopied ? <Check className="w-4 h-4" /> : <Bug className="w-4 h-4" />}
-          </Button>
-        </div>
+        {/* Bottom row: Control buttons with labels - improved mobile layout */}
+        <TooltipProvider delayDuration={300}>
+          <div className="grid grid-cols-4 sm:flex sm:flex-wrap sm:justify-center gap-2 w-full">
+            {/* Recording button */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={toggleRecording}
+                  variant={isRecording ? "destructive" : "outline"}
+                  size="sm"
+                  disabled={isTranscribing}
+                  className={`flex flex-col sm:flex-row items-center justify-center gap-1 h-auto py-2 px-2 sm:px-3 ${isRecording ? "animate-pulse" : "border-primary/50 hover:bg-primary/10"}`}
+                >
+                  {isTranscribing ? (
+                    <>
+                      <div className="w-5 h-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                      <span className="text-[10px] sm:text-xs">...</span>
+                    </>
+                  ) : isRecording ? (
+                    <>
+                      <div className="relative">
+                        <MicOff className="w-5 h-5" />
+                        <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-ping" />
+                      </div>
+                      <span className="text-[10px] sm:text-xs font-medium">Стоп</span>
+                    </>
+                  ) : (
+                    <>
+                      <Mic className="w-5 h-5" />
+                      <span className="text-[10px] sm:text-xs font-medium">Запись</span>
+                    </>
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-[200px]">
+                <p className="text-xs">{isRecording ? "Остановить запись и сохранить транскрипцию" : "Начать запись звонка с AI-транскрипцией"}</p>
+              </TooltipContent>
+            </Tooltip>
+            
+            {/* Translator button */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={() => setShowTranslator(!showTranslator)}
+                  variant={showTranslator ? "default" : "outline"}
+                  size="sm"
+                  className={`flex flex-col sm:flex-row items-center justify-center gap-1 h-auto py-2 px-2 sm:px-3 ${showTranslator ? "ring-2 ring-primary/50" : "border-primary/50 hover:bg-primary/10"}`}
+                >
+                  <Languages className="w-5 h-5" />
+                  <span className="text-[10px] sm:text-xs font-medium">Перевод</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-[200px]">
+                <p className="text-xs">Переводчик в реальном времени на 100+ языков</p>
+              </TooltipContent>
+            </Tooltip>
+            
+            {/* Copy link button */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={copyLink}
+                  variant="outline"
+                  size="sm"
+                  className="flex flex-col sm:flex-row items-center justify-center gap-1 h-auto py-2 px-2 sm:px-3 border-primary/50 hover:bg-primary/10"
+                >
+                  {copied ? (
+                    <>
+                      <Check className="w-5 h-5 text-green-500" />
+                      <span className="text-[10px] sm:text-xs font-medium text-green-500">Готово</span>
+                    </>
+                  ) : (
+                    <>
+                      <Link2 className="w-5 h-5" />
+                      <span className="text-[10px] sm:text-xs font-medium">Ссылка</span>
+                    </>
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-[200px]">
+                <p className="text-xs">Скопировать ссылку для приглашения участников</p>
+              </TooltipContent>
+            </Tooltip>
+            
+            {/* Diagnostics / Admin button */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={isAdmin ? () => setShowIPPanel(!showIPPanel) : copyDiagnostics}
+                  variant={showIPPanel && isAdmin ? "default" : "outline"}
+                  size="sm"
+                  className={`flex flex-col sm:flex-row items-center justify-center gap-1 h-auto py-2 px-2 sm:px-3 ${isAdmin ? (showIPPanel ? "" : "border-primary/50 hover:bg-primary/10") : "border-yellow-500/50 hover:bg-yellow-500/10 text-yellow-500"}`}
+                >
+                  {isAdmin ? (
+                    <>
+                      <Globe className="w-5 h-5" />
+                      <span className="text-[10px] sm:text-xs font-medium">IP</span>
+                    </>
+                  ) : (
+                    <>
+                      {diagnosticsCopied ? <Check className="w-5 h-5" /> : <Bug className="w-5 h-5" />}
+                      <span className="text-[10px] sm:text-xs font-medium">Отчёт</span>
+                    </>
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-[200px]">
+                <p className="text-xs">{isAdmin ? "Показать IP-адреса участников" : "Скопировать диагностику для поддержки"}</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        </TooltipProvider>
       </header>
 
       {/* Registration hint for non-authenticated users */}
