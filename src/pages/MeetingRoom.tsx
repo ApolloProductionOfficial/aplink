@@ -12,6 +12,7 @@ import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 import { useConnectionSounds } from "@/hooks/useConnectionSounds";
 import { RealtimeTranslator } from "@/components/RealtimeTranslator";
+import { useTranslation } from "@/hooks/useTranslation";
 import apolloLogo from "@/assets/apollo-logo.mp4";
 import CustomCursor from "@/components/CustomCursor";
 
@@ -64,6 +65,7 @@ const MeetingRoom = () => {
   const [connectionQuality, setConnectionQuality] = useState<number>(100); // 0-100 percentage
   const diagnosticsLogRef = useRef<{ ts: string; event: string; data?: unknown }[]>([]);
   const [diagnosticsCopied, setDiagnosticsCopied] = useState(false);
+  const { t } = useTranslation();
 
   // Helper to log diagnostic events (capped at 100 entries)
   const logDiagnostic = (event: string, data?: unknown) => {
@@ -147,10 +149,10 @@ const MeetingRoom = () => {
     try {
       await navigator.clipboard.writeText(JSON.stringify(report, null, 2));
       setDiagnosticsCopied(true);
-      toast({ title: "Отчёт скопирован", description: "Отправьте его разработчику" });
+      toast({ title: t.meetingRoom.diagnosticsCopied, description: t.meetingRoom.diagnosticsCopiedDesc });
       setTimeout(() => setDiagnosticsCopied(false), 2000);
     } catch {
-      toast({ title: "Ошибка", description: "Не удалось скопировать", variant: "destructive" });
+      toast({ title: t.meetingRoom.error, description: t.meetingRoom.copyLinkError, variant: "destructive" });
     }
   };
 
@@ -242,14 +244,14 @@ const MeetingRoom = () => {
       await navigator.clipboard.writeText(roomLink);
       setCopied(true);
       toast({
-        title: "Ссылка скопирована!",
-        description: "Отправьте её участникам для подключения",
+        title: t.meetingRoom.linkCopied,
+        description: t.meetingRoom.linkCopiedDesc,
       });
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       toast({
-        title: "Ошибка",
-        description: "Не удалось скопировать ссылку",
+        title: t.meetingRoom.error,
+        description: t.meetingRoom.copyLinkError,
         variant: "destructive",
       });
     }
@@ -289,22 +291,22 @@ const MeetingRoom = () => {
       const audioBlob = await stopRecording();
       if (audioBlob && audioBlob.size > 0) {
         toast({
-          title: "Запись остановлена",
-          description: "Транскрибируем созвон...",
+          title: t.meetingRoom.recordStopped,
+          description: t.meetingRoom.transcribing,
         });
         try {
           const transcript = await transcribeAudio(audioBlob);
           if (transcript) {
             transcriptRef.current.push(`[Транскрипция созвона]: ${transcript}`);
             toast({
-              title: "Транскрипция готова",
+              title: t.meetingRoom.transcriptionReady,
               description: transcript.length > 100 ? transcript.substring(0, 100) + '...' : transcript,
             });
           }
         } catch (error) {
           toast({
-            title: "Ошибка транскрипции",
-            description: "Не удалось транскрибировать аудио",
+            title: t.meetingRoom.transcriptionError,
+            description: t.meetingRoom.transcriptionErrorDesc,
             variant: "destructive",
           });
         }
@@ -314,14 +316,14 @@ const MeetingRoom = () => {
         hasStartedRecordingRef.current = true; // Mark that recording was started
         await startRecording();
         toast({
-          title: "Запись начата",
-          description: "Записываем звук созвона",
+          title: t.meetingRoom.recordStarted,
+          description: t.meetingRoom.recordStartedDesc,
         });
       } catch (error) {
         hasStartedRecordingRef.current = false;
         toast({
-          title: "Ошибка",
-          description: "Не удалось начать запись",
+          title: t.meetingRoom.error,
+          description: t.meetingRoom.recordError,
           variant: "destructive",
         });
       }
@@ -342,8 +344,8 @@ const MeetingRoom = () => {
 
     if (audioBlob && audioBlob.size > 0) {
       toast({
-        title: 'Запись обрабатывается',
-        description: 'Транскрибируем созвон...',
+        title: t.meetingRoom.recordProcessing,
+        description: t.meetingRoom.transcribing,
       });
 
       try {
@@ -354,8 +356,8 @@ const MeetingRoom = () => {
       } catch (error) {
         console.error('Final transcription failed:', error);
         toast({
-          title: 'Ошибка транскрипции',
-          description: 'Не удалось транскрибировать аудио',
+          title: t.meetingRoom.transcriptionError,
+          description: t.meetingRoom.transcriptionErrorDesc,
           variant: 'destructive',
         });
       }
@@ -1203,18 +1205,18 @@ const MeetingRoom = () => {
                         <MicOff className="w-5 h-5" />
                         <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-ping" />
                       </div>
-                      <span className="text-[10px] sm:text-xs font-medium">Стоп</span>
+                      <span className="text-[10px] sm:text-xs font-medium">{t.meetingRoom.stop}</span>
                     </>
                   ) : (
                     <>
                       <Mic className="w-5 h-5" />
-                      <span className="text-[10px] sm:text-xs font-medium">Запись</span>
+                      <span className="text-[10px] sm:text-xs font-medium">{t.meetingRoom.record}</span>
                     </>
                   )}
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom" className="max-w-[200px]">
-                <p className="text-xs">{isRecording ? "Остановить запись и сохранить транскрипцию" : "Начать запись звонка с AI-транскрипцией"}</p>
+                <p className="text-xs">{isRecording ? t.meetingRoom.stopRecordTooltip : t.meetingRoom.recordTooltip}</p>
               </TooltipContent>
             </Tooltip>
             
@@ -1228,11 +1230,11 @@ const MeetingRoom = () => {
                   className={`flex flex-col sm:flex-row items-center justify-center gap-1 h-auto py-2 px-2 sm:px-3 ${showTranslator ? "ring-2 ring-primary/50" : "border-primary/50 hover:bg-primary/10"}`}
                 >
                   <Languages className="w-5 h-5" />
-                  <span className="text-[10px] sm:text-xs font-medium">Перевод</span>
+                  <span className="text-[10px] sm:text-xs font-medium">{t.meetingRoom.translate}</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom" className="max-w-[200px]">
-                <p className="text-xs">Переводчик в реальном времени на 100+ языков</p>
+                <p className="text-xs">{t.meetingRoom.translateTooltip}</p>
               </TooltipContent>
             </Tooltip>
             
@@ -1248,18 +1250,18 @@ const MeetingRoom = () => {
                   {copied ? (
                     <>
                       <Check className="w-5 h-5 text-green-500" />
-                      <span className="text-[10px] sm:text-xs font-medium text-green-500">Готово</span>
+                      <span className="text-[10px] sm:text-xs font-medium text-green-500">{t.meetingRoom.done}</span>
                     </>
                   ) : (
                     <>
                       <Link2 className="w-5 h-5" />
-                      <span className="text-[10px] sm:text-xs font-medium">Ссылка</span>
+                      <span className="text-[10px] sm:text-xs font-medium">{t.meetingRoom.link}</span>
                     </>
                   )}
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom" className="max-w-[200px]">
-                <p className="text-xs">Скопировать ссылку для приглашения участников</p>
+                <p className="text-xs">{t.meetingRoom.linkTooltip}</p>
               </TooltipContent>
             </Tooltip>
             
@@ -1275,18 +1277,18 @@ const MeetingRoom = () => {
                   {isAdmin ? (
                     <>
                       <Globe className="w-5 h-5" />
-                      <span className="text-[10px] sm:text-xs font-medium">IP</span>
+                      <span className="text-[10px] sm:text-xs font-medium">{t.meetingRoom.ip}</span>
                     </>
                   ) : (
                     <>
                       {diagnosticsCopied ? <Check className="w-5 h-5" /> : <Bug className="w-5 h-5" />}
-                      <span className="text-[10px] sm:text-xs font-medium">Отчёт</span>
+                      <span className="text-[10px] sm:text-xs font-medium">{t.meetingRoom.report}</span>
                     </>
                   )}
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom" className="max-w-[200px]">
-                <p className="text-xs">{isAdmin ? "Показать IP-адреса участников" : "Скопировать диагностику для поддержки"}</p>
+                <p className="text-xs">{isAdmin ? t.meetingRoom.ipTooltip : t.meetingRoom.reportTooltip}</p>
               </TooltipContent>
             </Tooltip>
           </div>
@@ -1299,9 +1301,9 @@ const MeetingRoom = () => {
           <div className="flex items-start gap-3">
             <Sparkles className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-medium">Записывайте созвоны!</p>
+              <p className="text-sm font-medium">{t.meetingRoom.registerHint}</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Зарегистрируйтесь, чтобы получать AI-конспект после каждого звонка
+                {t.meetingRoom.registerHintDesc}
               </p>
               <Button
                 size="sm"
@@ -1311,7 +1313,7 @@ const MeetingRoom = () => {
                   window.open('/auth', '_blank');
                 }}
               >
-                Регистрация
+                {t.meetingRoom.register}
               </Button>
             </div>
             <button
@@ -1401,13 +1403,13 @@ const MeetingRoom = () => {
           {isTranscribing ? (
             <>
               <div className="w-3 h-3 rounded-full bg-yellow-500 animate-pulse" />
-              <span className="text-sm font-medium text-yellow-500">Транскрибируем...</span>
+              <span className="text-sm font-medium text-yellow-500">{t.meetingRoom.transcribing}</span>
             </>
           ) : (
             <>
               <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
               <span className="text-sm font-medium text-red-500">REC</span>
-              <span className="text-xs text-muted-foreground">Идёт запись созвона</span>
+              <span className="text-xs text-muted-foreground">{t.meetingRoom.recording}</span>
             </>
           )}
         </div>
