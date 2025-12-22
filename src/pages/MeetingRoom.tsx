@@ -350,21 +350,32 @@ const MeetingRoom = () => {
         audioContextKeepAlive = new AudioContext();
         const oscillator = audioContextKeepAlive.createOscillator();
         const gainNode = audioContextKeepAlive.createGain();
-        
-        // Set volume to 0 (silent)
-        gainNode.gain.value = 0;
-        
+
+        // IMPORTANT: keep it *almost* silent (not zero), so Chrome treats the tab as "playing audio"
+        // and throttles it less aggressively in background.
+        gainNode.gain.value = 0.00001;
+
         oscillator.connect(gainNode);
         gainNode.connect(audioContextKeepAlive.destination);
         oscillator.start();
-        
-        // Periodically resume audio context to prevent suspension
-        silentAudioInterval = setInterval(() => {
+
+        const resumeIfSuspended = () => {
           if (audioContextKeepAlive?.state === 'suspended') {
             audioContextKeepAlive.resume().catch(() => {});
           }
-        }, 5000);
-        
+        };
+
+        // Try to resume on first user gesture (autoplay policies can suspend AudioContext)
+        const resumeOnGesture = () => {
+          console.log('User gesture detected - resuming audio keep-alive');
+          audioContextKeepAlive?.resume().catch(() => {});
+        };
+        window.addEventListener('pointerdown', resumeOnGesture, { once: true, passive: true });
+        window.addEventListener('keydown', resumeOnGesture, { once: true });
+
+        // Periodically resume audio context to prevent suspension
+        silentAudioInterval = setInterval(resumeIfSuspended, 5000);
+
         console.log('Silent audio started for connection keep-alive');
       } catch (e) {
         console.log('Silent audio not available:', e);
