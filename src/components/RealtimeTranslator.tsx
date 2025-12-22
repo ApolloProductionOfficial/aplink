@@ -79,6 +79,8 @@ interface StoredSettings {
   targetLanguage: string;
   selectedVoice: string;
   pushToTalkMode: boolean;
+  vadThreshold: number;
+  silenceDuration: number;
 }
 
 const loadStoredSettings = (): Partial<StoredSettings> => {
@@ -129,8 +131,8 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
   const [vadSettingsOpen, setVadSettingsOpen] = useState(false);
   
   // VAD configurable settings
-  const [vadThreshold, setVadThreshold] = useState(0.02);
-  const [silenceDuration, setSilenceDuration] = useState(2000);
+  const [vadThreshold, setVadThreshold] = useState(storedSettings.vadThreshold ?? 0.02);
+  const [silenceDuration, setSilenceDuration] = useState(storedSettings.silenceDuration ?? 2000);
   const [minSpeechDuration, setMinSpeechDuration] = useState(300);
   const [isVadRecording, setIsVadRecording] = useState(false);
   
@@ -179,8 +181,10 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
       targetLanguage,
       selectedVoice,
       pushToTalkMode,
+      vadThreshold,
+      silenceDuration,
     });
-  }, [sourceLanguage, targetLanguage, selectedVoice, pushToTalkMode]);
+  }, [sourceLanguage, targetLanguage, selectedVoice, pushToTalkMode, vadThreshold, silenceDuration]);
 
   const loadHistory = async () => {
     if (!user) return;
@@ -1014,7 +1018,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
                       className="w-full flex items-center justify-between py-1.5 px-2 text-xs text-muted-foreground hover:text-foreground transition-colors rounded"
                     >
                       <div className="flex items-center gap-1.5">
-                        <Settings2 className="h-3 w-3" />
+                        <Settings2 className={cn("h-3 w-3 transition-transform", vadSettingsOpen && "rotate-90")} />
                         <span>{t.translator.micSettings}</span>
                       </div>
                       <div className="flex items-center gap-1.5">
@@ -1024,7 +1028,6 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
                             {t.translator.speaking}
                           </span>
                         )}
-                        <Settings2 className={cn("h-3 w-3 transition-transform", vadSettingsOpen && "rotate-90")} />
                       </div>
                     </button>
                   </CollapsibleTrigger>
