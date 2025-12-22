@@ -29,8 +29,9 @@ const StarField = () => {
     }
 
     const stars: Star[] = [];
-    // Reduced for better performance
-    const starCount = 50;
+    // Reduced for better performance - fewer stars on smaller screens
+    const screenArea = canvas.width * canvas.height;
+    const starCount = Math.min(30, Math.floor(screenArea / 50000));
 
     // Create stars
     for (let i = 0; i < starCount; i++) {
@@ -99,7 +100,11 @@ const StarField = () => {
     <canvas
       ref={canvasRef}
       className="fixed inset-0 pointer-events-none z-0"
-      style={{ opacity: 0.5, willChange: 'transform' }}
+      style={{ 
+        opacity: 0.5, 
+        willChange: 'transform',
+        contain: 'strict'
+      }}
     />
   );
 };
