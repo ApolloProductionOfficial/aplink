@@ -401,7 +401,7 @@ const Dashboard = () => {
               variant={activeTab === 'calls' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setActiveTab('calls')}
-              className="gap-2"
+              className="gap-2 focus-visible:ring-0 ring-0"
             >
               <FileText className="w-4 h-4" />
               Записи
@@ -410,7 +410,7 @@ const Dashboard = () => {
               variant={activeTab === 'profile' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setActiveTab('profile')}
-              className="gap-2"
+              className="gap-2 focus-visible:ring-0 ring-0"
             >
               <User className="w-4 h-4" />
               Профиль
@@ -420,7 +420,7 @@ const Dashboard = () => {
                 variant={activeTab === 'ip-checker' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setActiveTab('ip-checker')}
-                className="gap-2"
+                className="gap-2 focus-visible:ring-0 ring-0"
               >
                 <Globe className="w-4 h-4" />
                 IP-чекер

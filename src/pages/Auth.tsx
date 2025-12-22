@@ -349,7 +349,7 @@ const Auth = () => {
                   onClick={handleGoogleSignIn}
                   disabled={loading}
                   variant="outline"
-                  className="w-full h-12 gap-2"
+                  className="w-full h-12 gap-2 focus-visible:ring-0 ring-0"
                 >
                   <GoogleIcon className="w-5 h-5" />
                   {t.auth.continueWithGoogle}
@@ -464,7 +464,7 @@ const Auth = () => {
                 type="submit"
                 disabled={loading}
                 variant="outline"
-                className="w-full h-12 border-primary/50 hover:bg-primary/10 hover:border-primary"
+                className="w-full h-12 border-primary/50 hover:bg-primary/10 hover:border-primary focus-visible:ring-0 ring-0"
               >
                 {loading ? (
                   <div className="w-5 h-5 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
