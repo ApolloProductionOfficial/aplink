@@ -2,6 +2,8 @@
 <html lang="ru">
   <head>
     <meta charset="UTF-8" />
+    <!-- Preload favicon for faster display -->
+    <link rel="preload" href="/favicon.png" as="image" type="image/png" />
     <link rel="icon" href="/favicon.png" type="image/png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>APLink - Видеозвонки без границ</title>
@@ -17,8 +19,8 @@
     <meta name="twitter:site" content="@ApolloProduction" />
     <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
     
-    <!-- JaaS API Script -->
-    <script src='https://8x8.vc/vpaas-magic-cookie-0dd6b184ec7a4883bb89cbfc8c186c8a/external_api.js' async></script>
+    <!-- JaaS API Script - async for non-blocking -->
+    <script src='https://8x8.vc/vpaas-magic-cookie-0dd6b184ec7a4883bb89cbfc8c186c8a/external_api.js' async defer></script>
   </head>
 
   <body>

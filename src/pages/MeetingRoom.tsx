@@ -781,13 +781,15 @@ const MeetingRoom = () => {
 
   return (
     <div className="h-screen w-screen bg-background flex flex-col overflow-hidden cursor-none relative">
-      {/* Background Video */}
+      {/* Background Video - Optimized */}
       <video
         autoPlay
         loop
         muted
         playsInline
+        preload="metadata"
         className="absolute inset-0 w-full h-full object-cover z-0 opacity-30"
+        style={{ willChange: 'transform' }}
       >
         <source src={backgroundVideo} type="video/mp4" />
       </video>

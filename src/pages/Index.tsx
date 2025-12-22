@@ -240,7 +240,7 @@ const Index = () => {
       <NeonGlow />
       
       
-      {/* Video Background */}
+      {/* Video Background - Optimized */}
       <div className="fixed inset-0 z-0 flex items-center justify-center overflow-hidden bg-background">
         {/* Fallback gradient while video loads */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-primary/5" />
@@ -249,8 +249,10 @@ const Index = () => {
           muted
           loop
           playsInline
-          preload="auto"
+          preload="metadata"
+          poster=""
           className="min-w-full min-h-full object-cover opacity-45 relative z-10"
+          style={{ willChange: 'transform' }}
         >
           <source src={backgroundVideo} type="video/mp4" />
         </video>
@@ -270,7 +272,9 @@ const Index = () => {
                   loop 
                   muted 
                   playsInline
+                  preload="metadata"
                   className="absolute inset-0 w-full h-full object-cover scale-[1.3] origin-center"
+                  style={{ willChange: 'transform' }}
                 />
               </div>
             </div>
