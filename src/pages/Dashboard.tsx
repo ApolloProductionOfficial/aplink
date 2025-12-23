@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, Users, Calendar, User, Camera, Loader2, Check, Globe, Shield, Trash2 } from 'lucide-react';
+import { ArrowLeft, FileText, Users, Calendar, User, Camera, Loader2, Check, Globe, Shield, Trash2, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import CustomCursor from '@/components/CustomCursor';
 import TwoFactorSetup from '@/components/TwoFactorSetup';
 import apolloLogo from '@/assets/apollo-logo.mp4';
+import { generateMeetingPdf } from '@/utils/generateMeetingPdf';
 
 interface MeetingTranscript {
   id: string;
@@ -527,9 +528,21 @@ const Dashboard = () => {
                             )}
                           </div>
                         </div>
-                        {transcript.ended_at && (
-                          <Badge variant="secondary">Завершён</Badge>
-                        )}
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => generateMeetingPdf(transcript)}
+                            className="gap-1.5"
+                            title="Скачать PDF"
+                          >
+                            <Download className="w-4 h-4" />
+                            PDF
+                          </Button>
+                          {transcript.ended_at && (
+                            <Badge variant="secondary">Завершён</Badge>
+                          )}
+                        </div>
                       </div>
                     </CardHeader>
                     <CardContent>
