@@ -379,10 +379,11 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
       // Try to play - handle mobile restrictions
       const playPromise = audio.play();
       if (playPromise !== undefined) {
-        playPromise.catch(async (error) => {
-          console.error('Audio play failed, retrying:', error);
-          // On mobile, audio might be blocked - show toast
-          if (error.name === 'NotAllowedError') {
+        playPromise.catch(async (playError) => {
+          // Don't log as error to avoid triggering error notifications
+          console.log('Audio play blocked, will retry on next chunk');
+          // On mobile, audio might be blocked - show toast only for NotAllowedError
+          if (playError?.name === 'NotAllowedError') {
             toast.error('Нажмите на экран, чтобы включить звук перевода');
           }
           isPlayingRef.current = false;
