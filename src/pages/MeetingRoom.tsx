@@ -54,7 +54,7 @@ const MeetingRoom = () => {
   const { toast } = useToast();
   const { user, isLoading: authLoading } = useAuth();
   const { sendNotification } = usePushNotifications();
-  const { isRecording, startRecording, stopRecording, getAudioBlob } = useAudioRecorder();
+  const { isRecording, startRecording, stopRecording, getAudioBlob, getRecoveredRecording, clearRecoveredRecording } = useAudioRecorder();
   const isRecordingRef = useRef(false);
   useEffect(() => {
     isRecordingRef.current = isRecording;
@@ -191,6 +191,42 @@ const MeetingRoom = () => {
     
     checkAdminAndFetchIP();
   }, [user]);
+
+  // Check for recovered recording from crash
+  useEffect(() => {
+    const recovered = getRecoveredRecording();
+    if (recovered && user) {
+      toast({
+        title: '📼 Найдена незавершённая запись',
+        description: 'Хотите восстановить запись предыдущего созвона?',
+        action: (
+          <Button 
+            size="sm" 
+            onClick={async () => {
+              try {
+                const transcript = await transcribeAudio(recovered);
+                if (transcript) {
+                  toast({
+                    title: '✅ Запись восстановлена!',
+                    description: transcript.length > 100 ? transcript.substring(0, 100) + '...' : transcript,
+                  });
+                }
+                clearRecoveredRecording();
+              } catch (e) {
+                toast({
+                  title: 'Ошибка восстановления',
+                  variant: 'destructive',
+                });
+              }
+            }}
+          >
+            Восстановить
+          </Button>
+        ),
+        duration: 15000,
+      });
+    }
+  }, [user, getRecoveredRecording, clearRecoveredRecording]);
 
   // Show registration hint for non-authenticated users
   useEffect(() => {
@@ -340,6 +376,10 @@ const MeetingRoom = () => {
       audioBlob = await stopRecording();
     } else if (hasStartedRecordingRef.current) {
       audioBlob = getAudioBlob();
+      // Also check for recovered recording
+      if (!audioBlob || audioBlob.size === 0) {
+        audioBlob = getRecoveredRecording();
+      }
     }
 
     // Only save if user started recording at some point
@@ -1228,11 +1268,11 @@ const MeetingRoom = () => {
                     </>
                   ) : isRecording ? (
                     <>
-                      <div className="relative animate-fade-in">
-                        <MicOff className="w-5 h-5 animate-pulse" />
-                        <span className="absolute -top-1.5 -right-2.5 w-2.5 h-2.5 bg-red-500 rounded-full">
+                      <div className="relative animate-fade-in flex items-center gap-1">
+                        <span className="w-2.5 h-2.5 bg-red-500 rounded-full">
                           <span className="absolute inset-0 w-full h-full bg-red-500 rounded-full animate-ping opacity-75" />
                         </span>
+                        <MicOff className="w-5 h-5 animate-pulse" />
                       </div>
                       <span className="text-[10px] sm:text-xs font-medium animate-fade-in">{t.meetingRoom.stop}</span>
                     </>
@@ -1426,9 +1466,9 @@ const MeetingRoom = () => {
         </div>
       )}
 
-      {/* Recording Indicator Overlay - shifted right to not cover mic icon */}
+      {/* Recording Indicator Overlay - left side next to mic button */}
       {(isRecording || isTranscribing) && (
-        <div className="absolute top-20 left-16 sm:left-4 z-40 flex items-center gap-2 glass rounded-full px-4 py-2 border border-red-500/50 animate-fade-in">
+        <div className="absolute top-20 left-4 z-40 flex items-center gap-2 glass rounded-full px-4 py-2 border border-red-500/50 animate-fade-in">
           {isTranscribing ? (
             <>
               <div className="w-3 h-3 rounded-full bg-yellow-500 animate-pulse" />
