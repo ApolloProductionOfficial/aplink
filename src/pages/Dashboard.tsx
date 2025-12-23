@@ -75,39 +75,81 @@ const Dashboard = () => {
     }
   }, [user, isLoading, navigate]);
 
+  const fetchTranscripts = async () => {
+    const { data: transcriptsData } = await supabase
+      .from('meeting_transcripts')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (transcriptsData) {
+      setTranscripts(transcriptsData as MeetingTranscript[]);
+    }
+  };
+
+  // Initial data load
   useEffect(() => {
     if (!user) return;
-    
+
     const fetchData = async () => {
       setLoading(true);
-      
+
       // Fetch user profile
       const { data: profileData } = await supabase
         .from('profiles')
         .select('display_name, username, avatar_url')
         .eq('user_id', user.id)
         .maybeSingle();
-      
+
       if (profileData) {
         setProfile(profileData);
         setEditedName(profileData.display_name || '');
         setEditedUsername(profileData.username || '');
       }
-      
-      // Fetch transcripts where user participated
-      const { data: transcriptsData } = await supabase
-        .from('meeting_transcripts')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (transcriptsData) {
-        setTranscripts(transcriptsData as MeetingTranscript[]);
-      }
-      
+
+      // Fetch transcripts
+      await fetchTranscripts();
+
       setLoading(false);
     };
-    
+
     fetchData();
+  }, [user]);
+
+  // Auto-refresh: refetch transcripts on window focus (after returning from call)
+  useEffect(() => {
+    if (!user) return;
+
+    const handleFocus = () => {
+      fetchTranscripts();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [user]);
+
+  // Also subscribe to realtime inserts so new meetings appear instantly
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('meeting_transcripts_inserts')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'meeting_transcripts',
+        },
+        (payload) => {
+          const newMeeting = payload.new as MeetingTranscript;
+          setTranscripts((prev) => [newMeeting, ...prev]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   // Fetch participants for IP checker (admin only)
