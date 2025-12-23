@@ -76,9 +76,12 @@ const Dashboard = () => {
   }, [user, isLoading, navigate]);
 
   const fetchTranscripts = async () => {
+    if (!user) return;
+    
     const { data: transcriptsData } = await supabase
       .from('meeting_transcripts')
       .select('*')
+      .eq('owner_user_id', user.id)
       .order('created_at', { ascending: false });
 
     if (transcriptsData) {
