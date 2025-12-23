@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, Users, Calendar, User, Camera, Loader2, Check, Globe, Shield, Trash2, Download, Share2, Search, X, Link2, Copy } from 'lucide-react';
+import { ArrowLeft, FileText, Users, Calendar, User, Camera, Loader2, Check, Globe, Shield, Trash2, Download, Share2, Search, X, Link2, Copy, Link2Off, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -74,6 +74,9 @@ const Dashboard = () => {
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
   const [sharingMeetingId, setSharingMeetingId] = useState<string | null>(null);
   const [shareLink, setShareLink] = useState<string | null>(null);
+  const [shareLinkActive, setShareLinkActive] = useState(true);
+  const [deletingMeetingId, setDeletingMeetingId] = useState<string | null>(null);
+  const [downloadingPdf, setDownloadingPdf] = useState<string | null>(null);
 
   // Redirect if not logged in
   useEffect(() => {
@@ -425,29 +428,34 @@ const Dashboard = () => {
     
     setSharingMeetingId(meetingId);
     setShareLink(null);
+    setShareLinkActive(true);
     
     try {
       // Check if link already exists
       const { data: existingLink } = await supabase
         .from('shared_meeting_links')
-        .select('share_token')
+        .select('share_token, is_active')
         .eq('meeting_id', meetingId)
         .eq('created_by', user.id)
-        .eq('is_active', true)
         .maybeSingle();
       
       if (existingLink) {
         const link = `${window.location.origin}/shared/${existingLink.share_token}`;
         setShareLink(link);
+        setShareLinkActive(existingLink.is_active);
         return;
       }
       
-      // Create new share link
+      // Create new share link with 7 days expiration
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7);
+      
       const { data: newLink, error } = await supabase
         .from('shared_meeting_links')
         .insert({
           meeting_id: meetingId,
           created_by: user.id,
+          expires_at: expiresAt.toISOString(),
         })
         .select('share_token')
         .single();
@@ -456,6 +464,7 @@ const Dashboard = () => {
       
       const link = `${window.location.origin}/shared/${newLink.share_token}`;
       setShareLink(link);
+      setShareLinkActive(true);
       
     } catch (error) {
       console.error('Error creating share link:', error);
@@ -465,6 +474,92 @@ const Dashboard = () => {
         variant: 'destructive',
       });
       setSharingMeetingId(null);
+    }
+  };
+
+  // Deactivate share link
+  const handleDeactivateShareLink = async () => {
+    if (!user || !sharingMeetingId) return;
+    
+    try {
+      const { error } = await supabase
+        .from('shared_meeting_links')
+        .update({ is_active: !shareLinkActive })
+        .eq('meeting_id', sharingMeetingId)
+        .eq('created_by', user.id);
+      
+      if (error) throw error;
+      
+      setShareLinkActive(!shareLinkActive);
+      toast({
+        title: shareLinkActive ? 'Ссылка деактивирована' : 'Ссылка активирована',
+        description: shareLinkActive 
+          ? 'Ссылка больше не работает' 
+          : 'Ссылка снова доступна',
+      });
+    } catch (error) {
+      console.error('Error toggling share link:', error);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось изменить статус ссылки',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Delete meeting
+  const handleDeleteMeeting = async (meetingId: string) => {
+    if (!user) return;
+    
+    try {
+      // First delete share links
+      await supabase
+        .from('shared_meeting_links')
+        .delete()
+        .eq('meeting_id', meetingId)
+        .eq('created_by', user.id);
+      
+      // Then delete the meeting transcript
+      const { error } = await supabase
+        .from('meeting_transcripts')
+        .delete()
+        .eq('id', meetingId)
+        .eq('owner_user_id', user.id);
+      
+      if (error) throw error;
+      
+      // Remove from local state
+      setTranscripts(prev => prev.filter(t => t.id !== meetingId));
+      setDeletingMeetingId(null);
+      
+      toast({
+        title: 'Созвон удалён',
+        description: 'Запись созвона удалена',
+      });
+    } catch (error) {
+      console.error('Error deleting meeting:', error);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось удалить созвон',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Download PDF handler
+  const handleDownloadPdf = async (transcript: MeetingTranscript) => {
+    setDownloadingPdf(transcript.id);
+    try {
+      await generateMeetingPdf(transcript);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось создать PDF',
+        variant: 'destructive',
+      });
+    } finally {
+      setDownloadingPdf(null);
     }
   };
 
@@ -691,12 +786,26 @@ const Dashboard = () => {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => generateMeetingPdf(transcript)}
+                            onClick={() => handleDownloadPdf(transcript)}
+                            disabled={downloadingPdf === transcript.id}
                             className="gap-1.5"
                             title="Скачать PDF"
                           >
-                            <Download className="w-4 h-4" />
+                            {downloadingPdf === transcript.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Download className="w-4 h-4" />
+                            )}
                             PDF
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setDeletingMeetingId(transcript.id)}
+                            className="gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            title="Удалить"
+                          >
+                            <Trash2 className="w-4 h-4" />
                           </Button>
                           {transcript.ended_at && (
                             <Badge variant="secondary">Завершён</Badge>
@@ -786,23 +895,48 @@ const Dashboard = () => {
                   <CardContent className="space-y-4">
                     {shareLink ? (
                       <>
+                        {!shareLinkActive && (
+                          <div className="flex items-center gap-2 p-3 bg-destructive/10 rounded-lg text-destructive text-sm">
+                            <Link2Off className="w-4 h-4 shrink-0" />
+                            Ссылка деактивирована и не работает
+                          </div>
+                        )}
                         <p className="text-sm text-muted-foreground">
-                          Скопируйте ссылку и отправьте её тому, с кем хотите поделиться:
+                          {shareLinkActive 
+                            ? 'Скопируйте ссылку и отправьте её тому, с кем хотите поделиться. Ссылка действует 7 дней.'
+                            : 'Ссылка неактивна. Активируйте её, чтобы получатели могли просматривать конспект.'
+                          }
                         </p>
                         <div className="flex gap-2">
                           <Input
                             value={shareLink}
                             readOnly
-                            className="bg-muted/50 text-sm"
+                            className={`bg-muted/50 text-sm ${!shareLinkActive ? 'opacity-50' : ''}`}
                           />
-                          <Button onClick={copyShareLink} className="shrink-0 gap-1.5">
+                          <Button onClick={copyShareLink} className="shrink-0 gap-1.5" disabled={!shareLinkActive}>
                             <Copy className="w-4 h-4" />
                             Копировать
                           </Button>
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                          Любой, у кого есть эта ссылка, сможет просмотреть конспект созвона.
-                        </p>
+                        <div className="flex gap-2">
+                          <Button 
+                            variant={shareLinkActive ? "destructive" : "default"}
+                            onClick={handleDeactivateShareLink} 
+                            className="flex-1 gap-1.5"
+                          >
+                            {shareLinkActive ? (
+                              <>
+                                <Link2Off className="w-4 h-4" />
+                                Деактивировать
+                              </>
+                            ) : (
+                              <>
+                                <Link2 className="w-4 h-4" />
+                                Активировать
+                              </>
+                            )}
+                          </Button>
+                        </div>
                       </>
                     ) : (
                       <div className="flex items-center justify-center py-4">
@@ -814,6 +948,39 @@ const Dashboard = () => {
                   <div className="px-6 pb-6">
                     <Button variant="outline" onClick={closeShareDialog} className="w-full">
                       Закрыть
+                    </Button>
+                  </div>
+                </Card>
+              </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {deletingMeetingId && (
+              <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setDeletingMeetingId(null)}>
+                <Card className="max-w-md w-full bg-card border-border" onClick={(e) => e.stopPropagation()}>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-destructive">
+                      <AlertTriangle className="w-5 h-5" />
+                      Удалить созвон?
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                      Вы уверены, что хотите удалить этот созвон? Это действие нельзя отменить. 
+                      Будут удалены запись, транскрипция и все публичные ссылки.
+                    </p>
+                  </CardContent>
+                  <div className="px-6 pb-6 flex gap-2">
+                    <Button variant="outline" onClick={() => setDeletingMeetingId(null)} className="flex-1">
+                      Отмена
+                    </Button>
+                    <Button 
+                      variant="destructive" 
+                      onClick={() => handleDeleteMeeting(deletingMeetingId)} 
+                      className="flex-1 gap-1.5"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Удалить
                     </Button>
                   </div>
                 </Card>
