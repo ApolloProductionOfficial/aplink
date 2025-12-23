@@ -392,16 +392,26 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
       // In broadcast mode, play louder so mic can pick it up
       audio.volume = broadcastMode ? 1.0 : 1.0;
       
-      // Try to play - handle mobile restrictions
+      // Try to play - handle mobile restrictions with auto-unlock
       const playPromise = audio.play();
       if (playPromise !== undefined) {
         playPromise.catch(async (playError) => {
           // Don't log as error to avoid triggering error notifications
-          console.log('Audio play blocked, will retry on next chunk');
-          // On mobile, audio might be blocked - show toast only for NotAllowedError
-          if (playError?.name === 'NotAllowedError') {
-            toast.error('Нажмите на экран, чтобы включить звук перевода');
+          console.log('Audio play blocked, attempting auto-unlock');
+          
+          // Try to auto-unlock by creating and playing a silent audio
+          try {
+            const silentAudio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA');
+            await silentAudio.play();
+            silentAudio.pause();
+            
+            // Now retry the actual audio
+            await audio.play();
+          } catch (retryError) {
+            // Silent fail - audio will continue in next iteration
+            console.log('Audio unlock retry failed');
           }
+          
           isPlayingRef.current = false;
           playNextAudio();
         });
