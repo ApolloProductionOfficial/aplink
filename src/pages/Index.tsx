@@ -190,7 +190,7 @@ const Index = () => {
       setNewUsername("");
       toast({
         title: t.toast.saved,
-        description: `${t.toast.yourUsername} @${username}`,
+        description: `@${username}`,
       });
     }
     
