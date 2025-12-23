@@ -1,6 +1,27 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Copy, Check, Users, User, Sparkles, Mic, MicOff, Wifi, WifiOff, RefreshCw, Globe, Languages, Signal, SignalLow, SignalMedium, SignalHigh, Bug, ClipboardCopy, Link2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Copy,
+  Check,
+  Users,
+  User,
+  Sparkles,
+  Mic,
+  MicOff,
+  Wifi,
+  WifiOff,
+  RefreshCw,
+  Globe,
+  Languages,
+  Signal,
+  SignalLow,
+  SignalMedium,
+  SignalHigh,
+  Bug,
+  ClipboardCopy,
+  Link2,
+} from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import ParticipantsIPPanel from "@/components/ParticipantsIPPanel";
 import { Button } from "@/components/ui/button";
@@ -15,6 +36,8 @@ import { RealtimeTranslator } from "@/components/RealtimeTranslator";
 import { useTranslation } from "@/hooks/useTranslation";
 import apolloLogo from "@/assets/apollo-logo.mp4";
 import CustomCursor from "@/components/CustomCursor";
+import { MeetingEndSaveDialog, type MeetingSaveStatus } from "@/components/MeetingEndSaveDialog";
+import { invokeBackendFunctionKeepalive } from "@/utils/invokeBackendFunctionKeepalive";
 
 declare global {
   interface Window {
@@ -51,6 +74,13 @@ const MeetingRoom = () => {
   const hasRedirectedRef = useRef(false); // Prevent multiple redirects
   const userInitiatedEndRef = useRef(false); // Track if user clicked end call
   const hasStartedRecordingRef = useRef(false); // Track if recording was started
+
+  // End-call save UI (explicit status + retry)
+  const [endSaveDialogOpen, setEndSaveDialogOpen] = useState(false);
+  const [endSaveStatus, setEndSaveStatus] = useState<MeetingSaveStatus>("saving");
+  const [endSaveError, setEndSaveError] = useState<string | null>(null);
+  const pendingSavePayloadRef = useRef<any>(null);
+
   const { toast } = useToast();
   const { user, isLoading: authLoading } = useAuth();
   const { sendNotification } = usePushNotifications();
@@ -488,31 +518,90 @@ const MeetingRoom = () => {
         variant: 'destructive',
       });
     }
+  const buildMeetingSavePayload = async () => {
+    // Only save if recording was started at some point
+    if (!hasStartedRecordingRef.current) return null;
+    if (!user) return null;
+
+    // Make sure recorder is stopped so we don't lose chunks on unload
+    if (isRecordingRef.current) {
+      await stopRecording();
+    }
+
+    const transcriptText = transcriptRef.current.join("\n") || "[Транскрипция отсутствует]";
+
+    return {
+      roomId: roomSlug,
+      roomName: roomDisplayName,
+      transcript: transcriptText,
+      participants: Array.from(participantsRef.current),
+      userId: user.id,
+    };
   };
 
-  // Handle user-initiated call end - redirect immediately, process in background
+  const runMeetingSave = async () => {
+    const payload = await buildMeetingSavePayload();
+    if (!payload) {
+      // Нечего сохранять (или нет авторизации)
+      setEndSaveStatus("success");
+      return;
+    }
+
+    pendingSavePayloadRef.current = payload;
+
+    try {
+      await invokeBackendFunctionKeepalive("summarize-meeting", payload);
+      setEndSaveStatus("success");
+      setEndSaveError(null);
+    } catch (e: any) {
+      const msg = e?.message || "Не удалось сохранить созвон";
+      setEndSaveStatus("error");
+      setEndSaveError(msg);
+    }
+  };
+
+  // Handle user-initiated call end - save BEFORE navigation with explicit status + retry
   const handleUserEndCall = async () => {
     if (hasRedirectedRef.current) return;
     hasRedirectedRef.current = true;
     userInitiatedEndRef.current = true;
-    
-    // Stop recording immediately if active
-    if (isRecordingRef.current) {
-      await stopRecording();
-    }
-    
-    // Navigate immediately - don't wait for processing
-    navigate('/');
-    
-    // Open apolloproduction.studio in new tab
-    window.open('https://apolloproduction.studio', '_blank');
-    
-    // Process recording in background (after navigation)
-    setTimeout(() => {
-      saveMeetingTranscriptBackground();
-    }, 100);
+
+    setEndSaveDialogOpen(true);
+    setEndSaveStatus("saving");
+    setEndSaveError(null);
+
+    await runMeetingSave();
   };
-  
+
+  const retryEndSave = async () => {
+    setEndSaveStatus("saving");
+    setEndSaveError(null);
+
+    try {
+      if (pendingSavePayloadRef.current) {
+        await invokeBackendFunctionKeepalive("summarize-meeting", pendingSavePayloadRef.current);
+        setEndSaveStatus("success");
+      } else {
+        await runMeetingSave();
+      }
+    } catch (e: any) {
+      setEndSaveStatus("error");
+      setEndSaveError(e?.message || "Не удалось сохранить созвон");
+    }
+  };
+
+  const goToCallsAfterSave = () => {
+    setEndSaveDialogOpen(false);
+    navigate("/dashboard");
+    window.open("https://apolloproduction.studio", "_blank");
+  };
+
+  const exitWithoutSaving = () => {
+    setEndSaveDialogOpen(false);
+    navigate("/");
+    window.open("https://apolloproduction.studio", "_blank");
+  };
+
   // Handle Jitsi events - only redirect if user initiated end
   const handleJitsiClose = () => {
     // Only process if user clicked hangup button
