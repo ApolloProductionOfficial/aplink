@@ -75,7 +75,8 @@ const Header = () => {
                 loop 
                 muted 
                 playsInline
-                preload="metadata"
+                preload="auto"
+                poster=""
                 className="w-full h-full object-cover scale-110"
               />
             </div>
