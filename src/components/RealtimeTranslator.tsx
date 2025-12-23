@@ -348,15 +348,47 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
     
     try {
       const audio = new Audio(audioUrl);
+      
+      // Mobile Safari requires user gesture - try to unlock audio context
+      const unlockAudio = async () => {
+        try {
+          // Create temporary AudioContext to unlock audio on mobile
+          const tempContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+          await tempContext.resume();
+          tempContext.close();
+        } catch (e) {
+          console.log('Audio context unlock failed (may already be unlocked):', e);
+        }
+      };
+      
+      await unlockAudio();
+      
       audio.onended = () => {
         isPlayingRef.current = false;
         playNextAudio();
       };
-      audio.onerror = () => {
+      audio.onerror = (e) => {
+        console.error('Audio playback error:', e);
         isPlayingRef.current = false;
         playNextAudio();
       };
-      await audio.play();
+      
+      // Set volume to max
+      audio.volume = 1.0;
+      
+      // Try to play - handle mobile restrictions
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(async (error) => {
+          console.error('Audio play failed, retrying:', error);
+          // On mobile, audio might be blocked - show toast
+          if (error.name === 'NotAllowedError') {
+            toast.error('Нажмите на экран, чтобы включить звук перевода');
+          }
+          isPlayingRef.current = false;
+          playNextAudio();
+        });
+      }
     } catch (error) {
       console.error('Error playing audio:', error);
       isPlayingRef.current = false;
@@ -1145,10 +1177,48 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
 
             {/* Start/Stop button or PTT instructions */}
             {pushToTalkMode ? (
-              <div className="text-center py-3 px-4 rounded-lg bg-muted/30 border border-dashed border-border">
-                <Keyboard className="h-6 w-6 mx-auto mb-1.5 text-muted-foreground" />
-                <p className="text-sm font-medium">{t.translator.holdSpaceToRecord}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{t.translator.releaseToTranslate}</p>
+              <div 
+                className="text-center py-4 px-4 rounded-lg bg-muted/30 border border-dashed border-border cursor-pointer select-none touch-none active:bg-primary/20 active:border-primary/50 transition-colors md:cursor-default"
+                onTouchStart={async (e) => {
+                  e.preventDefault();
+                  // If mic isn't active yet, start it first
+                  if (!isListening) {
+                    await startListening();
+                  }
+                  startPushToTalk();
+                }}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  stopPushToTalk();
+                }}
+                onMouseDown={async (e) => {
+                  // Only for desktop fallback
+                  if ('ontouchstart' in window) return;
+                  e.preventDefault();
+                  if (!isListening) {
+                    await startListening();
+                  }
+                  startPushToTalk();
+                }}
+                onMouseUp={(e) => {
+                  if ('ontouchstart' in window) return;
+                  e.preventDefault();
+                  stopPushToTalk();
+                }}
+                onMouseLeave={(e) => {
+                  if ('ontouchstart' in window) return;
+                  if (isPushToTalkActive) {
+                    e.preventDefault();
+                    stopPushToTalk();
+                  }
+                }}
+              >
+                <Keyboard className="h-6 w-6 mx-auto mb-1.5 text-muted-foreground hidden md:block" />
+                <Mic className="h-6 w-6 mx-auto mb-1.5 text-muted-foreground md:hidden" />
+                <p className="text-sm font-medium hidden md:block">{t.translator.holdSpaceToRecord}</p>
+                <p className="text-sm font-medium md:hidden">Удерживайте для записи</p>
+                <p className="text-xs text-muted-foreground mt-0.5 hidden md:block">{t.translator.releaseToTranslate}</p>
+                <p className="text-xs text-muted-foreground mt-0.5 md:hidden">Отпустите для перевода</p>
               </div>
             ) : (
               <Button
