@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, Users, Calendar, User, Camera, Loader2, Check, Globe, Shield, Trash2, Download } from 'lucide-react';
+import { ArrowLeft, FileText, Users, Calendar, User, Camera, Loader2, Check, Globe, Shield, Trash2, Download, Share2, Search, X, Link2, Copy } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -68,6 +68,12 @@ const Dashboard = () => {
   const [show2FASetup, setShow2FASetup] = useState(false);
   const [has2FA, setHas2FA] = useState(false);
   const [disabling2FA, setDisabling2FA] = useState(false);
+  
+  // Search and filter state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
+  const [sharingMeetingId, setSharingMeetingId] = useState<string | null>(null);
+  const [shareLink, setShareLink] = useState<string | null>(null);
 
   // Redirect if not logged in
   useEffect(() => {
@@ -385,6 +391,95 @@ const Dashboard = () => {
     });
   };
 
+  // Filter transcripts based on search and date
+  const filteredTranscripts = transcripts.filter((t) => {
+    // Search filter
+    const matchesSearch = searchQuery === '' || 
+      t.room_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      t.summary?.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    if (!matchesSearch) return false;
+    
+    // Date filter
+    if (dateFilter === 'all') return true;
+    
+    const meetingDate = new Date(t.started_at);
+    const now = new Date();
+    
+    if (dateFilter === 'today') {
+      return meetingDate.toDateString() === now.toDateString();
+    } else if (dateFilter === 'week') {
+      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      return meetingDate >= weekAgo;
+    } else if (dateFilter === 'month') {
+      const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      return meetingDate >= monthAgo;
+    }
+    
+    return true;
+  });
+
+  // Share meeting function
+  const handleShareMeeting = async (meetingId: string) => {
+    if (!user) return;
+    
+    setSharingMeetingId(meetingId);
+    setShareLink(null);
+    
+    try {
+      // Check if link already exists
+      const { data: existingLink } = await supabase
+        .from('shared_meeting_links')
+        .select('share_token')
+        .eq('meeting_id', meetingId)
+        .eq('created_by', user.id)
+        .eq('is_active', true)
+        .maybeSingle();
+      
+      if (existingLink) {
+        const link = `${window.location.origin}/shared/${existingLink.share_token}`;
+        setShareLink(link);
+        return;
+      }
+      
+      // Create new share link
+      const { data: newLink, error } = await supabase
+        .from('shared_meeting_links')
+        .insert({
+          meeting_id: meetingId,
+          created_by: user.id,
+        })
+        .select('share_token')
+        .single();
+      
+      if (error) throw error;
+      
+      const link = `${window.location.origin}/shared/${newLink.share_token}`;
+      setShareLink(link);
+      
+    } catch (error) {
+      console.error('Error creating share link:', error);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось создать ссылку',
+        variant: 'destructive',
+      });
+      setSharingMeetingId(null);
+    }
+  };
+
+  const copyShareLink = () => {
+    if (shareLink) {
+      navigator.clipboard.writeText(shareLink);
+      toast({ title: 'Ссылка скопирована' });
+    }
+  };
+
+  const closeShareDialog = () => {
+    setSharingMeetingId(null);
+    setShareLink(null);
+  };
+
   if (isLoading || !user) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -481,10 +576,49 @@ const Dashboard = () => {
 
           {/* Calls Tab */}
           <TabsContent value="calls" className="space-y-6">
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <FileText className="w-6 h-6 text-primary" />
-              Мои созвоны
-            </h1>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <h1 className="text-2xl font-bold flex items-center gap-2">
+                <FileText className="w-6 h-6 text-primary" />
+                Мои созвоны
+              </h1>
+              
+              {/* Search and Filter */}
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Поиск по названию..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9 pr-8 w-full sm:w-64 bg-background/50"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+                <div className="flex gap-1">
+                  {(['all', 'today', 'week', 'month'] as const).map((filter) => (
+                    <Button
+                      key={filter}
+                      variant={dateFilter === filter ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setDateFilter(filter)}
+                      className="text-xs"
+                    >
+                      {filter === 'all' && 'Все'}
+                      {filter === 'today' && 'Сегодня'}
+                      {filter === 'week' && 'Неделя'}
+                      {filter === 'month' && 'Месяц'}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </div>
             
             {loading ? (
               <div className="flex items-center justify-center py-20">
@@ -504,9 +638,24 @@ const Dashboard = () => {
                   </Button>
                 </CardContent>
               </Card>
+            ) : filteredTranscripts.length === 0 ? (
+              <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+                <CardContent className="py-12 text-center text-muted-foreground">
+                  <Search className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>Ничего не найдено</p>
+                  <p className="text-sm mt-2">Попробуйте изменить параметры поиска</p>
+                  <Button
+                    variant="outline"
+                    onClick={() => { setSearchQuery(''); setDateFilter('all'); }}
+                    className="mt-4"
+                  >
+                    Сбросить фильтры
+                  </Button>
+                </CardContent>
+              </Card>
             ) : (
               <div className="grid gap-4">
-                {transcripts.map((transcript) => (
+                {filteredTranscripts.map((transcript) => (
                   <Card key={transcript.id} className="bg-card/50 backdrop-blur-sm border-border/50">
                     <CardHeader>
                       <div className="flex items-start justify-between">
@@ -528,7 +677,17 @@ const Dashboard = () => {
                             )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleShareMeeting(transcript.id)}
+                            className="gap-1.5"
+                            title="Поделиться"
+                          >
+                            <Share2 className="w-4 h-4" />
+                            Поделиться
+                          </Button>
                           <Button
                             variant="outline"
                             size="sm"
@@ -611,6 +770,53 @@ const Dashboard = () => {
                     </CardContent>
                   </Card>
                 ))}
+              </div>
+            )}
+            
+            {/* Share Link Modal */}
+            {sharingMeetingId && (
+              <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={closeShareDialog}>
+                <Card className="max-w-md w-full bg-card border-border" onClick={(e) => e.stopPropagation()}>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Link2 className="w-5 h-5 text-primary" />
+                      Поделиться созвоном
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {shareLink ? (
+                      <>
+                        <p className="text-sm text-muted-foreground">
+                          Скопируйте ссылку и отправьте её тому, с кем хотите поделиться:
+                        </p>
+                        <div className="flex gap-2">
+                          <Input
+                            value={shareLink}
+                            readOnly
+                            className="bg-muted/50 text-sm"
+                          />
+                          <Button onClick={copyShareLink} className="shrink-0 gap-1.5">
+                            <Copy className="w-4 h-4" />
+                            Копировать
+                          </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Любой, у кого есть эта ссылка, сможет просмотреть конспект созвона.
+                        </p>
+                      </>
+                    ) : (
+                      <div className="flex items-center justify-center py-4">
+                        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                        <span className="ml-2 text-muted-foreground">Создаём ссылку...</span>
+                      </div>
+                    )}
+                  </CardContent>
+                  <div className="px-6 pb-6">
+                    <Button variant="outline" onClick={closeShareDialog} className="w-full">
+                      Закрыть
+                    </Button>
+                  </div>
+                </Card>
               </div>
             )}
           </TabsContent>
