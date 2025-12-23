@@ -518,6 +518,8 @@ const MeetingRoom = () => {
         variant: 'destructive',
       });
     }
+  };
+
   const buildMeetingSavePayload = async () => {
     // Only save if recording was started at some point
     if (!hasStartedRecordingRef.current) return null;
@@ -1322,6 +1324,16 @@ const MeetingRoom = () => {
   return (
     <div className="h-screen w-screen bg-background flex flex-col overflow-hidden cursor-none relative">
       <CustomCursor />
+
+      {/* Meeting End Save Dialog with status + retry */}
+      <MeetingEndSaveDialog
+        open={endSaveDialogOpen}
+        status={endSaveStatus}
+        errorMessage={endSaveError}
+        onRetry={retryEndSave}
+        onGoToCalls={goToCallsAfterSave}
+        onExitWithoutSaving={exitWithoutSaving}
+      />
       
       {/* Realtime Translator */}
       <RealtimeTranslator
