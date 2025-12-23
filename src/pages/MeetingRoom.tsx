@@ -483,9 +483,13 @@ const MeetingRoom = () => {
         gainNode.connect(audioContextKeepAlive.destination);
         oscillator.start();
 
-        const resumeIfSuspended = () => {
+        const resumeIfSuspended = async () => {
           if (audioContextKeepAlive?.state === 'suspended') {
-            audioContextKeepAlive.resume().catch(() => {});
+            try {
+              await audioContextKeepAlive.resume();
+            } catch {
+              // Silently ignore - audio context may not be available
+            }
           }
         };
 
@@ -1216,7 +1220,7 @@ const MeetingRoom = () => {
                     <>
                       <div className="relative animate-fade-in">
                         <MicOff className="w-5 h-5 animate-pulse" />
-                        <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full">
+                        <span className="absolute -top-1.5 -right-2.5 w-2.5 h-2.5 bg-red-500 rounded-full">
                           <span className="absolute inset-0 w-full h-full bg-red-500 rounded-full animate-ping opacity-75" />
                         </span>
                       </div>

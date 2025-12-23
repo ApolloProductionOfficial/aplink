@@ -45,6 +45,7 @@ serve(async (req) => {
     const jsonContent = JSON.stringify(errorReport, null, 2);
     const base64Json = btoa(unescape(encodeURIComponent(jsonContent)));
     
+    // Create attachment for the email
     const htmlContent = `
       <!DOCTYPE html>
       <html>
@@ -54,12 +55,12 @@ serve(async (req) => {
             .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
             .header { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; padding: 20px; text-align: center; }
             .content { padding: 30px; }
-            .error-box { background: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; margin: 15px 0; border-radius: 4px; }
+            .error-box { background: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; margin: 15px 0; border-radius: 4px; word-break: break-all; }
             .details { background: #f8fafc; padding: 15px; border-radius: 4px; margin-top: 15px; }
             .label { font-weight: bold; color: #475569; }
             .footer { background: #f8fafc; padding: 15px; text-align: center; color: #64748b; font-size: 12px; }
-            .download-btn { display: inline-block; background: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 15px 0; font-weight: bold; }
-            .download-btn:hover { background: #2563eb; }
+            .json-block { background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 6px; font-family: monospace; font-size: 11px; white-space: pre-wrap; word-break: break-all; margin: 15px 0; max-height: 300px; overflow-y: auto; }
+            .copy-hint { background: #3b82f6; color: white; padding: 10px 15px; border-radius: 6px; margin: 15px 0; text-align: center; }
           </style>
         </head>
         <body>
@@ -77,22 +78,22 @@ serve(async (req) => {
                 ${errorMessage || "Нет описания"}
               </div>
               
-              <div style="text-align: center;">
-                <a href="data:application/json;base64,${base64Json}" download="error-report-${Date.now()}.json" class="download-btn">
-                  📥 Скачать отчёт об ошибке (.json)
-                </a>
+              <div class="copy-hint">
+                📋 Скопируйте JSON ниже и отправьте в чат Lovable для анализа
               </div>
+              
+              <div class="json-block">${jsonContent}</div>
               
               ${details ? `
                 <div class="details">
                   <strong>Дополнительные детали:</strong><br/>
-                  <pre style="white-space: pre-wrap; word-wrap: break-word;">${JSON.stringify(details, null, 2)}</pre>
+                  <pre style="white-space: pre-wrap; word-wrap: break-word; font-size: 11px;">${JSON.stringify(details, null, 2)}</pre>
                 </div>
               ` : ""}
             </div>
             <div class="footer">
               Apollo Production - Автоматическое уведомление<br/>
-              <small>Скачайте JSON файл и отправьте его в чат для анализа</small>
+              <small>Скопируйте JSON выше и вставьте в чат для анализа</small>
             </div>
           </div>
         </body>
