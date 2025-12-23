@@ -61,6 +61,7 @@ const MeetingRoom = () => {
   }, [isRecording]);
   const { playConnectedSound, playDisconnectedSound, playReconnectingSound } = useConnectionSounds();
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [isSavingMeeting, setIsSavingMeeting] = useState(false);
   const [showTranslator, setShowTranslator] = useState(false);
   const [connectionQuality, setConnectionQuality] = useState<number>(100); // 0-100 percentage
   const diagnosticsLogRef = useRef<{ ts: string; event: string; data?: unknown }[]>([]);
@@ -332,6 +333,8 @@ const MeetingRoom = () => {
 
   // Save meeting transcript and summary - always stop recording if active
   const saveMeetingTranscript = async () => {
+    setIsSavingMeeting(true);
+    
     // If recording was started, try to get audio even if the recorder already stopped (e.g., hangup ends tracks)
     let audioBlob: Blob | null = null;
 
@@ -366,12 +369,14 @@ const MeetingRoom = () => {
     // Only save if user started recording at some point
     if (!hasStartedRecordingRef.current) {
       console.log('Recording was not started, skipping transcript save');
+      setIsSavingMeeting(false);
       return;
     }
 
     // Only save if user is authenticated
     if (!user) {
       console.log('User not authenticated, skipping transcript save');
+      setIsSavingMeeting(false);
       return;
     }
 
@@ -403,6 +408,8 @@ const MeetingRoom = () => {
         description: 'Не удалось сохранить созвон. Попробуйте ещё раз.',
         variant: 'destructive',
       });
+    } finally {
+      setIsSavingMeeting(false);
     }
   };
 
@@ -1027,11 +1034,17 @@ const MeetingRoom = () => {
           }
         });
 
-        // Capture chat messages as part of transcript
+        // Capture chat messages as part of transcript and send notification
         apiRef.current.addEventListener('incomingMessage', (data: { from: string; message: string }) => {
           console.log('Chat message:', data);
           if (data.message) {
             transcriptRef.current.push(`[Чат] ${data.from || 'Unknown'}: ${data.message}`);
+            
+            // Send push notification for new chat message
+            sendNotification(`Сообщение от ${data.from || 'Участник'}`, {
+              body: data.message.length > 50 ? data.message.substring(0, 50) + '...' : data.message,
+              tag: 'chat-message',
+            });
           }
         });
 
@@ -1163,7 +1176,8 @@ const MeetingRoom = () => {
                   loop 
                   muted 
                   playsInline
-                  preload="metadata"
+                  preload="auto"
+                  poster=""
                   className="absolute inset-0 w-full h-full object-cover scale-[1.3] origin-center"
                   style={{ willChange: 'transform' }}
                 />
@@ -1396,9 +1410,9 @@ const MeetingRoom = () => {
         </div>
       )}
 
-      {/* Recording Indicator Overlay */}
+      {/* Recording Indicator Overlay - shifted right to not cover mic icon */}
       {(isRecording || isTranscribing) && (
-        <div className="absolute top-20 left-4 z-40 flex items-center gap-2 glass rounded-full px-4 py-2 border border-red-500/50 animate-fade-in">
+        <div className="absolute top-20 left-16 sm:left-4 z-40 flex items-center gap-2 glass rounded-full px-4 py-2 border border-red-500/50 animate-fade-in">
           {isTranscribing ? (
             <>
               <div className="w-3 h-3 rounded-full bg-yellow-500 animate-pulse" />
@@ -1411,6 +1425,19 @@ const MeetingRoom = () => {
               <span className="text-xs text-muted-foreground">{t.meetingRoom.recording}</span>
             </>
           )}
+        </div>
+      )}
+
+      {/* Saving Meeting Indicator with blocking overlay */}
+      {isSavingMeeting && (
+        <div className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-sm flex items-center justify-center">
+          <div className="glass rounded-xl px-8 py-6 border border-primary/30 flex flex-col items-center gap-4 max-w-sm mx-4">
+            <div className="w-12 h-12 rounded-full border-4 border-primary/30 border-t-primary animate-spin" />
+            <div className="text-center">
+              <p className="text-lg font-semibold">Сохранение созвона...</p>
+              <p className="text-sm text-muted-foreground mt-1">Пожалуйста, не закрывайте страницу</p>
+            </div>
+          </div>
         </div>
       )}
 

@@ -1008,17 +1008,16 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
               </Button>
             </div>
 
-            {/* Mode selector - unified style */}
+            {/* Mode selector - unified style, allow switching even during listening */}
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
-                onClick={() => !isListening && setPushToTalkMode(false)}
-                disabled={isListening}
+                onClick={() => setPushToTalkMode(false)}
                 className={cn(
                   "h-10 px-3 text-sm font-medium rounded-md transition-all flex items-center justify-center gap-2",
                   !pushToTalkMode 
                     ? "bg-primary text-primary-foreground shadow-sm" 
-                    : "bg-muted/40 text-muted-foreground border border-border/40 hover:bg-muted/60 disabled:opacity-50"
+                    : "bg-muted/40 text-muted-foreground border border-border/40 hover:bg-muted/60"
                 )}
               >
                 <Activity className="h-4 w-4" />
@@ -1026,17 +1025,18 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
               </button>
               <button
                 type="button"
-                onClick={() => !isListening && setPushToTalkMode(true)}
-                disabled={isListening}
+                onClick={() => setPushToTalkMode(true)}
                 className={cn(
                   "h-10 px-3 text-sm font-medium rounded-md transition-all flex items-center justify-center gap-2",
                   pushToTalkMode 
                     ? "bg-primary text-primary-foreground shadow-sm" 
-                    : "bg-muted/40 text-muted-foreground border border-border/40 hover:bg-muted/60 disabled:opacity-50"
+                    : "bg-muted/40 text-muted-foreground border border-border/40 hover:bg-muted/60"
                 )}
               >
-                <Keyboard className="h-4 w-4" />
-                {t.translator.modeSpace}
+                <Mic className="h-4 w-4 md:hidden" />
+                <Keyboard className="h-4 w-4 hidden md:block" />
+                <span className="hidden md:inline">{t.translator.modeSpace}</span>
+                <span className="md:hidden">Удержать</span>
               </button>
             </div>
 
