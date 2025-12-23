@@ -4,14 +4,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Label } from '@/components/ui/label';
 import { 
   Languages, Mic, MicOff, Volume2, Loader2, X, Minimize2, Maximize2, 
-  Download, History, Trash2, Play, Keyboard, Activity, Settings2, ArrowRight, HelpCircle, Radio
+  Download, History, Trash2, Play, Keyboard, Activity, ArrowRight
 } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Slider } from '@/components/ui/slider';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -36,8 +32,8 @@ interface RealtimeTranslatorProps {
   onToggle: () => void;
   roomId?: string;
   className?: string;
-  jitsiApi?: any; // Jitsi External API reference for audio handling
-  onTranslatedAudio?: (audioUrl: string) => void; // Callback when translation audio is ready
+  jitsiApi?: any;
+  onTranslatedAudio?: (audioUrl: string) => void;
 }
 
 const LANGUAGES = [
@@ -56,21 +52,18 @@ const LANGUAGES = [
 ];
 
 const VOICES = [
-  // Female voices - using audio wave icons
   { id: 'female-sarah', name: 'Sarah', gender: 'female', color: 'bg-pink-500' },
   { id: 'female-laura', name: 'Laura', gender: 'female', color: 'bg-rose-500' },
   { id: 'female-alice', name: 'Alice', gender: 'female', color: 'bg-fuchsia-500' },
   { id: 'female-matilda', name: 'Matilda', gender: 'female', color: 'bg-purple-500' },
   { id: 'female-lily', name: 'Lily', gender: 'female', color: 'bg-violet-500' },
   { id: 'female-jessica', name: 'Jessica', gender: 'female', color: 'bg-indigo-500' },
-  // Male voices
   { id: 'male-daniel', name: 'Daniel', gender: 'male', color: 'bg-blue-500' },
   { id: 'male-george', name: 'George', gender: 'male', color: 'bg-cyan-500' },
   { id: 'male-charlie', name: 'Charlie', gender: 'male', color: 'bg-teal-500' },
   { id: 'male-liam', name: 'Liam', gender: 'male', color: 'bg-emerald-500' },
   { id: 'male-brian', name: 'Brian', gender: 'male', color: 'bg-green-500' },
   { id: 'male-chris', name: 'Chris', gender: 'male', color: 'bg-lime-500' },
-  // Neutral voices
   { id: 'neutral-river', name: 'River', gender: 'neutral', color: 'bg-amber-500' },
   { id: 'neutral-alloy', name: 'Roger', gender: 'neutral', color: 'bg-orange-500' },
 ];
@@ -82,8 +75,6 @@ interface StoredSettings {
   targetLanguage: string;
   selectedVoice: string;
   pushToTalkMode: boolean;
-  vadThreshold: number;
-  silenceDuration: number;
 }
 
 const loadStoredSettings = (): Partial<StoredSettings> => {
@@ -98,9 +89,7 @@ const loadStoredSettings = (): Partial<StoredSettings> => {
 const saveSettings = (settings: StoredSettings) => {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
-  } catch {
-    // Ignore localStorage errors
-  }
+  } catch {}
 };
 
 export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
@@ -109,13 +98,12 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
   roomId,
   className,
   jitsiApi,
-  onTranslatedAudio,
 }) => {
   const { user } = useAuth();
   const { trackEvent } = useAnalytics();
   const { t } = useTranslation();
   
-  // WebRTC broadcast for translated audio
+  // WebRTC broadcast - auto-enabled when translator is active
   const { 
     isBroadcasting, 
     startBroadcast, 
@@ -123,7 +111,6 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
     playTranslatedAudio: playThroughWebRTC 
   } = useTranslationBroadcast(jitsiApi);
   
-  // Load initial values from localStorage
   const storedSettings = loadStoredSettings();
   
   const [targetLanguage, setTargetLanguage] = useState(storedSettings.targetLanguage || 'en');
@@ -139,24 +126,13 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
   const [isPreviewingVoice, setIsPreviewingVoice] = useState(false);
   const [pushToTalkMode, setPushToTalkMode] = useState(storedSettings.pushToTalkMode ?? false);
   const [isPushToTalkActive, setIsPushToTalkActive] = useState(false);
-  // VAD is always enabled (no toggle needed)
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [audioLevel, setAudioLevel] = useState(0);
-  const [vadSettingsOpen, setVadSettingsOpen] = useState(false);
   
-  // WebRTC broadcast mode - directly inject into Jitsi audio track (recommended)
-  const [webrtcBroadcastMode, setWebrtcBroadcastMode] = useState(false);
-  // Legacy broadcast mode - play translation audio loudly for microphone pickup
-  const [broadcastMode, setBroadcastMode] = useState(false);
-  // Listen to remote audio mode - translate incoming speech from partner
-  const [listenToPartner, setListenToPartner] = useState(false);
-  const remoteAudioContextRef = useRef<AudioContext | null>(null);
-  const remoteAnalyserRef = useRef<AnalyserNode | null>(null);
-  
-  // VAD configurable settings
-  const [vadThreshold, setVadThreshold] = useState(storedSettings.vadThreshold ?? 0.02);
-  const [silenceDuration, setSilenceDuration] = useState(storedSettings.silenceDuration ?? 2000);
-  const [minSpeechDuration, setMinSpeechDuration] = useState(300);
+  // VAD settings
+  const vadThreshold = 0.02;
+  const silenceDuration = 2000;
+  const minSpeechDuration = 300;
   const [isVadRecording, setIsVadRecording] = useState(false);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -165,10 +141,9 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
   const audioQueueRef = useRef<string[]>([]);
   const isPlayingRef = useRef(false);
   const translationsEndRef = useRef<HTMLDivElement>(null);
-  const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const pushToTalkRecordingRef = useRef(false);
   
-  // VAD (Voice Activity Detection) refs
+  // VAD refs
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const vadIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -176,38 +151,42 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
   const speechStartRef = useRef<number | null>(null);
   const vadRecordingRef = useRef(false);
 
-  // Auto-scroll to latest translation
+  // Auto-start WebRTC broadcast when translator becomes active
+  useEffect(() => {
+    if (isActive && jitsiApi && !isBroadcasting) {
+      startBroadcast().catch(console.error);
+    }
+    if (!isActive && isBroadcasting) {
+      stopBroadcast();
+    }
+  }, [isActive, jitsiApi, isBroadcasting, startBroadcast, stopBroadcast]);
+
   useEffect(() => {
     if (translationsEndRef.current) {
       translationsEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [translations]);
 
-  // Load history when tab changes
   useEffect(() => {
     if (activeTab === 'history' && user) {
       loadHistory();
     }
   }, [activeTab, user]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       stopListening();
     };
   }, []);
 
-  // Save settings to localStorage when they change
   useEffect(() => {
     saveSettings({
       sourceLanguage,
       targetLanguage,
       selectedVoice,
       pushToTalkMode,
-      vadThreshold,
-      silenceDuration,
     });
-  }, [sourceLanguage, targetLanguage, selectedVoice, pushToTalkMode, vadThreshold, silenceDuration]);
+  }, [sourceLanguage, targetLanguage, selectedVoice, pushToTalkMode]);
 
   const loadHistory = async () => {
     if (!user) return;
@@ -305,13 +284,11 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
     toast.success(t.translator.historyExported);
   };
 
-  // Preview selected voice
   const previewVoice = async () => {
     if (isPreviewingVoice) return;
     
     setIsPreviewingVoice(true);
     try {
-      const targetLang = LANGUAGES.find(l => l.code === targetLanguage);
       const sampleText = targetLanguage === 'ru' 
         ? 'Привет! Это пример моего голоса.' 
         : targetLanguage === 'en'
@@ -325,7 +302,6 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
         : 'Hello! This is a sample of my voice.';
 
       const formData = new FormData();
-      // Create a small audio blob with silence just to trigger TTS
       const silentBlob = new Blob([new Uint8Array(1000)], { type: 'audio/webm' });
       formData.append('audio', silentBlob, 'audio.webm');
       formData.append('targetLanguage', targetLanguage);
@@ -344,9 +320,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
         }
       );
 
-      if (!response.ok) {
-        throw new Error('Preview failed');
-      }
+      if (!response.ok) throw new Error('Preview failed');
 
       const result = await response.json();
       
@@ -369,8 +343,8 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
     isPlayingRef.current = true;
     const audioUrl = audioQueueRef.current.shift()!;
     
-    // WebRTC broadcast mode - use dedicated audio channel (best quality, no echo)
-    if (webrtcBroadcastMode && isBroadcasting) {
+    // Always try WebRTC broadcast first when in a call
+    if (isBroadcasting) {
       try {
         await playThroughWebRTC(audioUrl);
         isPlayingRef.current = false;
@@ -381,61 +355,31 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
       }
     }
     
-    // If legacy broadcast mode is enabled, notify parent to play through Jitsi
-    if (broadcastMode && onTranslatedAudio) {
-      onTranslatedAudio(audioUrl);
-    }
-    
     try {
       const audio = new Audio(audioUrl);
-      
-      // Mobile Safari requires user gesture - try to unlock audio context
-      const unlockAudio = async () => {
-        try {
-          // Create temporary AudioContext to unlock audio on mobile
-          const tempContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-          await tempContext.resume();
-          tempContext.close();
-        } catch (e) {
-          console.log('Audio context unlock failed (may already be unlocked):', e);
-        }
-      };
-      
-      await unlockAudio();
       
       audio.onended = () => {
         isPlayingRef.current = false;
         playNextAudio();
       };
-      audio.onerror = (e) => {
-        console.error('Audio playback error:', e);
+      audio.onerror = () => {
         isPlayingRef.current = false;
         playNextAudio();
       };
       
-      // In broadcast mode, play louder so mic can pick it up
-      audio.volume = broadcastMode ? 1.0 : 1.0;
+      audio.volume = 1.0;
       
-      // Try to play - handle mobile restrictions with auto-unlock
       const playPromise = audio.play();
       if (playPromise !== undefined) {
-        playPromise.catch(async (playError) => {
-          // Don't log as error to avoid triggering error notifications
-          console.log('Audio play blocked, attempting auto-unlock');
-          
-          // Try to auto-unlock by creating and playing a silent audio
+        playPromise.catch(async () => {
           try {
             const silentAudio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA');
             await silentAudio.play();
             silentAudio.pause();
-            
-            // Now retry the actual audio
             await audio.play();
-          } catch (retryError) {
-            // Silent fail - audio will continue in next iteration
-            console.log('Audio unlock retry failed');
+          } catch {
+            // Silent fail
           }
-          
           isPlayingRef.current = false;
           playNextAudio();
         });
@@ -445,10 +389,9 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
       isPlayingRef.current = false;
       playNextAudio();
     }
-  }, [broadcastMode, webrtcBroadcastMode, isBroadcasting, playThroughWebRTC, onTranslatedAudio]);
+  }, [isBroadcasting, playThroughWebRTC]);
 
   const processAudioChunk = useCallback(async (audioBlob: Blob) => {
-    // Increased minimum size to ensure we have meaningful audio
     if (audioBlob.size < 2000) {
       console.log('Audio chunk too small, skipping...');
       return;
@@ -477,9 +420,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
         }
       );
 
-      if (!response.ok) {
-        throw new Error(`Translation failed: ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`Translation failed: ${response.status}`);
 
       const result = await response.json();
       
@@ -494,7 +435,6 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
           voiceId: result.voiceId,
         };
 
-        // Create audio URL if available - always play
         if (result.audioContent) {
           const audioUrl = `data:audio/mpeg;base64,${result.audioContent}`;
           entry.audioUrl = audioUrl;
@@ -504,7 +444,6 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
 
         setTranslations(prev => [...prev.slice(-19), entry]);
         
-        // Track translation completion
         trackEvent({
           eventType: 'translation_completed',
           eventData: {
@@ -515,7 +454,6 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
           },
         });
         
-        // Save to database if user is logged in
         if (user) {
           await saveTranslation(entry);
         }
@@ -527,18 +465,10 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
     }
   }, [targetLanguage, sourceLanguage, selectedVoice, playNextAudio, user, roomId, trackEvent]);
 
-  // VAD: Start recording when speech detected
   const startVadRecording = useCallback(() => {
-    if (!streamRef.current) {
-      console.log('VAD Recording: No stream');
-      return;
-    }
-    if (vadRecordingRef.current) {
-      console.log('VAD Recording: Already recording');
-      return;
-    }
+    if (!streamRef.current || vadRecordingRef.current) return;
     
-    console.log('VAD Recording: Starting new recording');
+    console.log('VAD Recording: Starting');
     vadRecordingRef.current = true;
     setIsVadRecording(true);
     audioChunksRef.current = [];
@@ -554,7 +484,6 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
     };
 
     mediaRecorder.onstop = async () => {
-      console.log('VAD Recording: Stopped, processing audio');
       vadRecordingRef.current = false;
       setIsVadRecording(false);
       const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
@@ -565,27 +494,15 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
     mediaRecorder.start();
   }, [processAudioChunk]);
 
-  // VAD: Stop recording after silence
   const stopVadRecording = useCallback(() => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
       mediaRecorderRef.current.stop();
     }
   }, []);
 
-  // VAD: Analyze audio levels (and always run mic level meter)
   const startVad = useCallback(() => {
-    if (!streamRef.current) {
-      console.log('VAD: No stream available');
-      return;
-    }
-    if (vadIntervalRef.current) {
-      console.log('VAD: Already running');
-      return;
-    }
+    if (!streamRef.current || vadIntervalRef.current) return;
 
-    console.log('VAD: Starting audio analysis, pushToTalkMode:', pushToTalkMode);
-
-    // Create audio context for analysis
     audioContextRef.current = new AudioContext();
     analyserRef.current = audioContextRef.current.createAnalyser();
     analyserRef.current.fftSize = 1024;
@@ -600,7 +517,6 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
     vadIntervalRef.current = setInterval(() => {
       if (!analyserRef.current) return;
 
-      // Time-domain RMS is more reliable for VAD than frequency bins
       analyserRef.current.getByteTimeDomainData(timeData);
 
       let sum = 0;
@@ -610,10 +526,8 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
       }
       const rms = Math.sqrt(sum / timeData.length);
 
-      // Update audio level for visual indicator (0-100)
       setAudioLevel(Math.min(100, rms * 500));
 
-      // In push-to-talk mode we only need the mic level meter, skip VAD logic
       if (pushToTalkMode) {
         if (lastSpeaking) {
           lastSpeaking = false;
@@ -635,12 +549,9 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
 
         if (!speechStartRef.current) {
           speechStartRef.current = now;
-          console.log('VAD: Speech started');
         }
 
-        // Start recording if speech has been detected for minimum duration
         if (!vadRecordingRef.current && (now - speechStartRef.current) >= minSpeechDuration) {
-          console.log('VAD: Starting recording');
           startVadRecording();
         }
       } else {
@@ -649,16 +560,14 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
         }
 
         if (vadRecordingRef.current && silenceStartRef.current && (now - silenceStartRef.current) >= silenceDuration) {
-          console.log('VAD: Silence detected, stopping recording');
           stopVadRecording();
           speechStartRef.current = null;
           silenceStartRef.current = null;
         }
       }
-    }, 50); // Check every 50ms
-  }, [pushToTalkMode, startVadRecording, stopVadRecording, vadThreshold, silenceDuration, minSpeechDuration]);
+    }, 50);
+  }, [pushToTalkMode, startVadRecording, stopVadRecording]);
 
-  // Stop VAD
   const stopVad = useCallback(() => {
     if (vadIntervalRef.current) {
       clearInterval(vadIntervalRef.current);
@@ -675,51 +584,13 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
     setAudioLevel(0);
   }, []);
 
-  // Restart VAD when switching from PTT to Auto mode while mic is active
   useEffect(() => {
     if (isListening && streamRef.current && !pushToTalkMode) {
-      // Switching to Auto mode - restart VAD
       stopVad();
       startVad();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pushToTalkMode]);
 
-  const startRecordingChunk = useCallback(() => {
-    if (!streamRef.current) return;
-    // In push-to-talk mode, don't start auto chunks
-    if (pushToTalkMode && !pushToTalkRecordingRef.current) return;
-
-    // Legacy fixed-interval chunking (kept for fallback/debugging)
-    audioChunksRef.current = [];
-
-    const mediaRecorder = new MediaRecorder(streamRef.current, {
-      mimeType: 'audio/webm;codecs=opus',
-    });
-
-    mediaRecorder.ondataavailable = (event) => {
-      if (event.data.size > 0) {
-        audioChunksRef.current.push(event.data);
-      }
-    };
-
-    mediaRecorder.onstop = async () => {
-      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-      await processAudioChunk(audioBlob);
-    };
-
-    mediaRecorderRef.current = mediaRecorder;
-    mediaRecorder.start();
-
-    // Stop after 10 seconds
-    setTimeout(() => {
-      if (mediaRecorder.state === 'recording') {
-        mediaRecorder.stop();
-      }
-    }, 10000);
-  }, [processAudioChunk, pushToTalkMode]);
-
-  // Push-to-talk: start recording on key down
   const startPushToTalk = useCallback(() => {
     if (!streamRef.current || pushToTalkRecordingRef.current) return;
     
@@ -743,7 +614,6 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
       setIsPushToTalkActive(false);
       const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
       
-      // In PTT mode, stop mic after each recording so user knows it's not always on
       if (pushToTalkMode && streamRef.current) {
         stopListeningInternal();
       }
@@ -753,9 +623,8 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
 
     mediaRecorderRef.current = mediaRecorder;
     mediaRecorder.start();
-  }, [processAudioChunk]);
+  }, [processAudioChunk, pushToTalkMode]);
 
-  // Push-to-talk: stop recording on key up
   const stopPushToTalk = useCallback(() => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
       mediaRecorderRef.current.stop();
@@ -782,7 +651,6 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
         toast.success(t.translator.vadActivated);
       }
 
-      // Always start audio analysis (mic level meter). In non-PTT mode this also runs VAD.
       startVad();
     } catch (error) {
       console.error('Error accessing microphone:', error);
@@ -790,7 +658,6 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
     }
   }, [pushToTalkMode, startVad]);
 
-  // Keyboard listener for push-to-talk (Space key) - proper hold behavior
   useEffect(() => {
     if (!pushToTalkMode) return;
 
@@ -805,8 +672,6 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
     const stopEvent = (e: KeyboardEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      // stopImmediatePropagation is not on the TS KeyboardEvent type, but exists at runtime
-      (e as unknown as { stopImmediatePropagation?: () => void }).stopImmediatePropagation?.();
     };
 
     const handleKeyDown = async (e: KeyboardEvent) => {
@@ -816,7 +681,6 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
       stopEvent(e);
       isSpaceHeld = true;
 
-      // If mic isn't active yet, start it first (so PTT can work without pressing "Начать перевод")
       if (!isListening) {
         await startListening();
       }
@@ -842,13 +706,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
     };
   }, [pushToTalkMode, isListening, startListening, startPushToTalk, stopPushToTalk]);
 
-  // Internal stop (doesn't process current audio, just cleans up)
   const stopListeningInternal = useCallback(() => {
-    if (recordingIntervalRef.current) {
-      clearInterval(recordingIntervalRef.current);
-      recordingIntervalRef.current = null;
-    }
-
     stopVad();
 
     if (streamRef.current) {
@@ -889,6 +747,9 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
         <CardContent className="p-3 flex items-center gap-3">
           <div className="flex items-center gap-2">
             <Languages className="h-4 w-4 text-primary" />
+            {isBroadcasting && (
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+            )}
             {pushToTalkMode && isPushToTalkActive && (
               <Badge variant="destructive" className="animate-pulse">
                 <Mic className="h-3 w-3 mr-1" />
@@ -915,143 +776,120 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
 
   return (
     <Card className={cn(
-      "fixed bottom-4 right-4 z-50 w-[400px] max-h-[70vh] bg-background/95 backdrop-blur border-primary/20 shadow-lg flex flex-col",
+      "fixed bottom-4 right-4 z-50 w-[380px] max-h-[60vh] bg-background/95 backdrop-blur border-primary/20 shadow-lg flex flex-col",
       className
     )}>
-      <CardContent className="p-4 flex flex-col gap-3 flex-1 overflow-hidden">
+      <CardContent className="p-3 flex flex-col gap-2 flex-1 overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Languages className="h-5 w-5 text-primary" />
+            <Languages className="h-4 w-4 text-primary" />
             <span className="font-semibold text-sm">{t.translator.title}</span>
-            {pushToTalkMode && isPushToTalkActive && (
-              <Badge variant="destructive" className="animate-pulse text-xs">
-                REC
-              </Badge>
-            )}
-            {!pushToTalkMode && isListening && (
-              <Badge variant="default" className="text-xs bg-green-600">
+            {isBroadcasting && (
+              <span className="flex items-center gap-1 text-[10px] text-green-500">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
                 LIVE
-              </Badge>
+              </span>
             )}
-            {isProcessing && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+            {isProcessing && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
           </div>
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setIsMinimized(true)}>
-              <Minimize2 className="h-4 w-4" />
+              <Minimize2 className="h-3 w-3" />
             </Button>
             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onToggle}>
-              <X className="h-4 w-4" />
+              <X className="h-3 w-3" />
             </Button>
           </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-          <TabsList className="grid w-full grid-cols-2 h-9">
-            <TabsTrigger value="translate" className="text-xs flex items-center gap-1.5">
-              <Languages className="h-3.5 w-3.5" />
+          <TabsList className="grid w-full grid-cols-2 h-8">
+            <TabsTrigger value="translate" className="text-xs">
+              <Languages className="h-3 w-3 mr-1" />
               {t.translator.tabTranslate}
             </TabsTrigger>
-            <TabsTrigger value="history" className="text-xs flex items-center gap-1.5">
-              <History className="h-3.5 w-3.5" />
+            <TabsTrigger value="history" className="text-xs">
+              <History className="h-3 w-3 mr-1" />
               {t.translator.tabHistory}
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="translate" className="flex-1 flex flex-col gap-2.5 overflow-hidden mt-3">
-            {/* Language selectors with arrow */}
+          <TabsContent value="translate" className="flex-1 flex flex-col gap-2 overflow-hidden mt-2">
+            {/* Languages */}
             <div className="flex items-center gap-1">
               <Select value={sourceLanguage} onValueChange={setSourceLanguage}>
-                <SelectTrigger className="h-10 text-sm bg-muted/40 border-border/40 hover:bg-muted/60 transition-colors flex-1">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-base shrink-0">
-                      {sourceLanguage === 'auto' ? '🌍' : LANGUAGES.find(l => l.code === sourceLanguage)?.flag || '🌍'}
-                    </span>
-                    <span className="truncate text-xs">
+                <SelectTrigger className="h-9 text-xs bg-muted/40 border-border/40 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span>{sourceLanguage === 'auto' ? '🌍' : LANGUAGES.find(l => l.code === sourceLanguage)?.flag}</span>
+                    <span className="truncate">
                       {sourceLanguage === 'auto' ? t.translator.autoDetect : LANGUAGES.find(l => l.code === sourceLanguage)?.name}
                     </span>
                   </div>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="auto">
-                    <span className="flex items-center gap-2">
-                      <span className="text-base">🌍</span>
-                      <span>{t.translator.autoDetect}</span>
-                    </span>
-                  </SelectItem>
+                  <SelectItem value="auto">🌍 {t.translator.autoDetect}</SelectItem>
                   {LANGUAGES.map(lang => (
                     <SelectItem key={lang.code} value={lang.code}>
-                      <span className="flex items-center gap-2">
-                        <span className="text-base">{lang.flag}</span>
-                        <span>{lang.name}</span>
-                      </span>
+                      {lang.flag} {lang.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
 
-              <div className="shrink-0 px-1">
-                <ArrowRight className="h-4 w-4 text-muted-foreground" />
-              </div>
+              <ArrowRight className="h-3 w-3 text-muted-foreground shrink-0" />
 
               <Select value={targetLanguage} onValueChange={setTargetLanguage}>
-                <SelectTrigger className="h-10 text-sm bg-muted/40 border-border/40 hover:bg-muted/60 transition-colors flex-1">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-base shrink-0">
-                      {LANGUAGES.find(l => l.code === targetLanguage)?.flag || '🌍'}
-                    </span>
-                    <span className="truncate text-xs">
-                      {LANGUAGES.find(l => l.code === targetLanguage)?.name}
-                    </span>
+                <SelectTrigger className="h-9 text-xs bg-muted/40 border-border/40 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span>{LANGUAGES.find(l => l.code === targetLanguage)?.flag}</span>
+                    <span className="truncate">{LANGUAGES.find(l => l.code === targetLanguage)?.name}</span>
                   </div>
                 </SelectTrigger>
                 <SelectContent>
                   {LANGUAGES.map(lang => (
                     <SelectItem key={lang.code} value={lang.code}>
-                      <span className="flex items-center gap-2">
-                        <span className="text-base">{lang.flag}</span>
-                        <span>{lang.name}</span>
-                      </span>
+                      {lang.flag} {lang.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
-            {/* Voice selector - unified style */}
-            <div className="flex gap-2">
+            {/* Voice */}
+            <div className="flex gap-1.5">
               <Select value={selectedVoice} onValueChange={setSelectedVoice} disabled={isListening}>
-                <SelectTrigger className="h-10 text-sm flex-1 bg-muted/40 border-border/40 hover:bg-muted/60 transition-colors">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Volume2 className="h-4 w-4 shrink-0 text-muted-foreground" />
-                    <span className="truncate">{VOICES.find(v => v.id === selectedVoice)?.name || t.translator.voice}</span>
+                <SelectTrigger className="h-9 text-xs flex-1 bg-muted/40 border-border/40">
+                  <div className="flex items-center gap-1.5">
+                    <Volume2 className="h-3 w-3 text-muted-foreground" />
+                    <span>{VOICES.find(v => v.id === selectedVoice)?.name}</span>
                   </div>
                 </SelectTrigger>
-                <SelectContent className="max-h-[280px]">
-                  <div className="px-2 py-1 text-[10px] font-semibold text-pink-500/80 uppercase tracking-wide">{t.translator.femaleVoices}</div>
+                <SelectContent>
+                  <div className="px-2 py-1 text-[10px] font-semibold text-pink-500/80">{t.translator.femaleVoices}</div>
                   {VOICES.filter(v => v.gender === 'female').map(voice => (
                     <SelectItem key={voice.id} value={voice.id}>
                       <span className="flex items-center gap-2">
                         <span className={cn("w-2 h-2 rounded-full", voice.color)} />
-                        <span>{voice.name}</span>
+                        {voice.name}
                       </span>
                     </SelectItem>
                   ))}
-                  <div className="px-2 py-1 text-[10px] font-semibold text-blue-500/80 uppercase tracking-wide mt-1">{t.translator.maleVoices}</div>
+                  <div className="px-2 py-1 text-[10px] font-semibold text-blue-500/80 mt-1">{t.translator.maleVoices}</div>
                   {VOICES.filter(v => v.gender === 'male').map(voice => (
                     <SelectItem key={voice.id} value={voice.id}>
                       <span className="flex items-center gap-2">
                         <span className={cn("w-2 h-2 rounded-full", voice.color)} />
-                        <span>{voice.name}</span>
+                        {voice.name}
                       </span>
                     </SelectItem>
                   ))}
-                  <div className="px-2 py-1 text-[10px] font-semibold text-amber-500/80 uppercase tracking-wide mt-1">{t.translator.neutralVoices}</div>
+                  <div className="px-2 py-1 text-[10px] font-semibold text-amber-500/80 mt-1">{t.translator.neutralVoices}</div>
                   {VOICES.filter(v => v.gender === 'neutral').map(voice => (
                     <SelectItem key={voice.id} value={voice.id}>
                       <span className="flex items-center gap-2">
                         <span className={cn("w-2 h-2 rounded-full", voice.color)} />
-                        <span>{voice.name}</span>
+                        {voice.name}
                       </span>
                     </SelectItem>
                   ))}
@@ -1060,250 +898,62 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
               <Button
                 variant="outline"
                 size="icon"
-                className="h-10 w-10 shrink-0 bg-muted/40 border-border/40 hover:bg-muted/60"
+                className="h-9 w-9 shrink-0 bg-muted/40 border-border/40"
                 onClick={previewVoice}
                 disabled={isPreviewingVoice || isListening}
-                title={t.translator.previewVoice}
               >
-                {isPreviewingVoice ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+                {isPreviewingVoice ? <Loader2 className="h-3 w-3 animate-spin" /> : <Play className="h-3 w-3" />}
               </Button>
             </div>
 
-            {/* Mode selector - unified style, allow switching even during listening */}
-            <div className="grid grid-cols-2 gap-2">
+            {/* Mode toggle */}
+            <div className="grid grid-cols-2 gap-1.5">
               <button
                 type="button"
                 onClick={() => setPushToTalkMode(false)}
                 className={cn(
-                  "h-10 px-3 text-sm font-medium rounded-md transition-all flex items-center justify-center gap-2",
+                  "h-9 px-2 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1.5",
                   !pushToTalkMode 
-                    ? "bg-primary text-primary-foreground shadow-sm" 
-                    : "bg-muted/40 text-muted-foreground border border-border/40 hover:bg-muted/60"
+                    ? "bg-primary text-primary-foreground" 
+                    : "bg-muted/40 text-muted-foreground border border-border/40"
                 )}
               >
-                <Activity className="h-4 w-4" />
+                <Activity className="h-3 w-3" />
                 {t.translator.modeAuto}
               </button>
               <button
                 type="button"
                 onClick={() => setPushToTalkMode(true)}
                 className={cn(
-                  "h-10 px-3 text-sm font-medium rounded-md transition-all flex items-center justify-center gap-2",
+                  "h-9 px-2 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1.5",
                   pushToTalkMode 
-                    ? "bg-primary text-primary-foreground shadow-sm" 
-                    : "bg-muted/40 text-muted-foreground border border-border/40 hover:bg-muted/60"
+                    ? "bg-primary text-primary-foreground" 
+                    : "bg-muted/40 text-muted-foreground border border-border/40"
                 )}
               >
-                <Mic className="h-4 w-4 md:hidden" />
-                <Keyboard className="h-4 w-4 hidden md:block" />
+                <Keyboard className="h-3 w-3 hidden md:block" />
+                <Mic className="h-3 w-3 md:hidden" />
                 <span className="hidden md:inline">{t.translator.modeSpace}</span>
                 <span className="md:hidden">Удержать</span>
               </button>
             </div>
 
-            {/* Mic settings - compact, hidden by default behind gear icon */}
-            {!pushToTalkMode && (
-              <TooltipProvider delayDuration={200}>
-                <Collapsible open={vadSettingsOpen} onOpenChange={setVadSettingsOpen}>
-                  <CollapsibleTrigger asChild>
-                    <button 
-                      type="button"
-                      className="w-full flex items-center justify-between py-1.5 px-2 text-xs text-muted-foreground hover:text-foreground transition-colors rounded"
-                    >
-                      <div className="flex items-center gap-1.5">
-                        <Settings2 className={cn("h-3 w-3 transition-transform", vadSettingsOpen && "rotate-90")} />
-                        <span>{t.translator.micSettings}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        {isSpeaking && isListening && (
-                          <span className="flex items-center gap-1 text-green-500 text-[10px]">
-                            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                            {t.translator.speaking}
-                          </span>
-                        )}
-                      </div>
-                    </button>
-                  </CollapsibleTrigger>
-                  
-                  <CollapsibleContent className="mt-1.5 space-y-2 p-2 rounded-md bg-muted/30 border border-border/30">
-                    {/* Audio level indicator */}
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                        <span>{t.translator.level}</span>
-                        <span>{Math.round(audioLevel)}%</span>
-                      </div>
-                      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                        <div 
-                          className={cn(
-                            "h-full transition-all duration-75 rounded-full",
-                            audioLevel > vadThreshold * 500 ? "bg-green-500" : "bg-primary/50"
-                          )}
-                          style={{ width: `${audioLevel}%` }}
-                        />
-                      </div>
-                    </div>
-                    
-                    {/* Threshold slider with tooltip */}
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <span>{t.translator.sensitivity}</span>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <HelpCircle className="h-3 w-3 cursor-help opacity-60 hover:opacity-100" />
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="max-w-[200px] text-xs">
-                              {t.translator.sensitivityTooltip}
-                            </TooltipContent>
-                          </Tooltip>
-                        </div>
-                        <span className="font-mono">{(vadThreshold * 100).toFixed(1)}%</span>
-                      </div>
-                      <Slider
-                        value={[vadThreshold * 100]}
-                        onValueChange={([v]) => setVadThreshold(v / 100)}
-                        min={0.5}
-                        max={10}
-                        step={0.1}
-                        className="h-3"
-                        disabled={isListening}
-                      />
-                    </div>
-                    
-                    {/* Silence duration slider with tooltip */}
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <span>{t.translator.pause}</span>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <HelpCircle className="h-3 w-3 cursor-help opacity-60 hover:opacity-100" />
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="max-w-[200px] text-xs">
-                              {t.translator.pauseTooltip}
-                            </TooltipContent>
-                          </Tooltip>
-                        </div>
-                        <span className="font-mono">{(silenceDuration / 1000).toFixed(1)}s</span>
-                      </div>
-                      <Slider
-                        value={[silenceDuration]}
-                        onValueChange={([v]) => setSilenceDuration(v)}
-                        min={500}
-                        max={4000}
-                        step={100}
-                        className="h-3"
-                        disabled={isListening}
-                      />
-                    </div>
-                    
-                    {/* WebRTC Broadcast mode toggle (recommended) */}
-                    <div className="pt-2 border-t border-border/30 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1.5">
-                          <Radio className="h-3 w-3 text-green-500" />
-                          <span className="text-[10px] font-medium">WebRTC трансляция</span>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <HelpCircle className="h-3 w-3 cursor-help opacity-60 hover:opacity-100" />
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="max-w-[220px] text-xs">
-                              Прямая трансляция перевода собеседнику без эха. Рекомендуемый способ!
-                            </TooltipContent>
-                          </Tooltip>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            if (!webrtcBroadcastMode) {
-                              await startBroadcast();
-                              setWebrtcBroadcastMode(true);
-                              toast.success('WebRTC трансляция включена');
-                            } else {
-                              stopBroadcast();
-                              setWebrtcBroadcastMode(false);
-                            }
-                          }}
-                          className={cn(
-                            "relative w-8 h-4 rounded-full transition-colors",
-                            webrtcBroadcastMode ? "bg-green-500" : "bg-muted"
-                          )}
-                        >
-                          <span className={cn(
-                            "absolute top-0.5 w-3 h-3 rounded-full bg-background transition-all shadow-sm",
-                            webrtcBroadcastMode ? "left-[18px]" : "left-0.5"
-                          )} />
-                        </button>
-                      </div>
-                      
-                      {webrtcBroadcastMode && (
-                        <p className="text-[10px] text-green-500/80 bg-green-500/10 rounded p-1.5 flex items-center gap-1">
-                          <Radio className="h-3 w-3 animate-pulse" />
-                          {isBroadcasting ? 'Трансляция активна - собеседник слышит ваш перевод' : 'Подготовка канала...'}
-                        </p>
-                      )}
-                    </div>
-                    
-                    {/* Legacy Broadcast mode toggle */}
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1.5">
-                          <Volume2 className="h-3 w-3 text-primary opacity-60" />
-                          <span className="text-[10px] text-muted-foreground">Через динамик (устаревший)</span>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <HelpCircle className="h-3 w-3 cursor-help opacity-40 hover:opacity-100" />
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="max-w-[220px] text-xs">
-                              Воспроизводит перевод громко для передачи через микрофон. Может создавать эхо.
-                            </TooltipContent>
-                          </Tooltip>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setBroadcastMode(!broadcastMode)}
-                          disabled={webrtcBroadcastMode}
-                          className={cn(
-                            "relative w-8 h-4 rounded-full transition-colors",
-                            broadcastMode ? "bg-primary" : "bg-muted",
-                            webrtcBroadcastMode && "opacity-50 cursor-not-allowed"
-                          )}
-                        >
-                          <span className={cn(
-                            "absolute top-0.5 w-3 h-3 rounded-full bg-background transition-all shadow-sm",
-                            broadcastMode ? "left-[18px]" : "left-0.5"
-                          )} />
-                        </button>
-                      </div>
-                      
-                      {broadcastMode && !webrtcBroadcastMode && (
-                        <p className="text-[10px] text-amber-500/80 bg-amber-500/10 rounded p-1.5">
-                          ⚠️ Включите динамик и отключите эхоподавление
-                        </p>
-                      )}
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
-              </TooltipProvider>
-            )}
-
-            {/* Live audio level bar when listening (VAD mode) */}
+            {/* Audio level when listening */}
             {isListening && !pushToTalkMode && (
               <div className="flex items-center gap-2 px-1">
                 <Mic className={cn(
-                  "h-3.5 w-3.5 shrink-0 transition-all",
+                  "h-3 w-3 shrink-0",
                   isSpeaking ? "text-green-500" : "text-muted-foreground",
                   isVadRecording && "animate-pulse"
                 )} />
                 <div className={cn(
-                  "flex-1 h-1.5 bg-muted rounded-full overflow-hidden relative",
-                  isVadRecording && "ring-1 ring-green-500/50 ring-offset-1 ring-offset-background"
+                  "flex-1 h-1.5 bg-muted rounded-full overflow-hidden",
+                  isVadRecording && "ring-1 ring-green-500/50"
                 )}>
                   <div 
                     className={cn(
                       "h-full transition-all duration-75 rounded-full",
-                      audioLevel > vadThreshold * 500 ? "bg-green-500" : "bg-primary/40",
-                      isVadRecording && audioLevel > vadThreshold * 500 && "animate-pulse"
+                      audioLevel > vadThreshold * 500 ? "bg-green-500" : "bg-primary/40"
                     )}
                     style={{ width: `${audioLevel}%` }}
                   />
@@ -1314,24 +964,21 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
               </div>
             )}
 
-            {/* PTT visual feedback when recording */}
+            {/* PTT feedback */}
             {pushToTalkMode && isPushToTalkActive && (
-              <div className="flex items-center justify-center gap-2 py-3 rounded-lg bg-green-500/10 border border-green-500/30">
-                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
-                <span className="text-sm font-medium text-green-600">{t.translator.recording}</span>
+              <div className="flex items-center justify-center gap-2 py-2 rounded-lg bg-green-500/10 border border-green-500/30">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                <span className="text-xs font-medium text-green-600">{t.translator.recording}</span>
               </div>
             )}
 
-            {/* Start/Stop button or PTT instructions */}
+            {/* Start/Stop or PTT area */}
             {pushToTalkMode ? (
               <div 
-                className="text-center py-4 px-4 rounded-lg bg-muted/30 border border-dashed border-border cursor-pointer select-none touch-none active:bg-primary/20 active:border-primary/50 transition-colors md:cursor-default"
+                className="text-center py-3 px-3 rounded-lg bg-muted/30 border border-dashed border-border cursor-pointer select-none touch-none active:bg-primary/20 transition-colors"
                 onTouchStart={async (e) => {
                   e.preventDefault();
-                  // If mic isn't active yet, start it first
-                  if (!isListening) {
-                    await startListening();
-                  }
+                  if (!isListening) await startListening();
                   startPushToTalk();
                 }}
                 onTouchEnd={(e) => {
@@ -1339,12 +986,9 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
                   stopPushToTalk();
                 }}
                 onMouseDown={async (e) => {
-                  // Only for desktop fallback
                   if ('ontouchstart' in window) return;
                   e.preventDefault();
-                  if (!isListening) {
-                    await startListening();
-                  }
+                  if (!isListening) await startListening();
                   startPushToTalk();
                 }}
                 onMouseUp={(e) => {
@@ -1352,51 +996,47 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
                   e.preventDefault();
                   stopPushToTalk();
                 }}
-                onMouseLeave={(e) => {
+                onMouseLeave={() => {
                   if ('ontouchstart' in window) return;
-                  if (isPushToTalkActive) {
-                    e.preventDefault();
-                    stopPushToTalk();
-                  }
+                  if (isPushToTalkActive) stopPushToTalk();
                 }}
               >
-                <Keyboard className="h-6 w-6 mx-auto mb-1.5 text-muted-foreground hidden md:block" />
-                <Mic className="h-6 w-6 mx-auto mb-1.5 text-muted-foreground md:hidden" />
-                <p className="text-sm font-medium hidden md:block">{t.translator.holdSpaceToRecord}</p>
-                <p className="text-sm font-medium md:hidden">Удерживайте для записи</p>
-                <p className="text-xs text-muted-foreground mt-0.5 hidden md:block">{t.translator.releaseToTranslate}</p>
-                <p className="text-xs text-muted-foreground mt-0.5 md:hidden">Отпустите для перевода</p>
+                <Keyboard className="h-5 w-5 mx-auto mb-1 text-muted-foreground hidden md:block" />
+                <Mic className="h-5 w-5 mx-auto mb-1 text-muted-foreground md:hidden" />
+                <p className="text-xs font-medium hidden md:block">{t.translator.holdSpaceToRecord}</p>
+                <p className="text-xs font-medium md:hidden">Удерживайте для записи</p>
               </div>
             ) : (
               <Button
                 variant={isListening ? "destructive" : "default"}
                 onClick={toggleListening}
-                className="gap-2 h-10"
+                className="gap-2 h-9"
+                size="sm"
               >
                 {isListening ? (
                   <>
-                    <MicOff className="h-4 w-4" />
+                    <MicOff className="h-3 w-3" />
                     {t.translator.stop}
                   </>
                 ) : (
                   <>
-                    <Mic className="h-4 w-4" />
+                    <Mic className="h-3 w-3" />
                     {t.translator.startTranslation}
                   </>
                 )}
               </Button>
             )}
 
-            {/* Subtitles area */}
-            <div className="flex-1 overflow-y-auto min-h-[80px] max-h-[150px] border rounded-lg bg-muted/30 p-2 space-y-2">
+            {/* Subtitles */}
+            <div className="flex-1 overflow-y-auto min-h-[60px] max-h-[120px] border rounded-lg bg-muted/30 p-2 space-y-1.5">
               {translations.length === 0 ? (
-                <div className="text-center text-muted-foreground text-xs py-4">
+                <div className="text-center text-muted-foreground text-xs py-3">
                   {isListening ? t.translator.listening : t.translator.pressStart}
                 </div>
               ) : (
                 translations.map((entry) => (
-                  <div key={entry.id} className="text-xs space-y-0.5 border-b border-border/50 pb-2 last:border-0">
-                    <p className="text-muted-foreground italic">"{entry.originalText}"</p>
+                  <div key={entry.id} className="text-xs space-y-0.5 border-b border-border/50 pb-1.5 last:border-0">
+                    <p className="text-muted-foreground italic text-[11px]">"{entry.originalText}"</p>
                     <p className="text-foreground font-medium">{entry.translatedText}</p>
                   </div>
                 ))
@@ -1404,13 +1044,12 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
               <div ref={translationsEndRef} />
             </div>
 
-            {/* Footer */}
             {translations.length > 0 && (
-              <div className="flex gap-2">
-                <Button variant="ghost" size="sm" className="text-xs flex-1" onClick={clearTranslations}>
+              <div className="flex gap-1.5">
+                <Button variant="ghost" size="sm" className="text-xs flex-1 h-7" onClick={clearTranslations}>
                   {t.translator.clear}
                 </Button>
-                <Button variant="outline" size="sm" className="text-xs gap-1" onClick={exportHistory}>
+                <Button variant="outline" size="sm" className="text-xs gap-1 h-7" onClick={exportHistory}>
                   <Download className="h-3 w-3" />
                   CSV
                 </Button>
@@ -1418,32 +1057,32 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
             )}
           </TabsContent>
 
-          <TabsContent value="history" className="flex-1 flex flex-col gap-3 overflow-hidden mt-3">
+          <TabsContent value="history" className="flex-1 flex flex-col gap-2 overflow-hidden mt-2">
             {!user ? (
-              <div className="text-center text-muted-foreground text-xs py-8">
+              <div className="text-center text-muted-foreground text-xs py-6">
                 {t.translator.signInToViewHistory}
               </div>
             ) : historyLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <div className="flex items-center justify-center py-6">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
               </div>
             ) : (
               <>
-                <div className="flex-1 overflow-y-auto min-h-[150px] max-h-[250px] border rounded-lg bg-muted/30 p-2 space-y-2">
+                <div className="flex-1 overflow-y-auto min-h-[100px] max-h-[200px] border rounded-lg bg-muted/30 p-2 space-y-1.5">
                   {historyItems.length === 0 ? (
-                    <div className="text-center text-muted-foreground text-xs py-8">
+                    <div className="text-center text-muted-foreground text-xs py-6">
                       {t.translator.noHistory}
                     </div>
                   ) : (
                     historyItems.map((entry) => (
-                      <div key={entry.id} className="text-xs space-y-0.5 border-b border-border/50 pb-2 last:border-0">
-                        <div className="flex items-center justify-between text-muted-foreground">
+                      <div key={entry.id} className="text-xs space-y-0.5 border-b border-border/50 pb-1.5 last:border-0">
+                        <div className="flex items-center justify-between text-muted-foreground text-[10px]">
                           <span>{entry.timestamp.toLocaleDateString()} {entry.timestamp.toLocaleTimeString()}</span>
-                          <Badge variant="outline" className="text-[10px] h-4">
+                          <Badge variant="outline" className="text-[9px] h-4">
                             {entry.sourceLanguage || 'auto'} → {entry.targetLanguage}
                           </Badge>
                         </div>
-                        <p className="text-muted-foreground italic">"{entry.originalText}"</p>
+                        <p className="text-muted-foreground italic text-[11px]">"{entry.originalText}"</p>
                         <p className="text-foreground font-medium">{entry.translatedText}</p>
                       </div>
                     ))
@@ -1451,12 +1090,12 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
                 </div>
 
                 {historyItems.length > 0 && (
-                  <div className="flex gap-2">
-                    <Button variant="destructive" size="sm" className="text-xs flex-1 gap-1" onClick={clearHistory}>
+                  <div className="flex gap-1.5">
+                    <Button variant="destructive" size="sm" className="text-xs flex-1 gap-1 h-7" onClick={clearHistory}>
                       <Trash2 className="h-3 w-3" />
                       {t.translator.clearHistory}
                     </Button>
-                    <Button variant="outline" size="sm" className="text-xs flex-1 gap-1" onClick={exportHistory}>
+                    <Button variant="outline" size="sm" className="text-xs flex-1 gap-1 h-7" onClick={exportHistory}>
                       <Download className="h-3 w-3" />
                       {t.translator.exportCsv}
                     </Button>
