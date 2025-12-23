@@ -266,7 +266,7 @@ const ProfileCard = ({
                 onClick={onCopyUsername}
                 className="cursor-pointer group"
               >
-                <p className="text-sm text-muted-foreground">{(t.aplink as any)?.yourUsername || 'Your @username'}</p>
+                {/* Лейбл убран */}
                 <div className="flex items-center gap-2">
                   <p className="font-bold text-lg text-primary group-hover:text-primary/80 transition-colors">@{userUsername}</p>
                   {copied ? (

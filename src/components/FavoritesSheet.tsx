@@ -247,9 +247,7 @@ const FavoritesSheet = ({ open, onOpenChange }: FavoritesSheetProps) => {
             <div className="text-center py-12">
               <Star className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
               <p className="text-muted-foreground">{favorites.noContacts}</p>
-              <p className="text-sm text-muted-foreground/70 mt-2">
-                {t.aplink.addUsernameDesc}
-              </p>
+              {/* Подсказка убрана */}
             </div>
           ) : (
             <div className="space-y-2">

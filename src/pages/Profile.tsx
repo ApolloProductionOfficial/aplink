@@ -300,9 +300,7 @@ const Profile = () => {
                 className="bg-background/50 pl-8"
               />
             </div>
-            <p className="text-xs text-muted-foreground">
-              3–20 символов: латиница, цифры, подчёркивание
-            </p>
+            {/* Подсказка убрана */}
           </div>
 
           <div className="space-y-2">
