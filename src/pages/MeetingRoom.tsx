@@ -61,7 +61,6 @@ const MeetingRoom = () => {
   }, [isRecording]);
   const { playConnectedSound, playDisconnectedSound, playReconnectingSound } = useConnectionSounds();
   const [isTranscribing, setIsTranscribing] = useState(false);
-  const [isSavingMeeting, setIsSavingMeeting] = useState(false);
   const [showTranslator, setShowTranslator] = useState(false);
   const [connectionQuality, setConnectionQuality] = useState<number>(100); // 0-100 percentage
   const diagnosticsLogRef = useRef<{ ts: string; event: string; data?: unknown }[]>([]);
@@ -331,57 +330,51 @@ const MeetingRoom = () => {
     }
   };
 
-  // Save meeting transcript and summary - always stop recording if active
-  const saveMeetingTranscript = async () => {
-    setIsSavingMeeting(true);
-    
-    // If recording was started, try to get audio even if the recorder already stopped (e.g., hangup ends tracks)
+  // Save meeting transcript and summary in background
+  const saveMeetingTranscriptBackground = async () => {
+    // If recording was started, try to get audio even if the recorder already stopped
     let audioBlob: Blob | null = null;
 
     if (isRecordingRef.current) {
-      console.log('Recording is active, stopping and transcribing...');
+      console.log('Recording is active, stopping...');
       audioBlob = await stopRecording();
     } else if (hasStartedRecordingRef.current) {
       audioBlob = getAudioBlob();
     }
 
-    if (audioBlob && audioBlob.size > 0) {
-      toast({
-        title: t.meetingRoom.recordProcessing,
-        description: t.meetingRoom.transcribing,
-      });
-
-      try {
-        const transcript = await transcribeAudio(audioBlob);
-        if (transcript) {
-          transcriptRef.current.push(`[Транскрипция] ${userName}: ${transcript}`);
-        }
-      } catch (error) {
-        console.error('Final transcription failed:', error);
-        toast({
-          title: t.meetingRoom.transcriptionError,
-          description: t.meetingRoom.transcriptionErrorDesc,
-          variant: 'destructive',
-        });
-      }
-    }
-
     // Only save if user started recording at some point
     if (!hasStartedRecordingRef.current) {
       console.log('Recording was not started, skipping transcript save');
-      setIsSavingMeeting(false);
       return;
     }
 
     // Only save if user is authenticated
     if (!user) {
       console.log('User not authenticated, skipping transcript save');
-      setIsSavingMeeting(false);
       return;
     }
 
+    // Show processing toast
+    const toastId = toast({
+      title: '🎬 Обработка записи...',
+      description: 'Транскрипция и анализ созвона. Примерное время: 30-60 сек.',
+      duration: 60000, // Keep it visible for a long time
+    });
 
-    const transcriptText = transcriptRef.current.join('\n');
+    let transcriptText = transcriptRef.current.join('\n');
+
+    // Transcribe audio if available
+    if (audioBlob && audioBlob.size > 0) {
+      try {
+        console.log('Transcribing audio, size:', audioBlob.size);
+        const transcript = await transcribeAudio(audioBlob);
+        if (transcript) {
+          transcriptText += `\n[Транскрипция] ${userName}: ${transcript}`;
+        }
+      } catch (error) {
+        console.error('Transcription failed:', error);
+      }
+    }
 
     try {
       const { data, error } = await supabase.functions.invoke('summarize-meeting', {
@@ -397,9 +390,12 @@ const MeetingRoom = () => {
       if (error) throw error;
 
       console.log('Meeting saved:', data);
+      
+      // Update toast to success
       toast({
-        title: 'Встреча сохранена',
-        description: 'Конспект доступен в личном кабинете',
+        title: '✅ Запись сохранена!',
+        description: 'Конспект доступен в разделе "Созвоны" вашего личного кабинета.',
+        duration: 5000,
       });
     } catch (error) {
       console.error('Failed to save meeting:', error);
@@ -408,24 +404,30 @@ const MeetingRoom = () => {
         description: 'Не удалось сохранить созвон. Попробуйте ещё раз.',
         variant: 'destructive',
       });
-    } finally {
-      setIsSavingMeeting(false);
     }
   };
 
-  // Handle user-initiated call end - redirect only once
+  // Handle user-initiated call end - redirect immediately, process in background
   const handleUserEndCall = async () => {
     if (hasRedirectedRef.current) return;
     hasRedirectedRef.current = true;
     userInitiatedEndRef.current = true;
     
-    await saveMeetingTranscript();
+    // Stop recording immediately if active
+    if (isRecordingRef.current) {
+      await stopRecording();
+    }
+    
+    // Navigate immediately - don't wait for processing
+    navigate('/');
     
     // Open apolloproduction.studio in new tab
     window.open('https://apolloproduction.studio', '_blank');
     
-    // Navigate to dashboard
-    navigate(user ? '/dashboard' : '/');
+    // Process recording in background (after navigation)
+    setTimeout(() => {
+      saveMeetingTranscriptBackground();
+    }, 100);
   };
   
   // Handle Jitsi events - only redirect if user initiated end
@@ -1425,19 +1427,6 @@ const MeetingRoom = () => {
               <span className="text-xs text-muted-foreground">{t.meetingRoom.recording}</span>
             </>
           )}
-        </div>
-      )}
-
-      {/* Saving Meeting Indicator with blocking overlay */}
-      {isSavingMeeting && (
-        <div className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-sm flex items-center justify-center">
-          <div className="glass rounded-xl px-8 py-6 border border-primary/30 flex flex-col items-center gap-4 max-w-sm mx-4">
-            <div className="w-12 h-12 rounded-full border-4 border-primary/30 border-t-primary animate-spin" />
-            <div className="text-center">
-              <p className="text-lg font-semibold">Сохранение созвона...</p>
-              <p className="text-sm text-muted-foreground mt-1">Пожалуйста, не закрывайте страницу</p>
-            </div>
-          </div>
         </div>
       )}
 
