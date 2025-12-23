@@ -16,7 +16,7 @@ export const translations = {
       createAccount: "Создайте аккаунт",
       createAccountDesc: "Сохраняйте записи звонков, получайте AI-конспекты встреч и синхронизируйте историю на всех устройствах",
       register: "Зарегистрироваться",
-      yourUsername: "Ваш @username",
+      yourUsername: "@username",
       clickToCopy: "Нажмите, чтобы скопировать",
       addUsername: "Добавьте @username",
       addUsernameDesc: "Чтобы вас могли найти и добавить в контакты",
@@ -139,7 +139,7 @@ export const translations = {
       usernameMinLength: "Username должен быть минимум 3 символа",
       usernameTaken: "Этот username уже занят",
       usernameSaveError: "Не удалось сохранить username",
-      yourUsername: "Ваш username:",
+      yourUsername: "@username",
       loginSuccess: "Вы успешно вошли в систему"
     },
     // Two Factor Auth
@@ -1822,7 +1822,7 @@ export const translations = {
       createAccount: "Створіть акаунт",
       createAccountDesc: "Зберігайте записи дзвінків, отримуйте AI-конспекти зустрічей та синхронізуйте історію на всіх пристроях",
       register: "Зареєструватися",
-      yourUsername: "Ваш @username",
+      yourUsername: "@username",
       clickToCopy: "Натисніть, щоб скопіювати",
       addUsername: "Додайте @username",
       addUsernameDesc: "Щоб вас могли знайти та додати в контакти",
@@ -1945,7 +1945,7 @@ export const translations = {
       usernameMinLength: "Username повинен бути мінімум 3 символи",
       usernameTaken: "Цей username вже зайнятий",
       usernameSaveError: "Не вдалося зберегти username",
-      yourUsername: "Ваш username:",
+      yourUsername: "@username",
       loginSuccess: "Ви успішно увійшли в систему"
     },
     // Two Factor Auth
