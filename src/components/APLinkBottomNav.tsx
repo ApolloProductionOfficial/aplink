@@ -17,11 +17,6 @@ const APLinkBottomNav = ({ onFavoritesClick, onCreateClick }: APLinkBottomNavPro
 
   const navItems = [
     { 
-      icon: user ? User : LogIn, 
-      label: user ? (isAdmin ? 'Админ' : 'Кабинет') : 'Войти', 
-      action: () => user ? navigate(isAdmin ? '/admin' : '/dashboard') : navigate('/auth')
-    },
-    { 
       icon: ExternalLink, 
       label: 'Сайт', 
       action: () => window.open('https://apolloproduction.studio', '_blank')
@@ -41,6 +36,11 @@ const APLinkBottomNav = ({ onFavoritesClick, onCreateClick }: APLinkBottomNavPro
       label: 'Создать', 
       action: () => onCreateClick?.(),
       highlight: true
+    },
+    { 
+      icon: user ? User : LogIn, 
+      label: user ? (isAdmin ? 'Админ' : 'Кабинет') : 'Войти', 
+      action: () => user ? navigate(isAdmin ? '/admin' : '/dashboard') : navigate('/auth')
     },
   ];
 

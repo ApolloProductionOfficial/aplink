@@ -169,12 +169,35 @@ const FavoritesSheet = ({ open, onOpenChange }: FavoritesSheetProps) => {
     navigate(`/room/${roomName}?name=${encodeURIComponent(userName)}`);
   };
 
-  if (!user) return null;
+  // Handle swipe down to close
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    (e.currentTarget as any).touchStartY = touch.clientY;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const touch = e.changedTouches[0];
+    const startY = (e.currentTarget as any).touchStartY || 0;
+    const deltaY = touch.clientY - startY;
+    
+    // Swipe down threshold (80px)
+    if (deltaY > 80) {
+      onOpenChange(false);
+    }
+  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="h-[70vh] rounded-t-3xl bg-card/95 backdrop-blur-xl border-t border-primary/30">
-        <SheetHeader className="pb-4">
+      <SheetContent 
+        side="bottom" 
+        className="h-[70vh] rounded-t-3xl bg-card/95 backdrop-blur-xl border-t border-primary/30"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
+        {/* Swipe indicator */}
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-muted-foreground/30 rounded-full" />
+        
+        <SheetHeader className="pb-4 pt-2">
           <SheetTitle className="flex items-center justify-between">
             <span className="flex items-center gap-2">
               <Star className="w-5 h-5 text-primary" />
