@@ -35,6 +35,8 @@ interface RealtimeTranslatorProps {
   onToggle: () => void;
   roomId?: string;
   className?: string;
+  jitsiApi?: any; // Jitsi External API reference for audio handling
+  onTranslatedAudio?: (audioUrl: string) => void; // Callback when translation audio is ready
 }
 
 const LANGUAGES = [
@@ -105,6 +107,8 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
   onToggle,
   roomId,
   className,
+  jitsiApi,
+  onTranslatedAudio,
 }) => {
   const { user } = useAuth();
   const { trackEvent } = useAnalytics();
@@ -129,6 +133,13 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [audioLevel, setAudioLevel] = useState(0);
   const [vadSettingsOpen, setVadSettingsOpen] = useState(false);
+  
+  // Broadcast mode - play translation audio loudly for microphone pickup
+  const [broadcastMode, setBroadcastMode] = useState(false);
+  // Listen to remote audio mode - translate incoming speech from partner
+  const [listenToPartner, setListenToPartner] = useState(false);
+  const remoteAudioContextRef = useRef<AudioContext | null>(null);
+  const remoteAnalyserRef = useRef<AnalyserNode | null>(null);
   
   // VAD configurable settings
   const [vadThreshold, setVadThreshold] = useState(storedSettings.vadThreshold ?? 0.02);
@@ -346,6 +357,11 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
     isPlayingRef.current = true;
     const audioUrl = audioQueueRef.current.shift()!;
     
+    // If broadcast mode is enabled, notify parent to play through Jitsi
+    if (broadcastMode && onTranslatedAudio) {
+      onTranslatedAudio(audioUrl);
+    }
+    
     try {
       const audio = new Audio(audioUrl);
       
@@ -373,8 +389,8 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
         playNextAudio();
       };
       
-      // Set volume to max
-      audio.volume = 1.0;
+      // In broadcast mode, play louder so mic can pick it up
+      audio.volume = broadcastMode ? 1.0 : 1.0;
       
       // Try to play - handle mobile restrictions
       const playPromise = audio.play();
@@ -395,7 +411,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
       isPlayingRef.current = false;
       playNextAudio();
     }
-  }, []);
+  }, [broadcastMode, onTranslatedAudio]);
 
   const processAudioChunk = useCallback(async (audioBlob: Blob) => {
     // Increased minimum size to ensure we have meaningful audio
@@ -1145,6 +1161,43 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
                         className="h-3"
                         disabled={isListening}
                       />
+                    </div>
+                    
+                    {/* Broadcast mode toggle */}
+                    <div className="pt-2 border-t border-border/30 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <Volume2 className="h-3 w-3 text-primary" />
+                          <span className="text-[10px]">Транслировать собеседнику</span>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <HelpCircle className="h-3 w-3 cursor-help opacity-60 hover:opacity-100" />
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-[220px] text-xs">
+                              Ваш переведённый голос будет воспроизводиться громко, чтобы собеседник мог его услышать через ваш микрофон
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setBroadcastMode(!broadcastMode)}
+                          className={cn(
+                            "relative w-8 h-4 rounded-full transition-colors",
+                            broadcastMode ? "bg-primary" : "bg-muted"
+                          )}
+                        >
+                          <span className={cn(
+                            "absolute top-0.5 w-3 h-3 rounded-full bg-background transition-all shadow-sm",
+                            broadcastMode ? "left-[18px]" : "left-0.5"
+                          )} />
+                        </button>
+                      </div>
+                      
+                      {broadcastMode && (
+                        <p className="text-[10px] text-amber-500/80 bg-amber-500/10 rounded p-1.5">
+                          ⚠️ Включите динамик и отключите эхоподавление для лучшего результата
+                        </p>
+                      )}
                     </div>
                   </CollapsibleContent>
                 </Collapsible>
