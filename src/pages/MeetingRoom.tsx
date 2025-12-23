@@ -192,38 +192,81 @@ const MeetingRoom = () => {
     checkAdminAndFetchIP();
   }, [user]);
 
+  // Save recovered recording to personal cabinet
+  const saveRecoveredToProfile = async (audioBlob: Blob) => {
+    if (!user) return;
+    
+    const toastId = toast({
+      title: '🎬 Сохранение записи...',
+      description: 'Транскрипция и сохранение в личный кабинет...',
+      duration: 60000,
+    });
+
+    try {
+      // Transcribe the audio
+      const transcript = await transcribeAudio(audioBlob);
+      
+      // Save to meeting_transcripts
+      const { data, error } = await supabase.functions.invoke('summarize-meeting', {
+        body: {
+          roomId: `recovered-${Date.now()}`,
+          roomName: 'Восстановленная запись',
+          transcript: transcript ? `[Восстановленная запись]: ${transcript}` : '[Аудио без транскрипции]',
+          participants: [userName || 'Участник'],
+          userId: user.id,
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: '✅ Запись сохранена!',
+        description: 'Конспект доступен в разделе "Созвоны" вашего личного кабинета.',
+        duration: 5000,
+      });
+      
+      clearRecoveredRecording();
+    } catch (e) {
+      console.error('Failed to save recovered recording:', e);
+      toast({
+        title: 'Ошибка сохранения',
+        description: 'Не удалось сохранить запись. Попробуйте ещё раз.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   // Check for recovered recording from crash
   useEffect(() => {
     const recovered = getRecoveredRecording();
     if (recovered && user) {
       toast({
         title: '📼 Найдена незавершённая запись',
-        description: 'Хотите восстановить запись предыдущего созвона?',
+        description: 'Запись предыдущего созвона была восстановлена после сбоя.',
         action: (
-          <Button 
-            size="sm" 
-            onClick={async () => {
-              try {
-                const transcript = await transcribeAudio(recovered);
-                if (transcript) {
-                  toast({
-                    title: '✅ Запись восстановлена!',
-                    description: transcript.length > 100 ? transcript.substring(0, 100) + '...' : transcript,
-                  });
-                }
+          <div className="flex gap-2 mt-2">
+            <Button 
+              size="sm" 
+              onClick={() => saveRecoveredToProfile(recovered)}
+            >
+              💾 Сохранить
+            </Button>
+            <Button 
+              size="sm" 
+              variant="outline"
+              onClick={() => {
                 clearRecoveredRecording();
-              } catch (e) {
                 toast({
-                  title: 'Ошибка восстановления',
-                  variant: 'destructive',
+                  title: 'Запись удалена',
+                  description: 'Восстановленная запись была удалена.',
                 });
-              }
-            }}
-          >
-            Восстановить
-          </Button>
+              }}
+            >
+              🗑️ Удалить
+            </Button>
+          </div>
         ),
-        duration: 15000,
+        duration: 30000, // 30 seconds to decide
       });
     }
   }, [user, getRecoveredRecording, clearRecoveredRecording]);
