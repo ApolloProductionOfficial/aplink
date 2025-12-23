@@ -31,6 +31,20 @@ serve(async (req) => {
 
     const timestamp = new Date().toLocaleString("ru-RU", { timeZone: "Europe/Moscow" });
     
+    // Create JSON file content for download
+    const errorReport = {
+      timestamp,
+      source: source || "Неизвестно",
+      errorType: errorType || "Общая ошибка",
+      errorMessage: errorMessage || "Нет описания",
+      details: details || null,
+      userAgent: details?.userAgent || "Unknown",
+      url: details?.url || "Unknown",
+    };
+    
+    const jsonContent = JSON.stringify(errorReport, null, 2);
+    const base64Json = btoa(unescape(encodeURIComponent(jsonContent)));
+    
     const htmlContent = `
       <!DOCTYPE html>
       <html>
@@ -44,6 +58,8 @@ serve(async (req) => {
             .details { background: #f8fafc; padding: 15px; border-radius: 4px; margin-top: 15px; }
             .label { font-weight: bold; color: #475569; }
             .footer { background: #f8fafc; padding: 15px; text-align: center; color: #64748b; font-size: 12px; }
+            .download-btn { display: inline-block; background: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 15px 0; font-weight: bold; }
+            .download-btn:hover { background: #2563eb; }
           </style>
         </head>
         <body>
@@ -61,6 +77,12 @@ serve(async (req) => {
                 ${errorMessage || "Нет описания"}
               </div>
               
+              <div style="text-align: center;">
+                <a href="data:application/json;base64,${base64Json}" download="error-report-${Date.now()}.json" class="download-btn">
+                  📥 Скачать отчёт об ошибке (.json)
+                </a>
+              </div>
+              
               ${details ? `
                 <div class="details">
                   <strong>Дополнительные детали:</strong><br/>
@@ -69,7 +91,8 @@ serve(async (req) => {
               ` : ""}
             </div>
             <div class="footer">
-              Apollo Production - Автоматическое уведомление
+              Apollo Production - Автоматическое уведомление<br/>
+              <small>Скачайте JSON файл и отправьте его в чат для анализа</small>
             </div>
           </div>
         </body>
