@@ -29,6 +29,8 @@ export function initGlobalErrorHandlers() {
         line: lineno,
         column: colno,
         stack: error?.stack,
+        url: window.location.href,
+        userAgent: navigator.userAgent,
       },
       source: "JavaScript Runtime",
     });
@@ -54,6 +56,8 @@ export function initGlobalErrorHandlers() {
       details: {
         stack: event.reason?.stack,
         reason: String(event.reason),
+        url: window.location.href,
+        userAgent: navigator.userAgent,
       },
       source: "Promise",
     });
@@ -93,6 +97,8 @@ export function initGlobalErrorHandlers() {
         errorMessage: message.substring(0, 500),
         details: {
           fullMessage: message,
+          url: window.location.href,
+          userAgent: navigator.userAgent,
         },
         source: "Console",
       });
