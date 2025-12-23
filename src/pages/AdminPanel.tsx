@@ -477,51 +477,51 @@ const AdminPanel = () => {
             </Badge>
           </div>
           
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-1.5 md:gap-2 flex-wrap justify-end">
             <Button
               variant={activeTab === 'analytics' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setActiveTab('analytics')}
-              className="gap-2"
+              className="gap-1 md:gap-2 px-2 md:px-3 text-xs md:text-sm"
             >
-              <BarChart3 className="w-4 h-4" />
-              {admin.analytics || 'Статистика'}
+              <BarChart3 className="w-3.5 h-3.5 md:w-4 md:h-4" />
+              <span className="hidden sm:inline">{admin.analytics || 'Статистика'}</span>
             </Button>
             <Button
               variant={activeTab === 'transcripts' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setActiveTab('transcripts')}
-              className="gap-2"
+              className="gap-1 md:gap-2 px-2 md:px-3 text-xs md:text-sm"
             >
-              <FileText className="w-4 h-4" />
-              {admin.transcripts || 'Записи'}
+              <FileText className="w-3.5 h-3.5 md:w-4 md:h-4" />
+              <span className="hidden sm:inline">{admin.transcripts || 'Записи'}</span>
             </Button>
             <Button
               variant={activeTab === 'participants' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setActiveTab('participants')}
-              className="gap-2"
+              className="gap-1 md:gap-2 px-2 md:px-3 text-xs md:text-sm"
             >
-              <Users className="w-4 h-4" />
-              {admin.ipChecker || 'IP-чекер'}
+              <Globe className="w-3.5 h-3.5 md:w-4 md:h-4" />
+              <span className="hidden sm:inline">{admin.ipChecker || 'IP'}</span>
             </Button>
             <Button
               variant={activeTab === 'users' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setActiveTab('users')}
-              className="gap-2"
+              className="gap-1 md:gap-2 px-2 md:px-3 text-xs md:text-sm"
             >
-              <Users className="w-4 h-4" />
-              {admin.users || 'Пользователи'}
+              <Users className="w-3.5 h-3.5 md:w-4 md:h-4" />
+              <span className="hidden sm:inline">{admin.users || 'Юзеры'}</span>
             </Button>
             <Button
               variant={activeTab === 'profile' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setActiveTab('profile')}
-              className="gap-2"
+              className="gap-1 md:gap-2 px-2 md:px-3 text-xs md:text-sm"
             >
-              <User className="w-4 h-4" />
-              {admin.profile || 'Профиль'}
+              <User className="w-3.5 h-3.5 md:w-4 md:h-4" />
+              <span className="hidden sm:inline">{admin.profile || 'Профиль'}</span>
             </Button>
           </div>
         </div>
