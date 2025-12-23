@@ -624,6 +624,16 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
     setAudioLevel(0);
   }, []);
 
+  // Restart VAD when switching from PTT to Auto mode while mic is active
+  useEffect(() => {
+    if (isListening && streamRef.current && !pushToTalkMode) {
+      // Switching to Auto mode - restart VAD
+      stopVad();
+      startVad();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pushToTalkMode]);
+
   const startRecordingChunk = useCallback(() => {
     if (!streamRef.current) return;
     // In push-to-talk mode, don't start auto chunks
