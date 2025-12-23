@@ -40,7 +40,8 @@ const APLinkBottomNav = ({ onFavoritesClick, onCreateClick }: APLinkBottomNavPro
     { 
       icon: user ? User : LogIn, 
       label: user ? (isAdmin ? 'Админ' : 'Кабинет') : 'Войти', 
-      action: () => user ? navigate(isAdmin ? '/admin' : '/dashboard') : navigate('/auth')
+      action: () => user ? navigate(isAdmin ? '/admin' : '/dashboard') : navigate('/auth'),
+      accent: true // Less bright than highlight
     },
   ];
 
@@ -71,6 +72,7 @@ const APLinkBottomNav = ({ onFavoritesClick, onCreateClick }: APLinkBottomNavPro
         {navItems.map((item, index) => {
           const Icon = item.icon;
           const isHighlight = item.highlight;
+          const isAccent = (item as any).accent;
           
           return (
             <button
@@ -79,6 +81,8 @@ const APLinkBottomNav = ({ onFavoritesClick, onCreateClick }: APLinkBottomNavPro
               className={`relative flex flex-col items-center justify-center flex-1 h-full transition-all duration-300 ${
                 isHighlight
                   ? "text-primary"
+                  : isAccent
+                  ? "text-primary/70"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -95,14 +99,21 @@ const APLinkBottomNav = ({ onFavoritesClick, onCreateClick }: APLinkBottomNavPro
                   <div className="w-12 h-12 rounded-full blur-xl bg-primary/15 animate-pulse-glow" />
                 </div>
               )}
+              {isAccent && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-full blur-lg bg-primary/8" />
+                </div>
+              )}
               
               {/* Icon container */}
               <div className={`relative mb-1 transition-all duration-300 ${
-                isHighlight ? 'scale-110' : 'scale-100'
+                isHighlight ? 'scale-110' : isAccent ? 'scale-105' : 'scale-100'
               } hover:scale-110`}>
                 <Icon 
                   className={`w-5 h-5 relative z-10 ${
                     isHighlight ? 'drop-shadow-[0_0_6px_rgba(6,182,228,0.5)]' : ''
+                  } ${
+                    isAccent ? 'drop-shadow-[0_0_3px_rgba(6,182,228,0.3)]' : ''
                   }`}
                 />
                 
@@ -118,6 +129,8 @@ const APLinkBottomNav = ({ onFavoritesClick, onCreateClick }: APLinkBottomNavPro
               {/* Label */}
               <span className={`text-[10px] font-medium relative z-10 ${
                 isHighlight ? 'font-bold text-primary' : ''
+              } ${
+                isAccent ? 'text-primary/70' : ''
               }`}>
                 {item.label}
               </span>

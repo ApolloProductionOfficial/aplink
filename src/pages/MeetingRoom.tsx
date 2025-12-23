@@ -925,51 +925,55 @@ const MeetingRoom = () => {
           });
         });
 
-        // Handle connection failures - but ignore if tab is just hidden
+        // Handle connection failures - but ignore if tab is just hidden or user ended call
         apiRef.current.addEventListener('videoConferenceLeft', () => {
-        // If the page became hidden (app switch / background), we can't reliably keep WebRTC alive.
-        // Mark a pending reconnect and rejoin immediately once the user returns.
-        if (document.hidden) {
-          console.log('Conference left while hidden - will rejoin on focus/visibility');
-          pendingReconnectRef.current = true;
-          setConnectionStatus('reconnecting');
-          return;
-        }
+          // If user initiated leave, don't try to reconnect or show notifications
+          if (userInitiatedEndRef.current || hasRedirectedRef.current) {
+            console.log('User initiated leave - no reconnection needed');
+            return;
+          }
+
+          // If the page became hidden (app switch / background), we can't reliably keep WebRTC alive.
+          // Mark a pending reconnect and rejoin immediately once the user returns.
+          if (document.hidden) {
+            console.log('Conference left while hidden - will rejoin on focus/visibility');
+            pendingReconnectRef.current = true;
+            setConnectionStatus('reconnecting');
+            return;
+          }
 
           // Only show disconnection if user didn't initiate leave
-          if (!userInitiatedEndRef.current && !hasRedirectedRef.current) {
-            console.log('Disconnected from conference');
-            setConnectionStatus('disconnected');
-            playDisconnectedSound();
+          console.log('Disconnected from conference');
+          setConnectionStatus('disconnected');
+          playDisconnectedSound();
+          
+          // Attempt to reconnect
+          if (reconnectAttemptsRef.current < maxReconnectAttempts) {
+            reconnectAttemptsRef.current++;
+            setConnectionStatus('reconnecting');
+            playReconnectingSound();
+            toast({
+              title: t.meetingRoom.reconnecting || "Переподключение...",
+              description: (t.meetingRoom.reconnectingAttempt || "Попытка {attempt} из {max}")
+                .replace('{attempt}', String(reconnectAttemptsRef.current))
+                .replace('{max}', String(maxReconnectAttempts)),
+            });
             
-            // Attempt to reconnect
-            if (reconnectAttemptsRef.current < maxReconnectAttempts) {
-              reconnectAttemptsRef.current++;
-              setConnectionStatus('reconnecting');
-              playReconnectingSound();
-              toast({
-                title: t.meetingRoom.reconnecting || "Переподключение...",
-                description: (t.meetingRoom.reconnectingAttempt || "Попытка {attempt} из {max}")
-                  .replace('{attempt}', String(reconnectAttemptsRef.current))
-                  .replace('{max}', String(maxReconnectAttempts)),
-              });
-              
-              // Dispose current API and reinitialize
-              setTimeout(() => {
-                if (apiRef.current && !hasRedirectedRef.current) {
-                  logDiagnostic('jitsi-api-disposing', { reason: 'auto-reconnect' });
-                  apiRef.current.dispose();
-                  apiRef.current = null;
-                  initJitsi();
-                }
-              }, 2000);
-            } else {
-              toast({
-                title: t.meetingRoom.disconnected || "Соединение потеряно",
-                description: t.meetingRoom.reconnect ? `${t.meetingRoom.reconnect}` : "Нажмите кнопку переподключения или обновите страницу",
-                variant: "destructive",
-              });
-            }
+            // Dispose current API and reinitialize
+            setTimeout(() => {
+              if (apiRef.current && !hasRedirectedRef.current && !userInitiatedEndRef.current) {
+                logDiagnostic('jitsi-api-disposing', { reason: 'auto-reconnect' });
+                apiRef.current.dispose();
+                apiRef.current = null;
+                initJitsi();
+              }
+            }, 2000);
+          } else {
+            toast({
+              title: t.meetingRoom.disconnected || "Соединение потеряно",
+              description: t.meetingRoom.reconnect ? `${t.meetingRoom.reconnect}` : "Нажмите кнопку переподключения или обновите страницу",
+              variant: "destructive",
+            });
           }
         });
 
@@ -1152,6 +1156,12 @@ const MeetingRoom = () => {
         isActive={showTranslator}
         onToggle={() => setShowTranslator(false)}
         roomId={roomSlug}
+        jitsiApi={apiRef.current}
+        onTranslatedAudio={(audioUrl) => {
+          // In broadcast mode, the translator plays audio loudly
+          // so the microphone can pick it up for the partner to hear
+          console.log('Broadcast translation audio ready');
+        }}
       />
       
       {/* IP Panel for admins */}
