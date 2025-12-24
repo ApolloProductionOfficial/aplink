@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, Users, Calendar, Clock, MapPin, Globe, Shield, User, Camera, Save, Trash2, Loader2, BarChart3, Languages, MousePointer, TrendingUp, Eye } from 'lucide-react';
+import { ArrowLeft, FileText, Users, Calendar, Clock, MapPin, Globe, Shield, User, Camera, Save, Trash2, Loader2, BarChart3, Languages, MousePointer, TrendingUp, Eye, Download, Share2, Search, X, Link2, Copy, Link2Off, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -16,6 +16,7 @@ import CustomCursor from '@/components/CustomCursor';
 import AnimatedBackground from '@/components/AnimatedBackground';
 import TwoFactorSetup from '@/components/TwoFactorSetup';
 import apolloLogo from '@/assets/apollo-logo.mp4';
+import { generateMeetingPdf } from '@/utils/generateMeetingPdf';
 
 interface MeetingTranscript {
   id: string;
@@ -104,6 +105,15 @@ const AdminPanel = () => {
   const [usersLoading, setUsersLoading] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Calls (transcripts) controls – same as in user dashboard
+  const [searchQuery, setSearchQuery] = useState('');
+  const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
+  const [sharingMeetingId, setSharingMeetingId] = useState<string | null>(null);
+  const [shareLink, setShareLink] = useState<string | null>(null);
+  const [shareLinkActive, setShareLinkActive] = useState(true);
+  const [deletingMeetingId, setDeletingMeetingId] = useState<string | null>(null);
+  const [downloadingPdf, setDownloadingPdf] = useState<string | null>(null);
 
   // Redirect if not admin
   useEffect(() => {

@@ -41,43 +41,30 @@ const SharedMeeting = () => {
         return;
       }
 
-      // First, get the share link
-      const { data: linkData, error: linkError } = await supabase
-        .from('shared_meeting_links')
-        .select('meeting_id, is_active, expires_at')
-        .eq('share_token', token)
-        .maybeSingle();
-
-      if (linkError || !linkData) {
-        setError('Ссылка не найдена или недействительна');
-        setLoading(false);
-        return;
-      }
-
-      if (!linkData.is_active) {
-        setError('Эта ссылка была деактивирована');
-        setLoading(false);
-        return;
-      }
-
-      if (linkData.expires_at && new Date(linkData.expires_at) < new Date()) {
-        setError('Срок действия ссылки истёк');
-        setLoading(false);
-        return;
-      }
-
-      // Fetch the meeting using service role via edge function
-      const { data: meetingData, error: meetingError } = await supabase.functions.invoke('get-shared-meeting', {
-        body: { meetingId: linkData.meeting_id }
+      // Fetch meeting (and validate link) via backend function
+      const { data, error } = await supabase.functions.invoke('get-shared-meeting', {
+        body: { token },
       });
 
-      if (meetingError || !meetingData?.meeting) {
-        setError('Не удалось загрузить созвон');
+      if (error) {
+        const body = (error as any)?.context?.body;
+        try {
+          const parsed = typeof body === 'string' ? JSON.parse(body) : body;
+          setError(parsed?.error || 'Ссылка не найдена или недействительна');
+        } catch {
+          setError('Ссылка не найдена или недействительна');
+        }
         setLoading(false);
         return;
       }
 
-      setMeeting(meetingData.meeting);
+      if (!data?.meeting) {
+        setError(data?.error || 'Ссылка не найдена или недействительна');
+        setLoading(false);
+        return;
+      }
+
+      setMeeting(data.meeting);
       setLoading(false);
     };
 
