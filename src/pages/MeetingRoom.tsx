@@ -1247,7 +1247,6 @@ const MeetingRoom = () => {
                 console.log('Received translation broadcast from:', data.from);
                 // Play the translated audio for this participant
                 const audioUrl = `data:audio/mpeg;base64,${payload.audioBase64}`;
-                const audioUrl = `data:audio/mpeg;base64,${payload.audioBase64}`;
                 const audio = new Audio(audioUrl);
                 audio.volume = 0.9;
 
