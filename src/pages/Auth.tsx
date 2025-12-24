@@ -26,6 +26,8 @@ import apolloLogo from '@/assets/apollo-logo.mp4';
 const Auth = () => {
   const [searchParams] = useSearchParams();
   const mode = searchParams.get('mode');
+  const redirectToRaw = searchParams.get('redirect');
+  const redirectTo = redirectToRaw && redirectToRaw.startsWith('/') ? redirectToRaw : '/';
   
   const [authMode, setAuthMode] = useState<'login' | 'register' | 'forgot' | 'reset'>(
     mode === 'register' ? 'register' : 
@@ -56,9 +58,9 @@ const Auth = () => {
   // Redirect if already logged in (except for reset mode)
   useEffect(() => {
     if (!isLoading && user && authMode !== 'reset') {
-      navigate('/');
+      navigate(redirectTo);
     }
-  }, [user, isLoading, navigate, authMode]);
+  }, [user, isLoading, navigate, authMode, redirectTo]);
 
   // Update authMode when URL params change
   useEffect(() => {
@@ -148,13 +150,13 @@ const Auth = () => {
           if (factorsData?.totp && factorsData.totp.length > 0) {
             // User has 2FA enabled, show verification
             setRequires2FA(true);
-          } else {
-            toast({
-              title: t.auth.success.welcome,
-              description: t.auth.success.loginSuccess,
-            });
-            navigate('/');
-          }
+            } else {
+              toast({
+                title: t.auth.success.welcome,
+                description: t.auth.success.loginSuccess,
+              });
+              navigate(redirectTo);
+            }
         }
       } else if (authMode === 'register') {
         const { error, data } = await signUp(email, password, displayName);
@@ -184,7 +186,7 @@ const Auth = () => {
             title: t.auth.success.accountCreated,
             description: t.auth.success.welcomeToApp,
           });
-          navigate('/');
+          navigate(redirectTo);
         }
       } else if (authMode === 'forgot') {
         const { error } = await resetPassword(email);
@@ -325,7 +327,7 @@ const Auth = () => {
                 title: t.auth.success.welcome,
                 description: t.auth.success.loginSuccess,
               });
-              navigate('/');
+              navigate(redirectTo);
             }}
             onCancel={() => {
               setRequires2FA(false);

@@ -10,11 +10,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { ToastAction } from '@/components/ui/toast';
 import { useToast } from '@/hooks/use-toast';
 import CustomCursor from '@/components/CustomCursor';
 import TwoFactorSetup from '@/components/TwoFactorSetup';
 import apolloLogo from '@/assets/apollo-logo.mp4';
 import { generateMeetingDocx } from '@/utils/generateMeetingDocx';
+import { invokeBackendFunctionKeepalive } from '@/utils/invokeBackendFunctionKeepalive';
 
 interface MeetingTranscript {
   id: string;
@@ -53,6 +55,15 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { user, isLoading, signOut, isAdmin } = useAuth();
   const { toast } = useToast();
+
+  const PENDING_MEETING_SAVE_KEY = "pending_meeting_save_v1";
+  type PendingMeetingSaveBase = {
+    roomId: string;
+    roomName: string;
+    transcript: string;
+    participants: string[];
+  };
+
   const [transcripts, setTranscripts] = useState<MeetingTranscript[]>([]);
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<{ display_name: string | null; username: string | null; avatar_url: string | null } | null>(null);
@@ -84,6 +95,60 @@ const Dashboard = () => {
       navigate('/auth');
     }
   }, [user, isLoading, navigate]);
+
+  // If a meeting couldn't be saved (guest ended call), offer to save it now after login
+  useEffect(() => {
+    if (!user) return;
+
+    const raw = sessionStorage.getItem(PENDING_MEETING_SAVE_KEY);
+    if (!raw) return;
+
+    let base: PendingMeetingSaveBase | null = null;
+    try {
+      base = JSON.parse(raw) as PendingMeetingSaveBase;
+    } catch {
+      sessionStorage.removeItem(PENDING_MEETING_SAVE_KEY);
+      return;
+    }
+
+    toast({
+      title: "Найден несохранённый созвон",
+      description: "Нажмите «Сохранить», чтобы добавить его в «Мои созвоны».",
+      duration: 15000,
+      action: (
+        <ToastAction
+          altText="Сохранить"
+          onClick={async () => {
+            try {
+              const response = await invokeBackendFunctionKeepalive<{ success: boolean; meeting?: { id: string } }>(
+                'summarize-meeting',
+                { ...base!, userId: user.id },
+              );
+
+              if (!response?.success || !response?.meeting?.id) {
+                throw new Error('Сервер не подтвердил сохранение');
+              }
+
+              sessionStorage.removeItem(PENDING_MEETING_SAVE_KEY);
+              await fetchTranscripts();
+              toast({
+                title: '✅ Созвон сохранён',
+                description: 'Он появился в списке «Мои созвоны».',
+              });
+            } catch (e: any) {
+              toast({
+                title: 'Ошибка сохранения',
+                description: e?.message || 'Не удалось сохранить созвон',
+                variant: 'destructive',
+              });
+            }
+          }}
+        >
+          Сохранить
+        </ToastAction>
+      ),
+    });
+  }, [user]);
 
   const fetchTranscripts = async () => {
     if (!user) return;

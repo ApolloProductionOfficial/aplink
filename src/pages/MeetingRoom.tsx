@@ -81,7 +81,17 @@ const MeetingRoom = () => {
   const [endSaveDialogOpen, setEndSaveDialogOpen] = useState(false);
   const [endSaveStatus, setEndSaveStatus] = useState<MeetingSaveStatus>("saving");
   const [endSaveError, setEndSaveError] = useState<string | null>(null);
-  const pendingSavePayloadRef = useRef<any>(null);
+  const [endSaveNeedsLogin, setEndSaveNeedsLogin] = useState(false);
+
+  type PendingMeetingSaveBase = {
+    roomId: string;
+    roomName: string;
+    transcript: string;
+    participants: string[];
+  };
+
+  const PENDING_MEETING_SAVE_KEY = "pending_meeting_save_v1";
+  const pendingSaveBaseRef = useRef<PendingMeetingSaveBase | null>(null);
 
   const { toast } = useToast();
   const { user, isLoading: authLoading } = useAuth();
@@ -522,10 +532,17 @@ const MeetingRoom = () => {
     }
   };
 
-  const buildMeetingSavePayload = async () => {
+  const buildMeetingSaveBasePayload = async (): Promise<
+    | {
+        roomId: string;
+        roomName: string;
+        transcript: string;
+        participants: string[];
+      }
+    | null
+  > => {
     // Only save if recording was started at some point
     if (!hasStartedRecordingRef.current) return null;
-    if (!user) return null;
 
     // Make sure recorder is stopped so we don't lose chunks on unload
     if (isRecordingRef.current) {
@@ -539,39 +556,98 @@ const MeetingRoom = () => {
       roomName: roomDisplayName,
       transcript: transcriptText,
       participants: Array.from(participantsRef.current),
+    };
+  };
+
+  const buildMeetingSavePayload = async () => {
+    const base = await buildMeetingSaveBasePayload();
+    if (!base) return null;
+    if (!user) return null;
+
+    return {
+      ...base,
       userId: user.id,
     };
   };
 
-  const runMeetingSave = async () => {
-    // Не показываем «успех», если сохранять нечего / нет авторизации
-    if (!user) {
-      setEndSaveStatus("error");
-      setEndSaveError("Для сохранения созвона нужно войти в аккаунт.");
-      return;
+  const loadPendingSaveBaseFromStorage = (): PendingMeetingSaveBase | null => {
+    try {
+      const raw = sessionStorage.getItem(PENDING_MEETING_SAVE_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw) as PendingMeetingSaveBase;
+    } catch {
+      return null;
     }
+  };
 
+  const savePendingBaseToStorage = (base: PendingMeetingSaveBase) => {
+    try {
+      sessionStorage.setItem(PENDING_MEETING_SAVE_KEY, JSON.stringify(base));
+    } catch {
+      // ignore
+    }
+  };
+
+  const clearPendingBaseFromStorage = () => {
+    try {
+      sessionStorage.removeItem(PENDING_MEETING_SAVE_KEY);
+    } catch {
+      // ignore
+    }
+  };
+
+  const runMeetingSave = async () => {
+    // Не показываем «успех», если сохранять нечего
     if (!hasStartedRecordingRef.current) {
+      setEndSaveNeedsLogin(false);
       setEndSaveStatus("error");
       setEndSaveError("Запись не была включена — нечего сохранять.");
       return;
     }
 
+    // Если пользователь не вошёл — сохраняем данные локально и предлагаем авторизацию
+    if (!user) {
+      const base = await buildMeetingSaveBasePayload();
+      if (base) {
+        pendingSaveBaseRef.current = base;
+        savePendingBaseToStorage(base);
+      }
+
+      setEndSaveNeedsLogin(true);
+      setEndSaveStatus("error");
+      setEndSaveError(
+        "Для сохранения созвона нужно войти в аккаунт. Данные сохранены на этом устройстве — войдите и нажмите «Повторить».",
+      );
+      return;
+    }
+
     const payload = await buildMeetingSavePayload();
     if (!payload) {
+      setEndSaveNeedsLogin(false);
       setEndSaveStatus("error");
       setEndSaveError("Не удалось подготовить данные для сохранения.");
       return;
     }
 
-    pendingSavePayloadRef.current = payload;
+    // Keep base payload for retry flow
+    pendingSaveBaseRef.current = {
+      roomId: payload.roomId,
+      roomName: payload.roomName,
+      transcript: payload.transcript,
+      participants: payload.participants,
+    };
 
     try {
-      const response = await invokeBackendFunctionKeepalive<{ success: boolean; meeting?: { id: string } }>("summarize-meeting", payload);
-      
+      const response = await invokeBackendFunctionKeepalive<{ success: boolean; meeting?: { id: string } }>(
+        "summarize-meeting",
+        payload,
+      );
+
       // Verify the meeting was actually saved
       if (response?.success && response?.meeting?.id) {
         console.log("Meeting saved successfully with ID:", response.meeting.id);
+        clearPendingBaseFromStorage();
+        setEndSaveNeedsLogin(false);
         setEndSaveStatus("success");
         setEndSaveError(null);
       } else {
@@ -585,33 +661,40 @@ const MeetingRoom = () => {
     }
   };
 
-  // Handle user-initiated call end - save BEFORE navigation with explicit status + retry
-  const handleUserEndCall = async () => {
-    if (hasRedirectedRef.current) return;
-    hasRedirectedRef.current = true;
-    userInitiatedEndRef.current = true;
-
-    setEndSaveDialogOpen(true);
-    setEndSaveStatus("saving");
-    setEndSaveError(null);
-
-    await runMeetingSave();
-  };
-
   const retryEndSave = async () => {
     setEndSaveStatus("saving");
     setEndSaveError(null);
 
     try {
-      if (pendingSavePayloadRef.current) {
-        const response = await invokeBackendFunctionKeepalive<{ success: boolean; meeting?: { id: string } }>("summarize-meeting", pendingSavePayloadRef.current);
-        if (response?.success && response?.meeting?.id) {
-          setEndSaveStatus("success");
-        } else {
-          throw new Error("Сервер не подтвердил сохранение");
-        }
+      const base = pendingSaveBaseRef.current ?? loadPendingSaveBaseFromStorage();
+      if (!base) {
+        throw new Error("Не удалось найти данные для повторного сохранения");
+      }
+
+      if (!user) {
+        // Still not logged in
+        pendingSaveBaseRef.current = base;
+        savePendingBaseToStorage(base);
+        setEndSaveNeedsLogin(true);
+        setEndSaveStatus("error");
+        setEndSaveError("Для сохранения созвона нужно войти в аккаунт.");
+        return;
+      }
+
+      const response = await invokeBackendFunctionKeepalive<{ success: boolean; meeting?: { id: string } }>(
+        "summarize-meeting",
+        {
+          ...base,
+          userId: user.id,
+        },
+      );
+
+      if (response?.success && response?.meeting?.id) {
+        clearPendingBaseFromStorage();
+        setEndSaveNeedsLogin(false);
+        setEndSaveStatus("success");
       } else {
-        await runMeetingSave();
+        throw new Error("Сервер не подтвердил сохранение");
       }
     } catch (e: any) {
       setEndSaveStatus("error");
@@ -622,13 +705,12 @@ const MeetingRoom = () => {
   const goToCallsAfterSave = () => {
     setEndSaveDialogOpen(false);
     navigate("/dashboard");
-    window.open("https://apolloproduction.studio", "_blank");
   };
 
   const exitWithoutSaving = () => {
+    clearPendingBaseFromStorage();
     setEndSaveDialogOpen(false);
     navigate("/");
-    window.open("https://apolloproduction.studio", "_blank");
   };
 
   // Handle Jitsi events - only redirect if user initiated end
@@ -1443,6 +1525,13 @@ const MeetingRoom = () => {
         onRetry={retryEndSave}
         onGoToCalls={goToCallsAfterSave}
         onExitWithoutSaving={exitWithoutSaving}
+        onLoginToSave={
+          endSaveNeedsLogin
+            ? () => {
+                navigate(`/auth?redirect=${encodeURIComponent("/dashboard")}`);
+              }
+            : undefined
+        }
       />
       
       {/* Realtime Translator */}
@@ -1633,7 +1722,7 @@ const MeetingRoom = () => {
                 className="mt-2 h-7 text-xs"
                 onClick={() => {
                   setShowRegistrationHint(false);
-                  window.open('/auth', '_blank');
+                  navigate('/auth?mode=register');
                 }}
               >
                 {t.meetingRoom.register}

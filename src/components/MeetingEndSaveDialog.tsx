@@ -18,6 +18,9 @@ interface MeetingEndSaveDialogProps {
   onRetry: () => void;
   onGoToCalls: () => void;
   onExitWithoutSaving: () => void;
+  /** Optional: show a login CTA when saving requires authentication */
+  onLoginToSave?: () => void;
+  loginCtaLabel?: string;
 }
 
 export function MeetingEndSaveDialog({
@@ -27,6 +30,8 @@ export function MeetingEndSaveDialog({
   onRetry,
   onGoToCalls,
   onExitWithoutSaving,
+  onLoginToSave,
+  loginCtaLabel,
 }: MeetingEndSaveDialogProps) {
   const isSaving = status === "saving";
   const isSuccess = status === "success";
@@ -71,6 +76,11 @@ export function MeetingEndSaveDialog({
             </Button>
           ) : (
             <>
+              {onLoginToSave && (
+                <Button variant="outline" onClick={onLoginToSave} className="w-full sm:w-auto">
+                  {loginCtaLabel || "Войти и сохранить"}
+                </Button>
+              )}
               <Button onClick={onRetry} className="w-full sm:w-auto">
                 <RotateCcw className="mr-2 h-4 w-4" />
                 Повторить
