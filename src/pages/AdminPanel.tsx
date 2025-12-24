@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, Users, Calendar, Clock, MapPin, Globe, Shield, User, Camera, Save, Trash2, Loader2, BarChart3, Languages, MousePointer, TrendingUp, Eye, Download, Share2, Search, X, Link2, Copy, Link2Off, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, FileText, Users, Calendar, Clock, MapPin, Globe, Shield, User, Camera, Save, Trash2, Loader2, BarChart3, Languages, MousePointer, TrendingUp, Eye, Download, Share2, Search, X, Link2, Copy, Link2Off, AlertTriangle, Bug, XCircle, AlertCircle, Info } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -82,6 +82,28 @@ interface RegisteredUser {
   created_at: string;
 }
 
+interface ErrorLog {
+  id: string;
+  created_at: string;
+  error_type: string;
+  error_message: string;
+  source: string | null;
+  severity: string;
+  details: Record<string, unknown> | null;
+  url: string | null;
+  user_agent: string | null;
+  notified: boolean;
+}
+
+interface ErrorStats {
+  total: number;
+  byType: { type: string; count: number }[];
+  bySeverity: { severity: string; count: number }[];
+  today: number;
+  week: number;
+  notified: number;
+}
+
 const AdminPanel = () => {
   const navigate = useNavigate();
   const { user, isAdmin, isLoading } = useAuth();
@@ -91,7 +113,7 @@ const AdminPanel = () => {
   const [participants, setParticipants] = useState<MeetingParticipant[]>([]);
   const [geoData, setGeoData] = useState<Map<string, ParticipantGeoData>>(new Map());
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'transcripts' | 'participants' | 'profile' | 'analytics' | 'users'>('analytics');
+  const [activeTab, setActiveTab] = useState<'transcripts' | 'participants' | 'profile' | 'analytics' | 'users' | 'errors'>('analytics');
   const [profile, setProfile] = useState<Profile | null>(null);
   const [displayName, setDisplayName] = useState('');
   const [username, setUsername] = useState('');
@@ -105,6 +127,12 @@ const AdminPanel = () => {
   const [usersLoading, setUsersLoading] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Error logs state
+  const [errorLogs, setErrorLogs] = useState<ErrorLog[]>([]);
+  const [errorStats, setErrorStats] = useState<ErrorStats | null>(null);
+  const [errorsLoading, setErrorsLoading] = useState(false);
+  const [errorFilter, setErrorFilter] = useState<'all' | 'critical' | 'error' | 'warning' | 'info'>('all');
 
   // Calls (transcripts) controls – same as in user dashboard
   const [searchQuery, setSearchQuery] = useState('');
@@ -298,6 +326,68 @@ const AdminPanel = () => {
     };
 
     loadUsers();
+  }, [user, isAdmin, activeTab]);
+
+  // Load error logs
+  useEffect(() => {
+    if (!user || !isAdmin || activeTab !== 'errors') return;
+    
+    const loadErrors = async () => {
+      setErrorsLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('error_logs')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(500) as { data: ErrorLog[] | null; error: any };
+
+        if (error) throw error;
+        
+        const logs = data || [];
+        setErrorLogs(logs);
+        
+        // Calculate stats
+        const now = new Date();
+        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const weekStart = new Date(todayStart);
+        weekStart.setDate(weekStart.getDate() - 7);
+        
+        const byType = new Map<string, number>();
+        const bySeverity = new Map<string, number>();
+        let todayCount = 0;
+        let weekCount = 0;
+        let notifiedCount = 0;
+        
+        logs.forEach(log => {
+          // By type
+          byType.set(log.error_type, (byType.get(log.error_type) || 0) + 1);
+          // By severity
+          bySeverity.set(log.severity, (bySeverity.get(log.severity) || 0) + 1);
+          // Today
+          if (new Date(log.created_at) >= todayStart) todayCount++;
+          // Week
+          if (new Date(log.created_at) >= weekStart) weekCount++;
+          // Notified
+          if (log.notified) notifiedCount++;
+        });
+        
+        setErrorStats({
+          total: logs.length,
+          byType: Array.from(byType.entries()).map(([type, count]) => ({ type, count })).sort((a, b) => b.count - a.count),
+          bySeverity: Array.from(bySeverity.entries()).map(([severity, count]) => ({ severity, count })),
+          today: todayCount,
+          week: weekCount,
+          notified: notifiedCount,
+        });
+      } catch (error) {
+        console.error('Error loading error logs:', error);
+        toast.error('Не удалось загрузить логи ошибок');
+      } finally {
+        setErrorsLoading(false);
+      }
+    };
+
+    loadErrors();
   }, [user, isAdmin, activeTab]);
 
   // Check if user has 2FA enabled
@@ -673,6 +763,20 @@ const AdminPanel = () => {
               <span className="hidden sm:inline">{admin.users || 'Юзеры'}</span>
             </Button>
             <Button
+              variant={activeTab === 'errors' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setActiveTab('errors')}
+              className="gap-1 md:gap-2 px-2 md:px-3 text-xs md:text-sm relative"
+            >
+              <Bug className="w-3.5 h-3.5 md:w-4 md:h-4" />
+              <span className="hidden sm:inline">Ошибки</span>
+              {errorStats && errorStats.today > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 text-[10px] bg-destructive text-destructive-foreground rounded-full flex items-center justify-center">
+                  {errorStats.today > 9 ? '9+' : errorStats.today}
+                </span>
+              )}
+            </Button>
+            <Button
               variant={activeTab === 'profile' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setActiveTab('profile')}
@@ -856,6 +960,233 @@ const AdminPanel = () => {
                 <CardContent className="py-12 text-center text-muted-foreground">
                   <BarChart3 className="w-12 h-12 mx-auto mb-4 opacity-50" />
                   <p>Нет данных аналитики</p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        ) : activeTab === 'errors' ? (
+          <div className="space-y-6">
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <Bug className="w-6 h-6 text-primary" />
+              Мониторинг ошибок
+            </h1>
+
+            {errorsLoading ? (
+              <div className="flex items-center justify-center py-20">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              </div>
+            ) : errorStats ? (
+              <>
+                {/* Stats cards */}
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                  <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+                    <CardContent className="pt-6">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-destructive/20">
+                          <Bug className="w-5 h-5 text-destructive" />
+                        </div>
+                        <div>
+                          <p className="text-2xl font-bold">{errorStats.total}</p>
+                          <p className="text-xs text-muted-foreground">Всего ошибок</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+                    <CardContent className="pt-6">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-amber-500/20">
+                          <Clock className="w-5 h-5 text-amber-500" />
+                        </div>
+                        <div>
+                          <p className="text-2xl font-bold">{errorStats.today}</p>
+                          <p className="text-xs text-muted-foreground">Сегодня</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+                    <CardContent className="pt-6">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-blue-500/20">
+                          <Calendar className="w-5 h-5 text-blue-500" />
+                        </div>
+                        <div>
+                          <p className="text-2xl font-bold">{errorStats.week}</p>
+                          <p className="text-xs text-muted-foreground">За неделю</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+                    <CardContent className="pt-6">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-green-500/20">
+                          <AlertCircle className="w-5 h-5 text-green-500" />
+                        </div>
+                        <div>
+                          <p className="text-2xl font-bold">{errorStats.notified}</p>
+                          <p className="text-xs text-muted-foreground">Отправлено</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+                    <CardContent className="pt-6">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-red-500/20">
+                          <XCircle className="w-5 h-5 text-red-500" />
+                        </div>
+                        <div>
+                          <p className="text-2xl font-bold">{errorStats.bySeverity.find(s => s.severity === 'critical')?.count || 0}</p>
+                          <p className="text-xs text-muted-foreground">Критических</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  {/* By type */}
+                  <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Bug className="w-5 h-5 text-primary" />
+                        По типу ошибки
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {errorStats.byType.length === 0 ? (
+                        <p className="text-muted-foreground text-sm">Нет данных</p>
+                      ) : (
+                        <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                          {errorStats.byType.slice(0, 10).map((item, i) => (
+                            <div key={i} className="flex items-center justify-between text-sm">
+                              <span className="font-mono text-xs truncate flex-1 mr-2">{item.type}</span>
+                              <Badge variant="secondary">{item.count}</Badge>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* By severity */}
+                  <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <AlertTriangle className="w-5 h-5 text-primary" />
+                        По уровню критичности
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {errorStats.bySeverity.length === 0 ? (
+                        <p className="text-muted-foreground text-sm">Нет данных</p>
+                      ) : (
+                        <div className="space-y-3">
+                          {errorStats.bySeverity.map((item, i) => (
+                            <div key={i} className="flex items-center justify-between text-sm">
+                              <div className="flex items-center gap-2">
+                                {item.severity === 'critical' && <XCircle className="w-4 h-4 text-red-500" />}
+                                {item.severity === 'error' && <AlertCircle className="w-4 h-4 text-orange-500" />}
+                                {item.severity === 'warning' && <AlertTriangle className="w-4 h-4 text-amber-500" />}
+                                {item.severity === 'info' && <Info className="w-4 h-4 text-blue-500" />}
+                                <span className="capitalize">{item.severity}</span>
+                              </div>
+                              <Badge 
+                                variant="secondary"
+                                className={
+                                  item.severity === 'critical' ? 'bg-red-500/20 text-red-500' :
+                                  item.severity === 'error' ? 'bg-orange-500/20 text-orange-500' :
+                                  item.severity === 'warning' ? 'bg-amber-500/20 text-amber-500' :
+                                  'bg-blue-500/20 text-blue-500'
+                                }
+                              >
+                                {item.count}
+                              </Badge>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Filter and error list */}
+                <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+                  <CardHeader>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Clock className="w-5 h-5 text-primary" />
+                        Последние ошибки
+                      </CardTitle>
+                      <div className="flex gap-1.5 flex-wrap">
+                        {(['all', 'critical', 'error', 'warning', 'info'] as const).map((filter) => (
+                          <Button
+                            key={filter}
+                            variant={errorFilter === filter ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setErrorFilter(filter)}
+                            className="text-xs h-7"
+                          >
+                            {filter === 'all' ? 'Все' : filter.charAt(0).toUpperCase() + filter.slice(1)}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3 max-h-[500px] overflow-y-auto">
+                      {errorLogs
+                        .filter(log => errorFilter === 'all' || log.severity === errorFilter)
+                        .slice(0, 100)
+                        .map((log) => (
+                          <div key={log.id} className="border border-border/30 rounded-lg p-3 space-y-2">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex items-center gap-2">
+                                {log.severity === 'critical' && <XCircle className="w-4 h-4 text-red-500 shrink-0" />}
+                                {log.severity === 'error' && <AlertCircle className="w-4 h-4 text-orange-500 shrink-0" />}
+                                {log.severity === 'warning' && <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />}
+                                {log.severity === 'info' && <Info className="w-4 h-4 text-blue-500 shrink-0" />}
+                                <Badge variant="outline" className="text-xs shrink-0">
+                                  {log.error_type}
+                                </Badge>
+                                {log.notified && (
+                                  <Badge variant="secondary" className="text-xs bg-green-500/20 text-green-500">
+                                    📧
+                                  </Badge>
+                                )}
+                              </div>
+                              <span className="text-xs text-muted-foreground shrink-0">
+                                {new Date(log.created_at).toLocaleString('ru-RU')}
+                              </span>
+                            </div>
+                            <p className="text-sm text-foreground/80 break-all line-clamp-2">
+                              {log.error_message}
+                            </p>
+                            {log.source && (
+                              <p className="text-xs text-muted-foreground">
+                                Источник: {log.source}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                      {errorLogs.filter(log => errorFilter === 'all' || log.severity === errorFilter).length === 0 && (
+                        <p className="text-center text-muted-foreground py-8">Нет ошибок с выбранным фильтром</p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </>
+            ) : (
+              <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+                <CardContent className="py-12 text-center text-muted-foreground">
+                  <Bug className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>Нет данных об ошибках</p>
                 </CardContent>
               </Card>
             )}

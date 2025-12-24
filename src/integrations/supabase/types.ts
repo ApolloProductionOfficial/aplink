@@ -65,6 +65,48 @@ export type Database = {
         }
         Relationships: []
       }
+      error_logs: {
+        Row: {
+          created_at: string
+          details: Json | null
+          error_message: string
+          error_type: string
+          id: string
+          notified: boolean
+          severity: string
+          source: string | null
+          url: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          details?: Json | null
+          error_message: string
+          error_type: string
+          id?: string
+          notified?: boolean
+          severity?: string
+          source?: string | null
+          url?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          details?: Json | null
+          error_message?: string
+          error_type?: string
+          id?: string
+          notified?: boolean
+          severity?: string
+          source?: string | null
+          url?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       meeting_participants: {
         Row: {
           id: string
