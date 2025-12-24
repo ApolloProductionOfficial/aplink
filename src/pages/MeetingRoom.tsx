@@ -25,6 +25,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import ParticipantsIPPanel from "@/components/ParticipantsIPPanel";
 import { Button } from "@/components/ui/button";
+import { ToastAction } from "@/components/ui/toast";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -52,6 +53,7 @@ const MeetingRoom = () => {
   const userName = searchParams.get("name");
   const containerRef = useRef<HTMLDivElement>(null);
   const apiRef = useRef<any>(null);
+  const translationAudioUnlockedRef = useRef(false);
   const initJitsiRef = useRef<null | (() => void)>(null);
   const pendingReconnectRef = useRef(false);
   const mediaStateOnHideRef = useRef<{ audioMuted: boolean; videoMuted: boolean } | null>(null);
@@ -542,10 +544,23 @@ const MeetingRoom = () => {
   };
 
   const runMeetingSave = async () => {
+    // Не показываем «успех», если сохранять нечего / нет авторизации
+    if (!user) {
+      setEndSaveStatus("error");
+      setEndSaveError("Для сохранения созвона нужно войти в аккаунт.");
+      return;
+    }
+
+    if (!hasStartedRecordingRef.current) {
+      setEndSaveStatus("error");
+      setEndSaveError("Запись не была включена — нечего сохранять.");
+      return;
+    }
+
     const payload = await buildMeetingSavePayload();
     if (!payload) {
-      // Нечего сохранять (или нет авторизации)
-      setEndSaveStatus("success");
+      setEndSaveStatus("error");
+      setEndSaveError("Не удалось подготовить данные для сохранения.");
       return;
     }
 
@@ -1232,14 +1247,47 @@ const MeetingRoom = () => {
                 console.log('Received translation broadcast from:', data.from);
                 // Play the translated audio for this participant
                 const audioUrl = `data:audio/mpeg;base64,${payload.audioBase64}`;
+                const audioUrl = `data:audio/mpeg;base64,${payload.audioBase64}`;
                 const audio = new Audio(audioUrl);
                 audio.volume = 0.9;
-                audio.play().catch(e => console.log('Could not autoplay translation:', e));
-                
+
+                audio.play().catch((e) => {
+                  console.log("Could not autoplay translation:", e);
+
+                  // iOS Safari может блокировать autoplay — предлагаем один раз «разблокировать» звук
+                  if (!translationAudioUnlockedRef.current) {
+                    toast({
+                      title: "Включите звук перевода",
+                      description:
+                        "На iPhone нужно один раз нажать кнопку, чтобы разрешить воспроизведение перевода.",
+                      action: (
+                        <ToastAction
+                          altText="Включить звук"
+                          onClick={async () => {
+                            try {
+                              translationAudioUnlockedRef.current = true;
+                              const silentAudio = new Audio(
+                                "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA"
+                              );
+                              await silentAudio.play();
+                              silentAudio.pause();
+                              await audio.play();
+                            } catch (err) {
+                              console.log("Audio unlock failed:", err);
+                            }
+                          }}
+                        >
+                          Включить звук
+                        </ToastAction>
+                      ),
+                    });
+                  }
+                });
+
                 // Show toast notification
                 toast({
-                  title: `🌐 Перевод от ${data.from}`,
-                  description: payload.text?.substring(0, 80) || 'Аудио-перевод',
+                  title: `Перевод от ${data.from}`,
+                  description: payload.text?.substring(0, 80) || "Аудио-перевод",
                 });
                 return; // Don't add to transcript as regular chat
               }
