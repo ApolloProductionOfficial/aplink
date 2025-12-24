@@ -567,11 +567,19 @@ const MeetingRoom = () => {
     pendingSavePayloadRef.current = payload;
 
     try {
-      await invokeBackendFunctionKeepalive("summarize-meeting", payload);
-      setEndSaveStatus("success");
-      setEndSaveError(null);
+      const response = await invokeBackendFunctionKeepalive<{ success: boolean; meeting?: { id: string } }>("summarize-meeting", payload);
+      
+      // Verify the meeting was actually saved
+      if (response?.success && response?.meeting?.id) {
+        console.log("Meeting saved successfully with ID:", response.meeting.id);
+        setEndSaveStatus("success");
+        setEndSaveError(null);
+      } else {
+        throw new Error("Сервер не подтвердил сохранение созвона");
+      }
     } catch (e: any) {
       const msg = e?.message || "Не удалось сохранить созвон";
+      console.error("Meeting save error:", e);
       setEndSaveStatus("error");
       setEndSaveError(msg);
     }
@@ -596,8 +604,12 @@ const MeetingRoom = () => {
 
     try {
       if (pendingSavePayloadRef.current) {
-        await invokeBackendFunctionKeepalive("summarize-meeting", pendingSavePayloadRef.current);
-        setEndSaveStatus("success");
+        const response = await invokeBackendFunctionKeepalive<{ success: boolean; meeting?: { id: string } }>("summarize-meeting", pendingSavePayloadRef.current);
+        if (response?.success && response?.meeting?.id) {
+          setEndSaveStatus("success");
+        } else {
+          throw new Error("Сервер не подтвердил сохранение");
+        }
       } else {
         await runMeetingSave();
       }
@@ -1245,45 +1257,71 @@ const MeetingRoom = () => {
               const payload = JSON.parse(data.message);
               if (payload.type === 'translation_audio' && payload.audioBase64) {
                 console.log('Received translation broadcast from:', data.from);
+                
                 // Play the translated audio for this participant
                 const audioUrl = `data:audio/mpeg;base64,${payload.audioBase64}`;
-                const audio = new Audio(audioUrl);
-                audio.volume = 0.9;
-
-                audio.play().catch((e) => {
-                  console.log("Could not autoplay translation:", e);
-
-                  // iOS Safari может блокировать autoplay — предлагаем один раз «разблокировать» звук
-                  if (!translationAudioUnlockedRef.current) {
-                    toast({
-                      title: "Включите звук перевода",
-                      description:
-                        "На iPhone нужно один раз нажать кнопку, чтобы разрешить воспроизведение перевода.",
-                      action: (
-                        <ToastAction
-                          altText="Включить звук"
-                          onClick={async () => {
-                            try {
-                              translationAudioUnlockedRef.current = true;
-                              const silentAudio = new Audio(
-                                "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA"
-                              );
-                              await silentAudio.play();
-                              silentAudio.pause();
-                              await audio.play();
-                            } catch (err) {
-                              console.log("Audio unlock failed:", err);
-                            }
-                          }}
-                        >
-                          Включить звук
-                        </ToastAction>
-                      ),
-                    });
+                
+                // Helper function to play audio
+                const tryPlayAudio = async () => {
+                  const audio = new Audio(audioUrl);
+                  audio.volume = 0.9;
+                  
+                  try {
+                    await audio.play();
+                    // Mark as unlocked for future plays
+                    translationAudioUnlockedRef.current = true;
+                  } catch (e) {
+                    console.log("Could not autoplay translation:", e);
+                    
+                    // iOS Safari блокирует autoplay — показываем toast с кнопкой
+                    if (!translationAudioUnlockedRef.current) {
+                      toast({
+                        title: "Включите звук перевода",
+                        description: "Нажмите кнопку, чтобы разрешить воспроизведение перевода на этом устройстве.",
+                        duration: 15000,
+                        action: (
+                          <ToastAction
+                            altText="Включить звук"
+                            onClick={async () => {
+                              try {
+                                // Разблокируем аудио с помощью user gesture
+                                const silentAudio = new Audio(
+                                  "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA"
+                                );
+                                await silentAudio.play();
+                                silentAudio.pause();
+                                
+                                // Теперь пробуем воспроизвести перевод
+                                const retryAudio = new Audio(audioUrl);
+                                retryAudio.volume = 0.9;
+                                await retryAudio.play();
+                                
+                                translationAudioUnlockedRef.current = true;
+                                toast({
+                                  title: "Звук включён",
+                                  description: "Переводы теперь будут воспроизводиться автоматически.",
+                                });
+                              } catch (err) {
+                                console.log("Audio unlock failed:", err);
+                                toast({
+                                  title: "Ошибка",
+                                  description: "Не удалось включить звук. Попробуйте ещё раз.",
+                                  variant: "destructive",
+                                });
+                              }
+                            }}
+                          >
+                            Включить звук
+                          </ToastAction>
+                        ),
+                      });
+                    }
                   }
-                });
+                };
+                
+                tryPlayAudio();
 
-                // Show toast notification
+                // Show notification about incoming translation
                 toast({
                   title: `Перевод от ${data.from}`,
                   description: payload.text?.substring(0, 80) || "Аудио-перевод",

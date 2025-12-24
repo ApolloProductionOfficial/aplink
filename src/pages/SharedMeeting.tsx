@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { generateMeetingPdf } from '@/utils/generateMeetingPdf';
+import { generateMeetingDocx } from '@/utils/generateMeetingDocx';
 import apolloLogo from '@/assets/apollo-logo.mp4';
 
 interface MeetingTranscript {
@@ -173,11 +173,11 @@ const SharedMeeting = () => {
               </div>
               <Button
                 variant="outline"
-                onClick={() => generateMeetingPdf(meeting)}
+                onClick={() => generateMeetingDocx(meeting)}
                 className="gap-1.5"
               >
                 <Download className="w-4 h-4" />
-                Скачать PDF
+                Скачать Word
               </Button>
             </div>
           </CardHeader>

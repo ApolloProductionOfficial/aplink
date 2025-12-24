@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import CustomCursor from '@/components/CustomCursor';
 import TwoFactorSetup from '@/components/TwoFactorSetup';
 import apolloLogo from '@/assets/apollo-logo.mp4';
-import { generateMeetingPdf } from '@/utils/generateMeetingPdf';
+import { generateMeetingDocx } from '@/utils/generateMeetingDocx';
 
 interface MeetingTranscript {
   id: string;
@@ -546,16 +546,16 @@ const Dashboard = () => {
     }
   };
 
-  // Download PDF handler
+  // Download Word handler
   const handleDownloadPdf = async (transcript: MeetingTranscript) => {
     setDownloadingPdf(transcript.id);
     try {
-      await generateMeetingPdf(transcript);
+      await generateMeetingDocx(transcript);
     } catch (error) {
-      console.error('Error generating PDF:', error);
+      console.error('Error generating Word:', error);
       toast({
         title: 'Ошибка',
-        description: 'Не удалось создать PDF',
+        description: 'Не удалось создать Word документ',
         variant: 'destructive',
       });
     } finally {
@@ -789,14 +789,14 @@ const Dashboard = () => {
                             onClick={() => handleDownloadPdf(transcript)}
                             disabled={downloadingPdf === transcript.id}
                             className="gap-1.5"
-                            title="Скачать PDF"
+                            title="Скачать Word"
                           >
                             {downloadingPdf === transcript.id ? (
                               <Loader2 className="w-4 h-4 animate-spin" />
                             ) : (
                               <Download className="w-4 h-4" />
                             )}
-                            PDF
+                            Word
                           </Button>
                           <Button
                             variant="outline"
