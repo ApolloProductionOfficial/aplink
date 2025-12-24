@@ -447,6 +447,154 @@ const AdminPanel = () => {
     return String.fromCodePoint(...codePoints);
   };
 
+  // Filter transcripts based on search and date (same as Dashboard)
+  const filteredTranscripts = transcripts.filter((t) => {
+    const matchesSearch = searchQuery === '' || 
+      t.room_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      t.summary?.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    if (!matchesSearch) return false;
+    
+    if (dateFilter === 'all') return true;
+    
+    const meetingDate = new Date(t.started_at);
+    const now = new Date();
+    
+    if (dateFilter === 'today') {
+      return meetingDate.toDateString() === now.toDateString();
+    } else if (dateFilter === 'week') {
+      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      return meetingDate >= weekAgo;
+    } else if (dateFilter === 'month') {
+      const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      return meetingDate >= monthAgo;
+    }
+    
+    return true;
+  });
+
+  // Share meeting
+  const handleShareMeeting = async (meetingId: string) => {
+    if (!user) return;
+    
+    setSharingMeetingId(meetingId);
+    setShareLink(null);
+    setShareLinkActive(true);
+    
+    try {
+      const { data: existingLink } = await supabase
+        .from('shared_meeting_links')
+        .select('share_token, is_active')
+        .eq('meeting_id', meetingId)
+        .eq('created_by', user.id)
+        .maybeSingle();
+      
+      if (existingLink) {
+        const link = `${window.location.origin}/shared/${existingLink.share_token}`;
+        setShareLink(link);
+        setShareLinkActive(existingLink.is_active);
+        return;
+      }
+      
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7);
+      
+      const { data: newLink, error } = await supabase
+        .from('shared_meeting_links')
+        .insert({
+          meeting_id: meetingId,
+          created_by: user.id,
+          expires_at: expiresAt.toISOString(),
+        })
+        .select('share_token')
+        .single();
+      
+      if (error) throw error;
+      
+      const link = `${window.location.origin}/shared/${newLink.share_token}`;
+      setShareLink(link);
+      setShareLinkActive(true);
+      
+    } catch (error) {
+      console.error('Error creating share link:', error);
+      toast.error('Не удалось создать ссылку');
+      setSharingMeetingId(null);
+    }
+  };
+
+  // Deactivate/activate share link
+  const handleDeactivateShareLink = async () => {
+    if (!user || !sharingMeetingId) return;
+    
+    try {
+      const { error } = await supabase
+        .from('shared_meeting_links')
+        .update({ is_active: !shareLinkActive })
+        .eq('meeting_id', sharingMeetingId)
+        .eq('created_by', user.id);
+      
+      if (error) throw error;
+      
+      setShareLinkActive(!shareLinkActive);
+      toast.success(shareLinkActive ? 'Ссылка деактивирована' : 'Ссылка активирована');
+    } catch (error) {
+      console.error('Error toggling share link:', error);
+      toast.error('Не удалось изменить статус ссылки');
+    }
+  };
+
+  // Delete meeting
+  const handleDeleteMeeting = async (meetingId: string) => {
+    if (!user) return;
+    
+    try {
+      await supabase
+        .from('shared_meeting_links')
+        .delete()
+        .eq('meeting_id', meetingId);
+      
+      const { error } = await supabase
+        .from('meeting_transcripts')
+        .delete()
+        .eq('id', meetingId);
+      
+      if (error) throw error;
+      
+      setTranscripts(prev => prev.filter(t => t.id !== meetingId));
+      setDeletingMeetingId(null);
+      
+      toast.success('Созвон удалён');
+    } catch (error) {
+      console.error('Error deleting meeting:', error);
+      toast.error('Не удалось удалить созвон');
+    }
+  };
+
+  // Download PDF
+  const handleDownloadPdf = async (transcript: MeetingTranscript) => {
+    setDownloadingPdf(transcript.id);
+    try {
+      await generateMeetingPdf(transcript);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Не удалось создать PDF');
+    } finally {
+      setDownloadingPdf(null);
+    }
+  };
+
+  const copyShareLink = () => {
+    if (shareLink) {
+      navigator.clipboard.writeText(shareLink);
+      toast.success('Ссылка скопирована');
+    }
+  };
+
+  const closeShareDialog = () => {
+    setSharingMeetingId(null);
+    setShareLink(null);
+  };
+
   if (isLoading || !user || !isAdmin) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -716,22 +864,58 @@ const AdminPanel = () => {
           <div className="space-y-6">
             <h1 className="text-2xl font-bold flex items-center gap-2">
               <FileText className="w-6 h-6 text-primary" />
-              Все созвоны ({transcripts.length})
+              Все созвоны ({filteredTranscripts.length}/{transcripts.length})
             </h1>
+
+            {/* Search and filters */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Поиск по названию..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 bg-card/50"
+                />
+                {searchQuery && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                    onClick={() => setSearchQuery('')}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
+              <div className="flex gap-1.5">
+                {(['all', 'today', 'week', 'month'] as const).map((filter) => (
+                  <Button
+                    key={filter}
+                    variant={dateFilter === filter ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setDateFilter(filter)}
+                    className="text-xs"
+                  >
+                    {filter === 'all' ? 'Все' : filter === 'today' ? 'Сегодня' : filter === 'week' ? 'Неделя' : 'Месяц'}
+                  </Button>
+                ))}
+              </div>
+            </div>
             
-            {transcripts.length === 0 ? (
+            {filteredTranscripts.length === 0 ? (
               <Card className="bg-card/50 backdrop-blur-sm border-border/50">
                 <CardContent className="py-12 text-center text-muted-foreground">
                   <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>Пока нет записей созвонов</p>
+                  <p>{searchQuery || dateFilter !== 'all' ? 'Ничего не найдено' : 'Пока нет записей созвонов'}</p>
                 </CardContent>
               </Card>
             ) : (
               <div className="grid gap-4">
-                {transcripts.map((transcript) => (
+                {filteredTranscripts.map((transcript) => (
                   <Card key={transcript.id} className="bg-card/50 backdrop-blur-sm border-border/50">
                     <CardHeader>
-                      <div className="flex items-start justify-between">
+                      <div className="flex items-start justify-between flex-wrap gap-3">
                         <div>
                           <CardTitle className="text-lg flex items-center gap-2">
                             <Users className="w-5 h-5 text-primary" />
@@ -750,9 +934,45 @@ const AdminPanel = () => {
                             )}
                           </div>
                         </div>
-                        {transcript.ended_at && (
-                          <Badge variant="secondary">Завершён</Badge>
-                        )}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleShareMeeting(transcript.id)}
+                            className="gap-1.5"
+                            title="Поделиться"
+                          >
+                            <Share2 className="w-4 h-4" />
+                            Поделиться
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDownloadPdf(transcript)}
+                            disabled={downloadingPdf === transcript.id}
+                            className="gap-1.5"
+                            title="Скачать PDF"
+                          >
+                            {downloadingPdf === transcript.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Download className="w-4 h-4" />
+                            )}
+                            PDF
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setDeletingMeetingId(transcript.id)}
+                            className="gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            title="Удалить"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                          {transcript.ended_at && (
+                            <Badge variant="secondary">Завершён</Badge>
+                          )}
+                        </div>
                       </div>
                     </CardHeader>
                     <CardContent>
@@ -821,6 +1041,111 @@ const AdminPanel = () => {
                     </CardContent>
                   </Card>
                 ))}
+              </div>
+            )}
+
+            {/* Share Link Modal */}
+            {sharingMeetingId && (
+              <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={closeShareDialog}>
+                <Card className="max-w-md w-full bg-card border-border" onClick={(e) => e.stopPropagation()}>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Link2 className="w-5 h-5 text-primary" />
+                      Поделиться созвоном
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {shareLink ? (
+                      <>
+                        {!shareLinkActive && (
+                          <div className="flex items-center gap-2 p-3 bg-destructive/10 rounded-lg text-destructive text-sm">
+                            <Link2Off className="w-4 h-4 shrink-0" />
+                            Ссылка деактивирована и не работает
+                          </div>
+                        )}
+                        <p className="text-sm text-muted-foreground">
+                          {shareLinkActive 
+                            ? 'Скопируйте ссылку и отправьте её тому, с кем хотите поделиться. Ссылка действует 7 дней.'
+                            : 'Ссылка неактивна. Активируйте её, чтобы получатели могли просматривать конспект.'
+                          }
+                        </p>
+                        <div className="flex gap-2">
+                          <Input
+                            value={shareLink}
+                            readOnly
+                            className={`bg-muted/50 text-sm ${!shareLinkActive ? 'opacity-50' : ''}`}
+                          />
+                          <Button onClick={copyShareLink} className="shrink-0 gap-1.5" disabled={!shareLinkActive}>
+                            <Copy className="w-4 h-4" />
+                            Копировать
+                          </Button>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button 
+                            variant={shareLinkActive ? "destructive" : "default"}
+                            onClick={handleDeactivateShareLink} 
+                            className="flex-1 gap-1.5"
+                          >
+                            {shareLinkActive ? (
+                              <>
+                                <Link2Off className="w-4 h-4" />
+                                Деактивировать
+                              </>
+                            ) : (
+                              <>
+                                <Link2 className="w-4 h-4" />
+                                Активировать
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex items-center justify-center py-4">
+                        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                        <span className="ml-2 text-muted-foreground">Создаём ссылку...</span>
+                      </div>
+                    )}
+                  </CardContent>
+                  <div className="px-6 pb-6">
+                    <Button variant="outline" onClick={closeShareDialog} className="w-full">
+                      Закрыть
+                    </Button>
+                  </div>
+                </Card>
+              </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {deletingMeetingId && (
+              <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setDeletingMeetingId(null)}>
+                <Card className="max-w-md w-full bg-card border-border" onClick={(e) => e.stopPropagation()}>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-destructive">
+                      <AlertTriangle className="w-5 h-5" />
+                      Удалить созвон?
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                      Вы уверены, что хотите удалить этот созвон? Это действие нельзя отменить. 
+                      Будут удалены запись, транскрипция и все публичные ссылки.
+                    </p>
+                  </CardContent>
+                  <div className="px-6 pb-6 flex gap-2">
+                    <Button variant="outline" onClick={() => setDeletingMeetingId(null)} className="flex-1">
+                      Отмена
+                    </Button>
+                    <Button 
+                      variant="destructive" 
+                      onClick={() => handleDeleteMeeting(deletingMeetingId)} 
+                      className="flex-1 gap-1.5"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Удалить
+                    </Button>
+                  </div>
+                </Card>
               </div>
             )}
           </div>

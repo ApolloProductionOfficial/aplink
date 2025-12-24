@@ -34,6 +34,10 @@ interface RealtimeTranslatorProps {
   className?: string;
   jitsiApi?: any;
   onTranslatedAudio?: (audioUrl: string) => void;
+  /** Whether to broadcast translations to other participants */
+  broadcastToOthers?: boolean;
+  /** Callback when receiving translated audio from another participant */
+  onReceivedTranslation?: (audioBase64: string, senderName: string) => void;
 }
 
 const LANGUAGES = [
@@ -98,6 +102,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
   roomId,
   className,
   jitsiApi,
+  broadcastToOthers = true, // default: broadcast translations to all participants
 }) => {
   const { user } = useAuth();
   const { trackEvent } = useAnalytics();
@@ -110,6 +115,9 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
     stopBroadcast, 
     playTranslatedAudio: playThroughWebRTC 
   } = useTranslationBroadcast(jitsiApi);
+  
+  // State for broadcasting toggle
+  const [enableBroadcast, setEnableBroadcast] = useState(broadcastToOthers);
   
   const storedSettings = loadStoredSettings();
   
@@ -440,6 +448,23 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
           entry.audioUrl = audioUrl;
           audioQueueRef.current.push(audioUrl);
           playNextAudio();
+          
+          // Broadcast audio to other participants via Jitsi data channel
+          if (enableBroadcast && jitsiApi) {
+            try {
+              const translationPayload = JSON.stringify({
+                type: 'translation_audio',
+                audioBase64: result.audioContent,
+                text: result.translatedText,
+                lang: result.targetLanguage,
+              });
+              // Send to all participants via private message (empty recipient = broadcast)
+              jitsiApi.executeCommand('sendChatMessage', translationPayload, '', { ignorePrivacy: true });
+              console.log('Broadcast translation to other participants');
+            } catch (e) {
+              console.log('Could not broadcast translation:', e);
+            }
+          }
         }
 
         setTranslations(prev => [...prev.slice(-19), entry]);
@@ -906,36 +931,53 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
               </Button>
             </div>
 
-            {/* Mode toggle */}
-            <div className="grid grid-cols-2 gap-1.5">
-              <button
-                type="button"
-                onClick={() => setPushToTalkMode(false)}
+            {/* Mode toggle + Broadcast toggle */}
+            <div className="flex items-center gap-2">
+              <div className="grid grid-cols-2 gap-1.5 flex-1">
+                <button
+                  type="button"
+                  onClick={() => setPushToTalkMode(false)}
+                  className={cn(
+                    "h-9 px-2 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1.5",
+                    !pushToTalkMode 
+                      ? "bg-primary text-primary-foreground" 
+                      : "bg-muted/40 text-muted-foreground border border-border/40"
+                  )}
+                >
+                  <Activity className="h-3 w-3" />
+                  {t.translator.modeAuto}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPushToTalkMode(true)}
+                  className={cn(
+                    "h-9 px-2 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1.5",
+                    pushToTalkMode 
+                      ? "bg-primary text-primary-foreground" 
+                      : "bg-muted/40 text-muted-foreground border border-border/40"
+                  )}
+                >
+                  <Keyboard className="h-3 w-3 hidden md:block" />
+                  <Mic className="h-3 w-3 md:hidden" />
+                  <span className="hidden md:inline">{t.translator.modeSpace}</span>
+                  <span className="md:hidden">Удержать</span>
+                </button>
+              </div>
+              
+              {/* Broadcast toggle */}
+              <Button
+                variant={enableBroadcast ? "default" : "outline"}
+                size="sm"
+                onClick={() => setEnableBroadcast(b => !b)}
                 className={cn(
-                  "h-9 px-2 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1.5",
-                  !pushToTalkMode 
-                    ? "bg-primary text-primary-foreground" 
-                    : "bg-muted/40 text-muted-foreground border border-border/40"
+                  "h-9 px-2 text-xs gap-1",
+                  enableBroadcast ? "bg-green-600 hover:bg-green-700" : ""
                 )}
+                title={enableBroadcast ? "Трансляция включена — другие слышат перевод" : "Трансляция выключена — только вы слышите"}
               >
-                <Activity className="h-3 w-3" />
-                {t.translator.modeAuto}
-              </button>
-              <button
-                type="button"
-                onClick={() => setPushToTalkMode(true)}
-                className={cn(
-                  "h-9 px-2 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1.5",
-                  pushToTalkMode 
-                    ? "bg-primary text-primary-foreground" 
-                    : "bg-muted/40 text-muted-foreground border border-border/40"
-                )}
-              >
-                <Keyboard className="h-3 w-3 hidden md:block" />
-                <Mic className="h-3 w-3 md:hidden" />
-                <span className="hidden md:inline">{t.translator.modeSpace}</span>
-                <span className="md:hidden">Удержать</span>
-              </button>
+                <Volume2 className="h-3 w-3" />
+                <span className="hidden sm:inline">{enableBroadcast ? 'Всем' : 'Себе'}</span>
+              </Button>
             </div>
 
             {/* Audio level when listening */}
