@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.create-user]
 verify_jwt = false
+
+[functions.cleanup-error-logs]
+verify_jwt = false
