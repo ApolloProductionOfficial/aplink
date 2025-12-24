@@ -1,0 +1,551 @@
+# CF Project - Дизайн-система
+
+Скопируй эти файлы в новый проект для переноса всего стиля.
+
+---
+
+## src/index.css
+
+```css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Glassmorphism utilities */
+.glass {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.glass-dark {
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+}
+
+/* Custom cursor */
+* {
+  cursor: none !important;
+}
+
+@media (max-width: 768px) {
+  * {
+    cursor: auto !important;
+  }
+}
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Darker background for better contrast */
+    --background: 0 0% 2%;
+    --foreground: 0 0% 100%;
+
+    --card: 0 0% 4%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 0 0% 4%;
+    --popover-foreground: 0 0% 98%;
+
+    /* Single primary color - cyan/blue */
+    --primary: 190 95% 45%;
+    --primary-rgb: 6, 182, 228;
+    --primary-foreground: 0 0% 100%;
+
+    /* Subdued secondary colors using primary hue */
+    --secondary: 190 15% 15%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 65%;
+
+    --accent: 190 20% 18%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 0% 18%;
+    --input: 0 0% 15%;
+    --ring: 190 70% 50%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 3%;
+    --sidebar-foreground: 0 0% 96%;
+    --sidebar-border: 0 0% 15%;
+  }
+}
+
+@layer utilities {
+  /* Performance optimizations */
+  .will-change-transform {
+    will-change: transform;
+  }
+  
+  @supports (will-change: transform) {
+    .animate-float,
+    .animate-pulse-glow,
+    .animate-slide-in-right,
+    .animate-slide-in-left {
+      will-change: transform;
+    }
+  }
+  
+  .animate-gradient {
+    background-size: 200% 200%;
+    animation: gradient 8s ease infinite;
+  }
+  
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+  
+  .animate-pulse-glow {
+    animation: pulse-glow 3s ease-in-out infinite;
+  }
+  
+  .animate-music-pulse {
+    animation: music-pulse 0.8s ease-in-out infinite;
+  }
+  
+  .animate-slide-up {
+    animation: slide-up 0.6s ease-out;
+  }
+  
+  .animate-slide-in-left {
+    animation: slide-in-left 0.8s ease-out;
+  }
+  
+  .animate-slide-in-right {
+    animation: slide-in-right 0.8s ease-out;
+  }
+  
+  .animate-slide-in-bottom {
+    animation: slide-in-bottom 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  
+  .animate-cosmic-glow {
+    animation: cosmic-glow 3s ease-in-out infinite;
+  }
+  
+  .animate-cosmic-appear {
+    animation: cosmic-appear 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  
+  .animate-text-shimmer {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--foreground)) 0%,
+      hsl(var(--foreground)) 20%,
+      hsl(var(--primary)) 40%,
+      hsl(190 100% 65%) 50%,
+      hsl(var(--primary)) 60%,
+      hsl(var(--foreground)) 80%,
+      hsl(var(--foreground)) 100%
+    );
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: text-shimmer 8s ease-in-out infinite;
+  }
+  
+  .animate-subtle-pulse {
+    animation: subtle-pulse 3s ease-in-out infinite;
+  }
+  
+  .animate-text-shine {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .animate-text-shine::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(var(--primary-rgb), 0.08) 50%,
+      transparent 100%
+    );
+    animation: text-shine 4s ease-in-out infinite;
+  }
+}
+
+@keyframes gradient {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px hsl(190 95% 50% / 0.2);
+  }
+  50% {
+    box-shadow: 0 0 35px hsl(190 95% 55% / 0.4);
+  }
+}
+
+@keyframes music-pulse {
+  0%, 100% {
+    box-shadow: 0 0 8px hsl(190 95% 50% / 0.15), 0 0 15px hsl(190 95% 50% / 0.08);
+  }
+  25% {
+    box-shadow: 0 0 12px hsl(190 95% 50% / 0.2), 0 0 20px hsl(190 95% 50% / 0.12);
+  }
+  50% {
+    box-shadow: 0 0 15px hsl(190 95% 50% / 0.25), 0 0 25px hsl(190 95% 50% / 0.15);
+  }
+  75% {
+    box-shadow: 0 0 12px hsl(190 95% 50% / 0.2), 0 0 20px hsl(190 95% 50% / 0.12);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes text-shimmer {
+  0%, 100% {
+    background-position: 0% center;
+  }
+  50% {
+    background-position: 200% center;
+  }
+}
+
+@keyframes rotate3d {
+  0% {
+    transform: rotateY(-30deg) rotateX(7deg);
+  }
+  50% {
+    transform: rotateY(30deg) rotateX(-7deg);
+  }
+  100% {
+    transform: rotateY(-30deg) rotateX(7deg);
+  }
+}
+
+@keyframes subtle-pulse {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(var(--primary-rgb), 0.05);
+  }
+  50% {
+    box-shadow: 0 0 8px rgba(var(--primary-rgb), 0.1);
+  }
+}
+
+@keyframes text-shine {
+  0% {
+    left: -100%;
+  }
+  50%, 100% {
+    left: 100%;
+  }
+}
+
+@keyframes slide-in-bottom {
+  0% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes cosmic-glow {
+  0%, 100% {
+    filter: brightness(1) drop-shadow(0 0 6px rgba(6, 182, 228, 0.3));
+    opacity: 1;
+  }
+  50% {
+    filter: brightness(1.1) drop-shadow(0 0 10px rgba(6, 182, 228, 0.45));
+    opacity: 0.95;
+  }
+}
+
+@keyframes cosmic-appear {
+  0% {
+    opacity: 0;
+    transform: scale(0.9) translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+
+@keyframes shimmer {
+  0% {
+    background-position: -100% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+@keyframes nav-wave {
+  0% {
+    opacity: 0.3;
+    box-shadow: 0 0 4px rgba(6, 182, 228, 0.15);
+  }
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 15px rgba(6, 182, 228, 0.35);
+  }
+  100% {
+    opacity: 0.3;
+    box-shadow: 0 0 4px rgba(6, 182, 228, 0.15);
+  }
+}
+
+@keyframes emoji-bounce {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+  }
+  25% {
+    transform: scale(1.25) rotate(-10deg);
+  }
+  50% {
+    transform: scale(1.15) rotate(10deg);
+  }
+  75% {
+    transform: scale(1.25) rotate(-5deg);
+  }
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(var(--primary-rgb), 0.2) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+.animate-emoji-bounce {
+  animation: emoji-bounce 2.5s ease-in-out infinite;
+}
+
+.animate-nav-wave-1 {
+  animation: nav-wave 6s ease-in-out infinite;
+  animation-delay: 0s;
+}
+
+.animate-nav-wave-2 {
+  animation: nav-wave 6s ease-in-out infinite;
+  animation-delay: 1s;
+}
+
+.animate-nav-wave-3 {
+  animation: nav-wave 6s ease-in-out infinite;
+  animation-delay: 2s;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+```
+
+---
+
+## tailwind.config.ts
+
+```typescript
+import type { Config } from "tailwindcss";
+
+export default {
+  darkMode: ["class"],
+  content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
+  prefix: "",
+  theme: {
+    container: {
+      center: true,
+      padding: "2rem",
+      screens: {
+        "2xl": "1400px",
+      },
+    },
+    extend: {
+      colors: {
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
+        primary: {
+          DEFAULT: "hsl(var(--primary))",
+          foreground: "hsl(var(--primary-foreground))",
+        },
+        secondary: {
+          DEFAULT: "hsl(var(--secondary))",
+          foreground: "hsl(var(--secondary-foreground))",
+        },
+        destructive: {
+          DEFAULT: "hsl(var(--destructive))",
+          foreground: "hsl(var(--destructive-foreground))",
+        },
+        muted: {
+          DEFAULT: "hsl(var(--muted))",
+          foreground: "hsl(var(--muted-foreground))",
+        },
+        accent: {
+          DEFAULT: "hsl(var(--accent))",
+          foreground: "hsl(var(--accent-foreground))",
+        },
+        popover: {
+          DEFAULT: "hsl(var(--popover))",
+          foreground: "hsl(var(--popover-foreground))",
+        },
+        card: {
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
+        },
+      },
+      backgroundImage: {
+        'gradient-primary': 'var(--gradient-primary)',
+        'gradient-card': 'var(--gradient-card)',
+      },
+      boxShadow: {
+        'glow': 'var(--shadow-glow)',
+      },
+      borderRadius: {
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)",
+      },
+      keyframes: {
+        "accordion-down": {
+          from: {
+            height: "0",
+          },
+          to: {
+            height: "var(--radix-accordion-content-height)",
+          },
+        },
+        "accordion-up": {
+          from: {
+            height: "var(--radix-accordion-content-height)",
+          },
+          to: {
+            height: "0",
+          },
+        },
+        "shimmer": {
+          "0%": {
+            backgroundPosition: "200% 0",
+          },
+          "100%": {
+            backgroundPosition: "-200% 0",
+          },
+        },
+      },
+      animation: {
+        "accordion-down": "accordion-down 0.2s ease-out",
+        "accordion-up": "accordion-up 0.2s ease-out",
+        "shimmer": "shimmer 3s linear infinite",
+      },
+    },
+  },
+  plugins: [require("tailwindcss-animate")],
+} satisfies Config;
+```
+
+---
+
+## Инструкции по установке
+
+1. Скопируй `index.css` в `src/index.css`
+2. Скопируй `tailwind.config.ts` в корень проекта
+3. Установи плагин: `npm install tailwindcss-animate`
+4. Убедись, что `postcss.config.js` настроен для Tailwind
+
+---
+
+## Ключевые токены дизайна
+
+| Токен | HSL значение | Описание |
+|-------|--------------|----------|
+| `--background` | 0 0% 2% | Почти чёрный фон |
+| `--foreground` | 0 0% 100% | Белый текст |
+| `--primary` | 190 95% 45% | Cyan акцент |
+| `--card` | 0 0% 4% | Фон карточек |
+| `--muted` | 0 0% 12% | Приглушённый фон |
+| `--border` | 0 0% 18% | Границы |
+
+---
+
+## Готовые классы анимаций
+
+- `.animate-float` — плавающее движение
+- `.animate-pulse-glow` — пульсирующее свечение
+- `.animate-text-shimmer` — мерцание текста
+- `.animate-cosmic-glow` — космическое свечение
+- `.animate-slide-up/left/right` — появление со сдвигом
+- `.glass` / `.glass-dark` — glassmorphism эффект
