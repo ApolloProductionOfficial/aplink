@@ -78,11 +78,22 @@ serve(async (req) => {
                 ${errorMessage || "Нет описания"}
               </div>
               
-              <div class="copy-hint">
-                📋 Скопируйте JSON ниже и отправьте в чат Lovable для анализа
+          <div class="copy-hint">
+                📥 Скачайте JSON файл для анализа
               </div>
               
-              <div class="json-block">${jsonContent}</div>
+              <div style="text-align: center; margin: 15px 0;">
+                <a href="data:application/json;charset=utf-8;base64,${base64Json}" 
+                   download="error-report-${Date.now()}.json"
+                   style="display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);">
+                  📥 Скачать JSON отчёт
+                </a>
+              </div>
+              
+              <details style="margin-top: 15px;">
+                <summary style="cursor: pointer; color: #3b82f6; font-weight: bold;">📋 Или скопируйте JSON вручную</summary>
+                <div class="json-block">${jsonContent}</div>
+              </details>
               
               ${details ? `
                 <div class="details">
@@ -93,7 +104,7 @@ serve(async (req) => {
             </div>
             <div class="footer">
               Apollo Production - Автоматическое уведомление<br/>
-              <small>Скопируйте JSON выше и вставьте в чат для анализа</small>
+              <small>Скачайте JSON отчёт и отправьте в чат для анализа</small>
             </div>
           </div>
         </body>
