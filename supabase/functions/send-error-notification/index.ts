@@ -25,9 +25,9 @@ serve(async (req) => {
     }
 
     const resend = new Resend(resendApiKey);
-    const { errorType, errorMessage, details, source } = await req.json();
+    const { errorType, errorMessage, details, source, severity } = await req.json();
 
-    console.log("Sending error notification:", { errorType, errorMessage, source });
+    console.log("Sending error notification:", { errorType, errorMessage, source, severity });
 
     const timestamp = new Date().toLocaleString("ru-RU", { timeZone: "Europe/Moscow" });
     
