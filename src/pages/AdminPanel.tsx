@@ -16,7 +16,7 @@ import CustomCursor from '@/components/CustomCursor';
 import AnimatedBackground from '@/components/AnimatedBackground';
 import TwoFactorSetup from '@/components/TwoFactorSetup';
 import apolloLogo from '@/assets/apollo-logo.mp4';
-import { generateMeetingPdf } from '@/utils/generateMeetingPdf';
+import { generateMeetingDocx } from '@/utils/generateMeetingDocx';
 
 interface MeetingTranscript {
   id: string;
@@ -660,14 +660,14 @@ const AdminPanel = () => {
     }
   };
 
-  // Download PDF
+  // Download Word
   const handleDownloadPdf = async (transcript: MeetingTranscript) => {
     setDownloadingPdf(transcript.id);
     try {
-      await generateMeetingPdf(transcript);
+      await generateMeetingDocx(transcript);
     } catch (error) {
-      console.error('Error generating PDF:', error);
-      toast.error('Не удалось создать PDF');
+      console.error('Error generating Word:', error);
+      toast.error('Не удалось создать Word документ');
     } finally {
       setDownloadingPdf(null);
     }
@@ -1282,14 +1282,14 @@ const AdminPanel = () => {
                             onClick={() => handleDownloadPdf(transcript)}
                             disabled={downloadingPdf === transcript.id}
                             className="gap-1.5"
-                            title="Скачать PDF"
+                            title="Скачать Word"
                           >
                             {downloadingPdf === transcript.id ? (
                               <Loader2 className="w-4 h-4 animate-spin" />
                             ) : (
                               <Download className="w-4 h-4" />
                             )}
-                            PDF
+                            Word
                           </Button>
                           <Button
                             variant="outline"

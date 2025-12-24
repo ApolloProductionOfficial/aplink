@@ -136,6 +136,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
   const [isPushToTalkActive, setIsPushToTalkActive] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [audioLevel, setAudioLevel] = useState(0);
+  const [audioUnlocked, setAudioUnlocked] = useState(false);
   
   // VAD settings
   const vadThreshold = 0.02;
@@ -979,6 +980,32 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
                 <span className="hidden sm:inline">{enableBroadcast ? 'Всем' : 'Себе'}</span>
               </Button>
             </div>
+            
+            {/* iOS Audio Unlock Button */}
+            {!audioUnlocked && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  try {
+                    const silentAudio = new Audio(
+                      "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA"
+                    );
+                    await silentAudio.play();
+                    silentAudio.pause();
+                    setAudioUnlocked(true);
+                    toast.success("Звук разблокирован! Переводы будут воспроизводиться автоматически.");
+                  } catch (e) {
+                    console.error("Failed to unlock audio:", e);
+                    toast.error("Не удалось разблокировать звук. Попробуйте ещё раз.");
+                  }
+                }}
+                className="h-8 text-xs bg-yellow-500/10 border-yellow-500/50 hover:bg-yellow-500/20 text-yellow-600"
+              >
+                <Volume2 className="h-3 w-3 mr-1.5" />
+                Включить звук (для iPhone)
+              </Button>
+            )}
 
             {/* Audio level when listening */}
             {isListening && !pushToTalkMode && (
