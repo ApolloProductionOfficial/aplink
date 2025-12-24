@@ -429,6 +429,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_old_translation_history: { Args: never; Returns: number }
       get_room_participants: {
         Args: { room_id_param: string }
         Returns: {
@@ -472,6 +473,7 @@ export type Database = {
           username: string
         }[]
       }
+      validate_backup_code: { Args: { code_input: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "user"
