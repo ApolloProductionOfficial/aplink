@@ -13,38 +13,64 @@ serve(async (req) => {
   }
 
   try {
-    const { meetingId } = await req.json();
+    const { token } = await req.json();
 
-    if (!meetingId) {
+    if (!token || typeof token !== 'string') {
       return new Response(
-        JSON.stringify({ error: 'Meeting ID is required' }),
+        JSON.stringify({ error: 'Token is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('Fetching shared meeting:', meetingId);
+    console.log('Fetching shared meeting by token');
 
-    // Use service role to bypass RLS
+    // Use service role to bypass RLS (token validation is done here)
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    const { data: meeting, error } = await supabase
-      .from('meeting_transcripts')
-      .select('id, room_id, room_name, started_at, ended_at, transcript, summary, key_points, participants')
-      .eq('id', meetingId)
-      .single();
+    const { data: link, error: linkError } = await supabase
+      .from('shared_meeting_links')
+      .select('meeting_id, is_active, expires_at')
+      .eq('share_token', token)
+      .maybeSingle();
 
-    if (error) {
-      console.error('Error fetching meeting:', error);
+    if (linkError || !link) {
+      console.error('Share link not found:', linkError);
       return new Response(
-        JSON.stringify({ error: 'Meeting not found' }),
+        JSON.stringify({ error: 'Ссылка не найдена или недействительна' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('Meeting found:', meeting.room_name);
+    if (!link.is_active) {
+      return new Response(
+        JSON.stringify({ error: 'Эта ссылка была деактивирована' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (link.expires_at && new Date(link.expires_at) < new Date()) {
+      return new Response(
+        JSON.stringify({ error: 'Срок действия ссылки истёк' }),
+        { status: 410, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { data: meeting, error: meetingError } = await supabase
+      .from('meeting_transcripts')
+      .select('id, room_id, room_name, started_at, ended_at, transcript, summary, key_points, participants')
+      .eq('id', link.meeting_id)
+      .maybeSingle();
+
+    if (meetingError || !meeting) {
+      console.error('Error fetching meeting:', meetingError);
+      return new Response(
+        JSON.stringify({ error: 'Созвон не найден' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     return new Response(
       JSON.stringify({ meeting }),
