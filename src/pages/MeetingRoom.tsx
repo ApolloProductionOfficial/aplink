@@ -1219,17 +1219,42 @@ const MeetingRoom = () => {
         });
 
         // Capture chat messages as part of transcript and send notification
+        // Also handle translation broadcasts from other participants
         apiRef.current.addEventListener('incomingMessage', (data: { from: string; message: string }) => {
           console.log('Chat message:', data);
-          if (data.message) {
-            transcriptRef.current.push(`[Чат] ${data.from || 'Unknown'}: ${data.message}`);
-            
-            // Send push notification for new chat message
-            sendNotification(`Сообщение от ${data.from || 'Участник'}`, {
-              body: data.message.length > 50 ? data.message.substring(0, 50) + '...' : data.message,
-              tag: 'chat-message',
-            });
+          if (!data.message) return;
+          
+          // Check if this is a translation broadcast
+          try {
+            if (data.message.startsWith('{') && data.message.includes('translation_audio')) {
+              const payload = JSON.parse(data.message);
+              if (payload.type === 'translation_audio' && payload.audioBase64) {
+                console.log('Received translation broadcast from:', data.from);
+                // Play the translated audio for this participant
+                const audioUrl = `data:audio/mpeg;base64,${payload.audioBase64}`;
+                const audio = new Audio(audioUrl);
+                audio.volume = 0.9;
+                audio.play().catch(e => console.log('Could not autoplay translation:', e));
+                
+                // Show toast notification
+                toast({
+                  title: `🌐 Перевод от ${data.from}`,
+                  description: payload.text?.substring(0, 80) || 'Аудио-перевод',
+                });
+                return; // Don't add to transcript as regular chat
+              }
+            }
+          } catch {
+            // Not a translation payload, treat as regular chat
           }
+          
+          transcriptRef.current.push(`[Чат] ${data.from || 'Unknown'}: ${data.message}`);
+          
+          // Send push notification for new chat message
+          sendNotification(`Сообщение от ${data.from || 'Участник'}`, {
+            body: data.message.length > 50 ? data.message.substring(0, 50) + '...' : data.message,
+            tag: 'chat-message',
+          });
         });
 
         // Capture subtitles/closed captions
