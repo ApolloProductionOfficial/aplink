@@ -713,6 +713,26 @@ const MeetingRoom = () => {
     navigate("/");
   };
 
+  // Logic executed when user explicitly ends the call
+  const handleUserEndCall = async () => {
+    if (hasRedirectedRef.current) return;
+    hasRedirectedRef.current = true;
+    logDiagnostic("user-end-call", { hasRecording: hasStartedRecordingRef.current });
+
+    // No need to save -> just go home
+    if (!hasStartedRecordingRef.current) {
+      navigate("/");
+      return;
+    }
+
+    // Open save dialog
+    setEndSaveDialogOpen(true);
+    setEndSaveStatus("saving");
+    setEndSaveError(null);
+
+    await runMeetingSave();
+  };
+
   // Handle Jitsi events - only redirect if user initiated end
   const handleJitsiClose = () => {
     // Only process if user clicked hangup button
