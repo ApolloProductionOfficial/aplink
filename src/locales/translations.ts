@@ -899,7 +899,15 @@ export const translations = {
       noDataToExport: "Нет данных для экспорта",
       loadHistoryError: "Не удалось загрузить историю",
       clearHistoryError: "Ошибка очистки истории",
-      voicePreviewError: "Не удалось воспроизвести голос"
+      voicePreviewError: "Не удалось воспроизвести голос",
+      myLanguage: "Я говорю на",
+      partnerLanguage: "Собеседник",
+      detected: "Авто",
+      waitingForPartner: "Ожидаю...",
+      orSelectManually: "Или выберите вручную:",
+      symmetricMode: "Двусторонний перевод",
+      incomingTranslation: "Входящий перевод",
+      outgoingTranslation: "Исходящий перевод"
     }
   },
   en: {
@@ -1802,7 +1810,15 @@ export const translations = {
       noDataToExport: "No data to export",
       loadHistoryError: "Failed to load history",
       clearHistoryError: "Error clearing history",
-      voicePreviewError: "Failed to play voice"
+      voicePreviewError: "Failed to play voice",
+      myLanguage: "I speak",
+      partnerLanguage: "Partner",
+      detected: "Auto",
+      waitingForPartner: "Waiting...",
+      orSelectManually: "Or select manually:",
+      symmetricMode: "Two-way translation",
+      incomingTranslation: "Incoming translation",
+      outgoingTranslation: "Outgoing translation"
     }
   },
   uk: {
@@ -2705,7 +2721,15 @@ export const translations = {
       noDataToExport: "Немає даних для експорту",
       loadHistoryError: "Не вдалося завантажити історію",
       clearHistoryError: "Помилка очищення історії",
-      voicePreviewError: "Не вдалося відтворити голос"
+      voicePreviewError: "Не вдалося відтворити голос",
+      myLanguage: "Я говорю",
+      partnerLanguage: "Співрозмовник",
+      detected: "Авто",
+      waitingForPartner: "Очікую...",
+      orSelectManually: "Або оберіть вручну:",
+      symmetricMode: "Двосторонній переклад",
+      incomingTranslation: "Вхідний переклад",
+      outgoingTranslation: "Вихідний переклад"
     }
   }
 };
