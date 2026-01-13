@@ -52,13 +52,8 @@ export const useTranslationBroadcast = (jitsiApi: any): UseTranslationBroadcastR
     }
   }, []);
 
-  // Start broadcasting - replace Jitsi audio track with our mixed stream
+  // Start broadcasting - try to integrate with Jitsi audio
   const startBroadcast = useCallback(async () => {
-    if (!jitsiApi) {
-      console.log('No Jitsi API available');
-      return;
-    }
-
     await initializeAudioContext();
     
     if (!mixedStreamRef.current) {
@@ -67,32 +62,41 @@ export const useTranslationBroadcast = (jitsiApi: any): UseTranslationBroadcastR
     }
 
     try {
-      // Get current audio track from Jitsi (to preserve user's voice)
-      const tracks = jitsiApi.getLocalTracks?.();
-      const audioTrack = tracks?.find((t: any) => t.getType?.() === 'audio');
-      
-      if (audioTrack) {
-        originalTrackRef.current = audioTrack.track;
+      // Try to get Jitsi tracks if API is available
+      if (jitsiApi) {
+        const tracks = jitsiApi.getLocalTracks?.();
+        const audioTrack = tracks?.find((t: any) => t.getType?.() === 'audio');
         
-        // Connect original microphone to our mixer
-        if (originalTrackRef.current && audioContextRef.current && gainNodeRef.current) {
-          const micStream = new MediaStream([originalTrackRef.current]);
-          const micSource = audioContextRef.current.createMediaStreamSource(micStream);
-          micSource.connect(gainNodeRef.current);
-          console.log('Connected original microphone to mixer');
+        if (audioTrack?.track) {
+          originalTrackRef.current = audioTrack.track;
+          
+          // Connect original microphone to our mixer
+          if (audioContextRef.current && gainNodeRef.current) {
+            const micStream = new MediaStream([audioTrack.track]);
+            const micSource = audioContextRef.current.createMediaStreamSource(micStream);
+            micSource.connect(gainNodeRef.current);
+            console.log('Connected Jitsi microphone to mixer');
+          }
+        }
+
+        // Try to replace track (may not work with IFrame API)
+        const mixedTrack = mixedStreamRef.current.getAudioTracks()[0];
+        if (mixedTrack && typeof jitsiApi.replaceTrack === 'function') {
+          try {
+            await jitsiApi.replaceTrack(audioTrack, mixedTrack);
+            console.log('Replaced Jitsi audio track with mixed stream');
+          } catch (e) {
+            console.log('replaceTrack not supported, using local playback only');
+          }
         }
       }
 
-      // Replace Jitsi audio track with our mixed stream
-      const mixedTrack = mixedStreamRef.current.getAudioTracks()[0];
-      if (mixedTrack && jitsiApi.replaceTrack) {
-        await jitsiApi.replaceTrack(audioTrack, mixedTrack);
-        console.log('Replaced Jitsi audio track with mixed stream');
-      }
-
       setIsBroadcasting(true);
+      console.log('Translation broadcast started');
     } catch (error) {
       console.error('Failed to start broadcast:', error);
+      // Still mark as broadcasting for local playback
+      setIsBroadcasting(true);
     }
   }, [jitsiApi, initializeAudioContext]);
 

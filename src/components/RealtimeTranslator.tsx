@@ -529,20 +529,23 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
     isPlayingRef.current = true;
     const audioUrl = audioQueueRef.current.shift()!;
     
-    // Always try WebRTC broadcast first when in a call
-    if (isBroadcasting) {
-      try {
-        await playThroughWebRTC(audioUrl);
-        isPlayingRef.current = false;
-        playNextAudio();
-        return;
-      } catch (e) {
-        console.log('WebRTC playback failed, falling back to local');
-      }
-    }
-    
     try {
+      // Try WebRTC broadcast first (plays both locally and to partner)
+      if (isBroadcasting) {
+        try {
+          await playThroughWebRTC(audioUrl);
+          console.log('Audio played through WebRTC mixer');
+          isPlayingRef.current = false;
+          playNextAudio();
+          return;
+        } catch (e) {
+          console.log('WebRTC failed, falling back to local playback:', e);
+        }
+      }
+      
+      // Fallback: play locally only
       const audio = new Audio(audioUrl);
+      audio.volume = 1.0;
       
       audio.onended = () => {
         isPlayingRef.current = false;
@@ -553,21 +556,19 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
         playNextAudio();
       };
       
-      audio.volume = 1.0;
-      
       const playPromise = audio.play();
       if (playPromise !== undefined) {
         playPromise.catch(async () => {
+          // iOS workaround
           try {
             const silentAudio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA');
             await silentAudio.play();
             silentAudio.pause();
             await audio.play();
           } catch {
-            // Silent fail
+            isPlayingRef.current = false;
+            playNextAudio();
           }
-          isPlayingRef.current = false;
-          playNextAudio();
         });
       }
     } catch (error) {
