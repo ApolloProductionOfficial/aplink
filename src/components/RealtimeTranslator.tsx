@@ -163,7 +163,6 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
   const [selectedVoice, setSelectedVoice] = useState(storedSettings.selectedVoice || 'female-sarah');
   const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isProcessingIncoming, setIsProcessingIncoming] = useState(false);
   const [translations, setTranslations] = useState<TranslationEntry[]>([]);
   const [isMinimized, setIsMinimized] = useState(false);
   const [activeTab, setActiveTab] = useState('translate');
@@ -207,86 +206,43 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
     }
   }, []);
   
-  // Process incoming audio from partner - translate to my language
-  const processIncomingTranslation = useCallback(async (audioBase64: string, sourceLang: string, senderName: string) => {
-    if (isProcessingIncoming) return;
+  // Play incoming translated audio from partner (already translated, just play it!)
+  const playIncomingTranslation = useCallback((audioBase64: string, translatedText: string, originalText: string, sourceLang: string, senderName: string) => {
+    console.log('Playing incoming translation from:', senderName);
     
-    setIsProcessingIncoming(true);
-    
-    try {
-      // Convert base64 to blob
-      const binaryString = atob(audioBase64);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      const audioBlob = new Blob([bytes], { type: 'audio/mpeg' });
-      
-      const formData = new FormData();
-      formData.append('audio', audioBlob, 'audio.mp3');
-      formData.append('targetLanguage', myLanguage);
-      formData.append('voiceId', selectedVoice);
-      formData.append('sourceLanguage', sourceLang);
-      
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/realtime-translate`,
-        {
-          method: 'POST',
-          headers: {
-            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: formData,
-        }
-      );
-      
-      if (!response.ok) throw new Error(`Translation failed: ${response.status}`);
-      
-      const result = await response.json();
-      
-      if (result.translatedText && result.translatedText.trim()) {
-        // Update detected partner language
-        if (sourceLang && sourceLang !== myLanguage && !detectedPartnerLanguage) {
-          setDetectedPartnerLanguage(sourceLang);
-        }
-        
-        const entry: TranslationEntry = {
-          id: Date.now().toString() + '-incoming',
-          originalText: result.originalText || `[${senderName}]`,
-          translatedText: result.translatedText,
-          timestamp: new Date(),
-          sourceLanguage: sourceLang,
-          targetLanguage: myLanguage,
-          voiceId: result.voiceId,
-          direction: 'incoming',
-        };
-        
-        if (result.audioContent) {
-          const audioUrl = `data:audio/mpeg;base64,${result.audioContent}`;
-          entry.audioUrl = audioUrl;
-          incomingAudioQueueRef.current.push(audioUrl);
-          playNextIncoming();
-        }
-        
-        setTranslations(prev => [...prev.slice(-19), entry]);
-        
-        trackEvent({
-          eventType: 'translation_completed',
-          eventData: {
-            source_language: sourceLang,
-            target_language: myLanguage,
-            voice_id: selectedVoice,
-            text_length: result.originalText?.length || 0,
-            direction: 'incoming',
-          },
-        });
-      }
-    } catch (error) {
-      console.error('Incoming translation error:', error);
-    } finally {
-      setIsProcessingIncoming(false);
+    // Update detected partner language
+    if (sourceLang && sourceLang !== myLanguage && !detectedPartnerLanguage) {
+      setDetectedPartnerLanguage(sourceLang);
     }
-  }, [myLanguage, selectedVoice, detectedPartnerLanguage, trackEvent, playNextIncoming, isProcessingIncoming]);
+    
+    // Add to translations list
+    const entry: TranslationEntry = {
+      id: Date.now().toString() + '-incoming',
+      originalText: originalText || `[${senderName}]`,
+      translatedText: translatedText,
+      timestamp: new Date(),
+      sourceLanguage: sourceLang,
+      targetLanguage: myLanguage,
+      direction: 'incoming',
+    };
+    
+    // Play the audio directly (it's already translated!)
+    const audioUrl = `data:audio/mpeg;base64,${audioBase64}`;
+    entry.audioUrl = audioUrl;
+    incomingAudioQueueRef.current.push(audioUrl);
+    playNextIncoming();
+    
+    setTranslations(prev => [...prev.slice(-19), entry]);
+    
+    trackEvent({
+      eventType: 'translation_completed',
+      eventData: {
+        source_language: sourceLang,
+        target_language: myLanguage,
+        direction: 'incoming',
+      },
+    });
+  }, [myLanguage, detectedPartnerLanguage, trackEvent, playNextIncoming]);
   
   // Listen for incoming translations from Jitsi
   useEffect(() => {
@@ -299,8 +255,15 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
         
         const payload = JSON.parse(message);
         if (payload.type === 'translation_audio' && payload.audioBase64) {
-          console.log('Received translation from partner');
-          processIncomingTranslation(payload.audioBase64, payload.sourceLang || 'en', event?.data?.from || 'Partner');
+          console.log('Received translation audio from partner, playing directly');
+          // Play the audio directly - it's already in the target language!
+          playIncomingTranslation(
+            payload.audioBase64, 
+            payload.text || '', 
+            payload.originalText || '',
+            payload.sourceLang || 'en', 
+            event?.data?.from || 'Partner'
+          );
         }
       } catch {
         // Not a translation message, ignore
@@ -312,7 +275,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
     return () => {
       jitsiApi.removeListener('incomingMessage', handleIncomingMessage);
     };
-  }, [jitsiApi, isActive, processIncomingTranslation]);
+  }, [jitsiApi, isActive, playIncomingTranslation]);
   
   // VAD settings
   const vadThreshold = 0.02;
@@ -1003,7 +966,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
           <div className="flex items-center gap-2">
             <Languages className="h-4 w-4 text-primary" />
             <span className="font-semibold text-sm">{t.translator.title}</span>
-            {(isVadRecording || isPushToTalkActive || isProcessing || isProcessingIncoming) && (
+            {(isVadRecording || isPushToTalkActive || isProcessing) && (
               <span className="flex items-center gap-1 text-[10px] text-green-500">
                 <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
                 LIVE
