@@ -152,8 +152,8 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
     playTranslatedAudio: playThroughWebRTC 
   } = useTranslationBroadcast(jitsiApi);
   
-  // State for broadcasting toggle
-  const [enableBroadcast, setEnableBroadcast] = useState(broadcastToOthers);
+  // Broadcast is always enabled now
+  const enableBroadcast = true;
   
   const storedSettings = loadStoredSettings();
   
@@ -174,11 +174,145 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
   const [isPushToTalkActive, setIsPushToTalkActive] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [audioLevel, setAudioLevel] = useState(0);
-  const [audioUnlocked, setAudioUnlocked] = useState(false);
   
   // For incoming translation handling
   const incomingAudioQueueRef = useRef<string[]>([]);
   const isPlayingIncomingRef = useRef(false);
+  
+  // Process incoming translation audio queue
+  const playNextIncoming = useCallback(async () => {
+    if (isPlayingIncomingRef.current || incomingAudioQueueRef.current.length === 0) return;
+    
+    isPlayingIncomingRef.current = true;
+    const audioUrl = incomingAudioQueueRef.current.shift()!;
+    
+    try {
+      const audio = new Audio(audioUrl);
+      audio.volume = 1.0;
+      
+      audio.onended = () => {
+        isPlayingIncomingRef.current = false;
+        playNextIncoming();
+      };
+      audio.onerror = () => {
+        isPlayingIncomingRef.current = false;
+        playNextIncoming();
+      };
+      
+      await audio.play();
+    } catch (error) {
+      console.error('Error playing incoming audio:', error);
+      isPlayingIncomingRef.current = false;
+      playNextIncoming();
+    }
+  }, []);
+  
+  // Process incoming audio from partner - translate to my language
+  const processIncomingTranslation = useCallback(async (audioBase64: string, sourceLang: string, senderName: string) => {
+    if (isProcessingIncoming) return;
+    
+    setIsProcessingIncoming(true);
+    
+    try {
+      // Convert base64 to blob
+      const binaryString = atob(audioBase64);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      const audioBlob = new Blob([bytes], { type: 'audio/mpeg' });
+      
+      const formData = new FormData();
+      formData.append('audio', audioBlob, 'audio.mp3');
+      formData.append('targetLanguage', myLanguage);
+      formData.append('voiceId', selectedVoice);
+      formData.append('sourceLanguage', sourceLang);
+      
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/realtime-translate`,
+        {
+          method: 'POST',
+          headers: {
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: formData,
+        }
+      );
+      
+      if (!response.ok) throw new Error(`Translation failed: ${response.status}`);
+      
+      const result = await response.json();
+      
+      if (result.translatedText && result.translatedText.trim()) {
+        // Update detected partner language
+        if (sourceLang && sourceLang !== myLanguage && !detectedPartnerLanguage) {
+          setDetectedPartnerLanguage(sourceLang);
+        }
+        
+        const entry: TranslationEntry = {
+          id: Date.now().toString() + '-incoming',
+          originalText: result.originalText || `[${senderName}]`,
+          translatedText: result.translatedText,
+          timestamp: new Date(),
+          sourceLanguage: sourceLang,
+          targetLanguage: myLanguage,
+          voiceId: result.voiceId,
+          direction: 'incoming',
+        };
+        
+        if (result.audioContent) {
+          const audioUrl = `data:audio/mpeg;base64,${result.audioContent}`;
+          entry.audioUrl = audioUrl;
+          incomingAudioQueueRef.current.push(audioUrl);
+          playNextIncoming();
+        }
+        
+        setTranslations(prev => [...prev.slice(-19), entry]);
+        
+        trackEvent({
+          eventType: 'translation_completed',
+          eventData: {
+            source_language: sourceLang,
+            target_language: myLanguage,
+            voice_id: selectedVoice,
+            text_length: result.originalText?.length || 0,
+            direction: 'incoming',
+          },
+        });
+      }
+    } catch (error) {
+      console.error('Incoming translation error:', error);
+    } finally {
+      setIsProcessingIncoming(false);
+    }
+  }, [myLanguage, selectedVoice, detectedPartnerLanguage, trackEvent, playNextIncoming, isProcessingIncoming]);
+  
+  // Listen for incoming translations from Jitsi
+  useEffect(() => {
+    if (!jitsiApi || !isActive) return;
+    
+    const handleIncomingMessage = (event: any) => {
+      try {
+        const message = event?.data?.message || event?.message;
+        if (!message) return;
+        
+        const payload = JSON.parse(message);
+        if (payload.type === 'translation_audio' && payload.audioBase64) {
+          console.log('Received translation from partner');
+          processIncomingTranslation(payload.audioBase64, payload.sourceLang || 'en', event?.data?.from || 'Partner');
+        }
+      } catch {
+        // Not a translation message, ignore
+      }
+    };
+    
+    jitsiApi.addListener('incomingMessage', handleIncomingMessage);
+    
+    return () => {
+      jitsiApi.removeListener('incomingMessage', handleIncomingMessage);
+    };
+  }, [jitsiApi, isActive, processIncomingTranslation]);
   
   // VAD settings
   const vadThreshold = 0.02;
@@ -830,7 +964,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
         <CardContent className="p-3 flex items-center gap-3">
           <div className="flex items-center gap-2">
             <Languages className="h-4 w-4 text-primary" />
-            {isBroadcasting && (
+            {(isVadRecording || isPushToTalkActive || isProcessing) && (
               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
             )}
             {pushToTalkMode && isPushToTalkActive && (
@@ -868,7 +1002,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
           <div className="flex items-center gap-2">
             <Languages className="h-4 w-4 text-primary" />
             <span className="font-semibold text-sm">{t.translator.title}</span>
-            {isBroadcasting && (
+            {(isVadRecording || isPushToTalkActive || isProcessing || isProcessingIncoming) && (
               <span className="flex items-center gap-1 text-[10px] text-green-500">
                 <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
                 LIVE
@@ -1013,80 +1147,37 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
               </Button>
             </div>
 
-            {/* Mode toggle + Broadcast toggle */}
-            <div className="flex items-center gap-2">
-              <div className="grid grid-cols-2 gap-1.5 flex-1">
-                <button
-                  type="button"
-                  onClick={() => setPushToTalkMode(false)}
-                  className={cn(
-                    "h-9 px-2 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1.5",
-                    !pushToTalkMode 
-                      ? "bg-primary text-primary-foreground" 
-                      : "bg-muted/40 text-muted-foreground border border-border/40"
-                  )}
-                >
-                  <Activity className="h-3 w-3" />
-                  {t.translator.modeAuto}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPushToTalkMode(true)}
-                  className={cn(
-                    "h-9 px-2 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1.5",
-                    pushToTalkMode 
-                      ? "bg-primary text-primary-foreground" 
-                      : "bg-muted/40 text-muted-foreground border border-border/40"
-                  )}
-                >
-                  <Keyboard className="h-3 w-3 hidden md:block" />
-                  <Mic className="h-3 w-3 md:hidden" />
-                  <span className="hidden md:inline">{t.translator.modeSpace}</span>
-                  <span className="md:hidden">Удержать</span>
-                </button>
-              </div>
-              
-              {/* Broadcast toggle */}
-              <Button
-                variant={enableBroadcast ? "default" : "outline"}
-                size="sm"
-                onClick={() => setEnableBroadcast(b => !b)}
+            {/* Mode toggle */}
+            <div className="grid grid-cols-2 gap-1.5">
+              <button
+                type="button"
+                onClick={() => setPushToTalkMode(false)}
                 className={cn(
-                  "h-9 px-2 text-xs gap-1",
-                  enableBroadcast ? "bg-green-600 hover:bg-green-700" : ""
+                  "h-9 px-2 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1.5",
+                  !pushToTalkMode 
+                    ? "bg-primary text-primary-foreground" 
+                    : "bg-muted/40 text-muted-foreground border border-border/40"
                 )}
-                title={enableBroadcast ? "Трансляция включена — другие слышат перевод" : "Трансляция выключена — только вы слышите"}
               >
-                <Volume2 className="h-3 w-3" />
-                <span className="hidden sm:inline">{enableBroadcast ? 'Всем' : 'Себе'}</span>
-              </Button>
+                <Activity className="h-3 w-3" />
+                {t.translator.modeAuto}
+              </button>
+              <button
+                type="button"
+                onClick={() => setPushToTalkMode(true)}
+                className={cn(
+                  "h-9 px-2 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1.5",
+                  pushToTalkMode 
+                    ? "bg-primary text-primary-foreground" 
+                    : "bg-muted/40 text-muted-foreground border border-border/40"
+                )}
+              >
+                <Keyboard className="h-3 w-3 hidden md:block" />
+                <Mic className="h-3 w-3 md:hidden" />
+                <span className="hidden md:inline">{t.translator.modeSpace}</span>
+                <span className="md:hidden">Удержать</span>
+              </button>
             </div>
-            
-            {/* iOS Audio Unlock Button */}
-            {!audioUnlocked && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={async () => {
-                  try {
-                    const silentAudio = new Audio(
-                      "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA"
-                    );
-                    await silentAudio.play();
-                    silentAudio.pause();
-                    setAudioUnlocked(true);
-                    toast.success("Звук разблокирован! Переводы будут воспроизводиться автоматически.");
-                  } catch (e) {
-                    console.error("Failed to unlock audio:", e);
-                    toast.error("Не удалось разблокировать звук. Попробуйте ещё раз.");
-                  }
-                }}
-                className="h-8 text-xs bg-yellow-500/10 border-yellow-500/50 hover:bg-yellow-500/20 text-yellow-600"
-              >
-                <Volume2 className="h-3 w-3 mr-1.5" />
-                Включить звук (для iPhone)
-              </Button>
-            )}
 
             {/* Audio level when listening */}
             {isListening && !pushToTalkMode && (
@@ -1185,8 +1276,26 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
                 </div>
               ) : (
                 translations.map((entry) => (
-                  <div key={entry.id} className="text-xs space-y-0.5 border-b border-border/50 pb-1.5 last:border-0">
-                    <p className="text-muted-foreground italic text-[11px]">"{entry.originalText}"</p>
+                  <div 
+                    key={entry.id} 
+                    className={cn(
+                      "text-xs space-y-0.5 border-b border-border/50 pb-1.5 last:border-0",
+                      entry.direction === 'incoming' && "bg-blue-500/5 rounded px-1.5 py-1 -mx-1"
+                    )}
+                  >
+                    <div className="flex items-center gap-1">
+                      {entry.direction === 'incoming' && (
+                        <Badge variant="outline" className="text-[8px] h-3 px-1 bg-blue-500/10 text-blue-500 border-blue-500/30">
+                          ←
+                        </Badge>
+                      )}
+                      {entry.direction === 'outgoing' && (
+                        <Badge variant="outline" className="text-[8px] h-3 px-1 bg-green-500/10 text-green-500 border-green-500/30">
+                          →
+                        </Badge>
+                      )}
+                      <p className="text-muted-foreground italic text-[11px] flex-1">"{entry.originalText}"</p>
+                    </div>
                     <p className="text-foreground font-medium">{entry.translatedText}</p>
                   </div>
                 ))
