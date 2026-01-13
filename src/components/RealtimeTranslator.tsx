@@ -25,6 +25,7 @@ interface TranslationEntry {
   sourceLanguage?: string;
   targetLanguage?: string;
   voiceId?: string;
+  direction?: 'outgoing' | 'incoming';
 }
 
 interface RealtimeTranslatorProps {
@@ -39,6 +40,42 @@ interface RealtimeTranslatorProps {
   /** Callback when receiving translated audio from another participant */
   onReceivedTranslation?: (audioBase64: string, senderName: string) => void;
 }
+
+// Language detection from text patterns
+const detectLanguageFromText = (text: string): string | null => {
+  const patterns: Record<string, RegExp> = {
+    ru: /[а-яёА-ЯЁ]/,
+    uk: /[іїєґІЇЄҐ]/,
+    zh: /[\u4e00-\u9fff]/,
+    ja: /[\u3040-\u309f\u30a0-\u30ff]/,
+    ko: /[\uac00-\ud7af]/,
+    ar: /[\u0600-\u06ff]/,
+  };
+  
+  // Check for specific scripts first
+  if (patterns.uk.test(text)) return 'uk';
+  if (patterns.ru.test(text)) return 'ru';
+  if (patterns.zh.test(text)) return 'zh';
+  if (patterns.ja.test(text)) return 'ja';
+  if (patterns.ko.test(text)) return 'ko';
+  if (patterns.ar.test(text)) return 'ar';
+  
+  // Latin-based languages - check common words
+  const latinPatterns: Record<string, RegExp[]> = {
+    en: [/\b(the|is|are|was|were|have|has|this|that|with)\b/i],
+    es: [/\b(el|la|los|las|es|está|son|una|uno|que|con)\b/i],
+    de: [/\b(der|die|das|ist|sind|ein|eine|und|mit|für)\b/i],
+    fr: [/\b(le|la|les|est|sont|un|une|et|avec|pour)\b/i],
+    it: [/\b(il|la|i|le|è|sono|un|una|e|con|per)\b/i],
+    pt: [/\b(o|a|os|as|é|são|um|uma|e|com|para)\b/i],
+  };
+  
+  for (const [lang, regexes] of Object.entries(latinPatterns)) {
+    if (regexes.some(r => r.test(text))) return lang;
+  }
+  
+  return null;
+};
 
 const LANGUAGES = [
   { code: 'ru', name: 'Русский', flag: '🇷🇺' },
@@ -75,8 +112,7 @@ const VOICES = [
 const STORAGE_KEY = 'translator-settings';
 
 interface StoredSettings {
-  sourceLanguage: string;
-  targetLanguage: string;
+  myLanguage: string;
   selectedVoice: string;
   pushToTalkMode: boolean;
 }
@@ -121,11 +157,13 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
   
   const storedSettings = loadStoredSettings();
   
-  const [targetLanguage, setTargetLanguage] = useState(storedSettings.targetLanguage || 'en');
-  const [sourceLanguage, setSourceLanguage] = useState(storedSettings.sourceLanguage || 'auto');
+  // Symmetric translation: user only selects their own language
+  const [myLanguage, setMyLanguage] = useState(storedSettings.myLanguage || 'ru');
+  const [detectedPartnerLanguage, setDetectedPartnerLanguage] = useState<string | null>(null);
   const [selectedVoice, setSelectedVoice] = useState(storedSettings.selectedVoice || 'female-sarah');
   const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isProcessingIncoming, setIsProcessingIncoming] = useState(false);
   const [translations, setTranslations] = useState<TranslationEntry[]>([]);
   const [isMinimized, setIsMinimized] = useState(false);
   const [activeTab, setActiveTab] = useState('translate');
@@ -137,6 +175,10 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [audioLevel, setAudioLevel] = useState(0);
   const [audioUnlocked, setAudioUnlocked] = useState(false);
+  
+  // For incoming translation handling
+  const incomingAudioQueueRef = useRef<string[]>([]);
+  const isPlayingIncomingRef = useRef(false);
   
   // VAD settings
   const vadThreshold = 0.02;
@@ -190,12 +232,11 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
 
   useEffect(() => {
     saveSettings({
-      sourceLanguage,
-      targetLanguage,
+      myLanguage,
       selectedVoice,
       pushToTalkMode,
     });
-  }, [sourceLanguage, targetLanguage, selectedVoice, pushToTalkMode]);
+  }, [myLanguage, selectedVoice, pushToTalkMode]);
 
   const loadHistory = async () => {
     if (!user) return;
@@ -237,8 +278,8 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
         room_id: roomId || null,
         original_text: entry.originalText,
         translated_text: entry.translatedText,
-        source_language: entry.sourceLanguage || sourceLanguage,
-        target_language: targetLanguage,
+        source_language: entry.sourceLanguage || myLanguage,
+        target_language: entry.targetLanguage || detectedPartnerLanguage || 'en',
         voice_id: selectedVoice,
       });
     } catch (error) {
@@ -279,7 +320,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
         `"${item.originalText.replace(/"/g, '""')}"`,
         `"${item.translatedText.replace(/"/g, '""')}"`,
         item.sourceLanguage || 'auto',
-        item.targetLanguage || targetLanguage,
+        item.targetLanguage || detectedPartnerLanguage || 'en',
       ].join(','))
     ].join('\n');
 
@@ -298,22 +339,24 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
     
     setIsPreviewingVoice(true);
     try {
-      const sampleText = targetLanguage === 'ru' 
+      // Preview in partner's language (what they will hear)
+      const previewLang = detectedPartnerLanguage || (myLanguage === 'ru' ? 'en' : 'ru');
+      const sampleText = previewLang === 'ru' 
         ? 'Привет! Это пример моего голоса.' 
-        : targetLanguage === 'en'
+        : previewLang === 'en'
         ? 'Hello! This is a sample of my voice.'
-        : targetLanguage === 'es'
+        : previewLang === 'es'
         ? 'Hola! Este es un ejemplo de mi voz.'
-        : targetLanguage === 'de'
+        : previewLang === 'de'
         ? 'Hallo! Dies ist ein Beispiel meiner Stimme.'
-        : targetLanguage === 'fr'
+        : previewLang === 'fr'
         ? 'Bonjour! Ceci est un exemple de ma voix.'
         : 'Hello! This is a sample of my voice.';
 
       const formData = new FormData();
       const silentBlob = new Blob([new Uint8Array(1000)], { type: 'audio/webm' });
       formData.append('audio', silentBlob, 'audio.webm');
-      formData.append('targetLanguage', targetLanguage);
+      formData.append('targetLanguage', previewLang);
       formData.append('voiceId', selectedVoice);
       formData.append('previewText', sampleText);
 
@@ -409,13 +452,14 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
     setIsProcessing(true);
     
     try {
+      // For outgoing: translate from my language to partner's language
+      const targetLang = detectedPartnerLanguage || (myLanguage === 'ru' ? 'en' : 'ru');
+      
       const formData = new FormData();
       formData.append('audio', audioBlob, 'audio.webm');
-      formData.append('targetLanguage', targetLanguage);
+      formData.append('targetLanguage', targetLang);
       formData.append('voiceId', selectedVoice);
-      if (sourceLanguage !== 'auto') {
-        formData.append('sourceLanguage', sourceLanguage);
-      }
+      formData.append('sourceLanguage', myLanguage);
 
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/realtime-translate`,
@@ -434,14 +478,24 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
       const result = await response.json();
       
       if (result.translatedText && result.translatedText.trim()) {
+        // Auto-detect partner's language from our translation target
+        if (result.detectedLanguage && result.detectedLanguage !== myLanguage) {
+          // We detected a different language in our speech - update partner detection
+          const detected = detectLanguageFromText(result.originalText);
+          if (detected && detected !== myLanguage && !detectedPartnerLanguage) {
+            console.log('Auto-detected partner language from context:', detected);
+          }
+        }
+        
         const entry: TranslationEntry = {
           id: Date.now().toString(),
           originalText: result.originalText,
           translatedText: result.translatedText,
           timestamp: new Date(),
-          sourceLanguage: result.detectedLanguage,
-          targetLanguage: result.targetLanguage,
+          sourceLanguage: myLanguage,
+          targetLanguage: targetLang,
           voiceId: result.voiceId,
+          direction: 'outgoing',
         };
 
         if (result.audioContent) {
@@ -457,7 +511,9 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
                 type: 'translation_audio',
                 audioBase64: result.audioContent,
                 text: result.translatedText,
-                lang: result.targetLanguage,
+                originalText: result.originalText,
+                lang: targetLang,
+                sourceLang: myLanguage,
               });
               // Send to all participants via private message (empty recipient = broadcast)
               jitsiApi.executeCommand('sendChatMessage', translationPayload, '', { ignorePrivacy: true });
@@ -473,10 +529,11 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
         trackEvent({
           eventType: 'translation_completed',
           eventData: {
-            source_language: result.detectedLanguage || sourceLanguage,
-            target_language: targetLanguage,
+            source_language: myLanguage,
+            target_language: targetLang,
             voice_id: selectedVoice,
             text_length: result.originalText?.length || 0,
+            direction: 'outgoing',
           },
         });
         
@@ -489,7 +546,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
     } finally {
       setIsProcessing(false);
     }
-  }, [targetLanguage, sourceLanguage, selectedVoice, playNextAudio, user, roomId, trackEvent]);
+  }, [myLanguage, detectedPartnerLanguage, selectedVoice, playNextAudio, user, roomId, trackEvent, enableBroadcast, jitsiApi]);
 
   const startVadRecording = useCallback(() => {
     if (!streamRef.current || vadRecordingRef.current) return;
@@ -842,44 +899,68 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
           </TabsList>
 
           <TabsContent value="translate" className="flex-1 flex flex-col gap-2 overflow-hidden mt-2">
-            {/* Languages */}
-            <div className="flex items-center gap-1">
-              <Select value={sourceLanguage} onValueChange={setSourceLanguage}>
-                <SelectTrigger className="h-9 text-xs bg-muted/40 border-border/40 flex-1">
-                  <div className="flex items-center gap-1.5">
-                    <span>{sourceLanguage === 'auto' ? '🌍' : LANGUAGES.find(l => l.code === sourceLanguage)?.flag}</span>
-                    <span className="truncate">
-                      {sourceLanguage === 'auto' ? t.translator.autoDetect : LANGUAGES.find(l => l.code === sourceLanguage)?.name}
-                    </span>
+            {/* Symmetric Translation - My Language */}
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <div className="flex-1">
+                  <div className="text-[10px] text-muted-foreground mb-1">{t.translator.myLanguage || 'Я говорю на'}</div>
+                  <Select value={myLanguage} onValueChange={setMyLanguage}>
+                    <SelectTrigger className="h-9 text-xs bg-muted/40 border-border/40">
+                      <div className="flex items-center gap-1.5">
+                        <span>{LANGUAGES.find(l => l.code === myLanguage)?.flag}</span>
+                        <span className="truncate">{LANGUAGES.find(l => l.code === myLanguage)?.name}</span>
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LANGUAGES.map(lang => (
+                        <SelectItem key={lang.code} value={lang.code}>
+                          {lang.flag} {lang.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="flex flex-col items-center justify-center pt-4">
+                  <div className="flex items-center gap-1">
+                    <ArrowRight className="h-3 w-3 text-primary" />
+                    <ArrowRight className="h-3 w-3 text-primary rotate-180" />
                   </div>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="auto">🌍 {t.translator.autoDetect}</SelectItem>
-                  {LANGUAGES.map(lang => (
-                    <SelectItem key={lang.code} value={lang.code}>
-                      {lang.flag} {lang.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <ArrowRight className="h-3 w-3 text-muted-foreground shrink-0" />
-
-              <Select value={targetLanguage} onValueChange={setTargetLanguage}>
-                <SelectTrigger className="h-9 text-xs bg-muted/40 border-border/40 flex-1">
-                  <div className="flex items-center gap-1.5">
-                    <span>{LANGUAGES.find(l => l.code === targetLanguage)?.flag}</span>
-                    <span className="truncate">{LANGUAGES.find(l => l.code === targetLanguage)?.name}</span>
+                </div>
+                
+                <div className="flex-1">
+                  <div className="text-[10px] text-muted-foreground mb-1">{t.translator.partnerLanguage || 'Собеседник'}</div>
+                  <div className="h-9 px-3 flex items-center gap-1.5 text-xs bg-muted/20 border border-dashed border-border/40 rounded-md">
+                    {detectedPartnerLanguage ? (
+                      <>
+                        <span>{LANGUAGES.find(l => l.code === detectedPartnerLanguage)?.flag}</span>
+                        <span className="truncate">{LANGUAGES.find(l => l.code === detectedPartnerLanguage)?.name}</span>
+                        <Badge variant="outline" className="text-[9px] h-4 ml-auto">{t.translator.detected || 'Авто'}</Badge>
+                      </>
+                    ) : (
+                      <span className="text-muted-foreground italic">{t.translator.waitingForPartner || 'Ожидаю...'}</span>
+                    )}
                   </div>
-                </SelectTrigger>
-                <SelectContent>
-                  {LANGUAGES.map(lang => (
-                    <SelectItem key={lang.code} value={lang.code}>
-                      {lang.flag} {lang.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                </div>
+              </div>
+              
+              {/* Manual partner language override */}
+              {!detectedPartnerLanguage && (
+                <div className="flex items-center gap-2 text-[10px]">
+                  <span className="text-muted-foreground">{t.translator.orSelectManually || 'Или выберите вручную:'}</span>
+                  <div className="flex flex-wrap gap-1">
+                    {LANGUAGES.filter(l => l.code !== myLanguage).slice(0, 4).map(lang => (
+                      <button
+                        key={lang.code}
+                        onClick={() => setDetectedPartnerLanguage(lang.code)}
+                        className="px-2 py-0.5 rounded bg-muted/40 hover:bg-muted/60 transition-colors"
+                      >
+                        {lang.flag}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Voice */}
