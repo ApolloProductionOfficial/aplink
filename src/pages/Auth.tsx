@@ -43,6 +43,7 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string; name?: string; username?: string; confirmPassword?: string }>({});
   const [requires2FA, setRequires2FA] = useState(false);
+  const [requires2FAForReset, setRequires2FAForReset] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [hasSavedData, setHasSavedData] = useState(false);
   const [sessionRecoveryMessage, setSessionRecoveryMessage] = useState<string | null>(null);
@@ -66,13 +67,31 @@ const Auth = () => {
     }
   }, [user, isLoading, navigate, authMode, redirectTo]);
 
-  // Update authMode when URL params change
+  // Update authMode when URL params change and check if 2FA is required for reset
   useEffect(() => {
     if (mode === 'register') setAuthMode('register');
     else if (mode === 'forgot') setAuthMode('forgot');
     else if (mode === 'reset') {
       setAuthMode('reset');
       setSessionRecoveryMessage('Введите новый пароль для вашей учётной записи');
+      
+      // Check if user has 2FA enabled - if so, they need to verify first
+      const checkMFAForReset = async () => {
+        try {
+          const { data: factorsData } = await supabase.auth.mfa.listFactors();
+          if (factorsData?.totp && factorsData.totp.length > 0) {
+            // Check current AAL level
+            const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+            if (aalData?.currentLevel !== 'aal2') {
+              setRequires2FAForReset(true);
+              setSessionRecoveryMessage('Для смены пароля необходимо подтвердить 2FA');
+            }
+          }
+        } catch (e) {
+          console.log('MFA check for reset:', e);
+        }
+      };
+      setTimeout(checkMFAForReset, 0);
     }
   }, [mode]);
 
@@ -361,7 +380,7 @@ const Auth = () => {
         </div>
       </header>
 
-      {/* Auth Form or 2FA Verification */}
+      {/* Auth Form, 2FA Verification for login, or 2FA for password reset */}
       <main className="relative z-10 min-h-screen flex items-center justify-center px-4 pt-20">
         {requires2FA ? (
           <TwoFactorVerify
@@ -375,6 +394,20 @@ const Auth = () => {
             onCancel={() => {
               setRequires2FA(false);
               supabase.auth.signOut();
+            }}
+          />
+        ) : requires2FAForReset ? (
+          <TwoFactorVerify
+            onSuccess={() => {
+              setRequires2FAForReset(false);
+              setSessionRecoveryMessage('2FA подтверждена! Теперь введите новый пароль');
+              toast({
+                title: '2FA подтверждена',
+                description: 'Теперь вы можете установить новый пароль',
+              });
+            }}
+            onCancel={() => {
+              navigate('/auth');
             }}
           />
         ) : (
