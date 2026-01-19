@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,13 +8,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { 
   Activity, CheckCircle, AlertTriangle, XCircle, Clock, 
   Brain, Loader2, Code, Copy, Check, Search, Shield, 
-  Trash2, History, Bug, TrendingUp, BarChart3
+  Trash2, History, Bug, TrendingUp, BarChart3, Radio, Wifi, WifiOff
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format, subDays, startOfDay } from "date-fns";
 import { ru } from "date-fns/locale";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from "recharts";
+import { useRealtimeErrorMonitor } from "@/hooks/useRealtimeErrorMonitor";
 
 interface ErrorLog {
   id: string;
@@ -100,6 +101,12 @@ const SystemStatusDashboard = ({ errorLogs, errorStats, onClearOldLogs, clearing
   const [selectedRecord, setSelectedRecord] = useState<DiagnosticsRecord | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [trendData, setTrendData] = useState<TrendData[]>([]);
+
+  // Real-time error monitoring
+  const { recentErrors, isConnected, newErrorCount, clearNewErrorCount } = useRealtimeErrorMonitor({
+    showToast: true,
+    playSound: true,
+  });
 
   // Calculate 7-day trend data
   useEffect(() => {
@@ -296,6 +303,28 @@ const SystemStatusDashboard = ({ errorLogs, errorStats, onClearOldLogs, clearing
                 <StatusIcon className="w-3 h-3 mr-1" />
                 {overallStatus.text}
               </Badge>
+              {/* Realtime connection indicator */}
+              <div className="flex items-center gap-1.5">
+                {isConnected ? (
+                  <Badge variant="outline" className="bg-green-500/10 text-green-400 border-green-500/30 gap-1.5 animate-pulse">
+                    <Radio className="w-3 h-3" />
+                    Live
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="bg-gray-500/10 text-gray-400 border-gray-500/30 gap-1.5">
+                    <WifiOff className="w-3 h-3" />
+                    Offline
+                  </Badge>
+                )}
+                {newErrorCount > 0 && (
+                  <Badge 
+                    className="bg-red-500 text-white border-0 cursor-pointer animate-bounce"
+                    onClick={clearNewErrorCount}
+                  >
+                    +{newErrorCount} новых
+                  </Badge>
+                )}
+              </div>
             </div>
             <div className="flex gap-2 flex-wrap">
               <Button variant="outline" size="sm" onClick={copyAllErrors} className="gap-2">
@@ -342,6 +371,46 @@ const SystemStatusDashboard = ({ errorLogs, errorStats, onClearOldLogs, clearing
               <div className="text-xs text-gray-400">Отправлено</div>
             </div>
           </div>
+
+          {/* Realtime Errors Feed - Only show when there are new errors */}
+          {recentErrors.length > 0 && (
+            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Radio className="w-4 h-4 text-red-400 animate-pulse" />
+                  <span className="text-sm font-medium text-red-400">Live ошибки</span>
+                </div>
+                <Button variant="ghost" size="sm" onClick={clearNewErrorCount} className="h-6 px-2 text-xs text-gray-400 hover:text-white">
+                  Скрыть
+                </Button>
+              </div>
+              <div className="space-y-1.5 max-h-32 overflow-y-auto">
+                {recentErrors.slice(0, 5).map((error, idx) => (
+                  <div 
+                    key={error.id} 
+                    className={`p-2 rounded bg-gray-800/50 text-xs ${idx === 0 ? 'ring-1 ring-red-500/50' : ''}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      {error.severity === 'critical' ? (
+                        <XCircle className="w-3 h-3 text-red-500 flex-shrink-0" />
+                      ) : error.severity === 'error' ? (
+                        <AlertTriangle className="w-3 h-3 text-amber-500 flex-shrink-0" />
+                      ) : (
+                        <AlertTriangle className="w-3 h-3 text-yellow-500 flex-shrink-0" />
+                      )}
+                      <span className="text-white font-medium truncate">{error.error_type}</span>
+                      <span className="text-gray-500 text-[10px] ml-auto flex-shrink-0">
+                        {format(new Date(error.created_at), 'HH:mm:ss')}
+                      </span>
+                    </div>
+                    <p className="text-gray-400 truncate mt-0.5 pl-5">
+                      {error.error_message.substring(0, 80)}{error.error_message.length > 80 ? '...' : ''}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* 7-Day Trend Chart */}
           <div className="p-4 rounded-lg bg-gray-700/20">
