@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,14 +9,18 @@ const corsHeaders = {
 const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
 const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
 
-// Laura voice - clear female voice for notifications
-const VOICE_ID = "FGY2WhTYpPnrIDTdsKH5";
+// Voice IDs
+const VOICES = {
+  female: "FGY2WhTYpPnrIDTdsKH5", // Laura
+  male: "JBFqnCBsd6RMkjVDRZzb", // George
+};
 
 interface VoiceNotificationRequest {
   telegram_id: string;
   caller_name: string;
   is_group_call?: boolean;
   participant_count?: number;
+  user_id?: string; // Optional: to fetch user's voice preferences
 }
 
 serve(async (req) => {
@@ -25,7 +29,7 @@ serve(async (req) => {
   }
 
   try {
-    const { telegram_id, caller_name, is_group_call, participant_count }: VoiceNotificationRequest = await req.json();
+    const { telegram_id, caller_name, is_group_call, participant_count, user_id }: VoiceNotificationRequest = await req.json();
 
     if (!TELEGRAM_BOT_TOKEN) {
       throw new Error("TELEGRAM_BOT_TOKEN not configured");
@@ -41,6 +45,43 @@ serve(async (req) => {
 
     console.log(`Generating voice notification for ${telegram_id} from ${caller_name}`);
 
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    // Get user's voice preferences if user_id provided or find by telegram_id
+    let voicePreference: 'female' | 'male' = 'female';
+    let voiceSpeed = 1.0;
+
+    if (user_id) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("user_id", user_id)
+        .single();
+
+      if (profile) {
+        voicePreference = (profile as Record<string, unknown>).voice_preference as 'female' | 'male' || 'female';
+        voiceSpeed = (profile as Record<string, unknown>).voice_speed as number || 1.0;
+      }
+    } else {
+      // Try to find user by telegram_id
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("telegram_id", parseInt(telegram_id))
+        .single();
+
+      if (profile) {
+        voicePreference = (profile as Record<string, unknown>).voice_preference as 'female' | 'male' || 'female';
+        voiceSpeed = (profile as Record<string, unknown>).voice_speed as number || 1.0;
+      }
+    }
+
+    const voiceId = VOICES[voicePreference];
+    console.log(`Using voice: ${voicePreference} (${voiceId}), speed: ${voiceSpeed}`);
+
     // Generate voice message text
     let messageText: string;
     if (is_group_call && participant_count) {
@@ -51,7 +92,7 @@ serve(async (req) => {
 
     // Generate audio using ElevenLabs TTS
     const ttsResponse = await fetch(
-      `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}?output_format=mp3_44100_128`,
+      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`,
       {
         method: "POST",
         headers: {
@@ -66,7 +107,7 @@ serve(async (req) => {
             similarity_boost: 0.75,
             style: 0.3,
             use_speaker_boost: true,
-            speed: 1.1,
+            speed: voiceSpeed,
           },
         }),
       }
@@ -111,6 +152,8 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         message_id: telegramData.result?.message_id,
+        voice_used: voicePreference,
+        speed_used: voiceSpeed,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

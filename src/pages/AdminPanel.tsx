@@ -21,6 +21,7 @@ import DiagnosticsStatusCard from '@/components/DiagnosticsStatusCard';
 import DiagnosticsHistory from '@/components/DiagnosticsHistory';
 import TelegramSetupCard from '@/components/TelegramSetupCard';
 import TelegramActivityChart from '@/components/TelegramActivityChart';
+import GroupCallHistory from '@/components/GroupCallHistory';
 import { useAdminPushNotifications } from '@/hooks/useAdminPushNotifications';
 
 interface MeetingTranscript {
@@ -1128,6 +1129,9 @@ const AdminPanel = () => {
             
             {/* Telegram Mini App Activity Chart */}
             <TelegramActivityChart />
+            
+            {/* Group Call History */}
+            <GroupCallHistory />
             
             {/* Telegram Mini App Setup */}
             <TelegramSetupCard publishedUrl="https://aplink.live" />

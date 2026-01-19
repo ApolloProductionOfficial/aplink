@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import CustomCursor from '@/components/CustomCursor';
+import VoiceSettings from '@/components/VoiceSettings';
 
 const Profile = () => {
   const { user, isLoading: authLoading } = useAuth();
@@ -332,6 +333,11 @@ const Profile = () => {
               </>
             )}
           </Button>
+        </div>
+        
+        {/* Voice Settings */}
+        <div className="mt-6">
+          <VoiceSettings />
         </div>
       </main>
     </div>
