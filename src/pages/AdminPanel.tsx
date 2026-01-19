@@ -25,6 +25,8 @@ import GroupCallHistory from '@/components/GroupCallHistory';
 import CallScheduler from '@/components/CallScheduler';
 import TelegramMiniAppAnalytics from '@/components/TelegramMiniAppAnalytics';
 import { useAdminPushNotifications } from '@/hooks/useAdminPushNotifications';
+import ErrorStatsExport from '@/components/ErrorStatsExport';
+import DiagnosticsRecommendations from '@/components/DiagnosticsRecommendations';
 
 interface MeetingTranscript {
   id: string;
@@ -1157,7 +1159,8 @@ const AdminPanel = () => {
                 <Bug className="w-6 h-6 text-primary" />
                 Мониторинг и диагностика
               </h1>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
+                <ErrorStatsExport errorLogs={errorLogs} errorStats={errorStats} />
                 <Button
                   variant="default"
                   size="sm"
@@ -1303,6 +1306,13 @@ const AdminPanel = () => {
                   </div>
                 </CardContent>
               </Card>
+            )}
+
+            {/* Recommendations when there are issues */}
+            {diagnosticsResults && diagnosticsResults.results.some(r => r.status !== 'ok') && (
+              <DiagnosticsRecommendations 
+                results={diagnosticsResults.results} 
+              />
             )}
 
             {errorsLoading ? (
