@@ -380,6 +380,7 @@ const Auth = () => {
                         value={displayName}
                         onChange={(e) => setDisplayName(e.target.value)}
                         className="pl-10 h-12"
+                        autoComplete="name"
                       />
                     </div>
                     {errors.name && (
@@ -396,6 +397,7 @@ const Auth = () => {
                         onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
                         className="pl-10 h-12"
                         maxLength={20}
+                        autoComplete="username"
                       />
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
@@ -418,6 +420,8 @@ const Auth = () => {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="pl-10 h-12"
+                      autoComplete="email"
+                      name="email"
                     />
                   </div>
                   {errors.email && (
@@ -436,6 +440,8 @@ const Auth = () => {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="pl-10 h-12"
+                      autoComplete={authMode === 'login' ? 'current-password' : 'new-password'}
+                      name="password"
                     />
                   </div>
                   {errors.password && (
