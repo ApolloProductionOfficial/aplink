@@ -198,8 +198,10 @@ export const useTranslationBroadcast = (jitsiApi: any): UseTranslationBroadcastR
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
+      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+        audioContextRef.current.close().catch(() => {
+          // Ignore errors when closing already closed context
+        });
       }
     };
   }, []);

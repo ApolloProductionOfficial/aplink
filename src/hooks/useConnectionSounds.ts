@@ -23,7 +23,11 @@ const createSound = (frequency: number, duration: number, type: 'success' | 'err
     
     // Cleanup
     setTimeout(() => {
-      audioContext.close();
+      if (audioContext.state !== 'closed') {
+        audioContext.close().catch(() => {
+          // Ignore errors when closing already closed context
+        });
+      }
     }, duration * 1000 + 100);
   } catch (e) {
     console.warn('Could not play sound:', e);

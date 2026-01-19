@@ -754,8 +754,10 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
       clearInterval(vadIntervalRef.current);
       vadIntervalRef.current = null;
     }
-    if (audioContextRef.current) {
-      audioContextRef.current.close();
+    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+      audioContextRef.current.close().catch(() => {
+        // Ignore errors when closing already closed context
+      });
       audioContextRef.current = null;
     }
     analyserRef.current = null;
