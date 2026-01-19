@@ -26,7 +26,7 @@ import CallScheduler from '@/components/CallScheduler';
 import TelegramMiniAppAnalytics from '@/components/TelegramMiniAppAnalytics';
 import { useAdminPushNotifications } from '@/hooks/useAdminPushNotifications';
 import ErrorStatsExport from '@/components/ErrorStatsExport';
-import UnifiedAIDiagnostics from '@/components/UnifiedAIDiagnostics';
+import SystemStatusDashboard from '@/components/SystemStatusDashboard';
 
 interface MeetingTranscript {
   id: string;
@@ -1162,242 +1162,18 @@ const AdminPanel = () => {
               <ErrorStatsExport errorLogs={errorLogs} errorStats={errorStats} />
             </div>
 
-            {/* Unified AI Diagnostics - всё в одном месте */}
-            <UnifiedAIDiagnostics 
-              errorLogs={errorLogs}
-              onClearOldLogs={handleClearOldLogs}
-              clearingLogs={clearingOldLogs}
-            />
-
-            {/* Diagnostics Status Card */}
-            <DiagnosticsStatusCard 
-              onRunDiagnostics={handleRunDiagnostics}
-              isRunning={runningDiagnostics}
-            />
-
-
             {errorsLoading ? (
               <div className="flex items-center justify-center py-20">
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
               </div>
-            ) : errorStats ? (
-              <>
-                {/* Stats cards */}
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                  <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-                    <CardContent className="pt-6">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-destructive/20">
-                          <Bug className="w-5 h-5 text-destructive" />
-                        </div>
-                        <div>
-                          <p className="text-2xl font-bold">{errorStats.total}</p>
-                          <p className="text-xs text-muted-foreground">Всего ошибок</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-                    <CardContent className="pt-6">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-amber-500/20">
-                          <Clock className="w-5 h-5 text-amber-500" />
-                        </div>
-                        <div>
-                          <p className="text-2xl font-bold">{errorStats.today}</p>
-                          <p className="text-xs text-muted-foreground">Сегодня</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-                    <CardContent className="pt-6">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-blue-500/20">
-                          <Calendar className="w-5 h-5 text-blue-500" />
-                        </div>
-                        <div>
-                          <p className="text-2xl font-bold">{errorStats.week}</p>
-                          <p className="text-xs text-muted-foreground">За неделю</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-                    <CardContent className="pt-6">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-green-500/20">
-                          <AlertCircle className="w-5 h-5 text-green-500" />
-                        </div>
-                        <div>
-                          <p className="text-2xl font-bold">{errorStats.notified}</p>
-                          <p className="text-xs text-muted-foreground">Отправлено</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-                    <CardContent className="pt-6">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-red-500/20">
-                          <XCircle className="w-5 h-5 text-red-500" />
-                        </div>
-                        <div>
-                          <p className="text-2xl font-bold">{errorStats.bySeverity.find(s => s.severity === 'critical')?.count || 0}</p>
-                          <p className="text-xs text-muted-foreground">Критических</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-6">
-                  {/* By type */}
-                  <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-                    <CardHeader>
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <Bug className="w-5 h-5 text-primary" />
-                        По типу ошибки
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {errorStats.byType.length === 0 ? (
-                        <p className="text-muted-foreground text-sm">Нет данных</p>
-                      ) : (
-                        <div className="space-y-2 max-h-[200px] overflow-y-auto">
-                          {errorStats.byType.slice(0, 10).map((item, i) => (
-                            <div key={i} className="flex items-center justify-between text-sm">
-                              <span className="font-mono text-xs truncate flex-1 mr-2">{item.type}</span>
-                              <Badge variant="secondary">{item.count}</Badge>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-
-                  {/* By severity */}
-                  <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-                    <CardHeader>
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <AlertTriangle className="w-5 h-5 text-primary" />
-                        По уровню критичности
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {errorStats.bySeverity.length === 0 ? (
-                        <p className="text-muted-foreground text-sm">Нет данных</p>
-                      ) : (
-                        <div className="space-y-3">
-                          {errorStats.bySeverity.map((item, i) => (
-                            <div key={i} className="flex items-center justify-between text-sm">
-                              <div className="flex items-center gap-2">
-                                {item.severity === 'critical' && <XCircle className="w-4 h-4 text-red-500" />}
-                                {item.severity === 'error' && <AlertCircle className="w-4 h-4 text-orange-500" />}
-                                {item.severity === 'warning' && <AlertTriangle className="w-4 h-4 text-amber-500" />}
-                                {item.severity === 'info' && <Info className="w-4 h-4 text-blue-500" />}
-                                <span className="capitalize">{item.severity}</span>
-                              </div>
-                              <Badge 
-                                variant="secondary"
-                                className={
-                                  item.severity === 'critical' ? 'bg-red-500/20 text-red-500' :
-                                  item.severity === 'error' ? 'bg-orange-500/20 text-orange-500' :
-                                  item.severity === 'warning' ? 'bg-amber-500/20 text-amber-500' :
-                                  'bg-blue-500/20 text-blue-500'
-                                }
-                              >
-                                {item.count}
-                              </Badge>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Filter and error list */}
-                <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-                  <CardHeader>
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <Clock className="w-5 h-5 text-primary" />
-                        Последние ошибки
-                      </CardTitle>
-                      <div className="flex gap-1.5 flex-wrap">
-                        {(['all', 'critical', 'error', 'warning', 'info'] as const).map((filter) => (
-                          <Button
-                            key={filter}
-                            variant={errorFilter === filter ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => setErrorFilter(filter)}
-                            className="text-xs h-7"
-                          >
-                            {filter === 'all' ? 'Все' : filter.charAt(0).toUpperCase() + filter.slice(1)}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3 max-h-[500px] overflow-y-auto">
-                      {errorLogs
-                        .filter(log => errorFilter === 'all' || log.severity === errorFilter)
-                        .slice(0, 100)
-                        .map((log) => (
-                          <div key={log.id} className="border border-border/30 rounded-lg p-3 space-y-2">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex items-center gap-2">
-                                {log.severity === 'critical' && <XCircle className="w-4 h-4 text-red-500 shrink-0" />}
-                                {log.severity === 'error' && <AlertCircle className="w-4 h-4 text-orange-500 shrink-0" />}
-                                {log.severity === 'warning' && <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />}
-                                {log.severity === 'info' && <Info className="w-4 h-4 text-blue-500 shrink-0" />}
-                                <Badge variant="outline" className="text-xs shrink-0">
-                                  {log.error_type}
-                                </Badge>
-                                {log.notified && (
-                                  <Badge variant="secondary" className="text-xs bg-green-500/20 text-green-500">
-                                    📧
-                                  </Badge>
-                                )}
-                              </div>
-                              <span className="text-xs text-muted-foreground shrink-0">
-                                {new Date(log.created_at).toLocaleString('ru-RU')}
-                              </span>
-                            </div>
-                            <p className="text-sm text-foreground/80 break-all line-clamp-2">
-                              {log.error_message}
-                            </p>
-                            {log.source && (
-                              <p className="text-xs text-muted-foreground">
-                                Источник: {log.source}
-                              </p>
-                            )}
-                          </div>
-                        ))}
-                      {errorLogs.filter(log => errorFilter === 'all' || log.severity === errorFilter).length === 0 && (
-                        <p className="text-center text-muted-foreground py-8">Нет ошибок с выбранным фильтром</p>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              </>
             ) : (
-              <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-                <CardContent className="py-12 text-center text-muted-foreground">
-                  <Bug className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>Нет данных об ошибках</p>
-                </CardContent>
-              </Card>
+              <SystemStatusDashboard 
+                errorLogs={errorLogs}
+                errorStats={errorStats}
+                onClearOldLogs={handleClearOldLogs}
+                clearingLogs={clearingOldLogs}
+              />
             )}
-            
-            {/* Diagnostics History */}
-            <DiagnosticsHistory />
           </div>
         ) : activeTab === 'transcripts' ? (
           <div className="space-y-6">
