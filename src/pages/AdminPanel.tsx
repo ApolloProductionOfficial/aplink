@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, Users, Calendar, Clock, MapPin, Globe, Shield, User, Camera, Save, Trash2, Loader2, BarChart3, Languages, MousePointer, TrendingUp, Eye, Download, Share2, Search, X, Link2, Copy, Link2Off, AlertTriangle, Bug, XCircle, AlertCircle, Info, Send, Check } from 'lucide-react';
+import { ArrowLeft, FileText, Users, Calendar, Clock, MapPin, Globe, Shield, User, Camera, Save, Trash2, Loader2, BarChart3, Languages, MousePointer, TrendingUp, Eye, Download, Share2, Search, X, Link2, Copy, Link2Off, AlertTriangle, Bug, XCircle, AlertCircle, Info, Send, Check, MessageCircle, Smartphone } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -939,8 +939,8 @@ const AdminPanel = () => {
               onClick={() => setActiveTab('telegram')}
               className="gap-1 md:gap-2 px-2 md:px-3 text-xs md:text-sm"
             >
-              <Users className="w-3.5 h-3.5 md:w-4 md:h-4" />
-              <span className="hidden sm:inline">Telegram</span>
+              <MessageCircle className="w-3.5 h-3.5 md:w-4 md:h-4" />
+              <span className="hidden sm:inline">Telegram App</span>
             </Button>
             <Button
               variant={activeTab === 'profile' ? 'default' : 'outline'}
@@ -967,11 +967,7 @@ const AdminPanel = () => {
               {admin.siteAnalytics || 'Аналитика сайта'}
             </h1>
             
-            {/* Diagnostics Status Card */}
-            <DiagnosticsStatusCard 
-              onRunDiagnostics={handleRunDiagnostics}
-              isRunning={runningDiagnostics}
-            />
+            
             {analyticsLoading ? (
               <div className="flex items-center justify-center py-20">
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -1134,92 +1130,47 @@ const AdminPanel = () => {
                 </CardContent>
               </Card>
             )}
+          </div>
+        ) : activeTab === 'telegram' ? (
+          <div className="space-y-6">
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <Smartphone className="w-6 h-6 text-primary" />
+              Telegram App
+            </h1>
             
-            {/* Diagnostics History */}
-            <DiagnosticsHistory />
+            {/* Telegram Mini App Setup */}
+            <TelegramSetupCard publishedUrl="https://aplink.live" />
+            
+            {/* Full Telegram Mini App Analytics */}
+            <TelegramMiniAppAnalytics />
             
             {/* Group Call History */}
             <GroupCallHistory />
             
             {/* Call Scheduler */}
             <CallScheduler />
-            
-            {/* Telegram Mini App Setup */}
-            <TelegramSetupCard publishedUrl="https://aplink.live" />
-          </div>
-        ) : activeTab === 'telegram' ? (
-          <div className="space-y-6">
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Users className="w-6 h-6 text-primary" />
-              Telegram Mini App
-            </h1>
-            
-            {/* Full Telegram Mini App Analytics */}
-            <TelegramMiniAppAnalytics />
           </div>
         ) : activeTab === 'errors' ? (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-4">
               <h1 className="text-2xl font-bold flex items-center gap-2">
                 <Bug className="w-6 h-6 text-primary" />
-                Мониторинг ошибок
+                Мониторинг и диагностика
               </h1>
-              <div className="flex gap-2 flex-wrap">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handlePingBot}
-                  disabled={sendingPing}
-                  className="gap-2"
-                >
-                  {sendingPing ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Send className="w-4 h-4" />
-                  )}
-                  🏓 Пинг
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleSendStats}
-                  disabled={sendingStats}
-                  className="gap-2"
-                >
-                  {sendingStats ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <BarChart3 className="w-4 h-4" />
-                  )}
-                  /stats
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleTestTelegramNotification}
-                  disabled={testingSendTelegram}
-                  className="gap-2"
-                >
-                  {testingSendTelegram ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Bug className="w-4 h-4" />
-                  )}
-                  Тест ошибки
-                </Button>
+              <div className="flex gap-2">
                 <Button
                   variant="default"
                   size="sm"
                   onClick={handleRunDiagnostics}
                   disabled={runningDiagnostics}
-                  className="gap-2 bg-primary"
+                  className="gap-2"
                 >
                   {runningDiagnostics ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
                     <Search className="w-4 h-4" />
                   )}
-                  🔍 Диагностика
+                  Диагностика
                 </Button>
                 <Button
                   variant="default"
@@ -1233,7 +1184,7 @@ const AdminPanel = () => {
                   ) : (
                     <Shield className="w-4 h-4" />
                   )}
-                  🔧 Автофикс
+                  Автофикс
                 </Button>
                 <Button
                   variant="destructive"
@@ -1247,10 +1198,16 @@ const AdminPanel = () => {
                   ) : (
                     <Trash2 className="w-4 h-4" />
                   )}
-                  🗑️ Очистить 7д+
+                  Очистка
                 </Button>
               </div>
             </div>
+
+            {/* Diagnostics Status Card */}
+            <DiagnosticsStatusCard 
+              onRunDiagnostics={handleRunDiagnostics}
+              isRunning={runningDiagnostics}
+            />
 
             {/* Clear Logs Confirmation Dialog */}
             {showClearLogsConfirm && (
@@ -1567,6 +1524,9 @@ const AdminPanel = () => {
                 </CardContent>
               </Card>
             )}
+            
+            {/* Diagnostics History */}
+            <DiagnosticsHistory />
           </div>
         ) : activeTab === 'transcripts' ? (
           <div className="space-y-6">

@@ -89,9 +89,13 @@ serve(async (req) => {
 
       // Check for recurring error patterns
       const errorPatterns = new Map<string, number>();
+      const errorSources = new Map<string, number>();
       (recentErrors || []).forEach((err) => {
         const key = `${err.error_type}:${err.source || "unknown"}`;
         errorPatterns.set(key, (errorPatterns.get(key) || 0) + 1);
+        if (err.source) {
+          errorSources.set(err.source, (errorSources.get(err.source) || 0) + 1);
+        }
       });
 
       const recurringErrors = Array.from(errorPatterns.entries())
@@ -99,14 +103,45 @@ serve(async (req) => {
         .sort((a, b) => b[1] - a[1]);
 
       if (recurringErrors.length > 0) {
+        // Generate recommendations based on error patterns
+        const recommendations: string[] = [];
+        
+        recurringErrors.forEach(([pattern, count]) => {
+          const [errorType, source] = pattern.split(':');
+          
+          if (errorType.includes('TypeError') || errorType.includes('ReferenceError')) {
+            recommendations.push(`🔧 ${errorType} (${count}x): Проверьте типы данных и наличие переменных в ${source}`);
+          } else if (errorType.includes('Network') || errorType.includes('fetch')) {
+            recommendations.push(`🌐 Сетевые ошибки (${count}x): Добавьте обработку offline-режима и retry-логику`);
+          } else if (errorType.includes('Auth') || errorType.includes('JWT')) {
+            recommendations.push(`🔐 Ошибки авторизации (${count}x): Проверьте токены и сессии пользователей`);
+          } else if (errorType.includes('Database') || errorType.includes('Supabase')) {
+            recommendations.push(`🗃️ Ошибки БД (${count}x): Проверьте RLS-политики и структуру запросов`);
+          } else if (source.includes('edge-function')) {
+            recommendations.push(`⚡ Edge Function ошибки (${count}x): Проверьте логи функций и API-ключи`);
+          } else {
+            recommendations.push(`⚠️ ${errorType} (${count}x) в ${source}: Требует ручной проверки`);
+          }
+        });
+
         results.push({
           category: "Errors",
           name: "Recurring Error Patterns",
           status: "warning",
           message: `Found ${recurringErrors.length} recurring error pattern(s)`,
-          details: { patterns: recurringErrors.slice(0, 5) },
+          details: { 
+            patterns: recurringErrors.slice(0, 5),
+            recommendations: recommendations.slice(0, 5)
+          },
           fixable: true,
           fixAction: "clear_old_errors",
+        });
+      } else {
+        results.push({
+          category: "Errors",
+          name: "Error Patterns",
+          status: "ok",
+          message: "No recurring error patterns detected",
         });
       }
     }

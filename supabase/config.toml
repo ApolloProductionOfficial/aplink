@@ -65,3 +65,6 @@ verify_jwt = false
 
 [functions.send-push-notification]
 verify_jwt = false
+
+[functions.scheduled-call-reminder]
+verify_jwt = false
