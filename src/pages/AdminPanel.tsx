@@ -134,7 +134,8 @@ const AdminPanel = () => {
   const [errorsLoading, setErrorsLoading] = useState(false);
   const [errorFilter, setErrorFilter] = useState<'all' | 'critical' | 'error' | 'warning' | 'info'>('all');
   const [testingSendTelegram, setTestingSendTelegram] = useState(false);
-
+  const [sendingStats, setSendingStats] = useState(false);
+  const [sendingPing, setSendingPing] = useState(false);
   // Handle test Telegram notification
   const handleTestTelegramNotification = async () => {
     setTestingSendTelegram(true);
@@ -165,7 +166,40 @@ const AdminPanel = () => {
     }
   };
 
-  // Calls (transcripts) controls – same as in user dashboard
+  // Handle sending /stats command to Telegram bot
+  const handleSendStats = async () => {
+    setSendingStats(true);
+    try {
+      const { error } = await supabase.functions.invoke("telegram-bot-command", {
+        body: { command: "stats" }
+      });
+      if (error) throw error;
+      toast.success("📊 Статистика отправлена в Telegram!");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Неизвестная ошибка";
+      toast.error("Ошибка: " + message);
+    } finally {
+      setSendingStats(false);
+    }
+  };
+
+  // Handle ping bot
+  const handlePingBot = async () => {
+    setSendingPing(true);
+    try {
+      const { error } = await supabase.functions.invoke("telegram-bot-command", {
+        body: { command: "ping" }
+      });
+      if (error) throw error;
+      toast.success("🏓 Пинг отправлен!");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Неизвестная ошибка";
+      toast.error("Ошибка: " + message);
+    } finally {
+      setSendingPing(false);
+    }
+  };
+
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
   const [sharingMeetingId, setSharingMeetingId] = useState<string | null>(null);
@@ -1002,20 +1036,50 @@ const AdminPanel = () => {
                 <Bug className="w-6 h-6 text-primary" />
                 Мониторинг ошибок
               </h1>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleTestTelegramNotification}
-                disabled={testingSendTelegram}
-                className="gap-2"
-              >
-                {testingSendTelegram ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Send className="w-4 h-4" />
-                )}
-                Тест Telegram
-              </Button>
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePingBot}
+                  disabled={sendingPing}
+                  className="gap-2"
+                >
+                  {sendingPing ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4" />
+                  )}
+                  🏓 Пинг
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSendStats}
+                  disabled={sendingStats}
+                  className="gap-2"
+                >
+                  {sendingStats ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <BarChart3 className="w-4 h-4" />
+                  )}
+                  /stats
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleTestTelegramNotification}
+                  disabled={testingSendTelegram}
+                  className="gap-2"
+                >
+                  {testingSendTelegram ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Bug className="w-4 h-4" />
+                  )}
+                  Тест ошибки
+                </Button>
+              </div>
             </div>
 
             {errorsLoading ? (
