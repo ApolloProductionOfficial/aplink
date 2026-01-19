@@ -306,7 +306,15 @@ serve(async (req) => {
     const warningCount = results.filter((r) => r.status === "warning").length;
     const okCount = results.filter((r) => r.status === "ok").length;
 
-    // Send summary to Telegram
+    const summaryData = {
+      total: results.length,
+      ok: okCount,
+      warnings: warningCount,
+      errors: errorCount,
+    };
+
+    // Save to diagnostics_history
+    let telegramSent = false;
     const telegramToken = Deno.env.get("TELEGRAM_BOT_TOKEN");
     const adminChatId = "2061785720";
 
@@ -314,7 +322,7 @@ serve(async (req) => {
       const statusEmoji =
         errorCount > 0 ? "🔴" : warningCount > 0 ? "🟡" : "🟢";
       const scheduledLabel = scheduled ? " (⏰ по расписанию)" : "";
-      const summary = `${statusEmoji} *Диагностика APLink*${scheduledLabel}
+      const summaryMessage = `${statusEmoji} *Диагностика APLink*${scheduledLabel}
 
 ✅ OK: ${okCount}
 ⚠️ Warnings: ${warningCount}
@@ -327,28 +335,34 @@ ${results
 
 ${fixes.length > 0 && action === "fix" ? `\n*Применённые фиксы:*\n${fixes.map((f) => `✔️ ${f}`).join("\n")}` : ""}`;
 
-      await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
+      const telegramRes = await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           chat_id: adminChatId,
-          text: summary,
+          text: summaryMessage,
           parse_mode: "Markdown",
         }),
       });
+      telegramSent = telegramRes.ok;
     }
+
+    // Save to history table
+    await supabase.from("diagnostics_history").insert({
+      trigger_type: scheduled ? "scheduled" : "manual",
+      summary: summaryData,
+      results,
+      fixes,
+      telegram_sent: telegramSent,
+      run_by: scheduled ? "system" : null,
+    });
 
     return new Response(
       JSON.stringify({
         success: true,
         results,
         fixes,
-        summary: {
-          total: results.length,
-          ok: okCount,
-          warnings: warningCount,
-          errors: errorCount,
-        },
+        summary: summaryData,
       }),
       {
         status: 200,
