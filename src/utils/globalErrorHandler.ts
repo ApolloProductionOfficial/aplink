@@ -81,7 +81,9 @@ export function initGlobalErrorHandlers() {
       message.includes("ResizeObserver") ||
       message.includes("ChunkLoadError") ||
       message.includes("chrome-extension://") ||
-      message.includes("disconnected port object")
+      message.includes("disconnected port object") ||
+      message.includes("TelegramGameProxy") ||
+      message.includes("TelegramWebviewProxy")
     ) {
       return;
     }
