@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Mail, Lock, User, ArrowLeft, Globe } from 'lucide-react';
+import { Mail, Lock, User, ArrowLeft, Globe, History, Check } from 'lucide-react';
 import GoogleIcon from '@/components/icons/GoogleIcon';
+import { Checkbox } from '@/components/ui/checkbox';
 import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -42,6 +43,9 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string; name?: string; username?: string; confirmPassword?: string }>({});
   const [requires2FA, setRequires2FA] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [hasSavedData, setHasSavedData] = useState(false);
+  const [sessionRecoveryMessage, setSessionRecoveryMessage] = useState<string | null>(null);
   
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -66,8 +70,43 @@ const Auth = () => {
   useEffect(() => {
     if (mode === 'register') setAuthMode('register');
     else if (mode === 'forgot') setAuthMode('forgot');
-    else if (mode === 'reset') setAuthMode('reset');
+    else if (mode === 'reset') {
+      setAuthMode('reset');
+      setSessionRecoveryMessage('Введите новый пароль для вашей учётной записи');
+    }
   }, [mode]);
+
+  // Load saved email from localStorage on mount
+  useEffect(() => {
+    const savedEmail = localStorage.getItem('aplink_remember_email');
+    if (savedEmail) {
+      setEmail(savedEmail);
+      setRememberMe(true);
+      setHasSavedData(true);
+    } else {
+      setHasSavedData(false);
+    }
+  }, []);
+
+  // Save or clear email based on rememberMe
+  const handleRememberMe = useCallback((checked: boolean) => {
+    setRememberMe(checked);
+    if (!checked) {
+      localStorage.removeItem('aplink_remember_email');
+    }
+  }, []);
+
+  // Autofill saved data
+  const handleFillSavedData = useCallback(() => {
+    const savedEmail = localStorage.getItem('aplink_remember_email');
+    if (savedEmail) {
+      setEmail(savedEmail);
+      toast({
+        title: 'Данные восстановлены',
+        description: 'Email подставлен из сохранённых данных',
+      });
+    }
+  }, [toast]);
 
   const emailSchema = z.string().email(t.auth.errors.invalidEmail);
   const passwordSchema = z.string().min(6, t.auth.errors.passwordMin);
@@ -151,6 +190,10 @@ const Auth = () => {
             // User has 2FA enabled, show verification
             setRequires2FA(true);
             } else {
+              // Save email if rememberMe is checked
+              if (rememberMe) {
+                localStorage.setItem('aplink_remember_email', email);
+              }
               toast({
                 title: t.auth.success.welcome,
                 description: t.auth.success.loginSuccess,
@@ -464,6 +507,43 @@ const Auth = () => {
                   </div>
                   {errors.confirmPassword && (
                     <p className="text-sm text-destructive mt-1">{errors.confirmPassword}</p>
+                  )}
+                </div>
+              )}
+              
+              {/* Reset mode info message */}
+              {authMode === 'reset' && sessionRecoveryMessage && (
+                <div className="flex items-center gap-2 p-3 bg-primary/10 border border-primary/30 rounded-lg text-sm text-primary">
+                  <Check className="w-4 h-4 shrink-0" />
+                  {sessionRecoveryMessage}
+                </div>
+              )}
+              
+              {/* Remember me + Insert saved data (login mode only) */}
+              {authMode === 'login' && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="rememberMe"
+                      checked={rememberMe}
+                      onCheckedChange={(checked) => handleRememberMe(checked === true)}
+                    />
+                    <label
+                      htmlFor="rememberMe"
+                      className="text-sm text-muted-foreground cursor-pointer"
+                    >
+                      Запомнить email
+                    </label>
+                  </div>
+                  {hasSavedData && !email && (
+                    <button
+                      type="button"
+                      onClick={handleFillSavedData}
+                      className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors"
+                    >
+                      <History className="w-3 h-3" />
+                      Вставить сохранённые
+                    </button>
                   )}
                 </div>
               )}

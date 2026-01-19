@@ -73,13 +73,15 @@ export function initGlobalErrorHandlers() {
       typeof arg === "object" ? JSON.stringify(arg) : String(arg)
     ).join(" ");
     
-    // Skip common non-critical errors
+    // Skip common non-critical errors and browser extension errors
     if (
       message.includes("Warning:") ||
       message.includes("DevTools") ||
       message.includes("favicon") ||
       message.includes("ResizeObserver") ||
-      message.includes("ChunkLoadError")
+      message.includes("ChunkLoadError") ||
+      message.includes("chrome-extension://") ||
+      message.includes("disconnected port object")
     ) {
       return;
     }
