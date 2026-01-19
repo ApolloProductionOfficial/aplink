@@ -26,7 +26,7 @@ import CallScheduler from '@/components/CallScheduler';
 import TelegramMiniAppAnalytics from '@/components/TelegramMiniAppAnalytics';
 import { useAdminPushNotifications } from '@/hooks/useAdminPushNotifications';
 import ErrorStatsExport from '@/components/ErrorStatsExport';
-import DiagnosticsRecommendations from '@/components/DiagnosticsRecommendations';
+import AIErrorAnalysis from '@/components/AIErrorAnalysis';
 
 interface MeetingTranscript {
   id: string;
@@ -1206,6 +1206,9 @@ const AdminPanel = () => {
               </div>
             </div>
 
+            {/* AI Error Analysis */}
+            <AIErrorAnalysis />
+
             {/* Diagnostics Status Card */}
             <DiagnosticsStatusCard 
               onRunDiagnostics={handleRunDiagnostics}
@@ -1308,12 +1311,6 @@ const AdminPanel = () => {
               </Card>
             )}
 
-            {/* Recommendations when there are issues */}
-            {diagnosticsResults && diagnosticsResults.results.some(r => r.status !== 'ok') && (
-              <DiagnosticsRecommendations 
-                results={diagnosticsResults.results} 
-              />
-            )}
 
             {errorsLoading ? (
               <div className="flex items-center justify-center py-20">
