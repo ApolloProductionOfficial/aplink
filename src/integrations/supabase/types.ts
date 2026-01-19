@@ -169,6 +169,42 @@ export type Database = {
         }
         Relationships: []
       }
+      data_backups: {
+        Row: {
+          backup_data: Json
+          created_at: string
+          created_by: string | null
+          expires_at: string
+          id: string
+          operation_type: string
+          records_count: number
+          restored_at: string | null
+          table_name: string
+        }
+        Insert: {
+          backup_data: Json
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string
+          id?: string
+          operation_type: string
+          records_count?: number
+          restored_at?: string | null
+          table_name: string
+        }
+        Update: {
+          backup_data?: Json
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string
+          id?: string
+          operation_type?: string
+          records_count?: number
+          restored_at?: string | null
+          table_name?: string
+        }
+        Relationships: []
+      }
       diagnostics_history: {
         Row: {
           created_at: string
@@ -677,6 +713,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_expired_backups: { Args: never; Returns: number }
       cleanup_old_translation_history: { Args: never; Returns: number }
       get_room_participants: {
         Args: { room_id_param: string }

@@ -27,6 +27,7 @@ import TelegramMiniAppAnalytics from '@/components/TelegramMiniAppAnalytics';
 import { useAdminPushNotifications } from '@/hooks/useAdminPushNotifications';
 import ErrorStatsExport from '@/components/ErrorStatsExport';
 import SystemStatusDashboard from '@/components/SystemStatusDashboard';
+import DataBackupsManager from '@/components/DataBackupsManager';
 
 interface MeetingTranscript {
   id: string;
@@ -1167,12 +1168,15 @@ const AdminPanel = () => {
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
               </div>
             ) : (
-              <SystemStatusDashboard 
-                errorLogs={errorLogs}
-                errorStats={errorStats}
-                onClearOldLogs={handleClearOldLogs}
-                clearingLogs={clearingOldLogs}
-              />
+              <>
+                <SystemStatusDashboard 
+                  errorLogs={errorLogs}
+                  errorStats={errorStats}
+                  onClearOldLogs={handleClearOldLogs}
+                  clearingLogs={clearingOldLogs}
+                />
+                <DataBackupsManager />
+              </>
             )}
           </div>
         ) : activeTab === 'transcripts' ? (
