@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, LineChart, Line } from "recharts";
-import { MessageCircle, Users, Phone, TrendingUp, Loader2, Smartphone, Activity, Clock, UserPlus } from "lucide-react";
-
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from "recharts";
+import { MessageCircle, Users, Phone, TrendingUp, Loader2, Smartphone, Activity, Clock, UserPlus, Download, FileText } from "lucide-react";
+import { toast } from "sonner";
+import { jsPDF } from "jspdf";
 interface ActivityLog {
   id: string;
   action: string;
@@ -34,6 +36,7 @@ const COLORS = ["hsl(var(--primary))", "hsl(var(--chart-2))", "hsl(var(--chart-3
 
 const TelegramMiniAppAnalytics = () => {
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [dailyActivity, setDailyActivity] = useState<DailyStats[]>([]);
   const [actionStats, setActionStats] = useState<ActionStats[]>([]);
   const [hourlyStats, setHourlyStats] = useState<HourlyStats[]>([]);
@@ -45,6 +48,115 @@ const TelegramMiniAppAnalytics = () => {
   const [newUsersToday, setNewUsersToday] = useState(0);
   const [avgSessionDuration, setAvgSessionDuration] = useState(0);
   const [recentActivity, setRecentActivity] = useState<ActivityLog[]>([]);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // PDF Export function
+  const handleExportPDF = async () => {
+    setExporting(true);
+    try {
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      
+      // Title
+      doc.setFontSize(20);
+      doc.setTextColor(79, 70, 229);
+      doc.text("Telegram Mini App Analytics", pageWidth / 2, 20, { align: "center" });
+      
+      // Date
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text(`Отчёт сгенерирован: ${new Date().toLocaleString("ru-RU")}`, pageWidth / 2, 28, { align: "center" });
+      
+      // Stats section
+      doc.setFontSize(14);
+      doc.setTextColor(0);
+      doc.text("Основные показатели", 14, 45);
+      
+      doc.setFontSize(11);
+      const stats = [
+        ["Всего пользователей:", totalUsers.toString()],
+        ["Активных сегодня:", todayActive.toString()],
+        ["Активных за неделю:", weekActive.toString()],
+        ["Всего звонков:", totalCalls.toString()],
+        ["Групповых звонков:", groupCalls.toString()],
+        ["Новых сегодня:", newUsersToday.toString()],
+      ];
+      
+      let y = 55;
+      stats.forEach(([label, value]) => {
+        doc.setTextColor(60);
+        doc.text(label, 14, y);
+        doc.setTextColor(0);
+        doc.text(value, 80, y);
+        y += 8;
+      });
+      
+      // Action distribution
+      doc.setFontSize(14);
+      doc.setTextColor(0);
+      doc.text("Распределение действий", 14, y + 10);
+      
+      y += 20;
+      doc.setFontSize(10);
+      actionStats.forEach((stat) => {
+        doc.setTextColor(60);
+        doc.text(`${stat.action}:`, 14, y);
+        doc.setTextColor(0);
+        doc.text(stat.count.toString(), 80, y);
+        y += 7;
+      });
+      
+      // Daily activity summary
+      doc.setFontSize(14);
+      doc.setTextColor(0);
+      doc.text("Активность за 30 дней", 14, y + 10);
+      
+      y += 20;
+      doc.setFontSize(9);
+      const last7Days = dailyActivity.slice(-7);
+      last7Days.forEach((day) => {
+        doc.setTextColor(60);
+        doc.text(day.date, 14, y);
+        doc.setTextColor(0);
+        doc.text(`${day.count} действий, ${day.users} пользователей`, 50, y);
+        y += 6;
+      });
+      
+      // Recent activity
+      if (y < 250) {
+        doc.setFontSize(14);
+        doc.setTextColor(0);
+        doc.text("Последние действия", 14, y + 10);
+        
+        y += 20;
+        doc.setFontSize(9);
+        const recentSlice = recentActivity.slice(0, 10);
+        recentSlice.forEach((activity) => {
+          const actionName = formatAction(activity.action);
+          const time = new Date(activity.created_at).toLocaleString("ru-RU");
+          doc.setTextColor(60);
+          doc.text(`${actionName} - TG:${activity.telegram_id || "N/A"}`, 14, y);
+          doc.setTextColor(100);
+          doc.text(time, 140, y);
+          y += 6;
+          if (y > 280) return;
+        });
+      }
+      
+      // Footer
+      doc.setFontSize(8);
+      doc.setTextColor(150);
+      doc.text("APLink - Telegram Mini App Analytics Report", pageWidth / 2, 290, { align: "center" });
+      
+      doc.save(`telegram-analytics-${new Date().toISOString().split("T")[0]}.pdf`);
+      toast.success("PDF отчёт экспортирован!");
+    } catch (error) {
+      console.error("PDF export error:", error);
+      toast.error("Ошибка экспорта PDF");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   useEffect(() => {
     loadActivityData();
@@ -216,7 +328,29 @@ const TelegramMiniAppAnalytics = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" ref={containerRef}>
+      {/* Header with export button */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold flex items-center gap-2">
+          <Smartphone className="w-5 h-5 text-primary" />
+          Аналитика Telegram Mini App
+        </h2>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleExportPDF}
+          disabled={exporting}
+          className="gap-2"
+        >
+          {exporting ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <FileText className="w-4 h-4" />
+          )}
+          Экспорт PDF
+        </Button>
+      </div>
+
       {/* Main Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
         <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
