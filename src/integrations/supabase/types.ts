@@ -82,7 +82,7 @@ export type Database = {
       call_requests: {
         Row: {
           created_at: string
-          created_by: string
+          created_by: string | null
           expires_at: string
           id: string
           is_group_call: boolean
@@ -91,7 +91,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          created_by: string
+          created_by?: string | null
           expires_at?: string
           id?: string
           is_group_call?: boolean
@@ -100,7 +100,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          created_by?: string
+          created_by?: string | null
           expires_at?: string
           id?: string
           is_group_call?: boolean

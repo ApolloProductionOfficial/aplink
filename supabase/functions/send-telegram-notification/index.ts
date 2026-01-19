@@ -6,7 +6,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
+// Use REPORTS_BOT_TOKEN for error/diagnostic notifications (Reports and Errors bot)
+// This is separate from TELEGRAM_BOT_TOKEN which is used for user notifications (APLink bot)
+const REPORTS_BOT_TOKEN = Deno.env.get("REPORTS_BOT_TOKEN");
 const ADMIN_CHAT_ID = "2061785720";
 const GROUP_WINDOW_MS = 5 * 60 * 1000; // 5 минут - окно группировки
 
@@ -106,10 +108,10 @@ serve(async (req) => {
     
     console.log("Telegram notification request:", { errorType, source, severity, isTest });
     
-    if (!TELEGRAM_BOT_TOKEN) {
-      console.error("TELEGRAM_BOT_TOKEN not configured");
+    if (!REPORTS_BOT_TOKEN) {
+      console.error("REPORTS_BOT_TOKEN not configured");
       return new Response(
-        JSON.stringify({ error: "Bot token not configured" }), 
+        JSON.stringify({ error: "Reports bot token not configured" }), 
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -135,7 +137,7 @@ serve(async (req) => {
       });
 
       const telegramResponse = await fetch(
-        `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+        `https://api.telegram.org/bot${REPORTS_BOT_TOKEN}/sendMessage`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -194,7 +196,7 @@ serve(async (req) => {
           firstSeen: firstSeenFormatted
         });
 
-        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
+        await fetch(`https://api.telegram.org/bot${REPORTS_BOT_TOKEN}/editMessageText`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -224,9 +226,9 @@ serve(async (req) => {
       timestamp
     });
 
-    // Отправляем сообщение с inline-кнопками
+    // Отправляем сообщение с inline-кнопками через бот Reports and Errors
     const telegramResponse = await fetch(
-      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+      `https://api.telegram.org/bot${REPORTS_BOT_TOKEN}/sendMessage`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
