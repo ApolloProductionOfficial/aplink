@@ -149,8 +149,39 @@ serve(async (req) => {
             parse_mode: "Markdown"
           })
         });
+      } else if (text === "/clear") {
+        // Очистить старые логи (старше 7 дней)
+        const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+        
+        const { data: deletedLogs } = await supabase
+          .from("error_logs")
+          .delete()
+          .lt("created_at", weekAgo)
+          .select("id");
+        
+        const { data: deletedGroups } = await supabase
+          .from("error_groups")
+          .delete()
+          .lt("last_seen", weekAgo)
+          .select("id");
+        
+        const logsCount = deletedLogs?.length || 0;
+        const groupsCount = deletedGroups?.length || 0;
+        
+        const clearMessage = `🗑 *Очистка завершена*\n\nУдалено:\n• Логов: ${logsCount}\n• Групп: ${groupsCount}\n\n_Удалены записи старше 7 дней_`;
+        
+        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: clearMessage,
+            parse_mode: "Markdown"
+          })
+        });
+        
       } else if (text === "/help" || text === "/start") {
-        const helpMessage = `🤖 *Apollo Error Bot*\n\nДоступные команды:\n/stats - Показать статистику ошибок\n/help - Показать это сообщение\n\nБот автоматически отправляет уведомления об ошибках в приложении.`;
+        const helpMessage = `🤖 *Apollo Error Bot*\n\nДоступные команды:\n• /stats - Показать статистику ошибок\n• /clear - Очистить логи старше 7 дней\n• /help - Показать это сообщение\n\nБот автоматически отправляет уведомления об ошибках в приложении.`;
         
         await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
           method: "POST",

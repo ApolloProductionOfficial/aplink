@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
-const ADMIN_CHAT_ID = "8404175125";
+const ADMIN_CHAT_ID = "2061785720";
 const GROUP_WINDOW_MS = 5 * 60 * 1000; // 5 минут - окно группировки
 
 interface ErrorParams {
