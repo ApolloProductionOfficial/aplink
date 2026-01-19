@@ -85,7 +85,7 @@ function getInlineKeyboard(groupId?: string) {
   return {
     inline_keyboard: [
       [
-        { text: "📋 Открыть админку", url: "https://aplink.lovable.app/admin" },
+        { text: "📋 Открыть админку", url: "https://aplink.live/admin" },
         { text: "🔇 Игнорировать", callback_data: `ignore:${groupId || "new"}` }
       ],
       [

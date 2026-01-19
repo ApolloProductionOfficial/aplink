@@ -21,6 +21,9 @@ serve(async (req) => {
     const TELEGRAM_API = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}`;
 
     if (action === "setup") {
+      // Use provided URL or default to aplink.live
+      const appUrl = webAppUrl || "https://aplink.live";
+      
       // Set up the menu button to open the web app
       const menuButtonResult = await fetch(`${TELEGRAM_API}/setChatMenuButton`, {
         method: "POST",
@@ -30,7 +33,7 @@ serve(async (req) => {
             type: "web_app",
             text: "🎥 Открыть APLink",
             web_app: {
-              url: webAppUrl,
+              url: appUrl,
             },
           },
         }),
@@ -39,7 +42,7 @@ serve(async (req) => {
       const menuButtonData = await menuButtonResult.json();
       console.log("setChatMenuButton result:", menuButtonData);
 
-      // Set bot commands
+      // Set bot commands including groupcall
       const commandsResult = await fetch(`${TELEGRAM_API}/setMyCommands`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -47,6 +50,10 @@ serve(async (req) => {
           commands: [
             { command: "start", description: "🚀 Начать работу" },
             { command: "call", description: "📞 Создать звонок" },
+            { command: "groupcall", description: "👥 Групповой звонок" },
+            { command: "mycalls", description: "📋 История звонков" },
+            { command: "contacts", description: "⭐ Мои контакты" },
+            { command: "link", description: "🔗 Привязать аккаунт" },
             { command: "stats", description: "📊 Статистика" },
             { command: "help", description: "❓ Помощь" },
           ],
@@ -68,6 +75,7 @@ serve(async (req) => {
           bot: botData.result,
           menuButton: menuButtonData,
           commands: commandsData,
+          webAppUrl: appUrl,
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );

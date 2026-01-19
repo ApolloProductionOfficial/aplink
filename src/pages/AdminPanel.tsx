@@ -1126,7 +1126,7 @@ const AdminPanel = () => {
             <DiagnosticsHistory />
             
             {/* Telegram Mini App Setup */}
-            <TelegramSetupCard publishedUrl="https://aplink.lovable.app" />
+            <TelegramSetupCard publishedUrl="https://aplink.live" />
           </div>
         ) : activeTab === 'errors' ? (
           <div className="space-y-6">
