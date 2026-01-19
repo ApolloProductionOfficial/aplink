@@ -40,6 +40,7 @@ import CustomCursor from "@/components/CustomCursor";
 import { MeetingEndSaveDialog, type MeetingSaveStatus } from "@/components/MeetingEndSaveDialog";
 import { invokeBackendFunctionKeepalive } from "@/utils/invokeBackendFunctionKeepalive";
 import { useJitsiHealthMonitor } from "@/hooks/useJitsiHealthMonitor";
+import LeaveCallDialog from "@/components/LeaveCallDialog";
 
 declare global {
   interface Window {
@@ -152,22 +153,28 @@ const MeetingRoom = () => {
     }
   );
 
-  // Handle blocked navigation - show confirmation
+  // Handle blocked navigation - show modal dialog
   useEffect(() => {
     if (blocker.state === 'blocked') {
-      // Show confirmation dialog instead of immediately navigating
-      const confirmLeave = window.confirm(
-        'Вы уверены, что хотите покинуть созвон? Ваш вызов будет завершён.'
-      );
-      
-      if (confirmLeave) {
-        userInitiatedEndRef.current = true;
-        blocker.proceed();
-      } else {
-        blocker.reset();
-      }
+      // Show the modal dialog
+      setShowLeaveConfirm(true);
     }
   }, [blocker]);
+
+  const handleStayInCall = () => {
+    setShowLeaveConfirm(false);
+    if (blocker.state === 'blocked') {
+      blocker.reset();
+    }
+  };
+
+  const handleLeaveCall = () => {
+    setShowLeaveConfirm(false);
+    userInitiatedEndRef.current = true;
+    if (blocker.state === 'blocked') {
+      blocker.proceed();
+    }
+  };
 
   // Page Lifecycle & Browser events for extended diagnostics
   useEffect(() => {
@@ -1596,6 +1603,13 @@ const MeetingRoom = () => {
               }
             : undefined
         }
+      />
+
+      {/* Leave Call Confirmation Dialog */}
+      <LeaveCallDialog
+        open={showLeaveConfirm}
+        onStay={handleStayInCall}
+        onLeave={handleLeaveCall}
       />
       
       {/* Realtime Translator */}

@@ -17,6 +17,7 @@ import AnimatedBackground from '@/components/AnimatedBackground';
 import TwoFactorSetup from '@/components/TwoFactorSetup';
 import apolloLogo from '@/assets/apollo-logo.mp4';
 import { generateMeetingDocx } from '@/utils/generateMeetingDocx';
+import DiagnosticsStatusCard from '@/components/DiagnosticsStatusCard';
 
 interface MeetingTranscript {
   id: string;
@@ -948,6 +949,11 @@ const AdminPanel = () => {
               {admin.siteAnalytics || 'Аналитика сайта'}
             </h1>
             
+            {/* Diagnostics Status Card */}
+            <DiagnosticsStatusCard 
+              onRunDiagnostics={handleRunDiagnostics}
+              isRunning={runningDiagnostics}
+            />
             {analyticsLoading ? (
               <div className="flex items-center justify-center py-20">
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
