@@ -18,6 +18,9 @@ import TwoFactorSetup from '@/components/TwoFactorSetup';
 import apolloLogo from '@/assets/apollo-logo.mp4';
 import { generateMeetingDocx } from '@/utils/generateMeetingDocx';
 import DiagnosticsStatusCard from '@/components/DiagnosticsStatusCard';
+import DiagnosticsHistory from '@/components/DiagnosticsHistory';
+import TelegramSetupCard from '@/components/TelegramSetupCard';
+import { useAdminPushNotifications } from '@/hooks/useAdminPushNotifications';
 
 interface MeetingTranscript {
   id: string;
@@ -109,6 +112,8 @@ const AdminPanel = () => {
   const navigate = useNavigate();
   const { user, isAdmin, isLoading } = useAuth();
   const { t } = useTranslation();
+  // Initialize admin push notifications
+  useAdminPushNotifications();
   const admin = (t as any).adminPanel || {};
   const [transcripts, setTranscripts] = useState<MeetingTranscript[]>([]);
   const [participants, setParticipants] = useState<MeetingParticipant[]>([]);
@@ -1116,6 +1121,12 @@ const AdminPanel = () => {
                 </CardContent>
               </Card>
             )}
+            
+            {/* Diagnostics History */}
+            <DiagnosticsHistory />
+            
+            {/* Telegram Mini App Setup */}
+            <TelegramSetupCard publishedUrl="https://aplink.lovable.app" />
           </div>
         ) : activeTab === 'errors' ? (
           <div className="space-y-6">

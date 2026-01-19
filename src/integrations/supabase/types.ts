@@ -65,6 +65,39 @@ export type Database = {
         }
         Relationships: []
       }
+      diagnostics_history: {
+        Row: {
+          created_at: string
+          fixes: Json | null
+          id: string
+          results: Json
+          run_by: string | null
+          summary: Json
+          telegram_sent: boolean | null
+          trigger_type: string
+        }
+        Insert: {
+          created_at?: string
+          fixes?: Json | null
+          id?: string
+          results: Json
+          run_by?: string | null
+          summary: Json
+          telegram_sent?: boolean | null
+          trigger_type?: string
+        }
+        Update: {
+          created_at?: string
+          fixes?: Json | null
+          id?: string
+          results?: Json
+          run_by?: string | null
+          summary?: Json
+          telegram_sent?: boolean | null
+          trigger_type?: string
+        }
+        Relationships: []
+      }
       error_groups: {
         Row: {
           error_hash: string
