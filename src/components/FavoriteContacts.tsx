@@ -236,41 +236,43 @@ const FavoriteContacts = () => {
           >
             <Users className="w-4 h-4" />
           </Button>
+          
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
                 <UserPlus className="w-4 h-4" />
               </Button>
             </DialogTrigger>
-          <DialogContent className="bg-card border-border">
-            <DialogHeader>
-              <DialogTitle>{favorites.addContact}</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 pt-4">
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">@</span>
+            <DialogContent className="bg-card border-border">
+              <DialogHeader>
+                <DialogTitle>{favorites.addContact}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 pt-4">
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">@</span>
+                  <Input
+                    placeholder={favorites.username}
+                    value={searchName}
+                    onChange={(e) => setSearchName(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                    className="pl-8"
+                  />
+                </div>
                 <Input
-                  placeholder={favorites.username}
-                  value={searchName}
-                  onChange={(e) => setSearchName(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                  className="pl-8"
+                  placeholder={favorites.nickname}
+                  value={addNickname}
+                  onChange={(e) => setAddNickname(e.target.value)}
                 />
+                <Button
+                  onClick={addContact}
+                  disabled={adding || !searchName.trim()}
+                  className="w-full"
+                >
+                  {adding ? favorites.adding : favorites.add}
+                </Button>
               </div>
-              <Input
-                placeholder={favorites.nickname}
-                value={addNickname}
-                onChange={(e) => setAddNickname(e.target.value)}
-              />
-              <Button
-                onClick={addContact}
-                disabled={adding || !searchName.trim()}
-                className="w-full"
-              >
-                {adding ? favorites.adding : favorites.add}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {loading ? (
