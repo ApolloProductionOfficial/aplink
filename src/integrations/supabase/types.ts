@@ -65,6 +65,45 @@ export type Database = {
         }
         Relationships: []
       }
+      error_groups: {
+        Row: {
+          error_hash: string
+          error_message: string
+          error_type: string
+          first_seen: string | null
+          id: string
+          last_seen: string | null
+          occurrence_count: number | null
+          severity: string | null
+          source: string | null
+          telegram_message_id: number | null
+        }
+        Insert: {
+          error_hash: string
+          error_message: string
+          error_type: string
+          first_seen?: string | null
+          id?: string
+          last_seen?: string | null
+          occurrence_count?: number | null
+          severity?: string | null
+          source?: string | null
+          telegram_message_id?: number | null
+        }
+        Update: {
+          error_hash?: string
+          error_message?: string
+          error_type?: string
+          first_seen?: string | null
+          id?: string
+          last_seen?: string | null
+          occurrence_count?: number | null
+          severity?: string | null
+          source?: string | null
+          telegram_message_id?: number | null
+        }
+        Relationships: []
+      }
       error_logs: {
         Row: {
           created_at: string

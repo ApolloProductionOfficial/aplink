@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, Users, Calendar, Clock, MapPin, Globe, Shield, User, Camera, Save, Trash2, Loader2, BarChart3, Languages, MousePointer, TrendingUp, Eye, Download, Share2, Search, X, Link2, Copy, Link2Off, AlertTriangle, Bug, XCircle, AlertCircle, Info } from 'lucide-react';
+import { ArrowLeft, FileText, Users, Calendar, Clock, MapPin, Globe, Shield, User, Camera, Save, Trash2, Loader2, BarChart3, Languages, MousePointer, TrendingUp, Eye, Download, Share2, Search, X, Link2, Copy, Link2Off, AlertTriangle, Bug, XCircle, AlertCircle, Info, Send } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -133,6 +133,37 @@ const AdminPanel = () => {
   const [errorStats, setErrorStats] = useState<ErrorStats | null>(null);
   const [errorsLoading, setErrorsLoading] = useState(false);
   const [errorFilter, setErrorFilter] = useState<'all' | 'critical' | 'error' | 'warning' | 'info'>('all');
+  const [testingSendTelegram, setTestingSendTelegram] = useState(false);
+
+  // Handle test Telegram notification
+  const handleTestTelegramNotification = async () => {
+    setTestingSendTelegram(true);
+    try {
+      const { error } = await supabase.functions.invoke("send-telegram-notification", {
+        body: {
+          errorType: "TEST_NOTIFICATION",
+          errorMessage: "Это тестовое уведомление для проверки работы Telegram бота 🧪",
+          source: "Admin Panel - Test",
+          severity: "info",
+          isTest: true,
+          details: {
+            url: window.location.href,
+            userAgent: navigator.userAgent,
+            testedAt: new Date().toISOString(),
+            testedBy: user?.email || 'Unknown'
+          }
+        }
+      });
+      
+      if (error) throw error;
+      toast.success("✅ Тестовое уведомление отправлено в Telegram!");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Неизвестная ошибка";
+      toast.error("Ошибка отправки: " + message);
+    } finally {
+      setTestingSendTelegram(false);
+    }
+  };
 
   // Calls (transcripts) controls – same as in user dashboard
   const [searchQuery, setSearchQuery] = useState('');
@@ -966,10 +997,26 @@ const AdminPanel = () => {
           </div>
         ) : activeTab === 'errors' ? (
           <div className="space-y-6">
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Bug className="w-6 h-6 text-primary" />
-              Мониторинг ошибок
-            </h1>
+            <div className="flex items-center justify-between">
+              <h1 className="text-2xl font-bold flex items-center gap-2">
+                <Bug className="w-6 h-6 text-primary" />
+                Мониторинг ошибок
+              </h1>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleTestTelegramNotification}
+                disabled={testingSendTelegram}
+                className="gap-2"
+              >
+                {testingSendTelegram ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Send className="w-4 h-4" />
+                )}
+                Тест Telegram
+              </Button>
+            </div>
 
             {errorsLoading ? (
               <div className="flex items-center justify-center py-20">

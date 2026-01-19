@@ -113,7 +113,7 @@ const sendNotificationInternal = async (params: ErrorNotificationParams & { seve
       return true;
     }
 
-    const { data, error } = await supabase.functions.invoke("send-error-notification", {
+    const { data, error } = await supabase.functions.invoke("send-telegram-notification", {
       body: { ...params, severity: params.severity },
     });
 
