@@ -26,7 +26,17 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { action } = await req.json();
+    let action = "scan";
+    let scheduled = false;
+    
+    try {
+      const body = await req.json();
+      action = body.action || "scan";
+      scheduled = body.scheduled || false;
+    } catch {
+      // Body may be empty for some requests
+    }
+    
     const results: DiagnosticResult[] = [];
     const fixes: string[] = [];
 
@@ -303,7 +313,8 @@ serve(async (req) => {
     if (telegramToken) {
       const statusEmoji =
         errorCount > 0 ? "🔴" : warningCount > 0 ? "🟡" : "🟢";
-      const summary = `${statusEmoji} *Диагностика APLink*
+      const scheduledLabel = scheduled ? " (⏰ по расписанию)" : "";
+      const summary = `${statusEmoji} *Диагностика APLink*${scheduledLabel}
 
 ✅ OK: ${okCount}
 ⚠️ Warnings: ${warningCount}

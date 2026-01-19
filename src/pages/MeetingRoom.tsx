@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { useParams, useSearchParams, useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { useParams, useSearchParams, useNavigate, useBlocker } from "react-router-dom";
 import {
   ArrowLeft,
   Copy,
@@ -39,6 +39,7 @@ import apolloLogo from "@/assets/apollo-logo.mp4";
 import CustomCursor from "@/components/CustomCursor";
 import { MeetingEndSaveDialog, type MeetingSaveStatus } from "@/components/MeetingEndSaveDialog";
 import { invokeBackendFunctionKeepalive } from "@/utils/invokeBackendFunctionKeepalive";
+import { useJitsiHealthMonitor } from "@/hooks/useJitsiHealthMonitor";
 
 declare global {
   interface Window {
@@ -82,6 +83,7 @@ const MeetingRoom = () => {
   const [endSaveStatus, setEndSaveStatus] = useState<MeetingSaveStatus>("saving");
   const [endSaveError, setEndSaveError] = useState<string | null>(null);
   const [endSaveNeedsLogin, setEndSaveNeedsLogin] = useState(false);
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
 
   type PendingMeetingSaveBase = {
     roomId: string;
@@ -109,8 +111,13 @@ const MeetingRoom = () => {
   const [diagnosticsCopied, setDiagnosticsCopied] = useState(false);
   const { t } = useTranslation();
 
+  // Use room ID as-is for Jitsi (consistent room name)
+  // Display with proper formatting (dashes to spaces)
+  const roomDisplayName = decodeURIComponent(roomId || '').replace(/-/g, ' ');
+  const roomSlug = roomId || '';
+
   // Helper to log diagnostic events (capped at 100 entries)
-  const logDiagnostic = (event: string, data?: unknown) => {
+  const logDiagnostic = useCallback((event: string, data?: unknown) => {
     const entry = {
       ts: new Date().toISOString(),
       event,
@@ -118,7 +125,49 @@ const MeetingRoom = () => {
     };
     diagnosticsLogRef.current = [...diagnosticsLogRef.current.slice(-99), entry];
     console.log(`[DIAG:${event}]`, data ?? '');
-  };
+  }, []);
+
+  // Jitsi health monitoring with Telegram alerts
+  useJitsiHealthMonitor({
+    roomId: roomSlug,
+    userName: userName || 'Unknown',
+    jitsiApi: apiRef.current,
+    enabled: connectionStatus === 'connected',
+    onConnectionLost: () => {
+      logDiagnostic('health-monitor-connection-lost', {});
+    },
+    onConnectionRestored: () => {
+      logDiagnostic('health-monitor-connection-restored', {});
+    },
+  });
+
+  // Block navigation when in a call - prevents accidental back button exits
+  // This is key to preventing call disconnection on back button like Google Meet does
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) => {
+      // Only block if user is in an active call and hasn't initiated end
+      const isInActiveCall = connectionStatus === 'connected' && !userInitiatedEndRef.current && !hasRedirectedRef.current;
+      const isNavigatingAway = currentLocation.pathname !== nextLocation.pathname;
+      return isInActiveCall && isNavigatingAway;
+    }
+  );
+
+  // Handle blocked navigation - show confirmation
+  useEffect(() => {
+    if (blocker.state === 'blocked') {
+      // Show confirmation dialog instead of immediately navigating
+      const confirmLeave = window.confirm(
+        'Вы уверены, что хотите покинуть созвон? Ваш вызов будет завершён.'
+      );
+      
+      if (confirmLeave) {
+        userInitiatedEndRef.current = true;
+        blocker.proceed();
+      } else {
+        blocker.reset();
+      }
+    }
+  }, [blocker]);
 
   // Page Lifecycle & Browser events for extended diagnostics
   useEffect(() => {
@@ -174,7 +223,7 @@ const MeetingRoom = () => {
       window.removeEventListener('online', onOnline);
       window.removeEventListener('offline', onOffline);
     };
-  }, []);
+  }, [logDiagnostic]);
 
   // Copy diagnostics to clipboard
   const copyDiagnostics = async () => {
@@ -197,11 +246,6 @@ const MeetingRoom = () => {
       toast({ title: t.meetingRoom.error, description: t.meetingRoom.copyLinkError, variant: "destructive" });
     }
   };
-
-  // Use room ID as-is for Jitsi (consistent room name)
-  // Display with proper formatting (dashes to spaces)
-  const roomDisplayName = decodeURIComponent(roomId || '').replace(/-/g, ' ');
-  const roomSlug = roomId || '';
   
   // Track presence in this room
   usePresence(roomDisplayName);

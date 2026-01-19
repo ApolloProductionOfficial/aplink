@@ -138,6 +138,8 @@ const AdminPanel = () => {
   const [sendingPing, setSendingPing] = useState(false);
   const [runningDiagnostics, setRunningDiagnostics] = useState(false);
   const [runningAutofix, setRunningAutofix] = useState(false);
+  const [clearingOldLogs, setClearingOldLogs] = useState(false);
+  const [showClearLogsConfirm, setShowClearLogsConfirm] = useState(false);
   const [diagnosticsResults, setDiagnosticsResults] = useState<{
     results: Array<{
       category: string;
@@ -149,6 +151,36 @@ const AdminPanel = () => {
     fixes: string[];
     summary: { total: number; ok: number; warnings: number; errors: number };
   } | null>(null);
+
+  // Handle clearing logs older than 7 days
+  const handleClearOldLogs = async () => {
+    setClearingOldLogs(true);
+    setShowClearLogsConfirm(false);
+    try {
+      const { data, error } = await supabase.functions.invoke("telegram-bot-command", {
+        body: { command: "clear" }
+      });
+      if (error) throw error;
+      
+      // Reload error logs
+      const { data: newLogs } = await supabase
+        .from('error_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(500);
+      
+      if (newLogs) {
+        setErrorLogs(newLogs as ErrorLog[]);
+      }
+      
+      toast.success("🗑️ Логи старше 7 дней очищены и уведомление отправлено в Telegram!");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Неизвестная ошибка";
+      toast.error("Ошибка очистки: " + message);
+    } finally {
+      setClearingOldLogs(false);
+    }
+  };
   // Handle test Telegram notification
   const handleTestTelegramNotification = async () => {
     setTestingSendTelegram(true);
@@ -1157,8 +1189,57 @@ const AdminPanel = () => {
                   )}
                   🔧 Автофикс
                 </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setShowClearLogsConfirm(true)}
+                  disabled={clearingOldLogs}
+                  className="gap-2"
+                >
+                  {clearingOldLogs ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-4 h-4" />
+                  )}
+                  🗑️ Очистить 7д+
+                </Button>
               </div>
             </div>
+
+            {/* Clear Logs Confirmation Dialog */}
+            {showClearLogsConfirm && (
+              <Card className="bg-destructive/10 border-destructive/50 border-2">
+                <CardContent className="py-4">
+                  <div className="flex items-center gap-4 justify-between flex-wrap">
+                    <div className="flex items-center gap-3">
+                      <Trash2 className="w-6 h-6 text-destructive" />
+                      <div>
+                        <p className="font-medium">Удалить логи старше 7 дней?</p>
+                        <p className="text-sm text-muted-foreground">
+                          Это действие нельзя отменить. Уведомление будет отправлено в Telegram.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowClearLogsConfirm(false)}
+                      >
+                        Отмена
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={handleClearOldLogs}
+                      >
+                        Да, удалить
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Diagnostics Results Panel */}
             {diagnosticsResults && (
