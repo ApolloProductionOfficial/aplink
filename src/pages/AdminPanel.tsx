@@ -26,7 +26,7 @@ import CallScheduler from '@/components/CallScheduler';
 import TelegramMiniAppAnalytics from '@/components/TelegramMiniAppAnalytics';
 import { useAdminPushNotifications } from '@/hooks/useAdminPushNotifications';
 import ErrorStatsExport from '@/components/ErrorStatsExport';
-import AIErrorAnalysis from '@/components/AIErrorAnalysis';
+import UnifiedAIDiagnostics from '@/components/UnifiedAIDiagnostics';
 
 interface MeetingTranscript {
   id: string;
@@ -1159,157 +1159,21 @@ const AdminPanel = () => {
                 <Bug className="w-6 h-6 text-primary" />
                 Мониторинг и диагностика
               </h1>
-              <div className="flex gap-2 flex-wrap">
-                <ErrorStatsExport errorLogs={errorLogs} errorStats={errorStats} />
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={handleRunDiagnostics}
-                  disabled={runningDiagnostics}
-                  className="gap-2"
-                >
-                  {runningDiagnostics ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Search className="w-4 h-4" />
-                  )}
-                  Диагностика
-                </Button>
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={handleRunAutofix}
-                  disabled={runningAutofix || runningDiagnostics}
-                  className="gap-2 bg-green-600 hover:bg-green-700"
-                >
-                  {runningAutofix ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Shield className="w-4 h-4" />
-                  )}
-                  Автофикс
-                </Button>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => setShowClearLogsConfirm(true)}
-                  disabled={clearingOldLogs}
-                  className="gap-2"
-                >
-                  {clearingOldLogs ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Trash2 className="w-4 h-4" />
-                  )}
-                  Очистка
-                </Button>
-              </div>
+              <ErrorStatsExport errorLogs={errorLogs} errorStats={errorStats} />
             </div>
 
-            {/* AI Error Analysis */}
-            <AIErrorAnalysis />
+            {/* Unified AI Diagnostics - всё в одном месте */}
+            <UnifiedAIDiagnostics 
+              errorLogs={errorLogs}
+              onClearOldLogs={handleClearOldLogs}
+              clearingLogs={clearingOldLogs}
+            />
 
             {/* Diagnostics Status Card */}
             <DiagnosticsStatusCard 
               onRunDiagnostics={handleRunDiagnostics}
               isRunning={runningDiagnostics}
             />
-
-            {/* Clear Logs Confirmation Dialog */}
-            {showClearLogsConfirm && (
-              <Card className="bg-destructive/10 border-destructive/50 border-2">
-                <CardContent className="py-4">
-                  <div className="flex items-center gap-4 justify-between flex-wrap">
-                    <div className="flex items-center gap-3">
-                      <Trash2 className="w-6 h-6 text-destructive" />
-                      <div>
-                        <p className="font-medium">Удалить логи старше 7 дней?</p>
-                        <p className="text-sm text-muted-foreground">
-                          Это действие нельзя отменить. Уведомление будет отправлено в Telegram.
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowClearLogsConfirm(false)}
-                      >
-                        Отмена
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={handleClearOldLogs}
-                      >
-                        Да, удалить
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Diagnostics Results Panel */}
-            {diagnosticsResults && (
-              <Card className="bg-card/50 backdrop-blur-sm border-border/50 border-l-4 border-l-primary">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <Search className="w-5 h-5 text-primary" />
-                      Результаты диагностики
-                    </span>
-                    <div className="flex gap-2 text-sm">
-                      <Badge variant="secondary" className="bg-green-500/20 text-green-500">
-                        ✅ {diagnosticsResults.summary.ok}
-                      </Badge>
-                      <Badge variant="secondary" className="bg-amber-500/20 text-amber-500">
-                        ⚠️ {diagnosticsResults.summary.warnings}
-                      </Badge>
-                      <Badge variant="secondary" className="bg-red-500/20 text-red-500">
-                        ❌ {diagnosticsResults.summary.errors}
-                      </Badge>
-                    </div>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {diagnosticsResults.fixes.length > 0 && (
-                    <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
-                      <p className="font-medium text-green-500 mb-2">Применённые фиксы:</p>
-                      <ul className="text-sm space-y-1">
-                        {diagnosticsResults.fixes.map((fix, i) => (
-                          <li key={i} className="flex items-center gap-2">
-                            <Check className="w-4 h-4 text-green-500" />
-                            {fix}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  <div className="grid gap-2 max-h-[300px] overflow-y-auto">
-                    {diagnosticsResults.results.map((result, i) => (
-                      <div 
-                        key={i} 
-                        className={`p-2 rounded-lg border text-sm flex items-center justify-between ${
-                          result.status === 'ok' ? 'border-green-500/30 bg-green-500/5' :
-                          result.status === 'warning' ? 'border-amber-500/30 bg-amber-500/5' :
-                          'border-red-500/30 bg-red-500/5'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          {result.status === 'ok' && <Check className="w-4 h-4 text-green-500" />}
-                          {result.status === 'warning' && <AlertTriangle className="w-4 h-4 text-amber-500" />}
-                          {result.status === 'error' && <XCircle className="w-4 h-4 text-red-500" />}
-                          <Badge variant="outline" className="text-xs">{result.category}</Badge>
-                          <span className="font-medium">{result.name}</span>
-                        </div>
-                        <span className="text-muted-foreground text-xs">{result.message}</span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
 
 
             {errorsLoading ? (
