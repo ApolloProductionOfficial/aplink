@@ -1697,30 +1697,41 @@ const MeetingRoom = () => {
               </TooltipContent>
             </Tooltip>
             
-            {/* Diagnostics / Admin button */}
+            {/* IP Panel button - only for admins */}
+            {isAdmin && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={() => setShowIPPanel(!showIPPanel)}
+                    variant={showIPPanel ? "default" : "outline"}
+                    size="sm"
+                    className="flex flex-col sm:flex-row items-center justify-center gap-1 h-auto py-2 px-2 sm:px-3 focus-visible:ring-0 border-primary/50 hover:bg-primary/10"
+                  >
+                    <Globe className="w-5 h-5" />
+                    <span className="text-[10px] sm:text-xs font-medium">{t.meetingRoom.ip}</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-[200px]">
+                  <p className="text-xs">{t.meetingRoom.ipTooltip}</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+
+            {/* Report/Diagnostics button - for everyone (including admins) */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  onClick={isAdmin ? () => setShowIPPanel(!showIPPanel) : copyDiagnostics}
-                  variant={showIPPanel && isAdmin ? "default" : "outline"}
+                  onClick={copyDiagnostics}
+                  variant="outline"
                   size="sm"
-                  className={`flex flex-col sm:flex-row items-center justify-center gap-1 h-auto py-2 px-2 sm:px-3 focus-visible:ring-0 ${isAdmin ? (showIPPanel ? "" : "border-primary/50 hover:bg-primary/10") : "border-yellow-500/50 hover:bg-yellow-500/10 text-yellow-500"}`}
+                  className="flex flex-col sm:flex-row items-center justify-center gap-1 h-auto py-2 px-2 sm:px-3 focus-visible:ring-0 border-yellow-500/50 hover:bg-yellow-500/10 text-yellow-500"
                 >
-                  {isAdmin ? (
-                    <>
-                      <Globe className="w-5 h-5" />
-                      <span className="text-[10px] sm:text-xs font-medium">{t.meetingRoom.ip}</span>
-                    </>
-                  ) : (
-                    <>
-                      {diagnosticsCopied ? <Check className="w-5 h-5" /> : <Bug className="w-5 h-5" />}
-                      <span className="text-[10px] sm:text-xs font-medium">{t.meetingRoom.report}</span>
-                    </>
-                  )}
+                  {diagnosticsCopied ? <Check className="w-5 h-5" /> : <Bug className="w-5 h-5" />}
+                  <span className="text-[10px] sm:text-xs font-medium">{t.meetingRoom.report}</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom" className="max-w-[200px]">
-                <p className="text-xs">{isAdmin ? t.meetingRoom.ipTooltip : t.meetingRoom.reportTooltip}</p>
+                <p className="text-xs">{t.meetingRoom.reportTooltip}</p>
               </TooltipContent>
             </Tooltip>
           </div>
