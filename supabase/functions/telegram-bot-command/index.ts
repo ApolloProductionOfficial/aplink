@@ -1,7 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
+// Use REPORTS_BOT_TOKEN for error/diagnostic commands (Reports and Errors bot)
+// This is separate from TELEGRAM_BOT_TOKEN which is used for user notifications (APLink bot)
+const REPORTS_BOT_TOKEN = Deno.env.get("REPORTS_BOT_TOKEN");
 const ADMIN_CHAT_ID = "2061785720";
 
 const corsHeaders = {
@@ -15,8 +17,8 @@ serve(async (req) => {
   }
 
   try {
-    if (!TELEGRAM_BOT_TOKEN) {
-      throw new Error("TELEGRAM_BOT_TOKEN not configured");
+    if (!REPORTS_BOT_TOKEN) {
+      throw new Error("REPORTS_BOT_TOKEN not configured");
     }
 
     const { command } = await req.json();
@@ -51,8 +53,8 @@ serve(async (req) => {
 
       responseText = `📊 *Статистика Apollo Production*\n\n• Всего ошибок: ${totalLogs || 0}\n• Сегодня: ${todayLogs || 0}\n• Критических: ${criticalLogs || 0}\n• Активных групп: ${activeGroups || 0}\n\n_${new Date().toLocaleString("ru-RU", { timeZone: "Europe/Moscow" })}_`;
 
-      // Send to Telegram
-      await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      // Send to Reports and Errors bot
+      await fetch(`https://api.telegram.org/bot${REPORTS_BOT_TOKEN}/sendMessage`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -65,7 +67,7 @@ serve(async (req) => {
     } else if (command === "ping" || command === "/ping") {
       responseText = `🏓 *Pong!*\n\nБот работает исправно.\n_${new Date().toLocaleString("ru-RU", { timeZone: "Europe/Moscow" })}_`;
 
-      await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      await fetch(`https://api.telegram.org/bot${REPORTS_BOT_TOKEN}/sendMessage`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -95,7 +97,7 @@ serve(async (req) => {
 
       responseText = `🗑 *Очистка завершена*\n\nУдалено:\n• Логов: ${logsCount}\n• Групп: ${groupsCount}\n\n_Удалены записи старше 7 дней_`;
 
-      await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      await fetch(`https://api.telegram.org/bot${REPORTS_BOT_TOKEN}/sendMessage`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

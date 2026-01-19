@@ -315,7 +315,8 @@ serve(async (req) => {
 
     // Save to diagnostics_history
     let telegramSent = false;
-    const telegramToken = Deno.env.get("TELEGRAM_BOT_TOKEN");
+    // Use REPORTS_BOT_TOKEN for diagnostics notifications (Reports and Errors bot)
+    const telegramToken = Deno.env.get("REPORTS_BOT_TOKEN");
     const adminChatId = "2061785720";
 
     if (telegramToken) {

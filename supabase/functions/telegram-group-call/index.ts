@@ -71,24 +71,24 @@ serve(async (req) => {
 
     // Process participants - find their telegram_ids
     const participantResults: Array<{
-      telegram_id: bigint | null;
+      telegram_id: string | null;
       user_id: string | null;
       status: string;
       error?: string;
     }> = [];
 
     for (const participant of participants) {
-      let telegramId: bigint | null = null;
+      let telegramId: string | null = null;
       let userId: string | null = null;
 
       // Check if it's a telegram_id (number) or username
       if (/^\d+$/.test(participant)) {
-        telegramId = BigInt(participant);
+        telegramId = participant;
         // Find user by telegram_id
         const { data: profile } = await supabase
           .from("profiles")
           .select("user_id")
-          .eq("telegram_id", participant)
+          .eq("telegram_id", parseInt(participant))
           .single();
         userId = profile?.user_id || null;
       } else {
@@ -102,7 +102,7 @@ serve(async (req) => {
         
         if (profile) {
           userId = profile.user_id;
-          telegramId = profile.telegram_id ? BigInt(profile.telegram_id) : null;
+          telegramId = profile.telegram_id ? String(profile.telegram_id) : null;
         }
       }
 
@@ -112,7 +112,7 @@ serve(async (req) => {
         .insert({
           call_request_id: callRequest.id,
           user_id: userId,
-          telegram_id: telegramId ? Number(telegramId) : null,
+          telegram_id: telegramId ? parseInt(telegramId) : null,
           status: "invited",
         });
 
@@ -158,7 +158,7 @@ serve(async (req) => {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                chat_id: telegramId.toString(),
+                chat_id: telegramId,
                 text: message,
                 parse_mode: "Markdown",
                 reply_markup: keyboard,
@@ -186,7 +186,7 @@ serve(async (req) => {
                   "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
                 },
                 body: JSON.stringify({
-                  telegram_id: telegramId.toString(),
+                  telegram_id: telegramId,
                   caller_name: creatorName,
                   is_group_call: true,
                   participant_count: participants.length,
