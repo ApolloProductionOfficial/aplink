@@ -418,6 +418,45 @@ export type Database = {
         }
         Relationships: []
       }
+      scheduled_calls: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          participants_telegram_ids: number[] | null
+          reminder_sent: boolean | null
+          room_name: string
+          scheduled_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          participants_telegram_ids?: number[] | null
+          reminder_sent?: boolean | null
+          room_name: string
+          scheduled_at: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          participants_telegram_ids?: number[] | null
+          reminder_sent?: boolean | null
+          room_name?: string
+          scheduled_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       shared_meeting_links: {
         Row: {
           created_at: string

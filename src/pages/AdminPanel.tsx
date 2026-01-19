@@ -22,6 +22,8 @@ import DiagnosticsHistory from '@/components/DiagnosticsHistory';
 import TelegramSetupCard from '@/components/TelegramSetupCard';
 import TelegramActivityChart from '@/components/TelegramActivityChart';
 import GroupCallHistory from '@/components/GroupCallHistory';
+import CallScheduler from '@/components/CallScheduler';
+import TelegramMiniAppAnalytics from '@/components/TelegramMiniAppAnalytics';
 import { useAdminPushNotifications } from '@/hooks/useAdminPushNotifications';
 
 interface MeetingTranscript {
@@ -121,7 +123,7 @@ const AdminPanel = () => {
   const [participants, setParticipants] = useState<MeetingParticipant[]>([]);
   const [geoData, setGeoData] = useState<Map<string, ParticipantGeoData>>(new Map());
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'transcripts' | 'participants' | 'profile' | 'analytics' | 'users' | 'errors'>('analytics');
+  const [activeTab, setActiveTab] = useState<'transcripts' | 'participants' | 'profile' | 'analytics' | 'users' | 'errors' | 'telegram'>('analytics');
   const [profile, setProfile] = useState<Profile | null>(null);
   const [displayName, setDisplayName] = useState('');
   const [username, setUsername] = useState('');
@@ -932,6 +934,15 @@ const AdminPanel = () => {
               )}
             </Button>
             <Button
+              variant={activeTab === 'telegram' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setActiveTab('telegram')}
+              className="gap-1 md:gap-2 px-2 md:px-3 text-xs md:text-sm"
+            >
+              <Users className="w-3.5 h-3.5 md:w-4 md:h-4" />
+              <span className="hidden sm:inline">Telegram</span>
+            </Button>
+            <Button
               variant={activeTab === 'profile' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setActiveTab('profile')}
@@ -1127,14 +1138,24 @@ const AdminPanel = () => {
             {/* Diagnostics History */}
             <DiagnosticsHistory />
             
-            {/* Telegram Mini App Activity Chart */}
-            <TelegramActivityChart />
-            
             {/* Group Call History */}
             <GroupCallHistory />
             
+            {/* Call Scheduler */}
+            <CallScheduler />
+            
             {/* Telegram Mini App Setup */}
             <TelegramSetupCard publishedUrl="https://aplink.live" />
+          </div>
+        ) : activeTab === 'telegram' ? (
+          <div className="space-y-6">
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <Users className="w-6 h-6 text-primary" />
+              Telegram Mini App
+            </h1>
+            
+            {/* Full Telegram Mini App Analytics */}
+            <TelegramMiniAppAnalytics />
           </div>
         ) : activeTab === 'errors' ? (
           <div className="space-y-6">
