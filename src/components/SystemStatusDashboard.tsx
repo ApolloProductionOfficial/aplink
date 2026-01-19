@@ -199,9 +199,18 @@ const SystemStatusDashboard = ({ errorLogs, errorStats, onClearOldLogs, clearing
       });
       
       toast.success("🧠 AI-диагностика завершена!");
-    } catch (err) {
-      console.error("Analysis error:", err);
-      toast.error("Ошибка анализа");
+    } catch (err: unknown) {
+      // Don't log network errors as console.error to avoid polluting error logs
+      const errorName = (err as { name?: string })?.name || '';
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      
+      if (errorName === 'FunctionsFetchError' || errorMessage.includes('Failed to fetch')) {
+        console.warn("Analysis fetch warning:", errorMessage);
+        toast.error("Не удалось подключиться к сервису анализа. Проверьте соединение.");
+      } else {
+        console.warn("Analysis error:", err);
+        toast.error("Ошибка анализа: " + errorMessage.substring(0, 100));
+      }
     } finally {
       setLoading(false);
     }
@@ -217,9 +226,17 @@ const SystemStatusDashboard = ({ errorLogs, errorStats, onClearOldLogs, clearing
       
       setResult(prev => prev ? { ...prev, diagnostics: data } : null);
       toast.success("🔧 Автофикс завершён!");
-    } catch (err) {
-      console.error("Autofix error:", err);
-      toast.error("Ошибка автофикса");
+    } catch (err: unknown) {
+      const errorName = (err as { name?: string })?.name || '';
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      
+      if (errorName === 'FunctionsFetchError' || errorMessage.includes('Failed to fetch')) {
+        console.warn("Autofix fetch warning:", errorMessage);
+        toast.error("Не удалось подключиться к сервису. Проверьте соединение.");
+      } else {
+        console.warn("Autofix error:", err);
+        toast.error("Ошибка автофикса: " + errorMessage.substring(0, 100));
+      }
     } finally {
       setLoading(false);
     }
