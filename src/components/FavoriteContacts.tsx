@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Star, UserPlus, Phone, Trash2, Circle } from 'lucide-react';
+import { Star, UserPlus, Phone, Trash2, Circle, Users } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import GroupCallDialog from './GroupCallDialog';
 
 interface Contact {
   id: string;
@@ -40,6 +41,7 @@ const FavoriteContacts = () => {
   const [addNickname, setAddNickname] = useState('');
   const [adding, setAdding] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [groupCallOpen, setGroupCallOpen] = useState(false);
 
   const favorites = t.favorites || {
     title: 'Избранные контакты',
@@ -224,12 +226,22 @@ const FavoriteContacts = () => {
           {favorites.title}
         </h3>
         
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
-              <UserPlus className="w-4 h-4" />
-            </Button>
-          </DialogTrigger>
+        <div className="flex items-center gap-1">
+          <Button 
+            size="sm" 
+            variant="ghost" 
+            className="h-8 w-8 p-0"
+            onClick={() => setGroupCallOpen(true)}
+            title="Групповой звонок"
+          >
+            <Users className="w-4 h-4" />
+          </Button>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
+                <UserPlus className="w-4 h-4" />
+              </Button>
+            </DialogTrigger>
           <DialogContent className="bg-card border-border">
             <DialogHeader>
               <DialogTitle>{favorites.addContact}</DialogTitle>
@@ -329,6 +341,8 @@ const FavoriteContacts = () => {
           ))}
         </div>
       )}
+      
+      <GroupCallDialog open={groupCallOpen} onOpenChange={setGroupCallOpen} />
     </div>
   );
 };

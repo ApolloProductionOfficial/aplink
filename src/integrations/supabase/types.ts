@@ -41,6 +41,74 @@ export type Database = {
         }
         Relationships: []
       }
+      call_participants: {
+        Row: {
+          call_request_id: string
+          id: string
+          invited_at: string
+          responded_at: string | null
+          status: string
+          telegram_id: number | null
+          user_id: string | null
+        }
+        Insert: {
+          call_request_id: string
+          id?: string
+          invited_at?: string
+          responded_at?: string | null
+          status?: string
+          telegram_id?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          call_request_id?: string
+          id?: string
+          invited_at?: string
+          responded_at?: string | null
+          status?: string
+          telegram_id?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_participants_call_request_id_fkey"
+            columns: ["call_request_id"]
+            isOneToOne: false
+            referencedRelation: "call_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      call_requests: {
+        Row: {
+          created_at: string
+          created_by: string
+          expires_at: string
+          id: string
+          is_group_call: boolean
+          room_name: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          expires_at?: string
+          id?: string
+          is_group_call?: boolean
+          room_name: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          expires_at?: string
+          id?: string
+          is_group_call?: boolean
+          room_name?: string
+          status?: string
+        }
+        Relationships: []
+      }
       contacts: {
         Row: {
           contact_user_id: string
@@ -320,6 +388,8 @@ export type Database = {
           created_at: string
           display_name: string | null
           id: string
+          telegram_id: number | null
+          telegram_username: string | null
           updated_at: string
           user_id: string
           username: string | null
@@ -329,6 +399,8 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id?: string
+          telegram_id?: number | null
+          telegram_username?: string | null
           updated_at?: string
           user_id: string
           username?: string | null
@@ -338,6 +410,8 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id?: string
+          telegram_id?: number | null
+          telegram_username?: string | null
           updated_at?: string
           user_id?: string
           username?: string | null
@@ -414,6 +488,33 @@ export type Database = {
           referrer?: string | null
           session_id?: string | null
           user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      telegram_activity_log: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          telegram_id: number | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          telegram_id?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          telegram_id?: number | null
           user_id?: string | null
         }
         Relationships: []

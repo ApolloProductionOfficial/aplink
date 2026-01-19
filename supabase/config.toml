@@ -24,9 +24,6 @@ verify_jwt = false
 [functions.cleanup-old-participants]
 verify_jwt = false
 
-[functions.send-error-notification]
-verify_jwt = false
-
 [functions.realtime-translate]
 verify_jwt = false
 
@@ -58,4 +55,10 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.setup-telegram-webapp]
+verify_jwt = false
+
+[functions.telegram-group-call]
+verify_jwt = false
+
+[functions.telegram-voice-notification]
 verify_jwt = false
