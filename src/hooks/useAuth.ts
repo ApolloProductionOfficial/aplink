@@ -18,14 +18,33 @@ export const useAuth = () => {
   });
 
   useEffect(() => {
+    const cleanupAuthHashIfPresent = () => {
+      const { hash, pathname, search } = window.location;
+      if (!hash) return;
+
+      const hashContent = hash.startsWith('#') ? hash.slice(1) : hash;
+      const hasAuthTokens =
+        hashContent.includes('access_token=') ||
+        hashContent.includes('refresh_token=') ||
+        hashContent.includes('token_type=');
+
+      // Never touch meeting room URL here; it has its own early cleanup.
+      if (hasAuthTokens && !pathname.startsWith('/room/')) {
+        window.history.replaceState(null, '', pathname + search);
+      }
+    };
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      (_event, session) => {
         setState(prev => ({
           ...prev,
           session,
           user: session?.user ?? null,
         }));
+
+        // Once we have a session from a recovery/OAuth link, remove tokens from the URL.
+        if (session) cleanupAuthHashIfPresent();
         
         // Defer role check with setTimeout to avoid deadlock
         if (session?.user) {
@@ -45,6 +64,8 @@ export const useAuth = () => {
         session,
         user: session?.user ?? null,
       }));
+
+      if (session) cleanupAuthHashIfPresent();
       
       if (session?.user) {
         checkAdminRole(session.user.id);
@@ -64,6 +85,8 @@ export const useAuth = () => {
         .eq('user_id', userId)
         .eq('role', 'admin')
         .maybeSingle();
+
+      if (error) throw error;
       
       setState(prev => ({
         ...prev,
