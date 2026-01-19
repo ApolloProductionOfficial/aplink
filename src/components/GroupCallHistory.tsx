@@ -5,9 +5,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users, Calendar, Clock, Search, Phone, User, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { Users, Calendar, Clock, Search, Phone, User, CheckCircle, XCircle, Loader2, Download, FileSpreadsheet } from 'lucide-react';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
+import { toast } from 'sonner';
 
 interface CallParticipant {
   id: string;
@@ -118,6 +119,86 @@ const GroupCallHistory = () => {
     );
   });
 
+  // Export to CSV
+  const exportToCSV = () => {
+    if (filteredCalls.length === 0) {
+      toast.error('Нет данных для экспорта');
+      return;
+    }
+    
+    const headers = ['ID', 'Комната', 'Создатель', 'Групповой', 'Статус', 'Участников', 'Создан', 'Истекает'];
+    const rows = filteredCalls.map(call => [
+      call.id,
+      call.room_name,
+      call.creator_name || 'Система',
+      call.is_group_call ? 'Да' : 'Нет',
+      call.status,
+      call.participants?.length || 0,
+      format(new Date(call.created_at), 'dd.MM.yyyy HH:mm'),
+      format(new Date(call.expires_at), 'dd.MM.yyyy HH:mm'),
+    ]);
+    
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+    
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `call_history_${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    link.click();
+    
+    toast.success('CSV экспортирован!');
+  };
+
+  // Export to Excel-like TSV (opens in Excel properly)
+  const exportToExcel = () => {
+    if (filteredCalls.length === 0) {
+      toast.error('Нет данных для экспорта');
+      return;
+    }
+    
+    const headers = ['ID', 'Комната', 'Создатель', 'Групповой', 'Статус', 'Участников', 'Создан', 'Истекает', 'Участники'];
+    const rows = filteredCalls.map(call => [
+      call.id,
+      call.room_name,
+      call.creator_name || 'Система',
+      call.is_group_call ? 'Да' : 'Нет',
+      call.status,
+      call.participants?.length || 0,
+      format(new Date(call.created_at), 'dd.MM.yyyy HH:mm'),
+      format(new Date(call.expires_at), 'dd.MM.yyyy HH:mm'),
+      call.participants?.map(p => p.telegram_id ? `TG:${p.telegram_id}` : p.user_id?.slice(0, 8)).join('; ') || '',
+    ]);
+    
+    // Create Excel-compatible XML
+    let excelContent = `<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+  xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+  <Worksheet ss:Name="История звонков">
+    <Table>
+      <Row>
+        ${headers.map(h => `<Cell><Data ss:Type="String">${h}</Data></Cell>`).join('')}
+      </Row>
+      ${rows.map(row => `
+      <Row>
+        ${row.map(cell => `<Cell><Data ss:Type="String">${cell}</Data></Cell>`).join('')}
+      </Row>`).join('')}
+    </Table>
+  </Worksheet>
+</Workbook>`;
+    
+    const blob = new Blob([excelContent], { type: 'application/vnd.ms-excel' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `call_history_${format(new Date(), 'yyyy-MM-dd')}.xls`;
+    link.click();
+    
+    toast.success('Excel экспортирован!');
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
@@ -194,6 +275,14 @@ const GroupCallHistory = () => {
 
           <Button variant="outline" size="sm" onClick={fetchCalls}>
             Обновить
+          </Button>
+          <Button variant="outline" size="sm" onClick={exportToCSV} className="gap-1">
+            <Download className="w-4 h-4" />
+            CSV
+          </Button>
+          <Button variant="outline" size="sm" onClick={exportToExcel} className="gap-1">
+            <FileSpreadsheet className="w-4 h-4" />
+            Excel
           </Button>
         </div>
 
