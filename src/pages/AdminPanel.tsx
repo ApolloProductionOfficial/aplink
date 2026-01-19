@@ -17,8 +17,6 @@ import AnimatedBackground from '@/components/AnimatedBackground';
 import TwoFactorSetup from '@/components/TwoFactorSetup';
 import apolloLogo from '@/assets/apollo-logo.mp4';
 import { generateMeetingDocx } from '@/utils/generateMeetingDocx';
-import DiagnosticsStatusCard from '@/components/DiagnosticsStatusCard';
-import DiagnosticsHistory from '@/components/DiagnosticsHistory';
 import TelegramSetupCard from '@/components/TelegramSetupCard';
 import TelegramActivityChart from '@/components/TelegramActivityChart';
 import GroupCallHistory from '@/components/GroupCallHistory';
