@@ -27,6 +27,15 @@ serve(async (req) => {
     const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Parse request body for options
+    let autoTrigger = false;
+    try {
+      const body = await req.json();
+      autoTrigger = body.autoTrigger || false;
+    } catch {
+      // No body is fine
+    }
+
     if (!lovableApiKey) {
       return new Response(
         JSON.stringify({ error: "LOVABLE_API_KEY not configured" }),
@@ -39,7 +48,7 @@ serve(async (req) => {
       .from("error_logs")
       .select("*")
       .order("created_at", { ascending: false })
-      .limit(50);
+      .limit(100);
 
     if (fetchError) {
       throw new Error(`Failed to fetch errors: ${fetchError.message}`);
@@ -50,7 +59,8 @@ serve(async (req) => {
         JSON.stringify({
           analysis: "✅ Отлично! В системе нет ошибок для анализа.",
           recommendations: [],
-          summary: { total: 0, patterns: 0 }
+          codeExamples: [],
+          summary: { total: 0, patterns: 0, analyzedAt: new Date().toISOString() }
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -66,7 +76,7 @@ serve(async (req) => {
       errorGroups.get(key)!.push(err);
     });
 
-    // Prepare error summary for AI
+    // Prepare detailed error summary for AI
     const errorSummary = Array.from(errorGroups.entries())
       .map(([key, errors]) => {
         const [type, source] = key.split('::');
@@ -75,45 +85,49 @@ serve(async (req) => {
           type,
           source,
           count: errors.length,
-          message: sample.error_message.substring(0, 200),
+          message: sample.error_message.substring(0, 300),
           severity: sample.severity,
-          lastOccurred: sample.created_at
+          lastOccurred: sample.created_at,
+          details: sample.details ? JSON.stringify(sample.details).substring(0, 200) : null
         };
       })
       .sort((a, b) => b.count - a.count)
-      .slice(0, 10);
+      .slice(0, 15);
 
-    // Call Lovable AI for analysis
+    // Build comprehensive prompt for AI
     const prompt = `Ты — эксперт по отладке веб-приложений на React/TypeScript/Supabase. Проанализируй следующие группы ошибок и дай конкретные рекомендации по их устранению.
 
-ОШИБКИ ДЛЯ АНАЛИЗА:
+${autoTrigger ? '⚠️ ВНИМАНИЕ: Этот анализ запущен АВТОМАТИЧЕСКИ из-за превышения порога ошибок (10+ за час)!' : ''}
+
+ОШИБКИ ДЛЯ АНАЛИЗА (${recentErrors.length} всего, ${errorGroups.size} паттернов):
 ${JSON.stringify(errorSummary, null, 2)}
 
 Дай ответ в следующем формате JSON:
 {
-  "analysis": "Краткий общий анализ ситуации (2-3 предложения)",
+  "analysis": "Краткий общий анализ ситуации (2-3 предложения). Опиши главную проблему и её причину.",
   "recommendations": [
     {
       "priority": "high" | "medium" | "low",
       "errorType": "тип ошибки",
-      "problem": "краткое описание проблемы",
-      "solution": "конкретное решение с примером кода если нужно",
+      "problem": "краткое описание проблемы (1 предложение)",
+      "solution": "конкретное пошаговое решение",
       "file": "предполагаемый файл где искать проблему (если известно)"
     }
   ],
   "codeExamples": [
     {
       "title": "название примера",
-      "code": "пример кода для исправления"
+      "code": "готовый код для исправления проблемы"
     }
   ]
 }
 
 Важно:
 - Давай КОНКРЕТНЫЕ решения, не общие советы
-- Если ошибка связана с API ключами — укажи какой именно
-- Если ошибка в коде — покажи как исправить
-- Приоритизируй по критичности`;
+- Если ошибка связана с API ключами — укажи какой именно и где его настроить
+- Если ошибка в коде — покажи готовый код исправления
+- Приоритизируй по критичности: high = влияет на работу приложения, medium = неудобство для пользователя, low = косметические
+- Давай рекомендации, которые разработчик может скопировать в Lovable chat для исправления`;
 
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -124,10 +138,13 @@ ${JSON.stringify(errorSummary, null, 2)}
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         messages: [
-          { role: "system", content: "Ты эксперт по отладке React/TypeScript/Supabase приложений. Отвечай только валидным JSON." },
+          { 
+            role: "system", 
+            content: "Ты эксперт по отладке React/TypeScript/Supabase приложений. Отвечай ТОЛЬКО валидным JSON без markdown обёрток. Фокусируйся на практических решениях, которые можно сразу применить." 
+          },
           { role: "user", content: prompt }
         ],
-        temperature: 0.3,
+        temperature: 0.2,
       }),
     });
 
@@ -160,7 +177,7 @@ ${JSON.stringify(errorSummary, null, 2)}
     } catch (parseError) {
       console.error("Failed to parse AI response:", aiText);
       analysisResult = {
-        analysis: aiText.substring(0, 500),
+        analysis: aiText.substring(0, 500) || "Не удалось распарсить ответ AI",
         recommendations: [],
         codeExamples: []
       };

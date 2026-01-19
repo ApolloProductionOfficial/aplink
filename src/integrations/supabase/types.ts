@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_analysis_history: {
+        Row: {
+          analysis: string
+          code_examples: Json | null
+          created_at: string
+          error_count: number
+          id: string
+          pattern_count: number
+          recommendations: Json | null
+          run_by: string | null
+          trigger_type: string
+        }
+        Insert: {
+          analysis: string
+          code_examples?: Json | null
+          created_at?: string
+          error_count?: number
+          id?: string
+          pattern_count?: number
+          recommendations?: Json | null
+          run_by?: string | null
+          trigger_type?: string
+        }
+        Update: {
+          analysis?: string
+          code_examples?: Json | null
+          created_at?: string
+          error_count?: number
+          id?: string
+          pattern_count?: number
+          recommendations?: Json | null
+          run_by?: string | null
+          trigger_type?: string
+        }
+        Relationships: []
+      }
       backup_codes: {
         Row: {
           code_hash: string
