@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Phone, Clock, TrendingUp, Users, Star } from "lucide-react";
+import { Phone, Clock, TrendingUp, Users, Star, Download } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-
+import CallStatsExport from "./CallStatsExport";
 interface CallStats {
   total_calls: number;
   total_duration_seconds: number;
@@ -108,6 +108,15 @@ const CallStatistics = () => {
 
   return (
     <div className="space-y-6">
+      {/* Export buttons */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Download className="w-4 h-4" />
+          <span>Экспорт статистики</span>
+        </div>
+        <CallStatsExport stats={stats} topContacts={topContacts} />
+      </div>
+      
       {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">

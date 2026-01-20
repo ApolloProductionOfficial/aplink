@@ -471,6 +471,8 @@ export type Database = {
           updated_at: string
           user_id: string
           username: string | null
+          voice_preference: string | null
+          voice_speed: number | null
         }
         Insert: {
           avatar_url?: string | null
@@ -482,6 +484,8 @@ export type Database = {
           updated_at?: string
           user_id: string
           username?: string | null
+          voice_preference?: string | null
+          voice_speed?: number | null
         }
         Update: {
           avatar_url?: string | null
@@ -493,6 +497,8 @@ export type Database = {
           updated_at?: string
           user_id?: string
           username?: string | null
+          voice_preference?: string | null
+          voice_speed?: number | null
         }
         Relationships: []
       }
