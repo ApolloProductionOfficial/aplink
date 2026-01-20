@@ -10,9 +10,10 @@ const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
 const WEB_APP_URL = "https://aplink.live";
 
 interface GroupCallRequest {
-  created_by: string; // user_id
-  participants: string[]; // array of telegram_ids or usernames
+  created_by: string;
+  participants: string[];
   room_name?: string;
+  notify_creator_on_error?: boolean;
 }
 
 serve(async (req) => {
@@ -20,8 +21,13 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  );
+
   try {
-    const { created_by, participants, room_name }: GroupCallRequest = await req.json();
+    const { created_by, participants, room_name, notify_creator_on_error }: GroupCallRequest = await req.json();
 
     if (!TELEGRAM_BOT_TOKEN) {
       throw new Error("TELEGRAM_BOT_TOKEN not configured");
@@ -31,14 +37,34 @@ serve(async (req) => {
       throw new Error("Missing required fields: created_by, participants");
     }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    // Helper function to send error notification to creator
+    const sendErrorToCreator = async (errorMessage: string, details?: Record<string, unknown>) => {
+      if (!notify_creator_on_error) return;
+      
+      const { data: creatorData } = await supabase
+        .from("profiles")
+        .select("telegram_id")
+        .eq("user_id", created_by)
+        .single();
+      
+      if (creatorData?.telegram_id) {
+        const message = `❌ *Ошибка создания звонка*\n\n${errorMessage}\n\n${details ? `📋 Детали:\n\`${JSON.stringify(details)}\`` : ""}\n\n⏰ ${new Date().toLocaleString("ru-RU")}`;
+
+        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: creatorData.telegram_id,
+            text: message,
+            parse_mode: "Markdown",
+          }),
+        });
+      }
+    };
 
     // Generate room name if not provided
     const finalRoomName = room_name || `group-${Date.now().toString(36)}`;
-    const expiresAt = new Date(Date.now() + 2 * 60 * 1000).toISOString(); // 2 minutes
+    const expiresAt = new Date(Date.now() + 2 * 60 * 1000).toISOString();
 
     // Get creator's profile
     const { data: creatorProfile } = await supabase
@@ -64,12 +90,13 @@ serve(async (req) => {
 
     if (callError) {
       console.error("Error creating call request:", callError);
+      await sendErrorToCreator("Не удалось создать запрос звонка", { error: callError.message });
       throw new Error("Failed to create call request");
     }
 
     console.log("Created call request:", callRequest.id);
 
-    // Process participants - find their telegram_ids
+    // Process participants
     const participantResults: Array<{
       telegram_id: string | null;
       user_id: string | null;
@@ -81,10 +108,8 @@ serve(async (req) => {
       let telegramId: string | null = null;
       let userId: string | null = null;
 
-      // Check if it's a telegram_id (number) or username
       if (/^\d+$/.test(participant)) {
         telegramId = participant;
-        // Find user by telegram_id
         const { data: profile } = await supabase
           .from("profiles")
           .select("user_id")
@@ -92,7 +117,6 @@ serve(async (req) => {
           .single();
         userId = profile?.user_id || null;
       } else {
-        // It's a username, find profile
         const cleanUsername = participant.replace(/^@/, "").toLowerCase();
         const { data: profile } = await supabase
           .from("profiles")
@@ -103,10 +127,19 @@ serve(async (req) => {
         if (profile) {
           userId = profile.user_id;
           telegramId = profile.telegram_id ? String(profile.telegram_id) : null;
+        } else {
+          // User not found - notify creator
+          await sendErrorToCreator(`Пользователь @${cleanUsername} не найден в системе`, { username: cleanUsername });
+          participantResults.push({
+            telegram_id: null,
+            user_id: null,
+            status: "user_not_found",
+            error: "User not found",
+          });
+          continue;
         }
       }
 
-      // Insert participant record
       const { error: participantError } = await supabase
         .from("call_participants")
         .insert({
@@ -118,6 +151,7 @@ serve(async (req) => {
 
       if (participantError) {
         console.error("Error adding participant:", participantError);
+        await sendErrorToCreator("Ошибка добавления участника", { participant, error: participantError.message });
         participantResults.push({
           telegram_id: telegramId,
           user_id: userId,
@@ -127,27 +161,13 @@ serve(async (req) => {
         continue;
       }
 
-      // Send Telegram notification if telegram_id exists
       if (telegramId) {
-        const message = `🎥 *Групповой звонок!*
-
-👤 *Организатор:* ${creatorName}
-👥 *Участников:* ${participants.length}
-⏱ *Истекает через:* 2 минуты
-
-Нажмите кнопку ниже, чтобы присоединиться.`;
+        const message = `🎥 *Групповой звонок!*\n\n👤 *Организатор:* ${creatorName}\n👥 *Участников:* ${participants.length}\n⏱ *Истекает через:* 2 минуты\n\nНажмите кнопку ниже, чтобы присоединиться.`;
 
         const keyboard = {
           inline_keyboard: [
-            [
-              { 
-                text: "🎥 Присоединиться", 
-                web_app: { url: `${WEB_APP_URL}/room/${finalRoomName}` }
-              }
-            ],
-            [
-              { text: "❌ Отклонить", callback_data: `decline_group:${callRequest.id}` }
-            ]
+            [{ text: "🎥 Присоединиться", web_app: { url: `${WEB_APP_URL}/room/${finalRoomName}` } }],
+            [{ text: "❌ Отклонить", callback_data: `decline_group:${callRequest.id}` }]
           ]
         };
 
@@ -169,13 +189,20 @@ serve(async (req) => {
           const telegramData = await telegramResponse.json();
           console.log(`Notification sent to ${telegramId}:`, telegramData.ok);
 
+          if (!telegramData.ok) {
+            await sendErrorToCreator(`Не удалось отправить уведомление участнику`, { 
+              telegram_id: telegramId, 
+              telegram_error: telegramData.description 
+            });
+          }
+
           participantResults.push({
             telegram_id: telegramId,
             user_id: userId,
             status: telegramData.ok ? "notified" : "notification_failed",
           });
 
-          // Try to send voice notification
+          // Voice notification
           try {
             await fetch(
               `${Deno.env.get("SUPABASE_URL")}/functions/v1/telegram-voice-notification`,
@@ -198,6 +225,7 @@ serve(async (req) => {
           }
         } catch (error) {
           console.error(`Failed to send notification to ${telegramId}:`, error);
+          await sendErrorToCreator(`Ошибка отправки уведомления`, { telegram_id: telegramId });
           participantResults.push({
             telegram_id: telegramId,
             user_id: userId,
@@ -206,6 +234,7 @@ serve(async (req) => {
           });
         }
       } else {
+        await sendErrorToCreator(`У участника не привязан Telegram`, { participant });
         participantResults.push({
           telegram_id: null,
           user_id: userId,
