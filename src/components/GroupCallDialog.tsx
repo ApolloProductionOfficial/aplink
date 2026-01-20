@@ -40,8 +40,10 @@ const GroupCallDialog = ({ open, onOpenChange }: GroupCallDialogProps) => {
   const [results, setResults] = useState<{ username: string; status: string }[] | null>(null);
 
   useEffect(() => {
-    if (open && user) {
-      loadContacts();
+    if (open) {
+      if (user) {
+        loadContacts();
+      }
       setSelectedContacts(new Set());
       setResults(null);
     }
@@ -93,6 +95,11 @@ const GroupCallDialog = ({ open, onOpenChange }: GroupCallDialogProps) => {
   };
 
   const handleStartGroupCall = async () => {
+    if (!user) {
+      toast.error("Необходимо авторизоваться");
+      return;
+    }
+    
     if (selectedContacts.size < 1) {
       toast.error("Выберите хотя бы одного участника");
       return;

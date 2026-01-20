@@ -22,13 +22,15 @@ class ErrorBoundary extends Component<Props, State> {
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error("ErrorBoundary caught error:", error, errorInfo);
     
-    // Send notification
+    // Send notification with safe message extraction
+    const errorMessage = error?.message || error?.toString?.() || "Unknown error";
+    
     sendErrorNotification({
       errorType: "REACT_ERROR",
-      errorMessage: error.message,
+      errorMessage,
       details: {
-        stack: error.stack,
-        componentStack: errorInfo.componentStack,
+        stack: error?.stack || "No stack trace",
+        componentStack: errorInfo?.componentStack || "No component stack",
       },
       source: "React ErrorBoundary",
     });
