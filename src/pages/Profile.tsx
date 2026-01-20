@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import CustomCursor from '@/components/CustomCursor';
 import VoiceSettings from '@/components/VoiceSettings';
+import DoNotDisturbSettings from '@/components/DoNotDisturbSettings';
 
 const Profile = () => {
   const { user, isLoading: authLoading } = useAuth();
@@ -338,6 +339,11 @@ const Profile = () => {
         {/* Voice Settings */}
         <div className="mt-6">
           <VoiceSettings />
+        </div>
+        
+        {/* Do Not Disturb Settings */}
+        <div className="mt-6">
+          <DoNotDisturbSettings />
         </div>
       </main>
     </div>

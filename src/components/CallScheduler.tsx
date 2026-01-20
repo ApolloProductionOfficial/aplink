@@ -11,6 +11,8 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import CalendarExport from './CalendarExport';
 
 interface ScheduledCall {
   id: string;
@@ -20,6 +22,7 @@ interface ScheduledCall {
   description: string | null;
   status: string;
   reminder_sent: boolean;
+  reminder_minutes: number;
   created_at: string;
 }
 
@@ -35,6 +38,7 @@ const CallScheduler = () => {
   const [scheduledAt, setScheduledAt] = useState('');
   const [description, setDescription] = useState('');
   const [participantIds, setParticipantIds] = useState('');
+  const [reminderMinutes, setReminderMinutes] = useState('15');
 
   useEffect(() => {
     fetchScheduledCalls();
@@ -103,6 +107,7 @@ const CallScheduler = () => {
           scheduled_at: new Date(scheduledAt).toISOString(),
           participants_telegram_ids: ids,
           description: description.trim() || null,
+          reminder_minutes: parseInt(reminderMinutes),
         });
       
       if (error) throw error;
@@ -113,6 +118,7 @@ const CallScheduler = () => {
       setScheduledAt('');
       setDescription('');
       setParticipantIds('');
+      setReminderMinutes('15');
     } catch (error: any) {
       toast.error('Ошибка: ' + error.message);
     } finally {
@@ -236,15 +242,32 @@ const CallScheduler = () => {
               />
             </div>
             
-            <div>
-              <Label htmlFor="description">Описание (опционально)</Label>
-              <Textarea
-                id="description"
-                placeholder="О чём будет звонок..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={2}
-              />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <Label htmlFor="reminderMinutes">Напоминание за</Label>
+                <Select value={reminderMinutes} onValueChange={setReminderMinutes}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="5">5 минут</SelectItem>
+                    <SelectItem value="10">10 минут</SelectItem>
+                    <SelectItem value="15">15 минут</SelectItem>
+                    <SelectItem value="30">30 минут</SelectItem>
+                    <SelectItem value="60">1 час</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="description">Описание (опционально)</Label>
+                <Textarea
+                  id="description"
+                  placeholder="О чём будет звонок..."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={2}
+                />
+              </div>
             </div>
             
             <div className="flex gap-2">
@@ -316,7 +339,15 @@ const CallScheduler = () => {
                     )}
                   </div>
                   
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2 items-center">
+                    {/* Calendar Export */}
+                    <CalendarExport
+                      roomName={call.room_name}
+                      scheduledAt={call.scheduled_at}
+                      description={call.description}
+                      participantCount={call.participants_telegram_ids?.length}
+                    />
+                    
                     {call.status === 'scheduled' && (
                       <Button
                         size="sm"

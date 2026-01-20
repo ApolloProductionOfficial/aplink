@@ -145,6 +145,82 @@ serve(async (req) => {
         const { count: criticalLogs } = await supabase.from("error_logs").select("*", { count: "exact", head: true }).eq("severity", "critical");
         const { count: activeGroups } = await supabase.from("error_groups").select("*", { count: "exact", head: true });
         responseText = `📊 Статистика:\n• Всего: ${totalLogs || 0}\n• Сегодня: ${todayLogs || 0}\n• Критических: ${criticalLogs || 0}\n• Групп: ${activeGroups || 0}`;
+      
+      } else if (callbackData.startsWith("callback_5min:") || callbackData.startsWith("callback_15min:") || callbackData.startsWith("callback_busy:")) {
+        // Quick reply callbacks
+        const parts = callbackData.split(":");
+        const action = parts[0];
+        const callerId = parts[1];
+        
+        // Get caller's profile
+        const { data: callerProfile } = await supabase
+          .from("profiles")
+          .select("telegram_id, display_name, username")
+          .eq("user_id", callerId)
+          .single();
+        
+        // Get responder's profile
+        const { data: responderProfile } = await supabase
+          .from("profiles")
+          .select("display_name, username")
+          .eq("telegram_id", fromUser?.id)
+          .single();
+        
+        const responderName = responderProfile?.display_name || responderProfile?.username || "Пользователь";
+        
+        let callerMessage = "";
+        let buttonText = "";
+        
+        if (action === "callback_5min") {
+          callerMessage = `📞 *${responderName}* перезвонит через 5 минут`;
+          buttonText = "✅ Перезвоню через 5 мин";
+          responseText = "Отправлено: перезвоню через 5 минут";
+        } else if (action === "callback_15min") {
+          callerMessage = `📞 *${responderName}* перезвонит через 15 минут`;
+          buttonText = "✅ Перезвоню через 15 мин";
+          responseText = "Отправлено: перезвоню через 15 минут";
+        } else if (action === "callback_busy") {
+          callerMessage = `💬 *${responderName}* сейчас занят. Напишите сообщение.`;
+          buttonText = "✅ Занят, напишите";
+          responseText = "Отправлено: занят, напишите";
+        }
+        
+        // Send message to caller
+        if (callerProfile?.telegram_id) {
+          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: callerProfile.telegram_id,
+              text: callerMessage,
+              parse_mode: "Markdown",
+            }),
+          });
+        }
+        
+        // Update original message markup
+        if (chatId && messageId) {
+          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageReplyMarkup`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: chatId,
+              message_id: messageId,
+              reply_markup: { inline_keyboard: [[{ text: buttonText, callback_data: "noop" }]] },
+            }),
+          });
+        }
+        
+        // Log activity
+        await supabase.from("telegram_activity_log").insert({
+          telegram_id: fromUser?.id || null,
+          action: `quick_reply_${action.replace("callback_", "")}`,
+          metadata: { caller_id: callerId },
+        });
+      
+      } else if (callbackData === "noop") {
+        // No-op for already handled buttons
+        responseText = "";
       }
 
       await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {

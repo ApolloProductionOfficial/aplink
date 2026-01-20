@@ -162,12 +162,71 @@ serve(async (req) => {
       }
 
       if (telegramId) {
+        // Check if user has DND enabled
+        let dndActive = false;
+        let dndAutoReply = "";
+        
+        if (userId) {
+          const { data: userProfile } = await supabase
+            .from("profiles")
+            .select("dnd_enabled, dnd_start_time, dnd_end_time, dnd_auto_reply")
+            .eq("user_id", userId)
+            .single();
+          
+          if (userProfile?.dnd_enabled) {
+            const now = new Date();
+            const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+            const startTime = userProfile.dnd_start_time || "22:00";
+            const endTime = userProfile.dnd_end_time || "08:00";
+            
+            // Check if currently in DND time range
+            if (startTime > endTime) {
+              // Overnight DND (e.g., 22:00 to 08:00)
+              dndActive = currentTime >= startTime || currentTime <= endTime;
+            } else {
+              dndActive = currentTime >= startTime && currentTime <= endTime;
+            }
+            
+            dndAutoReply = userProfile.dnd_auto_reply || "Пользователь сейчас недоступен. Попробуйте позже.";
+          }
+        }
+        
+        if (dndActive) {
+          // Send DND auto-reply to caller
+          const callerTelegramId = creatorProfile?.telegram_id;
+          if (callerTelegramId) {
+            await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chat_id: callerTelegramId,
+                text: `🌙 *Режим "Не беспокоить"*\n\nУчастник сейчас недоступен:\n_${dndAutoReply}_`,
+                parse_mode: "Markdown",
+              }),
+            });
+          }
+          
+          participantResults.push({
+            telegram_id: telegramId,
+            user_id: userId,
+            status: "dnd_active",
+          });
+          continue;
+        }
+
         const message = `🎥 *Групповой звонок!*\n\n👤 *Организатор:* ${creatorName}\n👥 *Участников:* ${participants.length}\n⏱ *Истекает через:* 2 минуты\n\nНажмите кнопку ниже, чтобы присоединиться.`;
 
         const keyboard = {
           inline_keyboard: [
             [{ text: "🎥 Присоединиться", web_app: { url: `${WEB_APP_URL}/room/${finalRoomName}` } }],
-            [{ text: "❌ Отклонить", callback_data: `decline_group:${callRequest.id}` }]
+            [
+              { text: "⏰ 5 мин", callback_data: `callback_5min:${created_by}` },
+              { text: "⏰ 15 мин", callback_data: `callback_15min:${created_by}` }
+            ],
+            [
+              { text: "💬 Занят, напишите", callback_data: `callback_busy:${created_by}` },
+              { text: "❌ Отклонить", callback_data: `decline_group:${callRequest.id}` }
+            ]
           ]
         };
 
