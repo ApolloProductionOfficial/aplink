@@ -41,47 +41,60 @@ const GroupCallDialog = ({ open, onOpenChange }: GroupCallDialogProps) => {
 
   useEffect(() => {
     if (open) {
-      if (user) {
-        loadContacts();
-      }
       setSelectedContacts(new Set());
       setResults(null);
+      
+      // Safely load contacts only when user is authenticated
+      if (user?.id) {
+        loadContacts();
+      } else {
+        setLoading(false);
+      }
     }
-  }, [open, user]);
+  }, [open, user?.id]);
 
   const loadContacts = async () => {
-    if (!user) return;
-    setLoading(true);
-
-    const { data: contactsData, error } = await supabase
-      .from("contacts")
-      .select("*")
-      .eq("user_id", user.id);
-
-    if (error) {
-      console.error("Error fetching contacts:", error);
+    if (!user?.id) {
       setLoading(false);
       return;
     }
+    
+    setLoading(true);
 
-    // Fetch profiles for each contact
-    const contactsWithProfiles = await Promise.all(
-      (contactsData || []).map(async (contact) => {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("display_name, username, telegram_id")
-          .eq("user_id", contact.contact_user_id)
-          .single();
+    try {
+      const { data: contactsData, error } = await supabase
+        .from("contacts")
+        .select("*")
+        .eq("user_id", user.id);
 
-        return {
-          ...contact,
-          profile: profile || undefined,
-        };
-      })
-    );
+      if (error) {
+        console.error("Error fetching contacts:", error);
+        setLoading(false);
+        return;
+      }
 
-    setContacts(contactsWithProfiles);
-    setLoading(false);
+      // Fetch profiles for each contact
+      const contactsWithProfiles = await Promise.all(
+        (contactsData || []).map(async (contact) => {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("display_name, username, telegram_id")
+            .eq("user_id", contact.contact_user_id)
+            .single();
+
+          return {
+            ...contact,
+            profile: profile || undefined,
+          };
+        })
+      );
+
+      setContacts(contactsWithProfiles);
+    } catch (err) {
+      console.error("Error loading contacts:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const toggleContact = (contactId: string) => {
