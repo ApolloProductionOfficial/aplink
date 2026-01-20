@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import CustomCursor from '@/components/CustomCursor';
 import TwoFactorSetup from '@/components/TwoFactorSetup';
 import CallStatistics from '@/components/CallStatistics';
+import MissedCallsHistory from '@/components/MissedCallsHistory';
 import apolloLogo from '@/assets/apollo-logo.mp4';
 import { generateMeetingDocx } from '@/utils/generateMeetingDocx';
 import { invokeBackendFunctionKeepalive } from '@/utils/invokeBackendFunctionKeepalive';
@@ -750,7 +751,10 @@ const Dashboard = () => {
               <BarChart3 className="w-6 h-6 text-primary" />
               Статистика звонков
             </h1>
-            <CallStatistics />
+            <div className="grid gap-6 lg:grid-cols-2">
+              <CallStatistics />
+              <MissedCallsHistory />
+            </div>
           </TabsContent>
 
           {/* Calls Tab */}
