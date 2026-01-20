@@ -71,3 +71,6 @@ verify_jwt = false
 
 [functions.analyze-errors]
 verify_jwt = false
+
+[functions.deep-security-audit]
+verify_jwt = false
