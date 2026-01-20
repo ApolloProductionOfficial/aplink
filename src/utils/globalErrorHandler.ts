@@ -73,7 +73,7 @@ export function initGlobalErrorHandlers() {
       typeof arg === "object" ? JSON.stringify(arg) : String(arg)
     ).join(" ");
     
-    // Skip common non-critical errors and browser extension errors
+    // Skip common non-critical errors, browser extension errors, and Telegram mini app specific errors
     if (
       message.includes("Warning:") ||
       message.includes("DevTools") ||
@@ -83,7 +83,17 @@ export function initGlobalErrorHandlers() {
       message.includes("chrome-extension://") ||
       message.includes("disconnected port object") ||
       message.includes("TelegramGameProxy") ||
-      message.includes("TelegramWebviewProxy")
+      message.includes("TelegramWebviewProxy") ||
+      message.includes("Telegram.WebApp") ||
+      message.includes("postEvent") ||
+      message.includes("web_app_") ||
+      message.includes("tgWebAppData") ||
+      message.includes("themeParams") ||
+      message.includes("viewport_changed") ||
+      message.includes("main_button") ||
+      message.includes("back_button") ||
+      message.includes("popup_closed") ||
+      message.includes("initDataUnsafe")
     ) {
       return;
     }

@@ -490,6 +490,36 @@ export type Database = {
         }
         Relationships: []
       }
+      quick_call_history: {
+        Row: {
+          created_at: string
+          id: string
+          room_name: string
+          status: string
+          target_user_id: string | null
+          target_username: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          room_name: string
+          status?: string
+          target_user_id?: string | null
+          target_username: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          room_name?: string
+          status?: string
+          target_user_id?: string | null
+          target_username?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       scheduled_calls: {
         Row: {
           created_at: string
