@@ -349,11 +349,13 @@ export type Database = {
       meeting_transcripts: {
         Row: {
           created_at: string
+          duration_seconds: number | null
           ended_at: string | null
           id: string
           key_points: Json | null
           owner_user_id: string | null
           participants: Json | null
+          recording_url: string | null
           room_id: string
           room_name: string
           started_at: string
@@ -362,11 +364,13 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          duration_seconds?: number | null
           ended_at?: string | null
           id?: string
           key_points?: Json | null
           owner_user_id?: string | null
           participants?: Json | null
+          recording_url?: string | null
           room_id: string
           room_name: string
           started_at?: string
@@ -375,11 +379,13 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          duration_seconds?: number | null
           ended_at?: string | null
           id?: string
           key_points?: Json | null
           owner_user_id?: string | null
           participants?: Json | null
+          recording_url?: string | null
           room_id?: string
           room_name?: string
           started_at?: string
@@ -740,7 +746,27 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      call_statistics: {
+        Row: {
+          avg_duration_seconds: number | null
+          calls_last_month: number | null
+          calls_last_week: number | null
+          owner_user_id: string | null
+          total_calls: number | null
+          total_duration_seconds: number | null
+        }
+        Relationships: []
+      }
+      top_contacts: {
+        Row: {
+          call_count: number | null
+          last_called_at: string | null
+          target_user_id: string | null
+          target_username: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       cleanup_expired_backups: { Args: never; Returns: number }
