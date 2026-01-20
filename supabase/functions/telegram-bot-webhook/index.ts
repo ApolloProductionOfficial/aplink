@@ -18,6 +18,20 @@ interface TelegramUpdate {
     chat?: { id: number };
     from?: { id: number; username?: string; first_name?: string };
     text?: string;
+    voice?: {
+      file_id: string;
+      duration: number;
+      file_size?: number;
+    };
+    audio?: {
+      file_id: string;
+      duration: number;
+      file_size?: number;
+    };
+    reply_to_message?: {
+      text?: string;
+      voice?: { file_id: string };
+    };
   };
 }
 
@@ -218,11 +232,39 @@ serve(async (req) => {
           metadata: { caller_id: callerId },
         });
       
+      } else if (callbackData.startsWith("translate:")) {
+        // Handle translation callback for voice messages
+        const parts = callbackData.split(":");
+        const targetLang = parts[1];
+        
+        // Get the original message text (transcription)
+        if (chatId && messageId) {
+          // Get message to extract original text
+          // Since we can't easily get the original, show a tip
+          const langName = targetLang === "en" ? "английский" 
+            : targetLang === "ru" ? "русский" 
+            : targetLang === "es" ? "испанский" 
+            : targetLang;
+            
+          responseText = `💡 Отправьте голосовое сообщение ещё раз с командой:\n/translate ${langName}`;
+          
+          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: responseText,
+              parse_mode: "Markdown"
+            })
+          });
+          
+          responseText = `Перевод на ${langName}`;
+        }
+      
       } else if (callbackData === "noop") {
         // No-op for already handled buttons
         responseText = "";
       }
-
       await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -493,8 +535,172 @@ serve(async (req) => {
           })
         });
         
+      } else if (text === "/missed") {
+        // Get user's missed calls
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("telegram_id")
+          .eq("telegram_id", fromUser?.id)
+          .single();
+        
+        if (profile) {
+          const { data: missedCalls } = await supabase
+            .from("call_participants")
+            .select("call_request_id, status, invited_at")
+            .eq("telegram_id", fromUser?.id)
+            .in("status", ["invited", "declined"])
+            .order("invited_at", { ascending: false })
+            .limit(10);
+          
+          if (missedCalls && missedCalls.length > 0) {
+            // Get call request details
+            const callIds = missedCalls.map(c => c.call_request_id);
+            const { data: callRequests } = await supabase
+              .from("call_requests")
+              .select("id, room_name, created_by, created_at")
+              .in("id", callIds);
+            
+            // Get creator profiles
+            const creatorIds = callRequests?.map(c => c.created_by).filter(Boolean) || [];
+            const { data: creatorProfiles } = await supabase
+              .from("profiles")
+              .select("user_id, display_name, username")
+              .in("user_id", creatorIds);
+            
+            const callsList = missedCalls.map(c => {
+              const request = callRequests?.find(r => r.id === c.call_request_id);
+              const creator = creatorProfiles?.find(p => p.user_id === request?.created_by);
+              const name = creator?.display_name || (creator?.username ? `@${creator.username}` : "Неизвестный");
+              const date = new Date(c.invited_at).toLocaleString("ru-RU", { timeZone: "Europe/Moscow" });
+              const status = c.status === "declined" ? "❌" : "📵";
+              return `${status} От: *${name}*\n   _${date}_`;
+            }).join("\n\n");
+            
+            await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chat_id: chatId,
+                text: `📵 *Пропущенные звонки:*\n\n${callsList}`,
+                parse_mode: "Markdown"
+              })
+            });
+          } else {
+            await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chat_id: chatId,
+                text: "📵 Нет пропущенных звонков",
+                parse_mode: "Markdown"
+              })
+            });
+          }
+        } else {
+          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: "❌ Аккаунт не привязан. Используйте /link",
+              parse_mode: "Markdown"
+            })
+          });
+        }
+        
+      } else if (text === "/startcall" && chatId && chatId < 0) {
+        // Group chat command to start a group call
+        // Get chat info
+        const chatInfoResponse = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getChat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chat_id: chatId })
+        });
+        const chatInfo = await chatInfoResponse.json();
+        const chatTitle = chatInfo.result?.title || "Групповой чат";
+        
+        // Check if caller is linked
+        const { data: callerProfile } = await supabase
+          .from("profiles")
+          .select("user_id, display_name")
+          .eq("telegram_id", fromUser?.id)
+          .single();
+        
+        if (!callerProfile) {
+          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: "❌ Ваш аккаунт не привязан к APLink.\nИспользуйте @aplink\\_live\\_bot в личных сообщениях и команду /link",
+              parse_mode: "Markdown"
+            })
+          });
+        } else {
+          // Create a room with group chat name
+          const roomName = `group-${chatId.toString().replace("-", "")}-${Date.now().toString(36)}`;
+          
+          // Create call request
+          const { data: callRequest, error: insertError } = await supabase
+            .from("call_requests")
+            .insert({
+              room_name: roomName,
+              created_by: callerProfile.user_id,
+              is_group_call: true,
+              status: "pending",
+              expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+            })
+            .select()
+            .single();
+          
+          if (insertError || !callRequest) {
+            await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chat_id: chatId,
+                text: "❌ Ошибка создания звонка",
+                parse_mode: "Markdown"
+              })
+            });
+          } else {
+            const callerName = callerProfile.display_name || fromUser?.first_name || "Пользователь";
+            
+            await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chat_id: chatId,
+                text: `🎥 *Групповой звонок*\n\n👤 Организатор: *${callerName}*\n💬 Чат: *${chatTitle}*\n⏱ Истекает через 5 минут\n\nНажмите кнопку ниже, чтобы присоединиться!`,
+                parse_mode: "Markdown",
+                reply_markup: {
+                  inline_keyboard: [
+                    [
+                      { text: "🎥 Присоединиться к звонку", web_app: { url: `${WEB_APP_URL}/room/${roomName}` } }
+                    ],
+                    [
+                      { text: "❌ Отклонить", callback_data: `decline_group:${callRequest.id}` }
+                    ]
+                  ]
+                }
+              })
+            });
+            
+            // Log activity
+            await supabase.from("telegram_activity_log").insert({
+              telegram_id: fromUser?.id || null,
+              action: "group_chat_call_started",
+              metadata: { chat_id: chatId, room_name: roomName, chat_title: chatTitle },
+            });
+          }
+        }
+        
       } else if (text === "/help" || text === "/start") {
-        const helpMessage = `🎥 *APLink Bot*\n\nДоступные команды:\n\n📞 /call - Создать звонок\n👥 /groupcall @user1 @user2 - Групповой звонок\n📋 /mycalls - История звонков\n⭐ /contacts - Мои контакты\n🔗 /link - Привязать аккаунт\n📊 /stats - Статистика\n🗑 /clear - Очистить старые логи\n\nИспользуйте кнопку меню для быстрого доступа к приложению!`;
+        const isGroupChat = chatId && chatId < 0;
+        
+        const helpMessage = isGroupChat
+          ? `🎥 *APLink Bot*\n\n📞 /startcall - Начать групповой звонок для этого чата\n\nВсе участники чата могут присоединиться нажав на кнопку!`
+          : `🎥 *APLink Bot*\n\nДоступные команды:\n\n📞 /call - Создать звонок\n👥 /groupcall @user1 @user2 - Групповой звонок\n📵 /missed - Пропущенные звонки\n📋 /mycalls - История звонков\n⭐ /contacts - Мои контакты\n🔗 /link - Привязать аккаунт\n📊 /stats - Статистика\n🗑 /clear - Очистить старые логи\n\nИспользуйте кнопку меню для быстрого доступа к приложению!`;
         
         await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
           method: "POST",
@@ -503,13 +709,167 @@ serve(async (req) => {
             chat_id: chatId,
             text: helpMessage,
             parse_mode: "Markdown",
-            reply_markup: {
+            reply_markup: isGroupChat ? undefined : {
               inline_keyboard: [[
                 { text: "🎥 Открыть APLink", web_app: { url: WEB_APP_URL } }
               ]]
             }
           })
         });
+      }
+    }
+
+    // Handle voice messages
+    if (update.message?.voice || update.message?.audio) {
+      const chatId = update.message.chat?.id;
+      const fromUser = update.message.from;
+      const voice = update.message.voice || update.message.audio;
+      
+      if (voice && chatId && chatId > 0) { // Only in private chats
+        console.log("Voice message received:", voice.file_id);
+        
+        // Send processing message
+        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendChatAction`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chat_id: chatId, action: "typing" })
+        });
+
+        try {
+          // Get file path from Telegram
+          const fileResponse = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getFile`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ file_id: voice.file_id })
+          });
+          const fileData = await fileResponse.json();
+          
+          if (!fileData.ok || !fileData.result?.file_path) {
+            throw new Error("Failed to get file path");
+          }
+
+          // Download the audio file
+          const audioUrl = `https://api.telegram.org/file/bot${TELEGRAM_BOT_TOKEN}/${fileData.result.file_path}`;
+          const audioResponse = await fetch(audioUrl);
+          const audioBlob = await audioResponse.blob();
+
+          // Prepare form data for transcription
+          const formData = new FormData();
+          formData.append("file", audioBlob, "voice.ogg");
+          formData.append("model_id", "scribe_v1");
+
+          const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
+          
+          if (!ELEVENLABS_API_KEY) {
+            throw new Error("ElevenLabs API key not configured");
+          }
+
+          // Transcribe using ElevenLabs
+          const transcribeResponse = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
+            method: "POST",
+            headers: {
+              "xi-api-key": ELEVENLABS_API_KEY,
+            },
+            body: formData,
+          });
+
+          if (!transcribeResponse.ok) {
+            const errorText = await transcribeResponse.text();
+            throw new Error(`Transcription failed: ${errorText}`);
+          }
+
+          const transcription = await transcribeResponse.json();
+          const originalText = transcription.text || "Не удалось распознать текст";
+          
+          // Check if user wants translation (by replying with language code)
+          const replyText = update.message.reply_to_message?.text?.toLowerCase();
+          let translatedText = "";
+          let targetLang = "";
+          
+          // Detect if user mentioned a language for translation
+          if (replyText) {
+            const langMatch = replyText.match(/перевод(?:и)?(?:\s+на)?\s+(английский|русский|español|english|russian)/i);
+            if (langMatch) {
+              targetLang = langMatch[1].toLowerCase();
+            }
+          }
+          
+          // If no translation needed, just send transcription
+          let responseMessage = `🎤 *Транскрипция:*\n\n${originalText}`;
+          
+          if (targetLang) {
+            // Call translation API (using Lovable AI)
+            const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+            if (LOVABLE_API_KEY) {
+              const translateResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                  "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  model: "google/gemini-2.5-flash",
+                  messages: [
+                    { role: "system", content: `Translate the following text to ${targetLang}. Return only the translation, nothing else.` },
+                    { role: "user", content: originalText }
+                  ]
+                }),
+              });
+              
+              if (translateResponse.ok) {
+                const translateData = await translateResponse.json();
+                translatedText = translateData.choices?.[0]?.message?.content || "";
+                
+                if (translatedText) {
+                  responseMessage = `🎤 *Транскрипция:*\n${originalText}\n\n🌐 *Перевод (${targetLang}):*\n${translatedText}`;
+                }
+              }
+            }
+          }
+          
+          // Send transcription result with translation options
+          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: responseMessage,
+              parse_mode: "Markdown",
+              reply_markup: {
+                inline_keyboard: [
+                  [
+                    { text: "🇬🇧 English", callback_data: `translate:en:${voice.file_id.slice(0, 20)}` },
+                    { text: "🇷🇺 Русский", callback_data: `translate:ru:${voice.file_id.slice(0, 20)}` },
+                    { text: "🇪🇸 Español", callback_data: `translate:es:${voice.file_id.slice(0, 20)}` },
+                  ]
+                ]
+              }
+            })
+          });
+
+          // Log activity
+          await supabase.from("telegram_activity_log").insert({
+            telegram_id: fromUser?.id || null,
+            action: "voice_transcribed",
+            metadata: { 
+              duration: voice.duration, 
+              text_length: originalText.length,
+              translated: !!translatedText 
+            },
+          });
+
+        } catch (transcribeError) {
+          console.error("Voice transcription error:", transcribeError);
+          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: "❌ Не удалось распознать голосовое сообщение. Попробуйте ещё раз.",
+              parse_mode: "Markdown"
+            })
+          });
+        }
       }
     }
 
