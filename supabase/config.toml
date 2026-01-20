@@ -74,3 +74,6 @@ verify_jwt = false
 
 [functions.deep-security-audit]
 verify_jwt = false
+
+[functions.cleanup-expired-links]
+verify_jwt = false
