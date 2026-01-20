@@ -110,6 +110,8 @@ const MeetingRoom = () => {
   const [connectionQuality, setConnectionQuality] = useState<number>(100); // 0-100 percentage
   const diagnosticsLogRef = useRef<{ ts: string; event: string; data?: unknown }[]>([]);
   const [diagnosticsCopied, setDiagnosticsCopied] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const { t } = useTranslation();
 
   // Use room ID as-is for Jitsi (consistent room name)
@@ -460,6 +462,11 @@ const MeetingRoom = () => {
   // Toggle recording - using microphone instead of screen capture to prevent call exit
   const toggleRecording = async () => {
     if (isRecording) {
+      // Stop recording timer
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
       const audioBlob = await stopRecording();
       if (audioBlob && audioBlob.size > 0) {
         toast({
@@ -483,16 +490,26 @@ const MeetingRoom = () => {
           });
         }
       }
+      setRecordingDuration(0);
     } else {
       try {
         hasStartedRecordingRef.current = true; // Mark that recording was started
         await startRecording();
+        // Start recording timer
+        setRecordingDuration(0);
+        recordingTimerRef.current = setInterval(() => {
+          setRecordingDuration(prev => prev + 1);
+        }, 1000);
         toast({
           title: t.meetingRoom.recordStarted,
           description: t.meetingRoom.recordStartedDesc,
         });
       } catch (error) {
         hasStartedRecordingRef.current = false;
+        if (recordingTimerRef.current) {
+          clearInterval(recordingTimerRef.current);
+          recordingTimerRef.current = null;
+        }
         toast({
           title: t.meetingRoom.error,
           description: t.meetingRoom.recordError,
@@ -500,6 +517,13 @@ const MeetingRoom = () => {
         });
       }
     }
+  };
+
+  // Format recording duration
+  const formatRecordingTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
   // Save meeting transcript and summary in background
@@ -1588,6 +1612,18 @@ const MeetingRoom = () => {
     <div className="h-screen w-screen bg-background flex flex-col overflow-hidden cursor-none relative">
       <CustomCursor />
 
+      {/* Recording Indicator - Fixed top-left */}
+      {isRecording && (
+        <div className="fixed top-20 left-4 z-[100] flex items-center gap-2 bg-destructive/90 backdrop-blur-sm text-destructive-foreground px-3 py-1.5 rounded-full shadow-lg animate-fade-in">
+          <span className="relative w-3 h-3">
+            <span className="absolute inset-0 bg-white rounded-full animate-ping opacity-75" />
+            <span className="absolute inset-0 bg-white rounded-full" />
+          </span>
+          <span className="text-xs font-bold tracking-wide">REC</span>
+          <span className="text-xs font-mono font-bold">{formatRecordingTime(recordingDuration)}</span>
+        </div>
+      )}
+
       {/* Meeting End Save Dialog with status + retry */}
       <MeetingEndSaveDialog
         open={endSaveDialogOpen}
@@ -1690,12 +1726,14 @@ const MeetingRoom = () => {
                   ) : isRecording ? (
                     <>
                       <div className="relative animate-fade-in flex items-center gap-1">
-                        <span className="w-2.5 h-2.5 bg-red-500 rounded-full">
+                        <span className="relative w-2.5 h-2.5 bg-red-500 rounded-full">
                           <span className="absolute inset-0 w-full h-full bg-red-500 rounded-full animate-ping opacity-75" />
                         </span>
                         <MicOff className="w-5 h-5 animate-pulse" />
                       </div>
-                      <span className="text-[10px] sm:text-xs font-medium animate-fade-in">{t.meetingRoom.stop}</span>
+                      <span className="text-[10px] sm:text-xs font-bold font-mono animate-fade-in text-red-100">
+                        {formatRecordingTime(recordingDuration)}
+                      </span>
                     </>
                   ) : (
                     <>

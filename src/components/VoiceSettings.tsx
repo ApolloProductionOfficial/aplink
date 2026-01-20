@@ -92,7 +92,7 @@ const VoiceSettings = () => {
         : 'Привет! Это тестовое голосовое сообщение. Я George.';
 
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-transcribe`,
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`,
         {
           method: 'POST',
           headers: {
@@ -102,7 +102,7 @@ const VoiceSettings = () => {
           },
           body: JSON.stringify({
             text: testMessage,
-            voice_id: VOICES[voicePreference].id,
+            voiceId: VOICES[voicePreference].id,
             speed: voiceSpeed,
           }),
         }
