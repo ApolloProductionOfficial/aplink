@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, Users, Calendar, User, Camera, Loader2, Check, Globe, Shield, Trash2, Download, Share2, Search, X, Link2, Copy, Link2Off, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, FileText, Users, Calendar, User, Camera, Loader2, Check, Globe, Shield, Trash2, Download, Share2, Search, X, Link2, Copy, Link2Off, AlertTriangle, BarChart3 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ import { ToastAction } from '@/components/ui/toast';
 import { useToast } from '@/hooks/use-toast';
 import CustomCursor from '@/components/CustomCursor';
 import TwoFactorSetup from '@/components/TwoFactorSetup';
+import CallStatistics from '@/components/CallStatistics';
 import apolloLogo from '@/assets/apollo-logo.mp4';
 import { generateMeetingDocx } from '@/utils/generateMeetingDocx';
 import { invokeBackendFunctionKeepalive } from '@/utils/invokeBackendFunctionKeepalive';
@@ -699,6 +700,15 @@ const Dashboard = () => {
           
           <div className="flex items-center gap-2">
             <Button
+              variant={activeTab === 'stats' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setActiveTab('stats')}
+              className="gap-2 focus-visible:ring-0 ring-0"
+            >
+              <BarChart3 className="w-4 h-4" />
+              Статистика
+            </Button>
+            <Button
               variant={activeTab === 'calls' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setActiveTab('calls')}
@@ -733,6 +743,15 @@ const Dashboard = () => {
       
       <main className="container mx-auto px-4 py-8 relative z-10">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+
+          {/* Statistics Tab */}
+          <TabsContent value="stats" className="space-y-6">
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <BarChart3 className="w-6 h-6 text-primary" />
+              Статистика звонков
+            </h1>
+            <CallStatistics />
+          </TabsContent>
 
           {/* Calls Tab */}
           <TabsContent value="calls" className="space-y-6">
