@@ -19,27 +19,37 @@ serve(async (req) => {
 
     console.log("Checking for scheduled calls needing reminders...");
 
-    // Find calls scheduled 15 minutes from now that haven't had reminders sent
-    const fifteenMinutesFromNow = new Date(Date.now() + 15 * 60 * 1000);
-    const twentyMinutesFromNow = new Date(Date.now() + 20 * 60 * 1000);
+    // Get calls where reminder time has been reached
+    const now = new Date();
 
     const { data: scheduledCalls, error } = await supabase
       .from("scheduled_calls")
       .select("*")
       .eq("status", "scheduled")
       .eq("reminder_sent", false)
-      .gte("scheduled_at", fifteenMinutesFromNow.toISOString())
-      .lt("scheduled_at", twentyMinutesFromNow.toISOString());
+      .gt("scheduled_at", now.toISOString()); // Only future calls
 
     if (error) {
       throw error;
     }
 
-    console.log(`Found ${scheduledCalls?.length || 0} calls needing reminders`);
+    // Filter calls where reminder should be sent
+    const callsNeedingReminders = (scheduledCalls || []).filter(call => {
+      const scheduledTime = new Date(call.scheduled_at);
+      const reminderMinutes = call.reminder_minutes || 15;
+      const reminderTime = new Date(scheduledTime.getTime() - reminderMinutes * 60 * 1000);
+      return now >= reminderTime;
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    console.log(`Found ${callsNeedingReminders.length} calls needing reminders`);
 
     const remindersSent: string[] = [];
 
-    for (const call of scheduledCalls || []) {
+    for (const call of callsNeedingReminders) {
       const scheduledTime = new Date(call.scheduled_at);
       const timeUntil = Math.round((scheduledTime.getTime() - Date.now()) / 60000);
       
@@ -123,7 +133,7 @@ ${call.description ? `📝 ${call.description}` : ""}
     }
 
     // Also send to the creator's Telegram if available
-    for (const call of scheduledCalls || []) {
+    for (const call of callsNeedingReminders) {
       if (call.created_by) {
         const { data: creatorProfile } = await supabase
           .from("profiles")

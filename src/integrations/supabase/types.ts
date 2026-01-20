@@ -465,6 +465,10 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           display_name: string | null
+          dnd_auto_reply: string | null
+          dnd_enabled: boolean | null
+          dnd_end_time: string | null
+          dnd_start_time: string | null
           id: string
           telegram_id: number | null
           telegram_username: string | null
@@ -478,6 +482,10 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
+          dnd_auto_reply?: string | null
+          dnd_enabled?: boolean | null
+          dnd_end_time?: string | null
+          dnd_start_time?: string | null
           id?: string
           telegram_id?: number | null
           telegram_username?: string | null
@@ -491,6 +499,10 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
+          dnd_auto_reply?: string | null
+          dnd_enabled?: boolean | null
+          dnd_end_time?: string | null
+          dnd_start_time?: string | null
           id?: string
           telegram_id?: number | null
           telegram_username?: string | null
@@ -539,6 +551,7 @@ export type Database = {
           description: string | null
           id: string
           participants_telegram_ids: number[] | null
+          reminder_minutes: number | null
           reminder_sent: boolean | null
           room_name: string
           scheduled_at: string
@@ -551,6 +564,7 @@ export type Database = {
           description?: string | null
           id?: string
           participants_telegram_ids?: number[] | null
+          reminder_minutes?: number | null
           reminder_sent?: boolean | null
           room_name: string
           scheduled_at: string
@@ -563,6 +577,7 @@ export type Database = {
           description?: string | null
           id?: string
           participants_telegram_ids?: number[] | null
+          reminder_minutes?: number | null
           reminder_sent?: boolean | null
           room_name?: string
           scheduled_at?: string
