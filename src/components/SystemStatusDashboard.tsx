@@ -8,7 +8,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { 
   Activity, CheckCircle, AlertTriangle, XCircle, Clock, 
   Brain, Loader2, Code, Copy, Check, Search, Shield, 
-  Trash2, History, Bug, TrendingUp, BarChart3, Radio, Wifi, WifiOff
+  Trash2, History, Bug, TrendingUp, BarChart3, Radio, Wifi, WifiOff,
+  Scan, Lock, Database, Zap, Users, MessageCircle, Link2
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -77,6 +78,28 @@ interface DiagnosticsRecord {
   telegram_sent: boolean;
 }
 
+interface DeepAuditSection {
+  category: string;
+  score: number;
+  status: "critical" | "warning" | "good" | "excellent";
+  findings: {
+    severity: "critical" | "high" | "medium" | "low" | "info";
+    title: string;
+    description: string;
+    recommendation?: string;
+  }[];
+}
+
+interface DeepAuditResult {
+  overallScore: number;
+  overallStatus: string;
+  sections: DeepAuditSection[];
+  aiAnalysis: string;
+  aiRecommendations: string[];
+  scanDuration: number;
+  scannedAt: string;
+}
+
 interface TrendData {
   date: string;
   errors: number;
@@ -101,6 +124,8 @@ const SystemStatusDashboard = ({ errorLogs, errorStats, onClearOldLogs, clearing
   const [selectedRecord, setSelectedRecord] = useState<DiagnosticsRecord | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [trendData, setTrendData] = useState<TrendData[]>([]);
+  const [deepAuditLoading, setDeepAuditLoading] = useState(false);
+  const [deepAuditResult, setDeepAuditResult] = useState<DeepAuditResult | null>(null);
 
   // Real-time error monitoring
   const { recentErrors, isConnected, newErrorCount, clearNewErrorCount } = useRealtimeErrorMonitor({
@@ -249,6 +274,37 @@ const SystemStatusDashboard = ({ errorLogs, errorStats, onClearOldLogs, clearing
     }
   };
 
+  const runDeepAudit = async () => {
+    setDeepAuditLoading(true);
+    setDeepAuditResult(null);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke("deep-security-audit");
+      
+      if (error) throw error;
+      if (data.error) {
+        toast.error(data.error);
+        return;
+      }
+      
+      setDeepAuditResult(data);
+      toast.success(`🔍 Глубокий аудит завершён! Оценка: ${data.overallScore}/100`);
+    } catch (err: unknown) {
+      const errorName = (err as { name?: string })?.name || '';
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      
+      if (errorName === 'FunctionsFetchError' || errorMessage.includes('Failed to fetch')) {
+        console.warn("Deep audit fetch warning:", errorMessage);
+        toast.error("Не удалось подключиться к сервису аудита.");
+      } else {
+        console.warn("Deep audit error:", err);
+        toast.error("Ошибка аудита: " + errorMessage.substring(0, 100));
+      }
+    } finally {
+      setDeepAuditLoading(false);
+    }
+  };
+
   const copyCode = (code: string, index: number) => {
     navigator.clipboard.writeText(code);
     setCopiedIndex(index);
@@ -329,6 +385,10 @@ const SystemStatusDashboard = ({ errorLogs, errorStats, onClearOldLogs, clearing
             <div className="flex gap-2 flex-wrap">
               <Button variant="outline" size="sm" onClick={copyAllErrors} className="gap-2">
                 <Copy className="w-4 h-4" /> Скопировать всё
+              </Button>
+              <Button onClick={runDeepAudit} disabled={deepAuditLoading} size="sm" className="gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+                {deepAuditLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Scan className="w-4 h-4" />}
+                Глубокий аудит
               </Button>
               <Button onClick={() => runAIDiagnostics()} disabled={loading} size="sm" className="gap-2 bg-purple-600 hover:bg-purple-700">
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Brain className="w-4 h-4" />}
@@ -620,6 +680,177 @@ const SystemStatusDashboard = ({ errorLogs, errorStats, onClearOldLogs, clearing
                   <div className="flex items-center gap-2 text-green-400">
                     <CheckCircle className="w-5 h-5" />
                     <span>Критических проблем не обнаружено!</span>
+                  </div>
+                )}
+              </>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Deep Security Audit Results */}
+      {(deepAuditLoading || deepAuditResult) && (
+        <Card className="bg-gradient-to-br from-blue-900/20 to-cyan-900/20 border border-blue-500/30">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Scan className="w-5 h-5 text-blue-400" />
+              Глубокий аудит безопасности
+              {deepAuditResult && (
+                <Badge className={`ml-2 ${
+                  deepAuditResult.overallScore >= 90 ? 'bg-green-500/20 text-green-400' :
+                  deepAuditResult.overallScore >= 70 ? 'bg-yellow-500/20 text-yellow-400' :
+                  deepAuditResult.overallScore >= 50 ? 'bg-orange-500/20 text-orange-400' :
+                  'bg-red-500/20 text-red-400'
+                }`}>
+                  {deepAuditResult.overallScore}/100
+                </Badge>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {deepAuditLoading && (
+              <div className="flex items-center justify-center py-8">
+                <div className="relative">
+                  <Loader2 className="w-10 h-10 animate-spin text-blue-400" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Shield className="w-4 h-4 text-blue-300" />
+                  </div>
+                </div>
+                <div className="ml-4">
+                  <span className="text-white font-medium">Сканирую систему...</span>
+                  <p className="text-xs text-gray-400">Безопасность, база данных, API, UX</p>
+                </div>
+              </div>
+            )}
+
+            {deepAuditResult && !deepAuditLoading && (
+              <>
+                {/* Overall Score */}
+                <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
+                  <div className="flex items-center gap-4">
+                    <div className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold ${
+                      deepAuditResult.overallScore >= 90 ? 'bg-green-500/20 text-green-400 ring-2 ring-green-500/30' :
+                      deepAuditResult.overallScore >= 70 ? 'bg-yellow-500/20 text-yellow-400 ring-2 ring-yellow-500/30' :
+                      deepAuditResult.overallScore >= 50 ? 'bg-orange-500/20 text-orange-400 ring-2 ring-orange-500/30' :
+                      'bg-red-500/20 text-red-400 ring-2 ring-red-500/30'
+                    }`}>
+                      {deepAuditResult.overallScore}
+                    </div>
+                    <div>
+                      <div className="text-white font-medium">{deepAuditResult.overallStatus}</div>
+                      <div className="text-xs text-gray-400">
+                        Сканирование заняло {Math.round(deepAuditResult.scanDuration / 1000)}с
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {format(new Date(deepAuditResult.scannedAt), 'dd.MM.yyyy HH:mm', { locale: ru })}
+                  </div>
+                </div>
+
+                {/* Sections Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {deepAuditResult.sections.map((section, idx) => {
+                    const iconMap: Record<string, React.ReactNode> = {
+                      '🔒 Безопасность': <Lock className="w-4 h-4" />,
+                      '🗃️ База данных': <Database className="w-4 h-4" />,
+                      '⚡ API & Functions': <Zap className="w-4 h-4" />,
+                      '📊 UX & Аналитика': <BarChart3 className="w-4 h-4" />,
+                      '📱 Telegram': <MessageCircle className="w-4 h-4" />,
+                      '🔗 Целостность данных': <Link2 className="w-4 h-4" />,
+                    };
+                    
+                    return (
+                      <div key={idx} className={`p-3 rounded-lg border ${
+                        section.status === 'excellent' ? 'border-green-500/30 bg-green-500/10' :
+                        section.status === 'good' ? 'border-blue-500/30 bg-blue-500/10' :
+                        section.status === 'warning' ? 'border-amber-500/30 bg-amber-500/10' :
+                        'border-red-500/30 bg-red-500/10'
+                      }`}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className={`${
+                            section.status === 'excellent' ? 'text-green-400' :
+                            section.status === 'good' ? 'text-blue-400' :
+                            section.status === 'warning' ? 'text-amber-400' :
+                            'text-red-400'
+                          }`}>
+                            {iconMap[section.category] || <Activity className="w-4 h-4" />}
+                          </span>
+                          <span className={`text-lg font-bold ${
+                            section.score >= 90 ? 'text-green-400' :
+                            section.score >= 70 ? 'text-blue-400' :
+                            section.score >= 50 ? 'text-amber-400' :
+                            'text-red-400'
+                          }`}>
+                            {section.score}
+                          </span>
+                        </div>
+                        <div className="text-xs text-gray-300 truncate">{section.category}</div>
+                        <div className="text-[10px] text-gray-500">{section.findings.length} находок</div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* AI Analysis */}
+                {deepAuditResult.aiAnalysis && (
+                  <div className="p-3 bg-purple-500/10 rounded-lg border border-purple-500/30">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Brain className="w-4 h-4 text-purple-400" />
+                      <span className="text-sm font-medium text-purple-400">AI-анализ</span>
+                    </div>
+                    <p className="text-sm text-white">{deepAuditResult.aiAnalysis}</p>
+                  </div>
+                )}
+
+                {/* AI Recommendations */}
+                {deepAuditResult.aiRecommendations && deepAuditResult.aiRecommendations.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium text-gray-300">Рекомендации AI:</h4>
+                    <div className="grid gap-2">
+                      {deepAuditResult.aiRecommendations.slice(0, 6).map((rec, i) => (
+                        <div key={i} className="p-2 bg-gray-800/50 rounded-lg text-xs text-gray-300 flex items-start gap-2">
+                          <span className="text-purple-400 mt-0.5">→</span>
+                          {rec}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Critical Findings */}
+                {deepAuditResult.sections.some(s => s.findings.some(f => f.severity === 'critical' || f.severity === 'high')) && (
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium text-red-400 flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4" />
+                      Критические проблемы
+                    </h4>
+                    <div className="space-y-2">
+                      {deepAuditResult.sections.flatMap(s => 
+                        s.findings
+                          .filter(f => f.severity === 'critical' || f.severity === 'high')
+                          .map((f, i) => (
+                            <div key={`${s.category}-${i}`} className="p-2 bg-red-500/10 border border-red-500/30 rounded-lg">
+                              <div className="flex items-center gap-2">
+                                <Badge className="bg-red-500/20 text-red-400 text-[10px]">{f.severity}</Badge>
+                                <span className="text-sm text-white font-medium">{f.title}</span>
+                              </div>
+                              <p className="text-xs text-gray-400 mt-1">{f.description}</p>
+                              {f.recommendation && (
+                                <p className="text-xs text-blue-400 mt-1">💡 {f.recommendation}</p>
+                              )}
+                            </div>
+                          ))
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* All Good Message */}
+                {deepAuditResult.overallScore >= 90 && (
+                  <div className="flex items-center gap-2 text-green-400 p-3 bg-green-500/10 rounded-lg">
+                    <CheckCircle className="w-5 h-5" />
+                    <span>Система в отличном состоянии! Продолжайте в том же духе.</span>
                   </div>
                 )}
               </>
