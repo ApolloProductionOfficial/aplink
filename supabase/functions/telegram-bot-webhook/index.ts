@@ -4,8 +4,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
 const WEB_APP_URL = "https://aplink.live";
 
-// Branded APLink welcome animation (Apollo logo style)
-const WELCOME_GIF_URL = "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExZ3FzYmYxcTdmNjRzamlhbHc4Z3kwaG1raGhhdHB2YjQyNjlkZTJ2eCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/26tPnAAJxXTvpLwJy/giphy.gif";
+// Branded APLink welcome video (custom logo animation)
+const WELCOME_VIDEO_URL = "https://aplink.live/animations/aplink-welcome.mp4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -433,6 +433,215 @@ serve(async (req) => {
           body: JSON.stringify({ chat_id: chatId, text: clearMessage, parse_mode: "Markdown" })
         });
         
+      } else if (text.startsWith("/call ")) {
+        // Handle /call @username command
+        const parts = text.split(/\s+/);
+        const targetUsername = parts[1]?.replace("@", "").toLowerCase();
+        
+        if (!targetUsername) {
+          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: "❌ *Использование:*\n`/call @username`\n\nПример: `/call @ivan`",
+              parse_mode: "Markdown"
+            })
+          });
+        } else {
+          // Get caller's profile
+          const { data: callerProfile } = await supabase
+            .from("profiles")
+            .select("user_id, display_name, username")
+            .eq("telegram_id", fromUser?.id)
+            .single();
+          
+          if (!callerProfile) {
+            await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chat_id: chatId,
+                text: "❌ Ваш аккаунт не привязан. Используйте /link для привязки.",
+                parse_mode: "Markdown"
+              })
+            });
+          } else {
+            // Find target user
+            const { data: targetProfile } = await supabase
+              .from("profiles")
+              .select("user_id, display_name, telegram_id, dnd_enabled, dnd_start_time, dnd_end_time, dnd_auto_reply")
+              .eq("username", targetUsername)
+              .single();
+            
+            if (!targetProfile) {
+              await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  chat_id: chatId,
+                  text: `❌ Пользователь @${targetUsername} не найден.`,
+                  parse_mode: "Markdown"
+                })
+              });
+            } else if (!targetProfile.telegram_id) {
+              await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  chat_id: chatId,
+                  text: `❌ У пользователя @${targetUsername} не привязан Telegram.`,
+                  parse_mode: "Markdown"
+                })
+              });
+            } else {
+              // Check DND status
+              let dndActive = false;
+              if (targetProfile.dnd_enabled) {
+                const now = new Date();
+                const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+                const startTime = targetProfile.dnd_start_time || "22:00";
+                const endTime = targetProfile.dnd_end_time || "08:00";
+                
+                if (startTime > endTime) {
+                  dndActive = currentTime >= startTime || currentTime <= endTime;
+                } else {
+                  dndActive = currentTime >= startTime && currentTime <= endTime;
+                }
+              }
+              
+              if (dndActive) {
+                const autoReply = targetProfile.dnd_auto_reply || "Пользователь сейчас недоступен. Попробуйте позже.";
+                await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    chat_id: chatId,
+                    text: `🌙 *Режим "Не беспокоить"*\n\nПользователь @${targetUsername} сейчас недоступен:\n_${autoReply}_`,
+                    parse_mode: "Markdown"
+                  })
+                });
+              } else {
+                // Create room and call request
+                const roomName = `call-${Date.now().toString(36)}`;
+                const expiresAt = new Date(Date.now() + 2 * 60 * 1000).toISOString();
+                
+                const { data: callRequest, error: callError } = await supabase
+                  .from("call_requests")
+                  .insert({
+                    room_name: roomName,
+                    created_by: callerProfile.user_id,
+                    is_group_call: false,
+                    status: "pending",
+                    expires_at: expiresAt,
+                  })
+                  .select()
+                  .single();
+                
+                if (callError || !callRequest) {
+                  await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      chat_id: chatId,
+                      text: "❌ Ошибка создания звонка. Попробуйте позже.",
+                      parse_mode: "Markdown"
+                    })
+                  });
+                } else {
+                  const callerName = callerProfile.display_name || callerProfile.username || "Пользователь";
+                  
+                  // Add participant
+                  await supabase.from("call_participants").insert({
+                    call_request_id: callRequest.id,
+                    user_id: targetProfile.user_id,
+                    telegram_id: targetProfile.telegram_id,
+                    status: "invited",
+                  });
+                  
+                  // Send text notification to target
+                  const callMessage = `📞 *Входящий звонок!*\n\n👤 *От:* ${callerName}\n⏱ *Истекает через:* 2 минуты\n\nНажмите кнопку ниже, чтобы принять.`;
+                  
+                  const keyboard = {
+                    inline_keyboard: [
+                      [{ text: "📞 Принять звонок", web_app: { url: `${WEB_APP_URL}/room/${roomName}` } }],
+                      [
+                        { text: "⏰ 5 мин", callback_data: `callback_5min:${callerProfile.user_id}` },
+                        { text: "⏰ 15 мин", callback_data: `callback_15min:${callerProfile.user_id}` }
+                      ],
+                      [
+                        { text: "💬 Занят", callback_data: `callback_busy:${callerProfile.user_id}` },
+                        { text: "❌ Отклонить", callback_data: `decline_group:${callRequest.id}` }
+                      ]
+                    ]
+                  };
+                  
+                  await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      chat_id: targetProfile.telegram_id,
+                      text: callMessage,
+                      parse_mode: "Markdown",
+                      reply_markup: keyboard,
+                    })
+                  });
+                  
+                  // Send voice notification to target
+                  try {
+                    await fetch(
+                      `${Deno.env.get("SUPABASE_URL")}/functions/v1/telegram-voice-notification`,
+                      {
+                        method: "POST",
+                        headers: {
+                          "Content-Type": "application/json",
+                          "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+                        },
+                        body: JSON.stringify({
+                          telegram_id: String(targetProfile.telegram_id),
+                          caller_name: callerName,
+                          is_group_call: false,
+                          user_id: targetProfile.user_id,
+                        }),
+                      }
+                    );
+                    console.log("Voice notification sent for individual call");
+                  } catch (voiceError) {
+                    console.error("Voice notification error:", voiceError);
+                  }
+                  
+                  // Confirm to caller
+                  await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      chat_id: chatId,
+                      text: `✅ *Звонок отправлен!*\n\n📍 Комната: \`${roomName}\`\n👤 Получатель: @${targetUsername}\n⏱ Истекает через 2 минуты`,
+                      parse_mode: "Markdown",
+                      reply_markup: {
+                        inline_keyboard: [[
+                          { text: "🎥 Присоединиться", web_app: { url: `${WEB_APP_URL}/room/${roomName}` } }
+                        ]]
+                      }
+                    })
+                  });
+                  
+                  // Log activity
+                  await supabase.from("telegram_activity_log").insert({
+                    telegram_id: fromUser?.id || null,
+                    action: "individual_call_sent",
+                    metadata: { 
+                      room_name: roomName, 
+                      target_username: targetUsername,
+                      call_request_id: callRequest.id 
+                    },
+                  });
+                }
+              }
+            }
+          }
+        }
+        
       } else if (text.startsWith("/groupcall")) {
         // Parse usernames from command: /groupcall @user1 @user2 @user3
         const parts = text.split(/\s+/).slice(1);
@@ -812,23 +1021,24 @@ serve(async (req) => {
       } else if (text === "/help" || text === "/start") {
         const isGroupChat = chatId && chatId < 0;
         
-        // Send branded APLink GIF animation first (only in private chat)
+        // Send branded APLink video animation first (only in private chat)
         if (!isGroupChat) {
           try {
-            const gifResponse = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendAnimation`, {
+            const videoResponse = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendVideo`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 chat_id: chatId,
-                animation: WELCOME_GIF_URL,
+                video: WELCOME_VIDEO_URL,
                 caption: "✨ *Добро пожаловать в APLink!*\n\n_Видеозвонки нового поколения_",
-                parse_mode: "Markdown"
+                parse_mode: "Markdown",
+                supports_streaming: true
               })
             });
-            const gifResult = await gifResponse.json();
-            console.log("GIF send result:", JSON.stringify(gifResult));
-          } catch (gifError) {
-            console.log("Failed to send GIF, continuing with text:", gifError);
+            const videoResult = await videoResponse.json();
+            console.log("Video send result:", JSON.stringify(videoResult));
+          } catch (videoError) {
+            console.log("Failed to send video, continuing with text:", videoError);
           }
         }
         
