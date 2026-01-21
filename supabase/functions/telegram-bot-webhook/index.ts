@@ -410,7 +410,6 @@ serve(async (req) => {
                   inline_keyboard: isGroupChat
                     ? [[{ text: t("btnOpen", requestedLang), web_app: { url: WEB_APP_URL } }]]
                     : [
-                        [{ text: t("btnLink", requestedLang), web_app: { url: WEB_APP_URL } }],
                         [{ text: t("btnOpen", requestedLang), web_app: { url: WEB_APP_URL } }],
                         [{ text: t("btnLang", requestedLang), callback_data: "lang_menu" }],
                       ],
@@ -434,7 +433,6 @@ serve(async (req) => {
                     inline_keyboard: isGroupChat
                       ? [[{ text: t("btnOpen", requestedLang), web_app: { url: WEB_APP_URL } }]]
                       : [
-                          [{ text: t("btnLink", requestedLang), web_app: { url: WEB_APP_URL } }],
                           [{ text: t("btnOpen", requestedLang), web_app: { url: WEB_APP_URL } }],
                           [{ text: t("btnLang", requestedLang), callback_data: "lang_menu" }],
                         ],
@@ -1450,7 +1448,6 @@ serve(async (req) => {
             console.log("Sending help animation for existing user with lang:", lang);
             await sendWelcomeMedia(helpMessage, {
               inline_keyboard: [
-                [{ text: t("btnLink", lang), web_app: { url: WEB_APP_URL } }],
                 [{ text: t("btnOpen", lang), web_app: { url: WEB_APP_URL } }],
                 [{ text: t("btnLang", lang), callback_data: "lang_menu" }],
               ],

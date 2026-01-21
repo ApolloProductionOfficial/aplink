@@ -1706,8 +1706,7 @@ const MeetingRoom = () => {
         </div>
         
         {/* Bottom row: Control buttons with labels - improved mobile layout */}
-        <TooltipProvider delayDuration={300}>
-          <div className="grid grid-cols-4 sm:flex sm:flex-wrap sm:justify-center gap-2 w-full">
+        <div className="grid grid-cols-4 sm:flex sm:flex-wrap sm:justify-center gap-2 w-full">
             {/* Recording button */}
             <Tooltip>
               <TooltipTrigger asChild>
@@ -1831,7 +1830,6 @@ const MeetingRoom = () => {
               </TooltipContent>
             </Tooltip>
           </div>
-        </TooltipProvider>
       </header>
 
       {/* Registration hint for non-authenticated users */}
