@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Camera, Check, Loader2, User } from 'lucide-react';
+import { ArrowLeft, Camera, Check, Loader2, User, MessageCircle, ExternalLink } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import CustomCursor from '@/components/CustomCursor';
 import VoiceSettings from '@/components/VoiceSettings';
 import DoNotDisturbSettings from '@/components/DoNotDisturbSettings';
@@ -20,6 +21,8 @@ const Profile = () => {
   const [displayName, setDisplayName] = useState('');
   const [username, setUsername] = useState('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [telegramUsername, setTelegramUsername] = useState<string | null>(null);
+  const [telegramId, setTelegramId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -36,7 +39,7 @@ const Profile = () => {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('display_name, username, avatar_url')
+        .select('display_name, username, avatar_url, telegram_username, telegram_id')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -46,6 +49,8 @@ const Profile = () => {
         setDisplayName(data.display_name || '');
         setUsername(data.username || '');
         setAvatarUrl(data.avatar_url);
+        setTelegramUsername(data.telegram_username);
+        setTelegramId(data.telegram_id);
       }
 
       setLoading(false);
@@ -315,6 +320,52 @@ const Profile = () => {
             <p className="text-xs text-muted-foreground">
               Email нельзя изменить
             </p>
+          </div>
+
+          {/* Telegram Status */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <MessageCircle className="w-4 h-4" />
+              Telegram
+            </Label>
+            {telegramId ? (
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-primary/10 border border-primary/20">
+                <Badge variant="outline" className="bg-primary/20 text-primary border-primary/30">
+                  Привязан
+                </Badge>
+                <span className="text-sm font-medium">
+                  {telegramUsername ? `@${telegramUsername}` : `ID: ${telegramId}`}
+                </span>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 border border-border">
+                  <Badge variant="secondary" className="text-muted-foreground">
+                    Не привязан
+                  </Badge>
+                  <span className="text-sm text-muted-foreground">
+                    Для получения уведомлений о звонках
+                  </span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  asChild
+                  className="w-full"
+                >
+                  <a
+                    href="https://t.me/aplink_live_bot"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    Привязать через бота
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </Button>
+              </div>
+            )}
           </div>
 
           <Button
