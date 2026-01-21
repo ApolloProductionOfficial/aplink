@@ -261,6 +261,24 @@ serve(async (req) => {
           responseText = `Перевод на ${langName}`;
         }
       
+      } else if (callbackData === "link_account") {
+        // Handle link account button from welcome message
+        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: "🔗 *Привязка аккаунта*\n\nОткройте APLink через кнопку ниже и войдите в свой аккаунт. Telegram будет автоматически привязан.",
+            parse_mode: "Markdown",
+            reply_markup: {
+              inline_keyboard: [[
+                { text: "🔗 Открыть APLink", web_app: { url: WEB_APP_URL } }
+              ]]
+            }
+          })
+        });
+        responseText = "Откройте приложение для привязки";
+      
       } else if (callbackData === "noop") {
         // No-op for already handled buttons
         responseText = "";
@@ -698,9 +716,27 @@ serve(async (req) => {
       } else if (text === "/help" || text === "/start") {
         const isGroupChat = chatId && chatId < 0;
         
+        // Send welcome GIF animation first
+        const welcomeGifUrl = "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExcTd4Y2RyNzN4dTN1bWt5ZHU2NXc0aGk2OHBjNWp1bTV4bGM2YzN4aSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3oEdva9BUHPIs2SkGk/giphy.gif";
+        
+        try {
+          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendAnimation`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: chatId,
+              animation: welcomeGifUrl,
+              caption: "✨ *Добро пожаловать в APLink!*",
+              parse_mode: "Markdown"
+            })
+          });
+        } catch (gifError) {
+          console.log("Failed to send GIF, continuing with text:", gifError);
+        }
+        
         const helpMessage = isGroupChat
           ? `🎥 *APLink Bot*\n\n📞 /startcall - Начать групповой звонок для этого чата\n\nВсе участники чата могут присоединиться нажав на кнопку!`
-          : `🎥 *APLink Bot*\n\nДоступные команды:\n\n📞 /call - Создать звонок\n👥 /groupcall @user1 @user2 - Групповой звонок\n📵 /missed - Пропущенные звонки\n📋 /mycalls - История звонков\n⭐ /contacts - Мои контакты\n🔗 /link - Привязать аккаунт\n📊 /stats - Статистика\n🗑 /clear - Очистить старые логи\n\nИспользуйте кнопку меню для быстрого доступа к приложению!`;
+          : `🎥 *APLink Bot - Видеозвонки нового поколения*\n\n*Доступные команды:*\n\n📞 /call @username - Позвонить пользователю\n👥 /groupcall @user1 @user2 - Групповой звонок\n📵 /missed - Пропущенные звонки\n📋 /mycalls - История звонков\n⭐ /contacts - Мои контакты\n🔗 /link - Привязать аккаунт\n📊 /stats - Статистика\n🗑 /clear - Очистить старые логи\n🎤 Голосовое - Транскрипция и перевод\n\n💡 _Отправьте голосовое сообщение для транскрипции!_`;
         
         await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
           method: "POST",
@@ -710,9 +746,10 @@ serve(async (req) => {
             text: helpMessage,
             parse_mode: "Markdown",
             reply_markup: isGroupChat ? undefined : {
-              inline_keyboard: [[
-                { text: "🎥 Открыть APLink", web_app: { url: WEB_APP_URL } }
-              ]]
+              inline_keyboard: [
+                [{ text: "🎥 Открыть APLink", web_app: { url: WEB_APP_URL } }],
+                [{ text: "🔗 Привязать аккаунт", callback_data: "link_account" }]
+              ]
             }
           })
         });
