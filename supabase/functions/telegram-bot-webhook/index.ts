@@ -91,10 +91,28 @@ const getStoredLang = async (supabase: any, telegramId: number): Promise<BotLang
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
+const getProfileLang = async (supabase: any, telegramId: number): Promise<BotLang | null> => {
+  try {
+    const { data } = await supabase
+      .from("profiles")
+      .select("bot_language")
+      .eq("telegram_id", telegramId)
+      .maybeSingle();
+
+    const raw = (data as Record<string, unknown> | null)?.bot_language;
+    return normalizeLang(typeof raw === "string" ? raw : undefined);
+  } catch {
+    return null;
+  }
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const resolveLang = async (supabase: any, fromUser?: { id: number; language_code?: string }): Promise<BotLang> => {
   if (!fromUser?.id) return "ru";
   const stored = await getStoredLang(supabase, fromUser.id);
   if (stored) return stored;
+  const profileLang = await getProfileLang(supabase, fromUser.id);
+  if (profileLang) return profileLang;
   return inferLangFromTelegram(fromUser.language_code);
 };
 
@@ -1261,7 +1279,9 @@ serve(async (req) => {
         const isGroupChat = chatId && chatId < 0;
         
         // Check if user has language set
-        const stored = fromUser?.id ? await getStoredLang(supabase, fromUser.id) : null;
+        const stored = fromUser?.id
+          ? (await getStoredLang(supabase, fromUser.id)) ?? (await getProfileLang(supabase, fromUser.id))
+          : null;
         
         // Private chat: if no language stored, show language selection first
         if (!isGroupChat && !stored) {
@@ -1285,6 +1305,26 @@ serve(async (req) => {
           });
           const sendData = await sendResult.json();
           console.log("Send animation result:", JSON.stringify(sendData));
+
+          // Telegram couldn't fetch the media URL (common: URL returns HTML). Fallback to text-only message.
+          if (!sendData?.ok) {
+            await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chat_id: chatId,
+                text: `<b>🎥 APLink Bot</b>\n\n<blockquote>${t("langChooseFirst", lang)}</blockquote>`,
+                parse_mode: "HTML",
+                reply_markup: {
+                  inline_keyboard: [[
+                    { text: "🇷🇺 Русский", callback_data: "lang:ru" },
+                    { text: "🇬🇧 English", callback_data: "lang:en" },
+                    { text: "🇺🇦 Українська", callback_data: "lang:uk" },
+                  ]],
+                },
+              }),
+            });
+          }
         } else {
           const helpMessage = buildHelpMessage(lang, !!isGroupChat);
           
@@ -1310,6 +1350,26 @@ serve(async (req) => {
             });
             const helpData = await helpResult.json();
             console.log("Send help animation result:", JSON.stringify(helpData));
+
+            // Fallback to text-only help if Telegram can't fetch the media URL.
+            if (!helpData?.ok) {
+              await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  chat_id: chatId,
+                  text: helpMessage,
+                  parse_mode: "HTML",
+                  reply_markup: {
+                    inline_keyboard: [
+                      [{ text: t("btnLink", lang), web_app: { url: WEB_APP_URL } }],
+                      [{ text: t("btnOpen", lang), web_app: { url: WEB_APP_URL } }],
+                      [{ text: t("btnLang", lang), callback_data: "lang_menu" }],
+                    ],
+                  },
+                }),
+              });
+            }
           } else {
             // Group chat: plain message with button
             await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
