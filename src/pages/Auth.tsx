@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useTelegramLinking } from '@/hooks/useTelegramLinking';
 import { useLanguage } from '@/contexts/LanguageContext';
 import {
   DropdownMenu,
@@ -53,6 +54,9 @@ const Auth = () => {
   const { t } = useTranslation();
   const { language, setLanguage } = useLanguage();
   const { user, isLoading, signIn, signUp, signInWithGoogle, resetPassword, updatePassword } = useAuth();
+
+  // Auto-link Telegram account when logged in via Telegram Mini App
+  useTelegramLinking(user?.id);
 
   const languages = {
     ru: { label: 'Русский', flag: '🇷🇺' },

@@ -13,6 +13,14 @@ const corsHeaders = {
 };
 
 interface TelegramUpdate {
+  my_chat_member?: {
+    chat?: { id: number; title?: string; type?: string };
+    from?: { id: number; username?: string };
+    new_chat_member?: {
+      status: string;
+      user?: { id: number; is_bot?: boolean; username?: string };
+    };
+  };
   callback_query?: {
     id: string;
     data: string;
@@ -64,6 +72,46 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+
+    // Handle my_chat_member (bot added to group)
+    if (update.my_chat_member) {
+      const chatId = update.my_chat_member.chat?.id;
+      const chatTitle = update.my_chat_member.chat?.title || "группу";
+      const chatType = update.my_chat_member.chat?.type;
+      const newStatus = update.my_chat_member.new_chat_member?.status;
+      const newMemberBot = update.my_chat_member.new_chat_member?.user?.is_bot;
+      
+      console.log("my_chat_member update:", { chatId, chatType, newStatus, newMemberBot });
+      
+      // Only handle when bot is added to group/supergroup
+      if (chatId && (chatType === "group" || chatType === "supergroup") && 
+          (newStatus === "member" || newStatus === "administrator") && newMemberBot) {
+        
+        const welcomeMessage = `👋 *APLink Bot добавлен в "${chatTitle}"!*\n\n` +
+          `Теперь вы можете организовывать групповые видеозвонки прямо из этого чата.\n\n` +
+          `*Доступные команды:*\n` +
+          `📞 /startcall - Начать групповой звонок\n` +
+          `📵 /missed - Пропущенные звонки\n\n` +
+          `_Все участники чата смогут присоединиться к звонку нажав на кнопку!_`;
+        
+        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: welcomeMessage,
+            parse_mode: "Markdown"
+          })
+        });
+        
+        // Log activity
+        await supabase.from("telegram_activity_log").insert({
+          telegram_id: update.my_chat_member.from?.id || null,
+          action: "bot_added_to_group",
+          metadata: { chat_id: chatId, chat_title: chatTitle, chat_type: chatType },
+        });
+      }
+    }
 
     // Handle callback_query (button press)
     if (update.callback_query) {
@@ -1021,24 +1069,23 @@ serve(async (req) => {
       } else if (text === "/help" || text === "/start") {
         const isGroupChat = chatId && chatId < 0;
         
-        // Send branded APLink video animation first (only in private chat)
+        // Send branded APLink GIF animation first (only in private chat)
         if (!isGroupChat) {
           try {
-            const videoResponse = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendVideo`, {
+            const animResponse = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendAnimation`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 chat_id: chatId,
-                video: WELCOME_VIDEO_URL,
+                animation: WELCOME_VIDEO_URL,
                 caption: "✨ *Добро пожаловать в APLink!*\n\n_Видеозвонки нового поколения_",
-                parse_mode: "Markdown",
-                supports_streaming: true
+                parse_mode: "Markdown"
               })
             });
-            const videoResult = await videoResponse.json();
-            console.log("Video send result:", JSON.stringify(videoResult));
-          } catch (videoError) {
-            console.log("Failed to send video, continuing with text:", videoError);
+            const animResult = await animResponse.json();
+            console.log("Animation send result:", JSON.stringify(animResult));
+          } catch (animError) {
+            console.log("Failed to send animation, continuing with text:", animError);
           }
         }
         
@@ -1055,8 +1102,8 @@ serve(async (req) => {
             parse_mode: "Markdown",
             reply_markup: isGroupChat ? undefined : {
               inline_keyboard: [
-                [{ text: "🎥 Открыть APLink", web_app: { url: WEB_APP_URL } }],
-                [{ text: "🔗 Привязать аккаунт", callback_data: "link_account" }]
+                [{ text: "🔗 Привязать аккаунт", web_app: { url: WEB_APP_URL } }],
+                [{ text: "🎥 Открыть APLink", web_app: { url: WEB_APP_URL } }]
               ]
             }
           })
