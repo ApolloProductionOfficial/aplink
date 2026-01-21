@@ -54,6 +54,11 @@ interface TelegramUpdate {
     };
     reply_to_message?: {
       text?: string;
+      caption?: string;
+      animation?: { file_id: string };
+      video?: { file_id: string };
+      document?: { file_id: string; mime_type?: string };
+      photo?: Array<{ file_id: string }>;
       voice?: { file_id: string };
     };
   };
@@ -1486,13 +1491,30 @@ serve(async (req) => {
           body: JSON.stringify({ chat_id: chatId, text: "⛔ Только для админа / Admin only" }),
         });
       } else {
-        // Determine file_id from attached media (prefer animation, then video, then photo)
+        // Determine file_id from attached media OR from replied message media
         const msg = update.message;
-        let fileId: string | null = null;
-        if (msg.animation?.file_id) fileId = msg.animation.file_id;
-        else if (msg.video?.file_id) fileId = msg.video.file_id;
-        else if (msg.document?.file_id && msg.document.mime_type?.startsWith("video/")) fileId = msg.document.file_id;
-        else if (msg.photo && msg.photo.length > 0) fileId = msg.photo[msg.photo.length - 1].file_id;
+        const replied = update.message.reply_to_message;
+
+        const getMediaFileId = (m: typeof msg | typeof replied | undefined | null): string | null => {
+          if (!m) return null;
+          // Prefer animation (works best for MP4/GIF), then video, then video-document, then photo
+          if ((m as any).animation?.file_id) return (m as any).animation.file_id;
+          if ((m as any).video?.file_id) return (m as any).video.file_id;
+          if ((m as any).document?.file_id && (m as any).document?.mime_type?.startsWith("video/")) {
+            return (m as any).document.file_id;
+          }
+          if ((m as any).photo && (m as any).photo.length > 0) {
+            return (m as any).photo[(m as any).photo.length - 1].file_id;
+          }
+          return null;
+        };
+
+        const fileId = getMediaFileId(msg) || getMediaFileId(replied);
+        console.log("/setwelcome media resolved:", {
+          hasMsgMedia: !!getMediaFileId(msg),
+          hasReplyMedia: !!getMediaFileId(replied),
+          fileId: fileId ? "<present>" : null,
+        });
 
         if (!fileId) {
           await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
@@ -1500,13 +1522,19 @@ serve(async (req) => {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               chat_id: chatId,
-              text: "❌ *Прикрепите GIF/видео/фото вместе с командой /setwelcome*\n\n*Формат многоязычного капшена:*\n```\n/setwelcome\n\n🇷🇺 RU:\nПриветственный текст на русском\nМожно в несколько строк\n\n🇬🇧 EN:\nWelcome text in English\nMultiple lines supported\n\n🇺🇦 UK:\nПривітальний текст українською\nПідтримується багато рядків\n```\n\n💡 Если язык не указан — текст будет использован для всех языков.",
+              text: "❌ *Прикрепите GIF/видео/фото вместе с командой /setwelcome*\n\n*ИЛИ:* ответьте командой `/setwelcome` *reply* на сообщение с GIF/видео/фото.\n\n*Формат многоязычного текста:*\n```\n/setwelcome\n\n🇷🇺 RU:\nПриветственный текст на русском\nМожно в несколько строк\n\n🇬🇧 EN:\nWelcome text in English\nMultiple lines supported\n\n🇺🇦 UK:\nПривітальний текст українською\nПідтримується багато рядків\n```\n\n💡 Если язык не указан — текст будет использован для всех языков.",
               parse_mode: "Markdown",
             }),
           });
         } else {
           // Parse captions from message text (support multi-line blocks)
-          const captionText = (msg.caption || msg.text || "").replace(/^\/setwelcome\s*/i, "").trim();
+          const primaryText = (msg.caption || msg.text || "");
+          const replyText = (replied?.caption || replied?.text || "");
+
+          const stripSetWelcome = (text: string) => text.replace(/^\/setwelcome(?:@\w+)?\s*/i, "").trim();
+
+          // Prefer text provided in the command message; fall back to replied media caption/text.
+          const captionText = stripSetWelcome(primaryText) || stripSetWelcome(replyText);
           
           // Advanced multi-line extraction: find blocks between language markers
           const extractBlock = (text: string, markers: string[]): string | null => {
