@@ -696,7 +696,7 @@ serve(async (req) => {
               reply_markup: {
                 inline_keyboard: [
                   [{ text: dndEnabled ? t("settingsDndDisable", lang) : t("settingsDndEnable", lang), callback_data: dndEnabled ? "settings_dnd_off" : "settings_dnd_on" }],
-                  [{ text: t("btnOpen", lang), web_app: { url: WEB_APP_URL } }]
+                  [{ text: t("btnOpen", lang), web_app: { url: WEB_APP_URL } }],
                 ]
               }
             })
@@ -725,6 +725,43 @@ serve(async (req) => {
           });
         }
         responseText = "";
+      
+      } else if (callbackData === "admin_change_welcome") {
+        // Admin button: show /setwelcome format hint
+        if (fromUser?.id === ADMIN_TELEGRAM_ID) {
+          const formatHint = `✏️ *Сменить приветствие*
+
+Отправьте GIF/видео/фото с командой в caption:
+\`\`\`
+/setwelcome
+
+🇷🇺 RU:
+Текст на русском
+
+🇬🇧 EN:
+Text in English
+
+🇺🇦 UK:
+Текст українською
+\`\`\`
+
+*ИЛИ:* ответьте \`/setwelcome\` reply на сообщение с медиа.
+
+💡 Если язык не указан — текст будет использован для всех языков.`;
+
+          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: formatHint,
+              parse_mode: "Markdown",
+            }),
+          });
+          responseText = "";
+        } else {
+          responseText = "⛔ Admin only";
+        }
       
       } else if (callbackData === "noop") {
         // No-op for already handled buttons
@@ -1449,14 +1486,21 @@ serve(async (req) => {
           const helpMessage = getDbCaption(lang) || buildHelpMessage(lang, !!isGroupChat);
           
           // Private chat: send animation WITH caption
+          // Add admin button if user is admin
+          const isAdmin = fromUser?.id === ADMIN_TELEGRAM_ID;
           if (!isGroupChat) {
-            console.log("Sending help animation for existing user with lang:", lang);
-            await sendWelcomeMedia(helpMessage, {
-              inline_keyboard: [
-                [{ text: t("btnOpen", lang), web_app: { url: WEB_APP_URL } }],
-                [{ text: t("btnLang", lang), callback_data: "lang_menu" }],
-              ],
-            });
+            console.log("Sending help animation for existing user with lang:", lang, "isAdmin:", isAdmin);
+            const keyboard = isAdmin
+              ? [
+                  [{ text: t("btnOpen", lang), web_app: { url: WEB_APP_URL } }],
+                  [{ text: t("btnLang", lang), callback_data: "lang_menu" }],
+                  [{ text: "✏️ Сменить приветствие", callback_data: "admin_change_welcome" }],
+                ]
+              : [
+                  [{ text: t("btnOpen", lang), web_app: { url: WEB_APP_URL } }],
+                  [{ text: t("btnLang", lang), callback_data: "lang_menu" }],
+                ];
+            await sendWelcomeMedia(helpMessage, { inline_keyboard: keyboard });
           } else {
             // Group chat: plain message with button
             await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
