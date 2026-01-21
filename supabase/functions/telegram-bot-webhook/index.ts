@@ -1265,7 +1265,8 @@ serve(async (req) => {
         
         // Private chat: if no language stored, show language selection first
         if (!isGroupChat && !stored) {
-          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendAnimation`, {
+          console.log("Sending language selection for new user");
+          const sendResult = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendAnimation`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -1282,12 +1283,15 @@ serve(async (req) => {
               },
             }),
           });
+          const sendData = await sendResult.json();
+          console.log("Send animation result:", JSON.stringify(sendData));
         } else {
           const helpMessage = buildHelpMessage(lang, !!isGroupChat);
           
           // Private chat: send animation WITH caption
           if (!isGroupChat) {
-            await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendAnimation`, {
+            console.log("Sending help animation for existing user with lang:", lang);
+            const helpResult = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendAnimation`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -1304,6 +1308,8 @@ serve(async (req) => {
                 },
               }),
             });
+            const helpData = await helpResult.json();
+            console.log("Send help animation result:", JSON.stringify(helpData));
           } else {
             // Group chat: plain message with button
             await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
