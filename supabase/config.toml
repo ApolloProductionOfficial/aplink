@@ -77,3 +77,9 @@ verify_jwt = false
 
 [functions.cleanup-expired-links]
 verify_jwt = false
+
+[functions.setup-telegram-bot]
+verify_jwt = false
+
+[functions.telegram-callback-handler]
+verify_jwt = false

@@ -4,6 +4,14 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
 const WEB_APP_URL = "https://aplink.live";
 
+// Branded APLink welcome animation (Apollo logo style)
+const WELCOME_GIF_URL = "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExZ3FzYmYxcTdmNjRzamlhbHc4Z3kwaG1raGhhdHB2YjQyNjlkZTJ2eCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/26tPnAAJxXTvpLwJy/giphy.gif";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
 interface TelegramUpdate {
   callback_query?: {
     id: string;
@@ -12,10 +20,11 @@ interface TelegramUpdate {
     message?: {
       chat?: { id: number };
       message_id?: number;
+      text?: string;
     };
   };
   message?: {
-    chat?: { id: number };
+    chat?: { id: number; title?: string; type?: string };
     from?: { id: number; username?: string; first_name?: string };
     text?: string;
     voice?: {
@@ -36,10 +45,15 @@ interface TelegramUpdate {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
   try {
     const update: TelegramUpdate = await req.json();
     
-    console.log("Webhook received:", JSON.stringify(update).substring(0, 300));
+    console.log("Webhook received:", JSON.stringify(update).substring(0, 500));
     
     if (!TELEGRAM_BOT_TOKEN) {
       console.error("TELEGRAM_BOT_TOKEN not configured");
@@ -279,6 +293,60 @@ serve(async (req) => {
         });
         responseText = "Откройте приложение для привязки";
       
+      } else if (callbackData === "settings_dnd_on" || callbackData === "settings_dnd_off") {
+        // Toggle DND setting
+        const dndEnabled = callbackData === "settings_dnd_on";
+        
+        if (fromUser?.id) {
+          await supabase
+            .from("profiles")
+            .update({ dnd_enabled: dndEnabled })
+            .eq("telegram_id", fromUser.id);
+        }
+        
+        responseText = dndEnabled ? "🔕 Режим 'Не беспокоить' включён" : "🔔 Уведомления включены";
+        
+        // Update message with new buttons
+        if (chatId && messageId) {
+          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageReplyMarkup`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: chatId,
+              message_id: messageId,
+              reply_markup: {
+                inline_keyboard: [
+                  [{ text: dndEnabled ? "🔔 Включить уведомления" : "🔕 Не беспокоить", callback_data: dndEnabled ? "settings_dnd_off" : "settings_dnd_on" }],
+                  [{ text: "⬅️ Назад", callback_data: "settings_back" }]
+                ]
+              }
+            })
+          });
+        }
+        
+      } else if (callbackData === "settings_back") {
+        // Go back to main settings
+        if (chatId && messageId) {
+          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: chatId,
+              message_id: messageId,
+              text: "⚙️ *Настройки APLink*\n\nВыберите опцию для настройки:",
+              parse_mode: "Markdown",
+              reply_markup: {
+                inline_keyboard: [
+                  [{ text: "🔕 Не беспокоить", callback_data: "settings_dnd_on" }],
+                  [{ text: "🔔 Включить уведомления", callback_data: "settings_dnd_off" }],
+                  [{ text: "🎥 Открыть APLink", web_app: { url: WEB_APP_URL } }]
+                ]
+              }
+            })
+          });
+        }
+        responseText = "Настройки";
+      
       } else if (callbackData === "noop") {
         // No-op for already handled buttons
         responseText = "";
@@ -309,7 +377,35 @@ serve(async (req) => {
         });
       }
       
-      if (text === "/stats" || text === "/status") {
+      if (text === "/settings") {
+        // Settings command
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("dnd_enabled, voice_preference")
+          .eq("telegram_id", fromUser?.id)
+          .single();
+        
+        const dndStatus = profile?.dnd_enabled ? "🔕 Включён" : "🔔 Выключен";
+        
+        const settingsMessage = `⚙️ *Настройки APLink*\n\n*Текущие настройки:*\n• Режим 'Не беспокоить': ${dndStatus}\n\nВыберите опцию для изменения:`;
+        
+        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: settingsMessage,
+            parse_mode: "Markdown",
+            reply_markup: {
+              inline_keyboard: [
+                [{ text: profile?.dnd_enabled ? "🔔 Выключить 'Не беспокоить'" : "🔕 Включить 'Не беспокоить'", callback_data: profile?.dnd_enabled ? "settings_dnd_off" : "settings_dnd_on" }],
+                [{ text: "🎥 Открыть APLink", web_app: { url: WEB_APP_URL } }]
+              ]
+            }
+          })
+        });
+      
+      } else if (text === "/stats" || text === "/status") {
         const today = new Date().toISOString().split("T")[0];
         const { count: totalLogs } = await supabase.from("error_logs").select("*", { count: "exact", head: true });
         const { count: todayLogs } = await supabase.from("error_logs").select("*", { count: "exact", head: true }).gte("created_at", today);
@@ -716,27 +812,29 @@ serve(async (req) => {
       } else if (text === "/help" || text === "/start") {
         const isGroupChat = chatId && chatId < 0;
         
-        // Send welcome GIF animation first
-        const welcomeGifUrl = "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExcTd4Y2RyNzN4dTN1bWt5ZHU2NXc0aGk2OHBjNWp1bTV4bGM2YzN4aSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3oEdva9BUHPIs2SkGk/giphy.gif";
-        
-        try {
-          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendAnimation`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chat_id: chatId,
-              animation: welcomeGifUrl,
-              caption: "✨ *Добро пожаловать в APLink!*",
-              parse_mode: "Markdown"
-            })
-          });
-        } catch (gifError) {
-          console.log("Failed to send GIF, continuing with text:", gifError);
+        // Send branded APLink GIF animation first (only in private chat)
+        if (!isGroupChat) {
+          try {
+            const gifResponse = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendAnimation`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chat_id: chatId,
+                animation: WELCOME_GIF_URL,
+                caption: "✨ *Добро пожаловать в APLink!*\n\n_Видеозвонки нового поколения_",
+                parse_mode: "Markdown"
+              })
+            });
+            const gifResult = await gifResponse.json();
+            console.log("GIF send result:", JSON.stringify(gifResult));
+          } catch (gifError) {
+            console.log("Failed to send GIF, continuing with text:", gifError);
+          }
         }
         
         const helpMessage = isGroupChat
-          ? `🎥 *APLink Bot*\n\n📞 /startcall - Начать групповой звонок для этого чата\n\nВсе участники чата могут присоединиться нажав на кнопку!`
-          : `🎥 *APLink Bot - Видеозвонки нового поколения*\n\n*Доступные команды:*\n\n📞 /call @username - Позвонить пользователю\n👥 /groupcall @user1 @user2 - Групповой звонок\n📵 /missed - Пропущенные звонки\n📋 /mycalls - История звонков\n⭐ /contacts - Мои контакты\n🔗 /link - Привязать аккаунт\n📊 /stats - Статистика\n🗑 /clear - Очистить старые логи\n🎤 Голосовое - Транскрипция и перевод\n\n💡 _Отправьте голосовое сообщение для транскрипции!_`;
+          ? `🎥 *APLink Bot*\n\n📞 /startcall - Начать групповой звонок для этого чата\n📵 /missed - Пропущенные звонки\n\nВсе участники чата могут присоединиться нажав на кнопку!`
+          : `🎥 *APLink Bot*\n\n*Доступные команды:*\n\n📞 /call @username - Позвонить\n👥 /groupcall @user1 @user2 - Групповой звонок\n📵 /missed - Пропущенные звонки\n📋 /mycalls - История звонков\n⭐ /contacts - Мои контакты\n🔗 /link - Привязать аккаунт\n⚙️ /settings - Настройки\n📊 /stats - Статистика\n🎤 Голосовое - Транскрипция\n\n💡 _Отправьте голосовое сообщение для транскрипции и перевода!_`;
         
         await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
           method: "POST",
