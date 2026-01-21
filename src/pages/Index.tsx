@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslation } from "@/hooks/useTranslation";
 import { usePresence } from "@/hooks/usePresence";
+import { useTelegramLinking } from "@/hooks/useTelegramLinking";
 import CustomCursor from "@/components/CustomCursor";
 import ProfileCard from "@/components/ProfileCard";
 import APLinkBottomNav from "@/components/APLinkBottomNav";
@@ -56,6 +57,7 @@ const Index = () => {
   const { toast } = useToast();
   
   usePresence();
+  useTelegramLinking(user?.id);
 
   useEffect(() => {
     if (roomFromUrl) {

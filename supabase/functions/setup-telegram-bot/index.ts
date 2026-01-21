@@ -60,7 +60,7 @@ serve(async (req) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           url: webhookUrl,
-          allowed_updates: ["message", "callback_query"],
+          allowed_updates: ["message", "callback_query", "my_chat_member"],
           drop_pending_updates: false,
         }),
       }
