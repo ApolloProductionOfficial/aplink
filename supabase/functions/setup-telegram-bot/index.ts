@@ -16,10 +16,10 @@ const BOT_COMMANDS_RU = [
   { command: "missed", description: "📵 Пропущенные звонки" },
   { command: "mycalls", description: "📋 История звонков" },
   { command: "contacts", description: "⭐ Мои контакты" },
-  { command: "link", description: "🔗 Привязать аккаунт" },
   { command: "settings", description: "⚙️ Настройки уведомлений" },
   { command: "stats", description: "📊 Статистика" },
   { command: "lang", description: "🌐 Язык бота (RU/EN/UK)" },
+  { command: "setwelcome", description: "🎬 Изменить приветствие (админ)" },
   { command: "help", description: "❓ Помощь" },
 ];
 
@@ -30,10 +30,10 @@ const BOT_COMMANDS_EN = [
   { command: "missed", description: "📵 Missed calls" },
   { command: "mycalls", description: "📋 Call history" },
   { command: "contacts", description: "⭐ My contacts" },
-  { command: "link", description: "🔗 Link account" },
   { command: "settings", description: "⚙️ Notification settings" },
   { command: "stats", description: "📊 Stats" },
   { command: "lang", description: "🌐 Bot language (RU/EN/UK)" },
+  { command: "setwelcome", description: "🎬 Change welcome (admin)" },
   { command: "help", description: "❓ Help" },
 ];
 
@@ -44,10 +44,10 @@ const BOT_COMMANDS_UK = [
   { command: "missed", description: "📵 Пропущені дзвінки" },
   { command: "mycalls", description: "📋 Історія дзвінків" },
   { command: "contacts", description: "⭐ Мої контакти" },
-  { command: "link", description: "🔗 Прив'язати акаунт" },
   { command: "settings", description: "⚙️ Налаштування сповіщень" },
   { command: "stats", description: "📊 Статистика" },
   { command: "lang", description: "🌐 Мова бота (RU/EN/UK)" },
+  { command: "setwelcome", description: "🎬 Змінити привітання (адмін)" },
   { command: "help", description: "❓ Допомога" },
 ];
 
