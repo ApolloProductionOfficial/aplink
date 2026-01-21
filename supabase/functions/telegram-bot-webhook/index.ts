@@ -4,8 +4,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
 const WEB_APP_URL = "https://aplink.live";
 
-// Branded APLink welcome video (custom logo animation)
-const WELCOME_VIDEO_URL = "https://aplink.live/animations/aplink-welcome.mp4";
+// Branded APLink welcome GIF animation
+const WELCOME_GIF_URL = "https://aplink.live/animations/aplink-welcome.gif";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -1077,7 +1077,7 @@ serve(async (req) => {
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 chat_id: chatId,
-                animation: WELCOME_VIDEO_URL,
+                animation: WELCOME_GIF_URL,
                 caption: "✨ *Добро пожаловать в APLink!*\n\n_Видеозвонки нового поколения_",
                 parse_mode: "Markdown"
               })
@@ -1090,8 +1090,22 @@ serve(async (req) => {
         }
         
         const helpMessage = isGroupChat
-          ? `🎥 *APLink Bot*\n\n📞 /startcall - Начать групповой звонок для этого чата\n📵 /missed - Пропущенные звонки\n\nВсе участники чата могут присоединиться нажав на кнопку!`
-          : `🎥 *APLink Bot*\n\n*Доступные команды:*\n\n📞 /call @username - Позвонить\n👥 /groupcall @user1 @user2 - Групповой звонок\n📵 /missed - Пропущенные звонки\n📋 /mycalls - История звонков\n⭐ /contacts - Мои контакты\n🔗 /link - Привязать аккаунт\n⚙️ /settings - Настройки\n📊 /stats - Статистика\n🎤 Голосовое - Транскрипция\n\n💡 _Отправьте голосовое сообщение для транскрипции и перевода!_`;
+          ? `🎥 *APLink Bot*\n\n` +
+            `📞 /startcall — Начать групповой звонок\n` +
+            `📵 /missed — Пропущенные звонки\n\n` +
+            `_Все участники чата могут присоединиться нажав на кнопку!_`
+          : `🎥 *APLink Bot*\n\n` +
+            `\`Доступные команды:\`\n\n` +
+            `├ 📞 /call @username — Позвонить\n` +
+            `├ 👥 /groupcall @user1 @user2 — Групповой звонок\n` +
+            `├ 📵 /missed — Пропущенные звонки\n` +
+            `├ 📋 /mycalls — История звонков\n` +
+            `├ ⭐ /contacts — Мои контакты\n` +
+            `├ 🔗 /link — Привязать аккаунт\n` +
+            `├ ⚙️ /settings — Настройки\n` +
+            `├ 📊 /stats — Статистика\n` +
+            `╰ 🎤 Голосовое — Транскрипция\n\n` +
+            `\`💡 Отправьте голосовое сообщение для транскрипции и перевода!\``;
         
         await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
           method: "POST",
