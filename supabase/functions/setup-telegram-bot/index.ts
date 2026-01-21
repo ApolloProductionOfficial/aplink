@@ -9,7 +9,7 @@ const corsHeaders = {
 };
 
 // Bot commands for Telegram menu
-const BOT_COMMANDS = [
+const BOT_COMMANDS_RU = [
   { command: "start", description: "🎥 Начать работу с ботом" },
   { command: "call", description: "📞 Позвонить пользователю" },
   { command: "groupcall", description: "👥 Групповой звонок" },
@@ -19,7 +19,22 @@ const BOT_COMMANDS = [
   { command: "link", description: "🔗 Привязать аккаунт" },
   { command: "settings", description: "⚙️ Настройки уведомлений" },
   { command: "stats", description: "📊 Статистика" },
+  { command: "lang", description: "🌐 Язык бота (RU/EN)" },
   { command: "help", description: "❓ Помощь" },
+];
+
+const BOT_COMMANDS_EN = [
+  { command: "start", description: "🎥 Start" },
+  { command: "call", description: "📞 Call a user" },
+  { command: "groupcall", description: "👥 Group call" },
+  { command: "missed", description: "📵 Missed calls" },
+  { command: "mycalls", description: "📋 Call history" },
+  { command: "contacts", description: "⭐ My contacts" },
+  { command: "link", description: "🔗 Link account" },
+  { command: "settings", description: "⚙️ Notification settings" },
+  { command: "stats", description: "📊 Stats" },
+  { command: "lang", description: "🌐 Bot language (RU/EN)" },
+  { command: "help", description: "❓ Help" },
 ];
 
 serve(async (req) => {
@@ -38,18 +53,43 @@ serve(async (req) => {
 
     const results: Record<string, unknown> = {};
 
-    // 1. Set bot commands (menu)
-    const setCommandsResponse = await fetch(
+    // 1. Set bot commands (menu) - localized RU/EN
+    const setCommandsResponseRu = await fetch(
       `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/setMyCommands`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ commands: BOT_COMMANDS }),
+        body: JSON.stringify({ commands: BOT_COMMANDS_RU, language_code: "ru" }),
       }
     );
-    const setCommandsResult = await setCommandsResponse.json();
-    results.setCommands = setCommandsResult;
-    console.log("Set commands result:", setCommandsResult);
+    const setCommandsResultRu = await setCommandsResponseRu.json();
+    results.setCommandsRu = setCommandsResultRu;
+    console.log("Set commands (ru) result:", setCommandsResultRu);
+
+    const setCommandsResponseEn = await fetch(
+      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/setMyCommands`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ commands: BOT_COMMANDS_EN, language_code: "en" }),
+      }
+    );
+    const setCommandsResultEn = await setCommandsResponseEn.json();
+    results.setCommandsEn = setCommandsResultEn;
+    console.log("Set commands (en) result:", setCommandsResultEn);
+
+    // Also set default commands (fallback) to RU
+    const setCommandsResponseDefault = await fetch(
+      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/setMyCommands`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ commands: BOT_COMMANDS_RU }),
+      }
+    );
+    const setCommandsResultDefault = await setCommandsResponseDefault.json();
+    results.setCommandsDefault = setCommandsResultDefault;
+    console.log("Set commands (default) result:", setCommandsResultDefault);
 
     // 2. Set webhook URL
     const webhookUrl = `${SUPABASE_URL}/functions/v1/telegram-bot-webhook`;
