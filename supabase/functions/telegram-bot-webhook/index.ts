@@ -1089,23 +1089,33 @@ serve(async (req) => {
           }
         }
         
+        // Use HTML to get Telegram-style quote blocks (<blockquote>) like in your example.
         const helpMessage = isGroupChat
-          ? `🎥 *APLink Bot*\n\n` +
-            `📞 /startcall — Начать групповой звонок\n` +
-            `📵 /missed — Пропущенные звонки\n\n` +
-            `_Все участники чата могут присоединиться нажав на кнопку!_`
-          : `🎥 *APLink Bot*\n\n` +
-            `\`Доступные команды:\`\n\n` +
-            `├ 📞 /call @username — Позвонить\n` +
-            `├ 👥 /groupcall @user1 @user2 — Групповой звонок\n` +
-            `├ 📵 /missed — Пропущенные звонки\n` +
-            `├ 📋 /mycalls — История звонков\n` +
-            `├ ⭐ /contacts — Мои контакты\n` +
-            `├ 🔗 /link — Привязать аккаунт\n` +
-            `├ ⚙️ /settings — Настройки\n` +
-            `├ 📊 /stats — Статистика\n` +
-            `╰ 🎤 Голосовое — Транскрипция\n\n` +
-            `\`💡 Отправьте голосовое сообщение для транскрипции и перевода!\``;
+          ? [
+              `<b>🎥 APLink Bot</b>`,
+              ``,
+              `<blockquote>Команды для групп</blockquote>`,
+              `├ 📞 <b>/startcall</b> — Начать групповой звонок`,
+              `╰ 📵 <b>/missed</b> — Пропущенные звонки`,
+              ``,
+              `<blockquote>Все участники чата могут присоединиться нажав на кнопку.</blockquote>`,
+            ].join("\n")
+          : [
+              `<b>🎥 APLink Bot</b>`,
+              ``,
+              `<blockquote>Доступные команды</blockquote>`,
+              `├ 📞 <b>/call</b> @username — Позвонить`,
+              `├ 👥 <b>/groupcall</b> @user1 @user2 — Групповой звонок`,
+              `├ 📵 <b>/missed</b> — Пропущенные звонки`,
+              `├ 📋 <b>/mycalls</b> — История звонков`,
+              `├ ⭐ <b>/contacts</b> — Мои контакты`,
+              `├ 🔗 <b>/link</b> — Привязать аккаунт`,
+              `├ ⚙️ <b>/settings</b> — Настройки`,
+              `├ 📊 <b>/stats</b> — Статистика`,
+              `╰ 🎤 Голосовое — Транскрипция`,
+              ``,
+              `<blockquote>💡 Отправьте голосовое сообщение для транскрипции и перевода!</blockquote>`,
+            ].join("\n");
         
         await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
           method: "POST",
@@ -1113,7 +1123,7 @@ serve(async (req) => {
           body: JSON.stringify({
             chat_id: chatId,
             text: helpMessage,
-            parse_mode: "Markdown",
+            parse_mode: "HTML",
             reply_markup: isGroupChat ? undefined : {
               inline_keyboard: [
                 [{ text: "🔗 Привязать аккаунт", web_app: { url: WEB_APP_URL } }],
