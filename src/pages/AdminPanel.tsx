@@ -26,6 +26,7 @@ import { useAdminPushNotifications } from '@/hooks/useAdminPushNotifications';
 import ErrorStatsExport from '@/components/ErrorStatsExport';
 import SystemStatusDashboard from '@/components/SystemStatusDashboard';
 import DataBackupsManager from '@/components/DataBackupsManager';
+import WelcomeMessageEditor from '@/components/WelcomeMessageEditor';
 
 interface MeetingTranscript {
   id: string;
@@ -1144,6 +1145,9 @@ const AdminPanel = () => {
             
             {/* Full Telegram Mini App Analytics */}
             <TelegramMiniAppAnalytics />
+            
+            {/* Welcome Message Editor */}
+            <WelcomeMessageEditor />
             
             {/* Group Call History */}
             <GroupCallHistory />
