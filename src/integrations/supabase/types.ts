@@ -463,6 +463,7 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          bot_language: string | null
           created_at: string
           display_name: string | null
           dnd_auto_reply: string | null
@@ -480,6 +481,7 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          bot_language?: string | null
           created_at?: string
           display_name?: string | null
           dnd_auto_reply?: string | null
@@ -497,6 +499,7 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          bot_language?: string | null
           created_at?: string
           display_name?: string | null
           dnd_auto_reply?: string | null
