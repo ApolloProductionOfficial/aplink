@@ -77,6 +77,36 @@ export type Database = {
         }
         Relationships: []
       }
+      bot_welcome_settings: {
+        Row: {
+          caption_en: string | null
+          caption_ru: string | null
+          caption_uk: string | null
+          file_id: string | null
+          id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          caption_en?: string | null
+          caption_ru?: string | null
+          caption_uk?: string | null
+          file_id?: string | null
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          caption_en?: string | null
+          caption_ru?: string | null
+          caption_uk?: string | null
+          file_id?: string | null
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       call_participants: {
         Row: {
           call_request_id: string
