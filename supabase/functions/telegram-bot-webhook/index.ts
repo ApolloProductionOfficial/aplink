@@ -5,7 +5,9 @@ const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
 const WEB_APP_URL = "https://aplink.live";
 
 // Branded APLink welcome animation (MP4 works as GIF/animation in Telegram)
-const WELCOME_GIF_URL = "https://aplink.live/animations/aplink-welcome.mp4";
+// NOTE: Telegram fetches this URL server-side; it must return the raw MP4 bytes (not HTML).
+// Using the published domain is more reliable than custom domains/CDN that may return HTML.
+const WELCOME_GIF_URL = "https://aplink.lovable.app/animations/aplink-welcome.mp4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -381,6 +383,61 @@ serve(async (req) => {
             .eq("telegram_id", fromUser.id);
             
           responseText = t("langSet", requestedLang);
+
+          // Immediately update the current welcome/help message to the selected language
+          // so it feels like the bot "switched" right away.
+          if (chatId && messageId) {
+            const isGroupChat = chatId < 0;
+            const newHelp = buildHelpMessage(requestedLang, isGroupChat);
+
+            // First try editing caption (works if original message was sendAnimation)
+            const editCaptionRes = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageCaption`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chat_id: chatId,
+                message_id: messageId,
+                caption: newHelp,
+                parse_mode: "HTML",
+                reply_markup: {
+                  inline_keyboard: isGroupChat
+                    ? [[{ text: t("btnOpen", requestedLang), web_app: { url: WEB_APP_URL } }]]
+                    : [
+                        [{ text: t("btnLink", requestedLang), web_app: { url: WEB_APP_URL } }],
+                        [{ text: t("btnOpen", requestedLang), web_app: { url: WEB_APP_URL } }],
+                        [{ text: t("btnLang", requestedLang), callback_data: "lang_menu" }],
+                      ],
+                },
+              }),
+            });
+            const editCaptionData = await editCaptionRes.json();
+            console.log("editMessageCaption result:", JSON.stringify(editCaptionData));
+
+            // If it wasn't an animation message (caption edit fails), fallback to edit text.
+            if (!editCaptionData?.ok) {
+              const editTextRes = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  chat_id: chatId,
+                  message_id: messageId,
+                  text: newHelp,
+                  parse_mode: "HTML",
+                  reply_markup: {
+                    inline_keyboard: isGroupChat
+                      ? [[{ text: t("btnOpen", requestedLang), web_app: { url: WEB_APP_URL } }]]
+                      : [
+                          [{ text: t("btnLink", requestedLang), web_app: { url: WEB_APP_URL } }],
+                          [{ text: t("btnOpen", requestedLang), web_app: { url: WEB_APP_URL } }],
+                          [{ text: t("btnLang", requestedLang), callback_data: "lang_menu" }],
+                        ],
+                  },
+                }),
+              });
+              const editTextData = await editTextRes.json();
+              console.log("editMessageText fallback result:", JSON.stringify(editTextData));
+            }
+          }
         } else {
           responseText = t("langUnsupported", lang);
         }
