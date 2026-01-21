@@ -8,7 +8,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Bot commands for Telegram menu
+// Bot commands for Telegram menu - 3 languages
 const BOT_COMMANDS_RU = [
   { command: "start", description: "🎥 Начать работу с ботом" },
   { command: "call", description: "📞 Позвонить пользователю" },
@@ -19,7 +19,7 @@ const BOT_COMMANDS_RU = [
   { command: "link", description: "🔗 Привязать аккаунт" },
   { command: "settings", description: "⚙️ Настройки уведомлений" },
   { command: "stats", description: "📊 Статистика" },
-  { command: "lang", description: "🌐 Язык бота (RU/EN)" },
+  { command: "lang", description: "🌐 Язык бота (RU/EN/UK)" },
   { command: "help", description: "❓ Помощь" },
 ];
 
@@ -33,8 +33,22 @@ const BOT_COMMANDS_EN = [
   { command: "link", description: "🔗 Link account" },
   { command: "settings", description: "⚙️ Notification settings" },
   { command: "stats", description: "📊 Stats" },
-  { command: "lang", description: "🌐 Bot language (RU/EN)" },
+  { command: "lang", description: "🌐 Bot language (RU/EN/UK)" },
   { command: "help", description: "❓ Help" },
+];
+
+const BOT_COMMANDS_UK = [
+  { command: "start", description: "🎥 Почати роботу з ботом" },
+  { command: "call", description: "📞 Зателефонувати користувачу" },
+  { command: "groupcall", description: "👥 Груповий дзвінок" },
+  { command: "missed", description: "📵 Пропущені дзвінки" },
+  { command: "mycalls", description: "📋 Історія дзвінків" },
+  { command: "contacts", description: "⭐ Мої контакти" },
+  { command: "link", description: "🔗 Прив'язати акаунт" },
+  { command: "settings", description: "⚙️ Налаштування сповіщень" },
+  { command: "stats", description: "📊 Статистика" },
+  { command: "lang", description: "🌐 Мова бота (RU/EN/UK)" },
+  { command: "help", description: "❓ Допомога" },
 ];
 
 serve(async (req) => {
@@ -53,7 +67,7 @@ serve(async (req) => {
 
     const results: Record<string, unknown> = {};
 
-    // 1. Set bot commands (menu) - localized RU/EN
+    // 1. Set bot commands (menu) - localized RU/EN/UK
     const setCommandsResponseRu = await fetch(
       `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/setMyCommands`,
       {
@@ -77,6 +91,18 @@ serve(async (req) => {
     const setCommandsResultEn = await setCommandsResponseEn.json();
     results.setCommandsEn = setCommandsResultEn;
     console.log("Set commands (en) result:", setCommandsResultEn);
+
+    const setCommandsResponseUk = await fetch(
+      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/setMyCommands`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ commands: BOT_COMMANDS_UK, language_code: "uk" }),
+      }
+    );
+    const setCommandsResultUk = await setCommandsResponseUk.json();
+    results.setCommandsUk = setCommandsResultUk;
+    console.log("Set commands (uk) result:", setCommandsResultUk);
 
     // Also set default commands (fallback) to RU
     const setCommandsResponseDefault = await fetch(
@@ -128,7 +154,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        message: "Bot setup completed",
+        message: "Bot setup completed with 3 languages (RU/EN/UK)",
         results,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }

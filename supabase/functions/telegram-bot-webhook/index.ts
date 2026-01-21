@@ -15,7 +15,7 @@ const corsHeaders = {
 interface TelegramUpdate {
   my_chat_member?: {
     chat?: { id: number; title?: string; type?: string };
-    from?: { id: number; username?: string };
+    from?: { id: number; username?: string; language_code?: string };
     new_chat_member?: {
       status: string;
       user?: { id: number; is_bot?: boolean; username?: string };
@@ -52,20 +52,25 @@ interface TelegramUpdate {
   };
 }
 
-type BotLang = "ru" | "en";
+// Extended to 3 languages: Russian, English, Ukrainian
+type BotLang = "ru" | "en" | "uk";
 
 const normalizeLang = (raw?: string | null): BotLang | null => {
   const v = (raw || "").toLowerCase().trim();
   if (v === "ru" || v === "рус" || v === "русский" || v === "russian") return "ru";
   if (v === "en" || v === "eng" || v === "english" || v === "англ" || v === "английский") return "en";
+  if (v === "uk" || v === "ua" || v === "укр" || v === "українська" || v === "ukrainian") return "uk";
   return null;
 };
 
 const inferLangFromTelegram = (languageCode?: string | null): BotLang => {
   const lc = (languageCode || "").toLowerCase();
-  return lc.startsWith("en") ? "en" : "ru";
+  if (lc.startsWith("en")) return "en";
+  if (lc.startsWith("uk") || lc.startsWith("ua")) return "uk";
+  return "ru";
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const getStoredLang = async (supabase: any, telegramId: number): Promise<BotLang | null> => {
   try {
     const { data } = await supabase
@@ -85,6 +90,7 @@ const getStoredLang = async (supabase: any, telegramId: number): Promise<BotLang
   }
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const resolveLang = async (supabase: any, fromUser?: { id: number; language_code?: string }): Promise<BotLang> => {
   if (!fromUser?.id) return "ru";
   const stored = await getStoredLang(supabase, fromUser.id);
@@ -92,64 +98,178 @@ const resolveLang = async (supabase: any, fromUser?: { id: number; language_code
   return inferLangFromTelegram(fromUser.language_code);
 };
 
+// =================== LOCALIZED TEXTS ===================
+
+const i18n = {
+  // /start & /help
+  helpTitle: { ru: "🎥 APLink Bot", en: "🎥 APLink Bot", uk: "🎥 APLink Bot" },
+  helpCmdsHeader: { ru: "Доступные команды", en: "Available commands", uk: "Доступні команди" },
+  helpGroupCmdsHeader: { ru: "Команды для групп", en: "Group commands", uk: "Команди для груп" },
+  helpCall: { ru: "Позвонить", en: "Call", uk: "Зателефонувати" },
+  helpGroupCall: { ru: "Групповой звонок", en: "Group call", uk: "Груповий дзвінок" },
+  helpMissed: { ru: "Пропущенные звонки", en: "Missed calls", uk: "Пропущені дзвінки" },
+  helpMyCalls: { ru: "История звонков", en: "Call history", uk: "Історія дзвінків" },
+  helpContacts: { ru: "Мои контакты", en: "My contacts", uk: "Мої контакти" },
+  helpLink: { ru: "Привязать аккаунт", en: "Link account", uk: "Прив'язати акаунт" },
+  helpSettings: { ru: "Настройки", en: "Settings", uk: "Налаштування" },
+  helpStats: { ru: "Статистика", en: "Stats", uk: "Статистика" },
+  helpLang: { ru: "Язык", en: "Language", uk: "Мова" },
+  helpVoice: { ru: "Голосовое — Транскрипция", en: "Voice — Transcription", uk: "Голосове — Транскрипція" },
+  helpVoiceTip: { ru: "💡 Отправьте голосовое сообщение для транскрипции и перевода!", en: "💡 Send a voice message for transcription & translation!", uk: "💡 Надішліть голосове повідомлення для транскрипції та перекладу!" },
+  helpGroupJoinTip: { ru: "Все участники чата могут присоединиться нажав на кнопку.", en: "Anyone in the chat can join by tapping the button.", uk: "Усі учасники чату можуть приєднатися, натиснувши кнопку." },
+  helpStartCall: { ru: "Начать групповой звонок", en: "Start a group call", uk: "Почати груповий дзвінок" },
+
+  // Language picker
+  langPrompt: { ru: "🌐 Язык бота\n\nВыберите язык:", en: "🌐 Bot language\n\nChoose language:", uk: "🌐 Мова бота\n\nОберіть мову:" },
+  langSet: { ru: "✅ Язык установлен: Русский", en: "✅ Language set to English", uk: "✅ Мова встановлена: Українська" },
+  langUnsupported: { ru: "❌ Неподдерживаемый язык", en: "❌ Unsupported language", uk: "❌ Непідтримувана мова" },
+  langChooseFirst: { ru: "🌐 Выберите язык бота:", en: "🌐 Choose bot language:", uk: "🌐 Оберіть мову бота:" },
+
+  // Buttons
+  btnLink: { ru: "🔗 Привязать аккаунт", en: "🔗 Link account", uk: "🔗 Прив'язати акаунт" },
+  btnOpen: { ru: "🎥 Открыть APLink", en: "🎥 Open APLink", uk: "🎥 Відкрити APLink" },
+  btnLang: { ru: "🌐 Язык", en: "🌐 Language", uk: "🌐 Мова" },
+  btnJoin: { ru: "🎥 Присоединиться к звонку", en: "🎥 Join call", uk: "🎥 Приєднатися до дзвінка" },
+  btnDecline: { ru: "❌ Отклонить", en: "❌ Decline", uk: "❌ Відхилити" },
+
+  // Group welcome
+  groupWelcomeTitle: { ru: "👋 APLink Bot добавлен!", en: "👋 APLink Bot added!", uk: "👋 APLink Bot додано!" },
+  groupWelcomeDesc: { ru: "Теперь вы можете организовывать групповые видеозвонки прямо из этого чата.", en: "You can now organize group video calls directly from this chat.", uk: "Тепер ви можете організовувати групові відеодзвінки прямо з цього чату." },
+
+  // Settings
+  settingsTitle: { ru: "⚙️ Настройки APLink", en: "⚙️ APLink Settings", uk: "⚙️ Налаштування APLink" },
+  settingsCurrent: { ru: "Текущие настройки:", en: "Current settings:", uk: "Поточні налаштування:" },
+  settingsDnd: { ru: "Режим 'Не беспокоить'", en: "Do not disturb", uk: "Режим 'Не турбувати'" },
+  settingsDndOn: { ru: "🔕 Включён", en: "🔕 On", uk: "🔕 Увімкнено" },
+  settingsDndOff: { ru: "🔔 Выключен", en: "🔔 Off", uk: "🔔 Вимкнено" },
+  settingsDndEnable: { ru: "🔕 Включить 'Не беспокоить'", en: "🔕 Enable Do not disturb", uk: "🔕 Увімкнути 'Не турбувати'" },
+  settingsDndDisable: { ru: "🔔 Выключить 'Не беспокоить'", en: "🔔 Disable Do not disturb", uk: "🔔 Вимкнути 'Не турбувати'" },
+  settingsEnabledToast: { ru: "🔕 Режим 'Не беспокоить' включён", en: "🔕 Do not disturb enabled", uk: "🔕 Режим 'Не турбувати' увімкнено" },
+  settingsDisabledToast: { ru: "🔔 Уведомления включены", en: "🔔 Notifications enabled", uk: "🔔 Сповіщення увімкнено" },
+
+  // Errors & messages
+  errAccountNotLinked: { ru: "❌ Аккаунт не привязан. Используйте /link", en: "❌ Account not linked. Use /link", uk: "❌ Акаунт не прив'язаний. Використовуйте /link" },
+  errUserNotFound: { ru: "❌ Пользователь не найден.", en: "❌ User not found.", uk: "❌ Користувача не знайдено." },
+  errUserNoTelegram: { ru: "❌ У пользователя не привязан Telegram.", en: "❌ User has no Telegram linked.", uk: "❌ У користувача не прив'язаний Telegram." },
+  errCallFailed: { ru: "❌ Ошибка создания звонка. Попробуйте позже.", en: "❌ Failed to create call. Try later.", uk: "❌ Помилка створення дзвінка. Спробуйте пізніше." },
+  errGeneric: { ru: "❌ Произошла ошибка", en: "❌ An error occurred", uk: "❌ Сталася помилка" },
+
+  // /call
+  callUsage: { ru: "❌ *Использование:*\n`/call @username`\n\nПример: `/call @ivan`", en: "❌ *Usage:*\n`/call @username`\n\nExample: `/call @ivan`", uk: "❌ *Використання:*\n`/call @username`\n\nПриклад: `/call @ivan`" },
+  callIncoming: { ru: "📞 *Входящий звонок!*", en: "📞 *Incoming call!*", uk: "📞 *Вхідний дзвінок!*" },
+  callFrom: { ru: "👤 *От:*", en: "👤 *From:*", uk: "👤 *Від:*" },
+  callExpires: { ru: "⏱ *Истекает через:* 2 минуты", en: "⏱ *Expires in:* 2 minutes", uk: "⏱ *Закінчується через:* 2 хвилини" },
+  callAcceptBtn: { ru: "📞 Принять звонок", en: "📞 Accept call", uk: "📞 Прийняти дзвінок" },
+  callCreated: { ru: "✅ *Звонок создан!*", en: "✅ *Call created!*", uk: "✅ *Дзвінок створено!*" },
+  callRoom: { ru: "📍 Комната:", en: "📍 Room:", uk: "📍 Кімната:" },
+  callWaiting: { ru: "⏳ Ожидание ответа...", en: "⏳ Waiting for response...", uk: "⏳ Очікування відповіді..." },
+  callDndActive: { ru: "🌙 *Режим 'Не беспокоить'*\n\nПользователь сейчас недоступен:", en: "🌙 *Do not disturb*\n\nUser is currently unavailable:", uk: "🌙 *Режим 'Не турбувати'*\n\nКористувач зараз недоступний:" },
+
+  // /groupcall
+  groupCallUsage: { ru: "❌ *Использование:*\n`/groupcall @user1 @user2`\n\nПример: `/groupcall @anna @petr @maria`", en: "❌ *Usage:*\n`/groupcall @user1 @user2`\n\nExample: `/groupcall @anna @petr @maria`", uk: "❌ *Використання:*\n`/groupcall @user1 @user2`\n\nПриклад: `/groupcall @anna @petr @maria`" },
+  groupCallCreated: { ru: "✅ *Групповой звонок создан!*", en: "✅ *Group call created!*", uk: "✅ *Груповий дзвінок створено!*" },
+  groupCallInvited: { ru: "👥 Приглашено:", en: "👥 Invited:", uk: "👥 Запрошено:" },
+  groupCallNotified: { ru: "📨 Уведомлено:", en: "📨 Notified:", uk: "📨 Сповіщено:" },
+  groupCallExpires: { ru: "⏱ Истекает через 2 минуты", en: "⏱ Expires in 2 minutes", uk: "⏱ Закінчується через 2 хвилини" },
+
+  // /mycalls
+  myCallsTitle: { ru: "📋 *История звонков:*", en: "📋 *Call history:*", uk: "📋 *Історія дзвінків:*" },
+  myCallsEmpty: { ru: "📋 У вас пока нет звонков.", en: "📋 You have no calls yet.", uk: "📋 У вас поки немає дзвінків." },
+
+  // /contacts
+  contactsTitle: { ru: "⭐ *Ваши контакты:*", en: "⭐ *Your contacts:*", uk: "⭐ *Ваші контакти:*" },
+  contactsEmpty: { ru: "⭐ У вас пока нет контактов.", en: "⭐ You have no contacts yet.", uk: "⭐ У вас поки немає контактів." },
+  contactsTelegramHint: { ru: "📱 = Telegram привязан", en: "📱 = Telegram linked", uk: "📱 = Telegram прив'язаний" },
+
+  // /link
+  linkTitle: { ru: "🔗 *Привязка аккаунта*", en: "🔗 *Link account*", uk: "🔗 *Прив'язка акаунту*" },
+  linkDesc: { ru: "Откройте APLink через кнопку ниже и войдите в свой аккаунт. Telegram будет автоматически привязан.", en: "Open APLink via the button below and sign in. Telegram will be linked automatically.", uk: "Відкрийте APLink через кнопку нижче та увійдіть в акаунт. Telegram буде автоматично прив'язаний." },
+
+  // /missed
+  missedTitle: { ru: "📵 *Пропущенные звонки:*", en: "📵 *Missed calls:*", uk: "📵 *Пропущені дзвінки:*" },
+  missedEmpty: { ru: "📵 Нет пропущенных звонков", en: "📵 No missed calls", uk: "📵 Немає пропущених дзвінків" },
+  missedFrom: { ru: "От:", en: "From:", uk: "Від:" },
+
+  // /startcall (group)
+  startCallTitle: { ru: "🎥 *Групповой звонок*", en: "🎥 *Group call*", uk: "🎥 *Груповий дзвінок*" },
+  startCallOrganizer: { ru: "👤 Организатор:", en: "👤 Organizer:", uk: "👤 Організатор:" },
+  startCallChat: { ru: "💬 Чат:", en: "💬 Chat:", uk: "💬 Чат:" },
+  startCallExpires5: { ru: "⏱ Истекает через 5 минут", en: "⏱ Expires in 5 minutes", uk: "⏱ Закінчується через 5 хвилин" },
+  startCallJoinTip: { ru: "Нажмите кнопку ниже, чтобы присоединиться!", en: "Click the button below to join!", uk: "Натисніть кнопку нижче, щоб приєднатися!" },
+  startCallNotLinked: { ru: "❌ Ваш аккаунт не привязан к APLink.\nИспользуйте @aplink\\_live\\_bot в личных сообщениях и команду /link", en: "❌ Your account is not linked to APLink.\nUse @aplink\\_live\\_bot in private messages and /link command", uk: "❌ Ваш акаунт не прив'язаний до APLink.\nВикористовуйте @aplink\\_live\\_bot в приватних повідомленнях та команду /link" },
+
+  // /stats
+  statsTitle: { ru: "📊 *Статистика APLink*", en: "📊 *APLink Stats*", uk: "📊 *Статистика APLink*" },
+  statsErrors: { ru: "Ошибки:", en: "Errors:", uk: "Помилки:" },
+  statsCalls: { ru: "Звонки:", en: "Calls:", uk: "Дзвінки:" },
+  statsTotal: { ru: "Всего:", en: "Total:", uk: "Всього:" },
+  statsToday: { ru: "Сегодня:", en: "Today:", uk: "Сьогодні:" },
+
+  // Quick reply callbacks
+  quickReply5min: { ru: "перезвонит через 5 минут", en: "will call back in 5 min", uk: "передзвонить через 5 хвилин" },
+  quickReply15min: { ru: "перезвонит через 15 минут", en: "will call back in 15 min", uk: "передзвонить через 15 хвилин" },
+  quickReplyBusy: { ru: "сейчас занят. Напишите сообщение.", en: "is busy now. Send a message.", uk: "зараз зайнятий. Надішліть повідомлення." },
+  quickReplySent: { ru: "Отправлено", en: "Sent", uk: "Надіслано" },
+
+  // Callback responses
+  callbackDeclined: { ru: "❌ Вы отклонили приглашение", en: "❌ You declined the invitation", uk: "❌ Ви відхилили запрошення" },
+  callbackExpired: { ru: "⏰ Приглашение истекло", en: "⏰ Invitation expired", uk: "⏰ Запрошення закінчилось" },
+  callbackJoinNow: { ru: "🎥 Присоединяйтесь к звонку!", en: "🎥 Join the call!", uk: "🎥 Приєднуйтесь до дзвінка!" },
+
+  // Voice processing
+  voiceProcessing: { ru: "🎤 Обработка голосового сообщения...", en: "🎤 Processing voice message...", uk: "🎤 Обробка голосового повідомлення..." },
+  voiceTranscription: { ru: "📝 *Транскрипция:*", en: "📝 *Transcription:*", uk: "📝 *Транскрипція:*" },
+  voiceTranslateBtn: { ru: "Перевести", en: "Translate", uk: "Перекласти" },
+};
+
+const t = (key: keyof typeof i18n, lang: BotLang): string => {
+  return i18n[key]?.[lang] || i18n[key]?.["ru"] || String(key);
+};
+
 const buildHelpMessage = (lang: BotLang, isGroupChat: boolean) => {
   if (isGroupChat) {
-    return lang === "en"
-      ? [
-          `<b>🎥 APLink Bot</b>`,
-          ``,
-          `<blockquote>Group commands</blockquote>`,
-          `├ 📞 <b>/startcall</b> — Start a group call`,
-          `╰ 📵 <b>/missed</b> — Missed calls`,
-          ``,
-          `<blockquote>Anyone in the chat can join by tapping the button.</blockquote>`,
-        ].join("\n")
-      : [
-          `<b>🎥 APLink Bot</b>`,
-          ``,
-          `<blockquote>Команды для групп</blockquote>`,
-          `├ 📞 <b>/startcall</b> — Начать групповой звонок`,
-          `╰ 📵 <b>/missed</b> — Пропущенные звонки`,
-          ``,
-          `<blockquote>Все участники чата могут присоединиться нажав на кнопку.</blockquote>`,
-        ].join("\n");
+    return [
+      `<b>${t("helpTitle", lang)}</b>`,
+      ``,
+      `<blockquote>${t("helpGroupCmdsHeader", lang)}</blockquote>`,
+      `├ 📞 <b>/startcall</b> — ${t("helpStartCall", lang)}`,
+      `╰ 📵 <b>/missed</b> — ${t("helpMissed", lang)}`,
+      ``,
+      `<blockquote>${t("helpGroupJoinTip", lang)}</blockquote>`,
+    ].join("\n");
   }
 
-  return lang === "en"
-    ? [
-        `<b>🎥 APLink Bot</b>`,
-        ``,
-        `<blockquote>Available commands</blockquote>`,
-        `├ 📞 <b>/call</b> @username — Call`,
-        `├ 👥 <b>/groupcall</b> @user1 @user2 — Group call`,
-        `├ 📵 <b>/missed</b> — Missed calls`,
-        `├ 📋 <b>/mycalls</b> — Call history`,
-        `├ ⭐ <b>/contacts</b> — My contacts`,
-        `├ 🔗 <b>/link</b> — Link account`,
-        `├ ⚙️ <b>/settings</b> — Settings`,
-        `├ 📊 <b>/stats</b> — Stats`,
-        `├ 🌐 <b>/lang</b> — Language`,
-        `╰ 🎤 Voice — Transcription`,
-        ``,
-        `<blockquote>💡 Send a voice message for transcription & translation!</blockquote>`,
-      ].join("\n")
-    : [
-        `<b>🎥 APLink Bot</b>`,
-        ``,
-        `<blockquote>Доступные команды</blockquote>`,
-        `├ 📞 <b>/call</b> @username — Позвонить`,
-        `├ 👥 <b>/groupcall</b> @user1 @user2 — Групповой звонок`,
-        `├ 📵 <b>/missed</b> — Пропущенные звонки`,
-        `├ 📋 <b>/mycalls</b> — История звонков`,
-        `├ ⭐ <b>/contacts</b> — Мои контакты`,
-        `├ 🔗 <b>/link</b> — Привязать аккаунт`,
-        `├ ⚙️ <b>/settings</b> — Настройки`,
-        `├ 📊 <b>/stats</b> — Статистика`,
-        `├ 🌐 <b>/lang</b> — Язык`,
-        `╰ 🎤 Голосовое — Транскрипция`,
-        ``,
-        `<blockquote>💡 Отправьте голосовое сообщение для транскрипции и перевода!</blockquote>`,
-      ].join("\n");
+  return [
+    `<b>${t("helpTitle", lang)}</b>`,
+    ``,
+    `<blockquote>${t("helpCmdsHeader", lang)}</blockquote>`,
+    `├ 📞 <b>/call</b> @username — ${t("helpCall", lang)}`,
+    `├ 👥 <b>/groupcall</b> @user1 @user2 — ${t("helpGroupCall", lang)}`,
+    `├ 📵 <b>/missed</b> — ${t("helpMissed", lang)}`,
+    `├ 📋 <b>/mycalls</b> — ${t("helpMyCalls", lang)}`,
+    `├ ⭐ <b>/contacts</b> — ${t("helpContacts", lang)}`,
+    `├ 🔗 <b>/link</b> — ${t("helpLink", lang)}`,
+    `├ ⚙️ <b>/settings</b> — ${t("helpSettings", lang)}`,
+    `├ 📊 <b>/stats</b> — ${t("helpStats", lang)}`,
+    `├ 🌐 <b>/lang</b> — ${t("helpLang", lang)}`,
+    `╰ 🎤 ${t("helpVoice", lang)}`,
+    ``,
+    `<blockquote>${t("helpVoiceTip", lang)}</blockquote>`,
+  ].join("\n");
+};
+
+const buildGroupWelcome = (lang: BotLang, chatTitle: string) => {
+  return [
+    `<b>${t("groupWelcomeTitle", lang)}</b>`,
+    ``,
+    `<blockquote>${t("groupWelcomeDesc", lang)}</blockquote>`,
+    ``,
+    `<blockquote>${t("helpGroupCmdsHeader", lang)}</blockquote>`,
+    `├ 📞 <b>/startcall</b> — ${t("helpStartCall", lang)}`,
+    `╰ 📵 <b>/missed</b> — ${t("helpMissed", lang)}`,
+    ``,
+    `<blockquote>${t("helpGroupJoinTip", lang)}</blockquote>`,
+  ].join("\n");
 };
 
 serve(async (req) => {
@@ -180,6 +300,7 @@ serve(async (req) => {
       const chatType = update.my_chat_member.chat?.type;
       const newStatus = update.my_chat_member.new_chat_member?.status;
       const newMemberBot = update.my_chat_member.new_chat_member?.user?.is_bot;
+      const fromUser = update.my_chat_member.from;
       
       console.log("my_chat_member update:", { chatId, chatType, newStatus, newMemberBot });
       
@@ -187,12 +308,9 @@ serve(async (req) => {
       if (chatId && (chatType === "group" || chatType === "supergroup") && 
           (newStatus === "member" || newStatus === "administrator") && newMemberBot) {
         
-        const welcomeMessage = `👋 *APLink Bot добавлен в "${chatTitle}"!*\n\n` +
-          `Теперь вы можете организовывать групповые видеозвонки прямо из этого чата.\n\n` +
-          `*Доступные команды:*\n` +
-          `📞 /startcall - Начать групповой звонок\n` +
-          `📵 /missed - Пропущенные звонки\n\n` +
-          `_Все участники чата смогут присоединиться к звонку нажав на кнопку!_`;
+        // Resolve language from the user who added the bot
+        const lang = await resolveLang(supabase, fromUser);
+        const welcomeMessage = buildGroupWelcome(lang, chatTitle);
         
         await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
           method: "POST",
@@ -200,13 +318,18 @@ serve(async (req) => {
           body: JSON.stringify({
             chat_id: chatId,
             text: welcomeMessage,
-            parse_mode: "Markdown"
+            parse_mode: "HTML",
+            reply_markup: {
+              inline_keyboard: [[
+                { text: t("btnOpen", lang), web_app: { url: WEB_APP_URL } }
+              ]]
+            }
           })
         });
         
         // Log activity
         await supabase.from("telegram_activity_log").insert({
-          telegram_id: update.my_chat_member.from?.id || null,
+          telegram_id: fromUser?.id || null,
           action: "bot_added_to_group",
           metadata: { chat_id: chatId, chat_title: chatTitle, chat_type: chatType },
         });
@@ -219,6 +342,7 @@ serve(async (req) => {
       const chatId = update.callback_query.message?.chat?.id;
       const messageId = update.callback_query.message?.message_id;
       const fromUser = update.callback_query.from;
+      const lang = await resolveLang(supabase, fromUser);
       
       console.log("Callback received:", callbackData);
 
@@ -232,9 +356,15 @@ serve(async (req) => {
             action: "bot_lang_set",
             metadata: { lang: requestedLang },
           });
-          responseText = requestedLang === "en" ? "✅ Language set to English" : "✅ Язык установлен: Русский";
+          // Also sync to profile if exists
+          await supabase
+            .from("profiles")
+            .update({ bot_language: requestedLang })
+            .eq("telegram_id", fromUser.id);
+            
+          responseText = t("langSet", requestedLang);
         } else {
-          responseText = "❌ Unsupported language";
+          responseText = t("langUnsupported", lang);
         }
 
       } else if (callbackData === "lang_menu") {
@@ -244,12 +374,13 @@ serve(async (req) => {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             chat_id: chatId,
-            text: "<b>🌐 Язык / Language</b>\n\nВыберите язык бота:",
+            text: `<b>${t("langPrompt", lang)}</b>`,
             parse_mode: "HTML",
             reply_markup: {
               inline_keyboard: [[
                 { text: "🇷🇺 Русский", callback_data: "lang:ru" },
                 { text: "🇬🇧 English", callback_data: "lang:en" },
+                { text: "🇺🇦 Українська", callback_data: "lang:uk" },
               ]],
             },
           }),
@@ -261,7 +392,7 @@ serve(async (req) => {
         if (groupId && groupId !== "new") {
           await supabase.from("error_groups").delete().eq("id", groupId);
         }
-        responseText = "✅ Ошибка проигнорирована";
+        responseText = "✅";
         if (chatId && messageId) {
           await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/deleteMessage`, {
             method: "POST",
@@ -282,7 +413,7 @@ serve(async (req) => {
             .eq("telegram_id", fromUser.id);
         }
         
-        responseText = "❌ Вы отклонили приглашение";
+        responseText = t("callbackDeclined", lang);
         
         // Log activity
         await supabase.from("telegram_activity_log").insert({
@@ -311,7 +442,7 @@ serve(async (req) => {
               .eq("telegram_id", fromUser.id);
           }
           
-          responseText = "🎥 Присоединяйтесь к звонку!";
+          responseText = t("callbackJoinNow", lang);
           
           // Send message with web app button
           await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
@@ -319,17 +450,17 @@ serve(async (req) => {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               chat_id: chatId,
-              text: `🎥 Нажмите кнопку ниже, чтобы присоединиться к комнате *${callRequest.room_name}*`,
+              text: `${t("callbackJoinNow", lang)}\n\n${t("callRoom", lang)} \`${callRequest.room_name}\``,
               parse_mode: "Markdown",
               reply_markup: {
                 inline_keyboard: [[
-                  { text: "🎥 Открыть APLink", web_app: { url: `${WEB_APP_URL}/room/${callRequest.room_name}` } }
+                  { text: t("btnOpen", lang), web_app: { url: `${WEB_APP_URL}/room/${callRequest.room_name}` } }
                 ]]
               }
             })
           });
         } else {
-          responseText = "⏰ Приглашение истекло";
+          responseText = t("callbackExpired", lang);
         }
         
       } else if (callbackData === "clear_logs") {
@@ -344,7 +475,7 @@ serve(async (req) => {
           .delete()
           .lt("last_seen", weekAgo)
           .select("id");
-        responseText = `🗑 Удалено:\n• Логов: ${deletedLogs?.length || 0}\n• Групп: ${deletedGroups?.length || 0}`;
+        responseText = `🗑 Logs: ${deletedLogs?.length || 0}, Groups: ${deletedGroups?.length || 0}`;
         
       } else if (callbackData === "show_stats") {
         const today = new Date().toISOString().split("T")[0];
@@ -352,7 +483,7 @@ serve(async (req) => {
         const { count: todayLogs } = await supabase.from("error_logs").select("*", { count: "exact", head: true }).gte("created_at", today);
         const { count: criticalLogs } = await supabase.from("error_logs").select("*", { count: "exact", head: true }).eq("severity", "critical");
         const { count: activeGroups } = await supabase.from("error_groups").select("*", { count: "exact", head: true });
-        responseText = `📊 Статистика:\n• Всего: ${totalLogs || 0}\n• Сегодня: ${todayLogs || 0}\n• Критических: ${criticalLogs || 0}\n• Групп: ${activeGroups || 0}`;
+        responseText = `${t("statsTotal", lang)} ${totalLogs || 0}\n${t("statsToday", lang)} ${todayLogs || 0}`;
       
       } else if (callbackData.startsWith("callback_5min:") || callbackData.startsWith("callback_15min:") || callbackData.startsWith("callback_busy:")) {
         // Quick reply callbacks
@@ -374,23 +505,23 @@ serve(async (req) => {
           .eq("telegram_id", fromUser?.id)
           .single();
         
-        const responderName = responderProfile?.display_name || responderProfile?.username || "Пользователь";
+        const responderName = responderProfile?.display_name || responderProfile?.username || "User";
         
         let callerMessage = "";
         let buttonText = "";
         
         if (action === "callback_5min") {
-          callerMessage = `📞 *${responderName}* перезвонит через 5 минут`;
-          buttonText = "✅ Перезвоню через 5 мин";
-          responseText = "Отправлено: перезвоню через 5 минут";
+          callerMessage = `📞 *${responderName}* ${t("quickReply5min", lang)}`;
+          buttonText = "✅ 5 min";
+          responseText = t("quickReplySent", lang);
         } else if (action === "callback_15min") {
-          callerMessage = `📞 *${responderName}* перезвонит через 15 минут`;
-          buttonText = "✅ Перезвоню через 15 мин";
-          responseText = "Отправлено: перезвоню через 15 минут";
+          callerMessage = `📞 *${responderName}* ${t("quickReply15min", lang)}`;
+          buttonText = "✅ 15 min";
+          responseText = t("quickReplySent", lang);
         } else if (action === "callback_busy") {
-          callerMessage = `💬 *${responderName}* сейчас занят. Напишите сообщение.`;
-          buttonText = "✅ Занят, напишите";
-          responseText = "Отправлено: занят, напишите";
+          callerMessage = `💬 *${responderName}* ${t("quickReplyBusy", lang)}`;
+          buttonText = "✅";
+          responseText = t("quickReplySent", lang);
         }
         
         // Send message to caller
@@ -431,29 +562,12 @@ serve(async (req) => {
         const parts = callbackData.split(":");
         const targetLang = parts[1];
         
-        // Get the original message text (transcription)
-        if (chatId && messageId) {
-          // Get message to extract original text
-          // Since we can't easily get the original, show a tip
-          const langName = targetLang === "en" ? "английский" 
-            : targetLang === "ru" ? "русский" 
-            : targetLang === "es" ? "испанский" 
-            : targetLang;
+        const langName = targetLang === "en" ? "English" 
+          : targetLang === "ru" ? "Русский" 
+          : targetLang === "uk" ? "Українська"
+          : targetLang;
             
-          responseText = `💡 Отправьте голосовое сообщение ещё раз с командой:\n/translate ${langName}`;
-          
-          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chat_id: chatId,
-              text: responseText,
-              parse_mode: "Markdown"
-            })
-          });
-          
-          responseText = `Перевод на ${langName}`;
-        }
+        responseText = `${t("voiceTranslateBtn", lang)}: ${langName}`;
       
       } else if (callbackData === "link_account") {
         // Handle link account button from welcome message
@@ -462,16 +576,16 @@ serve(async (req) => {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             chat_id: chatId,
-            text: "🔗 *Привязка аккаунта*\n\nОткройте APLink через кнопку ниже и войдите в свой аккаунт. Telegram будет автоматически привязан.",
+            text: `${t("linkTitle", lang)}\n\n${t("linkDesc", lang)}`,
             parse_mode: "Markdown",
             reply_markup: {
               inline_keyboard: [[
-                { text: "🔗 Открыть APLink", web_app: { url: WEB_APP_URL } }
+                { text: t("btnLink", lang), web_app: { url: WEB_APP_URL } }
               ]]
             }
           })
         });
-        responseText = "Откройте приложение для привязки";
+        responseText = "";
       
       } else if (callbackData === "settings_dnd_on" || callbackData === "settings_dnd_off") {
         // Toggle DND setting
@@ -484,7 +598,7 @@ serve(async (req) => {
             .eq("telegram_id", fromUser.id);
         }
         
-        responseText = dndEnabled ? "🔕 Режим 'Не беспокоить' включён" : "🔔 Уведомления включены";
+        responseText = dndEnabled ? t("settingsEnabledToast", lang) : t("settingsDisabledToast", lang);
         
         // Update message with new buttons
         if (chatId && messageId) {
@@ -496,8 +610,8 @@ serve(async (req) => {
               message_id: messageId,
               reply_markup: {
                 inline_keyboard: [
-                  [{ text: dndEnabled ? "🔔 Включить уведомления" : "🔕 Не беспокоить", callback_data: dndEnabled ? "settings_dnd_off" : "settings_dnd_on" }],
-                  [{ text: "⬅️ Назад", callback_data: "settings_back" }]
+                  [{ text: dndEnabled ? t("settingsDndDisable", lang) : t("settingsDndEnable", lang), callback_data: dndEnabled ? "settings_dnd_off" : "settings_dnd_on" }],
+                  [{ text: t("btnOpen", lang), web_app: { url: WEB_APP_URL } }]
                 ]
               }
             })
@@ -513,19 +627,19 @@ serve(async (req) => {
             body: JSON.stringify({
               chat_id: chatId,
               message_id: messageId,
-              text: "⚙️ *Настройки APLink*\n\nВыберите опцию для настройки:",
+              text: `${t("settingsTitle", lang)}\n\n${t("settingsCurrent", lang)}`,
               parse_mode: "Markdown",
               reply_markup: {
                 inline_keyboard: [
-                  [{ text: "🔕 Не беспокоить", callback_data: "settings_dnd_on" }],
-                  [{ text: "🔔 Включить уведомления", callback_data: "settings_dnd_off" }],
-                  [{ text: "🎥 Открыть APLink", web_app: { url: WEB_APP_URL } }]
+                  [{ text: t("settingsDndEnable", lang), callback_data: "settings_dnd_on" }],
+                  [{ text: t("settingsDndDisable", lang), callback_data: "settings_dnd_off" }],
+                  [{ text: t("btnOpen", lang), web_app: { url: WEB_APP_URL } }]
                 ]
               }
             })
           });
         }
-        responseText = "Настройки";
+        responseText = "";
       
       } else if (callbackData === "noop") {
         // No-op for already handled buttons
@@ -537,7 +651,7 @@ serve(async (req) => {
         body: JSON.stringify({
           callback_query_id: update.callback_query.id,
           text: responseText,
-          show_alert: true
+          show_alert: responseText.length > 0
         })
       });
     }
@@ -547,6 +661,7 @@ serve(async (req) => {
       const chatId = update.message.chat?.id;
       const text = update.message.text;
       const fromUser = update.message.from;
+      const lang = await resolveLang(supabase, fromUser);
       
       // Log activity
       if (fromUser?.id) {
@@ -558,27 +673,23 @@ serve(async (req) => {
       }
       
       if (text.startsWith("/lang")) {
-        const lang = await resolveLang(supabase, fromUser);
         const parts = text.split(/\s+/).filter(Boolean);
         const arg = parts[1];
         const requested = normalizeLang(arg);
 
         if (!requested) {
-          const prompt = lang === "en"
-            ? "<b>🌐 Bot language</b>\n\nChoose language:" 
-            : "<b>🌐 Язык бота</b>\n\nВыберите язык:";
-
           await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               chat_id: chatId,
-              text: prompt,
+              text: `<b>${t("langPrompt", lang)}</b>`,
               parse_mode: "HTML",
               reply_markup: {
                 inline_keyboard: [[
                   { text: "🇷🇺 Русский", callback_data: "lang:ru" },
                   { text: "🇬🇧 English", callback_data: "lang:en" },
+                  { text: "🇺🇦 Українська", callback_data: "lang:uk" },
                 ]],
               },
             }),
@@ -589,12 +700,16 @@ serve(async (req) => {
             action: "bot_lang_set",
             metadata: { lang: requested },
           });
+          // Also sync to profile if exists
+          await supabase
+            .from("profiles")
+            .update({ bot_language: requested })
+            .eq("telegram_id", fromUser.id);
 
-          const ok = requested === "en" ? "✅ Language set to English" : "✅ Язык установлен: Русский";
           await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ chat_id: chatId, text: ok }),
+            body: JSON.stringify({ chat_id: chatId, text: t("langSet", requested) }),
           });
         }
 
@@ -606,9 +721,9 @@ serve(async (req) => {
           .eq("telegram_id", fromUser?.id)
           .single();
         
-        const dndStatus = profile?.dnd_enabled ? "🔕 Включён" : "🔔 Выключен";
+        const dndStatus = profile?.dnd_enabled ? t("settingsDndOn", lang) : t("settingsDndOff", lang);
         
-        const settingsMessage = `⚙️ *Настройки APLink*\n\n*Текущие настройки:*\n• Режим 'Не беспокоить': ${dndStatus}\n\nВыберите опцию для изменения:`;
+        const settingsMessage = `${t("settingsTitle", lang)}\n\n*${t("settingsCurrent", lang)}*\n• ${t("settingsDnd", lang)}: ${dndStatus}`;
         
         await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
           method: "POST",
@@ -619,8 +734,9 @@ serve(async (req) => {
             parse_mode: "Markdown",
             reply_markup: {
               inline_keyboard: [
-                [{ text: profile?.dnd_enabled ? "🔔 Выключить 'Не беспокоить'" : "🔕 Включить 'Не беспокоить'", callback_data: profile?.dnd_enabled ? "settings_dnd_off" : "settings_dnd_on" }],
-                [{ text: "🎥 Открыть APLink", web_app: { url: WEB_APP_URL } }]
+                [{ text: profile?.dnd_enabled ? t("settingsDndDisable", lang) : t("settingsDndEnable", lang), callback_data: profile?.dnd_enabled ? "settings_dnd_off" : "settings_dnd_on" }],
+                [{ text: t("btnLang", lang), callback_data: "lang_menu" }],
+                [{ text: t("btnOpen", lang), web_app: { url: WEB_APP_URL } }]
               ]
             }
           })
@@ -633,7 +749,7 @@ serve(async (req) => {
         const { count: totalCalls } = await supabase.from("call_requests").select("*", { count: "exact", head: true });
         const { count: todayCalls } = await supabase.from("call_requests").select("*", { count: "exact", head: true }).gte("created_at", today);
         
-        const statsMessage = `📊 *Статистика APLink*\n\n*Ошибки:*\n• Всего: ${totalLogs || 0}\n• Сегодня: ${todayLogs || 0}\n\n*Звонки:*\n• Всего: ${totalCalls || 0}\n• Сегодня: ${todayCalls || 0}\n\n_${new Date().toLocaleString("ru-RU", { timeZone: "Europe/Moscow" })}_`;
+        const statsMessage = `${t("statsTitle", lang)}\n\n*${t("statsErrors", lang)}*\n• ${t("statsTotal", lang)} ${totalLogs || 0}\n• ${t("statsToday", lang)} ${todayLogs || 0}\n\n*${t("statsCalls", lang)}*\n• ${t("statsTotal", lang)} ${totalCalls || 0}\n• ${t("statsToday", lang)} ${todayCalls || 0}`;
         
         await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
           method: "POST",
@@ -646,12 +762,14 @@ serve(async (req) => {
         const { data: deletedLogs } = await supabase.from("error_logs").delete().lt("created_at", weekAgo).select("id");
         const { data: deletedGroups } = await supabase.from("error_groups").delete().lt("last_seen", weekAgo).select("id");
         
-        const clearMessage = `🗑 *Очистка завершена*\n\nУдалено:\n• Логов: ${deletedLogs?.length || 0}\n• Групп: ${deletedGroups?.length || 0}`;
-        
         await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ chat_id: chatId, text: clearMessage, parse_mode: "Markdown" })
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: `🗑 Logs: ${deletedLogs?.length || 0}, Groups: ${deletedGroups?.length || 0}`,
+            parse_mode: "Markdown"
+          })
         });
         
       } else if (text.startsWith("/call ")) {
@@ -663,11 +781,7 @@ serve(async (req) => {
           await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chat_id: chatId,
-              text: "❌ *Использование:*\n`/call @username`\n\nПример: `/call @ivan`",
-              parse_mode: "Markdown"
-            })
+            body: JSON.stringify({ chat_id: chatId, text: t("callUsage", lang), parse_mode: "Markdown" })
           });
         } else {
           // Get caller's profile
@@ -681,11 +795,7 @@ serve(async (req) => {
             await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                chat_id: chatId,
-                text: "❌ Ваш аккаунт не привязан. Используйте /link для привязки.",
-                parse_mode: "Markdown"
-              })
+              body: JSON.stringify({ chat_id: chatId, text: t("errAccountNotLinked", lang), parse_mode: "Markdown" })
             });
           } else {
             // Find target user
@@ -699,21 +809,13 @@ serve(async (req) => {
               await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  chat_id: chatId,
-                  text: `❌ Пользователь @${targetUsername} не найден.`,
-                  parse_mode: "Markdown"
-                })
+                body: JSON.stringify({ chat_id: chatId, text: `${t("errUserNotFound", lang)} @${targetUsername}`, parse_mode: "Markdown" })
               });
             } else if (!targetProfile.telegram_id) {
               await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  chat_id: chatId,
-                  text: `❌ У пользователя @${targetUsername} не привязан Telegram.`,
-                  parse_mode: "Markdown"
-                })
+                body: JSON.stringify({ chat_id: chatId, text: `${t("errUserNoTelegram", lang)} @${targetUsername}`, parse_mode: "Markdown" })
               });
             } else {
               // Check DND status
@@ -732,13 +834,13 @@ serve(async (req) => {
               }
               
               if (dndActive) {
-                const autoReply = targetProfile.dnd_auto_reply || "Пользователь сейчас недоступен. Попробуйте позже.";
+                const autoReply = targetProfile.dnd_auto_reply || "";
                 await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({
                     chat_id: chatId,
-                    text: `🌙 *Режим "Не беспокоить"*\n\nПользователь @${targetUsername} сейчас недоступен:\n_${autoReply}_`,
+                    text: `${t("callDndActive", lang)}\n_${autoReply}_`,
                     parse_mode: "Markdown"
                   })
                 });
@@ -763,14 +865,10 @@ serve(async (req) => {
                   await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      chat_id: chatId,
-                      text: "❌ Ошибка создания звонка. Попробуйте позже.",
-                      parse_mode: "Markdown"
-                    })
+                    body: JSON.stringify({ chat_id: chatId, text: t("errCallFailed", lang), parse_mode: "Markdown" })
                   });
                 } else {
-                  const callerName = callerProfile.display_name || callerProfile.username || "Пользователь";
+                  const callerName = callerProfile.display_name || callerProfile.username || "User";
                   
                   // Add participant
                   await supabase.from("call_participants").insert({
@@ -780,19 +878,22 @@ serve(async (req) => {
                     status: "invited",
                   });
                   
+                  // Get target's language
+                  const targetLang = await resolveLang(supabase, { id: targetProfile.telegram_id });
+                  
                   // Send text notification to target
-                  const callMessage = `📞 *Входящий звонок!*\n\n👤 *От:* ${callerName}\n⏱ *Истекает через:* 2 минуты\n\nНажмите кнопку ниже, чтобы принять.`;
+                  const callMessage = `${t("callIncoming", targetLang)}\n\n${t("callFrom", targetLang)} ${callerName}\n${t("callExpires", targetLang)}`;
                   
                   const keyboard = {
                     inline_keyboard: [
-                      [{ text: "📞 Принять звонок", web_app: { url: `${WEB_APP_URL}/room/${roomName}` } }],
+                      [{ text: t("callAcceptBtn", targetLang), web_app: { url: `${WEB_APP_URL}/room/${roomName}` } }],
                       [
-                        { text: "⏰ 5 мин", callback_data: `callback_5min:${callerProfile.user_id}` },
-                        { text: "⏰ 15 мин", callback_data: `callback_15min:${callerProfile.user_id}` }
+                        { text: "⏰ 5 min", callback_data: `callback_5min:${callerProfile.user_id}` },
+                        { text: "⏰ 15 min", callback_data: `callback_15min:${callerProfile.user_id}` }
                       ],
                       [
-                        { text: "💬 Занят", callback_data: `callback_busy:${callerProfile.user_id}` },
-                        { text: "❌ Отклонить", callback_data: `decline_group:${callRequest.id}` }
+                        { text: "💬", callback_data: `callback_busy:${callerProfile.user_id}` },
+                        { text: t("btnDecline", targetLang), callback_data: `decline_group:${callRequest.id}` }
                       ]
                     ]
                   };
@@ -804,44 +905,21 @@ serve(async (req) => {
                       chat_id: targetProfile.telegram_id,
                       text: callMessage,
                       parse_mode: "Markdown",
-                      reply_markup: keyboard,
+                      reply_markup: keyboard
                     })
                   });
                   
-                  // Send voice notification to target
-                  try {
-                    await fetch(
-                      `${Deno.env.get("SUPABASE_URL")}/functions/v1/telegram-voice-notification`,
-                      {
-                        method: "POST",
-                        headers: {
-                          "Content-Type": "application/json",
-                          "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
-                        },
-                        body: JSON.stringify({
-                          telegram_id: String(targetProfile.telegram_id),
-                          caller_name: callerName,
-                          is_group_call: false,
-                          user_id: targetProfile.user_id,
-                        }),
-                      }
-                    );
-                    console.log("Voice notification sent for individual call");
-                  } catch (voiceError) {
-                    console.error("Voice notification error:", voiceError);
-                  }
-                  
-                  // Confirm to caller
+                  // Send confirmation to caller
                   await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                       chat_id: chatId,
-                      text: `✅ *Звонок отправлен!*\n\n📍 Комната: \`${roomName}\`\n👤 Получатель: @${targetUsername}\n⏱ Истекает через 2 минуты`,
+                      text: `${t("callCreated", lang)}\n\n${t("callRoom", lang)} \`${roomName}\`\n${t("callWaiting", lang)}`,
                       parse_mode: "Markdown",
                       reply_markup: {
                         inline_keyboard: [[
-                          { text: "🎥 Присоединиться", web_app: { url: `${WEB_APP_URL}/room/${roomName}` } }
+                          { text: t("btnOpen", lang), web_app: { url: `${WEB_APP_URL}/room/${roomName}` } }
                         ]]
                       }
                     })
@@ -850,12 +928,8 @@ serve(async (req) => {
                   // Log activity
                   await supabase.from("telegram_activity_log").insert({
                     telegram_id: fromUser?.id || null,
-                    action: "individual_call_sent",
-                    metadata: { 
-                      room_name: roomName, 
-                      target_username: targetUsername,
-                      call_request_id: callRequest.id 
-                    },
+                    action: "call_initiated",
+                    metadata: { target_username: targetUsername, room_name: roomName },
                   });
                 }
               }
@@ -863,26 +937,22 @@ serve(async (req) => {
           }
         }
         
-      } else if (text.startsWith("/groupcall")) {
-        // Parse usernames from command: /groupcall @user1 @user2 @user3
+      } else if (text.startsWith("/groupcall ")) {
+        // Handle /groupcall @user1 @user2 command
         const parts = text.split(/\s+/).slice(1);
-        const usernames = parts.filter(p => p.startsWith("@")).map(p => p.slice(1).toLowerCase());
+        const usernames = parts.map(p => p.replace("@", "").toLowerCase()).filter(Boolean);
         
         if (usernames.length === 0) {
           await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chat_id: chatId,
-              text: "❌ *Использование:*\n`/groupcall @user1 @user2 @user3`\n\nУкажите хотя бы одного пользователя.",
-              parse_mode: "Markdown"
-            })
+            body: JSON.stringify({ chat_id: chatId, text: t("groupCallUsage", lang), parse_mode: "Markdown" })
           });
         } else {
-          // Find caller's user_id by telegram_id
+          // Get caller's profile
           const { data: callerProfile } = await supabase
             .from("profiles")
-            .select("user_id, display_name")
+            .select("user_id, display_name, username")
             .eq("telegram_id", fromUser?.id)
             .single();
           
@@ -890,11 +960,7 @@ serve(async (req) => {
             await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                chat_id: chatId,
-                text: "❌ Ваш аккаунт не привязан. Используйте /link для привязки.",
-                parse_mode: "Markdown"
-              })
+              body: JSON.stringify({ chat_id: chatId, text: t("errAccountNotLinked", lang), parse_mode: "Markdown" })
             });
           } else {
             // Invoke group call function
@@ -923,11 +989,11 @@ serve(async (req) => {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                   chat_id: chatId,
-                  text: `✅ *Групповой звонок создан!*\n\n📍 Комната: \`${result.room_name}\`\n👥 Приглашено: ${usernames.length}\n📨 Уведомлено: ${notifiedCount}\n⏱ Истекает через 2 минуты`,
+                  text: `${t("groupCallCreated", lang)}\n\n${t("callRoom", lang)} \`${result.room_name}\`\n${t("groupCallInvited", lang)} ${usernames.length}\n${t("groupCallNotified", lang)} ${notifiedCount}\n${t("groupCallExpires", lang)}`,
                   parse_mode: "Markdown",
                   reply_markup: {
                     inline_keyboard: [[
-                      { text: "🎥 Присоединиться", web_app: { url: result.room_url } }
+                      { text: t("btnJoin", lang), web_app: { url: result.room_url } }
                     ]]
                   }
                 })
@@ -936,11 +1002,7 @@ serve(async (req) => {
               await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  chat_id: chatId,
-                  text: `❌ Ошибка: ${result.error}`,
-                  parse_mode: "Markdown"
-                })
+                body: JSON.stringify({ chat_id: chatId, text: `${t("errGeneric", lang)}: ${result.error}`, parse_mode: "Markdown" })
               });
             }
           }
@@ -973,32 +1035,20 @@ serve(async (req) => {
             await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                chat_id: chatId,
-                text: `📋 *История звонков:*\n\n${callsList}`,
-                parse_mode: "Markdown"
-              })
+              body: JSON.stringify({ chat_id: chatId, text: `${t("myCallsTitle", lang)}\n\n${callsList}`, parse_mode: "Markdown" })
             });
           } else {
             await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                chat_id: chatId,
-                text: "📋 У вас пока нет звонков.",
-                parse_mode: "Markdown"
-              })
+              body: JSON.stringify({ chat_id: chatId, text: t("myCallsEmpty", lang), parse_mode: "Markdown" })
             });
           }
         } else {
           await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chat_id: chatId,
-              text: "❌ Аккаунт не привязан. Используйте /link",
-              parse_mode: "Markdown"
-            })
+            body: JSON.stringify({ chat_id: chatId, text: t("errAccountNotLinked", lang), parse_mode: "Markdown" })
           });
         }
         
@@ -1025,7 +1075,7 @@ serve(async (req) => {
                 .eq("user_id", c.contact_user_id)
                 .single();
               
-              const name = c.nickname || contactProfile?.display_name || "Пользователь";
+              const name = c.nickname || contactProfile?.display_name || "User";
               const username = contactProfile?.username ? `@${contactProfile.username}` : "";
               const hasTelegram = contactProfile?.telegram_id ? "📱" : "";
               return `• ${name} ${username} ${hasTelegram}`;
@@ -1036,7 +1086,7 @@ serve(async (req) => {
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 chat_id: chatId,
-                text: `⭐ *Ваши контакты:*\n\n${contactsList.join("\n")}\n\n📱 = Telegram привязан`,
+                text: `${t("contactsTitle", lang)}\n\n${contactsList.join("\n")}\n\n${t("contactsTelegramHint", lang)}`,
                 parse_mode: "Markdown"
               })
             });
@@ -1044,22 +1094,14 @@ serve(async (req) => {
             await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                chat_id: chatId,
-                text: "⭐ У вас пока нет контактов.",
-                parse_mode: "Markdown"
-              })
+              body: JSON.stringify({ chat_id: chatId, text: t("contactsEmpty", lang), parse_mode: "Markdown" })
             });
           }
         } else {
           await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chat_id: chatId,
-              text: "❌ Аккаунт не привязан. Используйте /link",
-              parse_mode: "Markdown"
-            })
+            body: JSON.stringify({ chat_id: chatId, text: t("errAccountNotLinked", lang), parse_mode: "Markdown" })
           });
         }
         
@@ -1069,11 +1111,11 @@ serve(async (req) => {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             chat_id: chatId,
-            text: "🔗 *Привязка аккаунта*\n\nОткройте APLink через кнопку ниже и войдите в свой аккаунт. Telegram будет автоматически привязан.",
+            text: `${t("linkTitle", lang)}\n\n${t("linkDesc", lang)}`,
             parse_mode: "Markdown",
             reply_markup: {
               inline_keyboard: [[
-                { text: "🔗 Открыть APLink", web_app: { url: WEB_APP_URL } }
+                { text: t("btnLink", lang), web_app: { url: WEB_APP_URL } }
               ]]
             }
           })
@@ -1114,41 +1156,29 @@ serve(async (req) => {
             const callsList = missedCalls.map(c => {
               const request = callRequests?.find(r => r.id === c.call_request_id);
               const creator = creatorProfiles?.find(p => p.user_id === request?.created_by);
-              const name = creator?.display_name || (creator?.username ? `@${creator.username}` : "Неизвестный");
+              const name = creator?.display_name || (creator?.username ? `@${creator.username}` : "Unknown");
               const date = new Date(c.invited_at).toLocaleString("ru-RU", { timeZone: "Europe/Moscow" });
               const status = c.status === "declined" ? "❌" : "📵";
-              return `${status} От: *${name}*\n   _${date}_`;
+              return `${status} ${t("missedFrom", lang)} *${name}*\n   _${date}_`;
             }).join("\n\n");
             
             await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                chat_id: chatId,
-                text: `📵 *Пропущенные звонки:*\n\n${callsList}`,
-                parse_mode: "Markdown"
-              })
+              body: JSON.stringify({ chat_id: chatId, text: `${t("missedTitle", lang)}\n\n${callsList}`, parse_mode: "Markdown" })
             });
           } else {
             await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                chat_id: chatId,
-                text: "📵 Нет пропущенных звонков",
-                parse_mode: "Markdown"
-              })
+              body: JSON.stringify({ chat_id: chatId, text: t("missedEmpty", lang), parse_mode: "Markdown" })
             });
           }
         } else {
           await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chat_id: chatId,
-              text: "❌ Аккаунт не привязан. Используйте /link",
-              parse_mode: "Markdown"
-            })
+            body: JSON.stringify({ chat_id: chatId, text: t("errAccountNotLinked", lang), parse_mode: "Markdown" })
           });
         }
         
@@ -1161,7 +1191,7 @@ serve(async (req) => {
           body: JSON.stringify({ chat_id: chatId })
         });
         const chatInfo = await chatInfoResponse.json();
-        const chatTitle = chatInfo.result?.title || "Групповой чат";
+        const chatTitle = chatInfo.result?.title || "Group";
         
         // Check if caller is linked
         const { data: callerProfile } = await supabase
@@ -1174,11 +1204,7 @@ serve(async (req) => {
           await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chat_id: chatId,
-              text: "❌ Ваш аккаунт не привязан к APLink.\nИспользуйте @aplink\\_live\\_bot в личных сообщениях и команду /link",
-              parse_mode: "Markdown"
-            })
+            body: JSON.stringify({ chat_id: chatId, text: t("startCallNotLinked", lang), parse_mode: "Markdown" })
           });
         } else {
           // Create a room with group chat name
@@ -1201,30 +1227,22 @@ serve(async (req) => {
             await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                chat_id: chatId,
-                text: "❌ Ошибка создания звонка",
-                parse_mode: "Markdown"
-              })
+              body: JSON.stringify({ chat_id: chatId, text: t("errCallFailed", lang), parse_mode: "Markdown" })
             });
           } else {
-            const callerName = callerProfile.display_name || fromUser?.first_name || "Пользователь";
+            const callerName = callerProfile.display_name || fromUser?.first_name || "User";
             
             await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 chat_id: chatId,
-                text: `🎥 *Групповой звонок*\n\n👤 Организатор: *${callerName}*\n💬 Чат: *${chatTitle}*\n⏱ Истекает через 5 минут\n\nНажмите кнопку ниже, чтобы присоединиться!`,
+                text: `${t("startCallTitle", lang)}\n\n${t("startCallOrganizer", lang)} *${callerName}*\n${t("startCallChat", lang)} *${chatTitle}*\n${t("startCallExpires5", lang)}\n\n${t("startCallJoinTip", lang)}`,
                 parse_mode: "Markdown",
                 reply_markup: {
                   inline_keyboard: [
-                    [
-                      { text: "🎥 Присоединиться к звонку", web_app: { url: `${WEB_APP_URL}/room/${roomName}` } }
-                    ],
-                    [
-                      { text: "❌ Отклонить", callback_data: `decline_group:${callRequest.id}` }
-                    ]
+                    [{ text: t("btnJoin", lang), web_app: { url: `${WEB_APP_URL}/room/${roomName}` } }],
+                    [{ text: t("btnDecline", lang), callback_data: `decline_group:${callRequest.id}` }]
                   ]
                 }
               })
@@ -1241,39 +1259,68 @@ serve(async (req) => {
         
       } else if (text === "/help" || text === "/start") {
         const isGroupChat = chatId && chatId < 0;
-        const lang = await resolveLang(supabase, fromUser);
-        const helpMessage = buildHelpMessage(lang, !!isGroupChat);
         
-        // Private chat: send animation WITH caption (text + quotes) in a single message like in your screenshot
-        if (!isGroupChat) {
+        // Check if user has language set
+        const stored = fromUser?.id ? await getStoredLang(supabase, fromUser.id) : null;
+        
+        // Private chat: if no language stored, show language selection first
+        if (!isGroupChat && !stored) {
           await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendAnimation`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               chat_id: chatId,
               animation: WELCOME_GIF_URL,
-              caption: helpMessage,
+              caption: `<b>🎥 APLink Bot</b>\n\n<blockquote>${t("langChooseFirst", lang)}</blockquote>`,
               parse_mode: "HTML",
               reply_markup: {
-                inline_keyboard: [
-                  [{ text: lang === "en" ? "🔗 Link account" : "🔗 Привязать аккаунт", web_app: { url: WEB_APP_URL } }],
-                  [{ text: lang === "en" ? "🎥 Open APLink" : "🎥 Открыть APLink", web_app: { url: WEB_APP_URL } }],
-                  [{ text: lang === "en" ? "🌐 Language" : "🌐 Язык", callback_data: "lang_menu" }],
-                ],
+                inline_keyboard: [[
+                  { text: "🇷🇺 Русский", callback_data: "lang:ru" },
+                  { text: "🇬🇧 English", callback_data: "lang:en" },
+                  { text: "🇺🇦 Українська", callback_data: "lang:uk" },
+                ]],
               },
             }),
           });
         } else {
-          // Group chat: plain message
-          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chat_id: chatId,
-              text: helpMessage,
-              parse_mode: "HTML",
-            }),
-          });
+          const helpMessage = buildHelpMessage(lang, !!isGroupChat);
+          
+          // Private chat: send animation WITH caption
+          if (!isGroupChat) {
+            await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendAnimation`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chat_id: chatId,
+                animation: WELCOME_GIF_URL,
+                caption: helpMessage,
+                parse_mode: "HTML",
+                reply_markup: {
+                  inline_keyboard: [
+                    [{ text: t("btnLink", lang), web_app: { url: WEB_APP_URL } }],
+                    [{ text: t("btnOpen", lang), web_app: { url: WEB_APP_URL } }],
+                    [{ text: t("btnLang", lang), callback_data: "lang_menu" }],
+                  ],
+                },
+              }),
+            });
+          } else {
+            // Group chat: plain message with button
+            await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chat_id: chatId,
+                text: helpMessage,
+                parse_mode: "HTML",
+                reply_markup: {
+                  inline_keyboard: [[
+                    { text: t("btnOpen", lang), web_app: { url: WEB_APP_URL } }
+                  ]]
+                }
+              }),
+            });
+          }
         }
       }
     }
@@ -1283,6 +1330,7 @@ serve(async (req) => {
       const chatId = update.message.chat?.id;
       const fromUser = update.message.from;
       const voice = update.message.voice || update.message.audio;
+      const lang = await resolveLang(supabase, fromUser);
       
       if (voice && chatId && chatId > 0) { // Only in private chats
         console.log("Voice message received:", voice.file_id);
@@ -1303,138 +1351,79 @@ serve(async (req) => {
           });
           const fileData = await fileResponse.json();
           
-          if (!fileData.ok || !fileData.result?.file_path) {
-            throw new Error("Failed to get file path");
-          }
-
-          // Download the audio file
-          const audioUrl = `https://api.telegram.org/file/bot${TELEGRAM_BOT_TOKEN}/${fileData.result.file_path}`;
-          const audioResponse = await fetch(audioUrl);
-          const audioBlob = await audioResponse.blob();
-
-          // Prepare form data for transcription
-          const formData = new FormData();
-          formData.append("file", audioBlob, "voice.ogg");
-          formData.append("model_id", "scribe_v1");
-
-          const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
-          
-          if (!ELEVENLABS_API_KEY) {
-            throw new Error("ElevenLabs API key not configured");
-          }
-
-          // Transcribe using ElevenLabs
-          const transcribeResponse = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
-            method: "POST",
-            headers: {
-              "xi-api-key": ELEVENLABS_API_KEY,
-            },
-            body: formData,
-          });
-
-          if (!transcribeResponse.ok) {
-            const errorText = await transcribeResponse.text();
-            throw new Error(`Transcription failed: ${errorText}`);
-          }
-
-          const transcription = await transcribeResponse.json();
-          const originalText = transcription.text || "Не удалось распознать текст";
-          
-          // Check if user wants translation (by replying with language code)
-          const replyText = update.message.reply_to_message?.text?.toLowerCase();
-          let translatedText = "";
-          let targetLang = "";
-          
-          // Detect if user mentioned a language for translation
-          if (replyText) {
-            const langMatch = replyText.match(/перевод(?:и)?(?:\s+на)?\s+(английский|русский|español|english|russian)/i);
-            if (langMatch) {
-              targetLang = langMatch[1].toLowerCase();
-            }
-          }
-          
-          // If no translation needed, just send transcription
-          let responseMessage = `🎤 *Транскрипция:*\n\n${originalText}`;
-          
-          if (targetLang) {
-            // Call translation API (using Lovable AI)
-            const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-            if (LOVABLE_API_KEY) {
-              const translateResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          if (fileData.ok && fileData.result?.file_path) {
+            const audioUrl = `https://api.telegram.org/file/bot${TELEGRAM_BOT_TOKEN}/${fileData.result.file_path}`;
+            
+            // Send to ElevenLabs for transcription
+            const transcriptionResponse = await fetch(
+              `${Deno.env.get("SUPABASE_URL")}/functions/v1/elevenlabs-transcribe`,
+              {
                 method: "POST",
                 headers: {
-                  "Authorization": `Bearer ${LOVABLE_API_KEY}`,
                   "Content-Type": "application/json",
+                  "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
                 },
-                body: JSON.stringify({
-                  model: "google/gemini-2.5-flash",
-                  messages: [
-                    { role: "system", content: `Translate the following text to ${targetLang}. Return only the translation, nothing else.` },
-                    { role: "user", content: originalText }
-                  ]
-                }),
+                body: JSON.stringify({ audioUrl, languageCode: "auto" }),
+              }
+            );
+            
+            const transcription = await transcriptionResponse.json();
+            
+            if (transcription.text) {
+              // Log activity
+              await supabase.from("telegram_activity_log").insert({
+                telegram_id: fromUser?.id || null,
+                action: "voice_transcribed",
+                metadata: { 
+                  text_length: transcription.text.length,
+                  detected_language: transcription.detected_language 
+                },
               });
               
-              if (translateResponse.ok) {
-                const translateData = await translateResponse.json();
-                translatedText = translateData.choices?.[0]?.message?.content || "";
-                
-                if (translatedText) {
-                  responseMessage = `🎤 *Транскрипция:*\n${originalText}\n\n🌐 *Перевод (${targetLang}):*\n${translatedText}`;
-                }
-              }
+              await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  chat_id: chatId,
+                  text: `${t("voiceTranscription", lang)}\n\n${transcription.text}`,
+                  parse_mode: "Markdown",
+                  reply_markup: {
+                    inline_keyboard: [[
+                      { text: `🇬🇧 ${t("voiceTranslateBtn", lang)}`, callback_data: "translate:en" },
+                      { text: `🇷🇺 ${t("voiceTranslateBtn", lang)}`, callback_data: "translate:ru" },
+                      { text: `🇺🇦 ${t("voiceTranslateBtn", lang)}`, callback_data: "translate:uk" },
+                    ]]
+                  }
+                })
+              });
+            } else {
+              await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ chat_id: chatId, text: t("errGeneric", lang) })
+              });
             }
           }
-          
-          // Send transcription result with translation options
+        } catch (err) {
+          console.error("Voice processing error:", err);
           await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chat_id: chatId,
-              text: responseMessage,
-              parse_mode: "Markdown",
-              reply_markup: {
-                inline_keyboard: [
-                  [
-                    { text: "🇬🇧 English", callback_data: `translate:en:${voice.file_id.slice(0, 20)}` },
-                    { text: "🇷🇺 Русский", callback_data: `translate:ru:${voice.file_id.slice(0, 20)}` },
-                    { text: "🇪🇸 Español", callback_data: `translate:es:${voice.file_id.slice(0, 20)}` },
-                  ]
-                ]
-              }
-            })
-          });
-
-          // Log activity
-          await supabase.from("telegram_activity_log").insert({
-            telegram_id: fromUser?.id || null,
-            action: "voice_transcribed",
-            metadata: { 
-              duration: voice.duration, 
-              text_length: originalText.length,
-              translated: !!translatedText 
-            },
-          });
-
-        } catch (transcribeError) {
-          console.error("Voice transcription error:", transcribeError);
-          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chat_id: chatId,
-              text: "❌ Не удалось распознать голосовое сообщение. Попробуйте ещё раз.",
-              parse_mode: "Markdown"
-            })
+            body: JSON.stringify({ chat_id: chatId, text: t("errGeneric", lang) })
           });
         }
       }
     }
 
-    return new Response("OK", { status: 200 });
+    return new Response(JSON.stringify({ ok: true }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+
   } catch (error) {
     console.error("Webhook error:", error);
-    return new Response("Error", { status: 500 });
+    return new Response(JSON.stringify({ error: String(error) }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
