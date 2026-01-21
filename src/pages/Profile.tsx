@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import CustomCursor from '@/components/CustomCursor';
 import VoiceSettings from '@/components/VoiceSettings';
 import DoNotDisturbSettings from '@/components/DoNotDisturbSettings';
+import BotLanguageSettings from '@/components/BotLanguageSettings';
 
 const Profile = () => {
   const { user, isLoading: authLoading } = useAuth();
@@ -387,6 +388,11 @@ const Profile = () => {
           </Button>
         </div>
         
+        {/* Bot Language Settings */}
+        <div className="mt-6">
+          <BotLanguageSettings />
+        </div>
+
         {/* Voice Settings */}
         <div className="mt-6">
           <VoiceSettings />
