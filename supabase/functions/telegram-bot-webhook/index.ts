@@ -1500,33 +1500,68 @@ serve(async (req) => {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               chat_id: chatId,
-              text: "❌ Прикрепите GIF/видео/фото вместе с командой /setwelcome и капшеном.\n\n*Формат:*\n`/setwelcome`\n\n_Капшен (RU):_ текст...\n_Caption (EN):_ text...\n_Підпис (UK):_ текст...",
+              text: "❌ *Прикрепите GIF/видео/фото вместе с командой /setwelcome*\n\n*Формат многоязычного капшена:*\n```\n/setwelcome\n\n🇷🇺 RU:\nПриветственный текст на русском\nМожно в несколько строк\n\n🇬🇧 EN:\nWelcome text in English\nMultiple lines supported\n\n🇺🇦 UK:\nПривітальний текст українською\nПідтримується багато рядків\n```\n\n💡 Если язык не указан — текст будет использован для всех языков.",
               parse_mode: "Markdown",
             }),
           });
         } else {
-          // Parse captions from message text (support multi-line)
+          // Parse captions from message text (support multi-line blocks)
           const captionText = (msg.caption || msg.text || "").replace(/^\/setwelcome\s*/i, "").trim();
-          // Simple extraction: split by double newline or language markers
-          const ruMatch = captionText.match(/(?:RU|Русский|🇷🇺)[:\s]*([^\n]+)/i);
-          const enMatch = captionText.match(/(?:EN|English|🇬🇧)[:\s]*([^\n]+)/i);
-          const ukMatch = captionText.match(/(?:UK|UA|Українська|🇺🇦)[:\s]*([^\n]+)/i);
+          
+          // Advanced multi-line extraction: find blocks between language markers
+          const extractBlock = (text: string, markers: string[]): string | null => {
+            for (const marker of markers) {
+              const regex = new RegExp(`(?:^|\\n)${marker}[:\\s]*\\n?([\\s\\S]*?)(?=\\n(?:🇷🇺|🇬🇧|🇺🇦|RU:|EN:|UK:)|$)`, "i");
+              const match = text.match(regex);
+              if (match && match[1]?.trim()) {
+                return match[1].trim();
+              }
+            }
+            return null;
+          };
+          
+          const captionRu = extractBlock(captionText, ["🇷🇺 RU", "🇷🇺", "RU"]);
+          const captionEn = extractBlock(captionText, ["🇬🇧 EN", "🇬🇧", "EN"]);
+          const captionUk = extractBlock(captionText, ["🇺🇦 UK", "🇺🇦", "UK", "UA"]);
+          
+          // Fallback: if no language markers found, use entire text for all languages
+          const fallbackCaption = (!captionRu && !captionEn && !captionUk && captionText) ? captionText : null;
+          const finalRu = captionRu || fallbackCaption;
+          const finalEn = captionEn || fallbackCaption;
+          const finalUk = captionUk || fallbackCaption;
 
-          const captionRu = ruMatch?.[1]?.trim() || captionText || null;
-          const captionEn = enMatch?.[1]?.trim() || null;
-          const captionUk = ukMatch?.[1]?.trim() || null;
-
-          // Update DB row
-          const { error: updateErr } = await supabase
+          // Update or insert DB row
+          const { data: existing } = await supabase
             .from("bot_welcome_settings")
-            .update({
-              file_id: fileId,
-              caption_ru: captionRu,
-              caption_en: captionEn,
-              caption_uk: captionUk,
-              updated_at: new Date().toISOString(),
-            })
-            .neq("id", "00000000-0000-0000-0000-000000000000"); // update all rows (should be one)
+            .select("id")
+            .limit(1)
+            .maybeSingle();
+          
+          let updateErr: Error | null = null;
+          if (existing) {
+            const { error } = await supabase
+              .from("bot_welcome_settings")
+              .update({
+                file_id: fileId,
+                caption_ru: finalRu,
+                caption_en: finalEn,
+                caption_uk: finalUk,
+                updated_at: new Date().toISOString(),
+                updated_by: null, // Telegram admin doesn't have web user_id
+              })
+              .eq("id", existing.id);
+            if (error) updateErr = error;
+          } else {
+            const { error } = await supabase
+              .from("bot_welcome_settings")
+              .insert({
+                file_id: fileId,
+                caption_ru: finalRu,
+                caption_en: finalEn,
+                caption_uk: finalUk,
+              });
+            if (error) updateErr = error;
+          }
 
           if (updateErr) {
             console.error("Failed to update welcome settings:", updateErr);
@@ -1536,12 +1571,17 @@ serve(async (req) => {
               body: JSON.stringify({ chat_id: chatId, text: `❌ DB error: ${updateErr.message}` }),
             });
           } else {
+            // Preview what was saved
+            const previewRu = (finalRu || "—").substring(0, 50) + ((finalRu?.length || 0) > 50 ? "..." : "");
+            const previewEn = (finalEn || "—").substring(0, 50) + ((finalEn?.length || 0) > 50 ? "..." : "");
+            const previewUk = (finalUk || "—").substring(0, 50) + ((finalUk?.length || 0) > 50 ? "..." : "");
+            
             await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 chat_id: chatId,
-                text: `✅ *Welcome обновлён!*\n\n📎 file_id: \`${fileId.substring(0, 30)}...\`\n🇷🇺 RU: ${captionRu || "—"}\n🇬🇧 EN: ${captionEn || "—"}\n🇺🇦 UK: ${captionUk || "—"}`,
+                text: `✅ *Welcome обновлён!*\n\n📎 file_id сохранён\n\n🇷🇺 *RU:*\n${previewRu}\n\n🇬🇧 *EN:*\n${previewEn}\n\n🇺🇦 *UK:*\n${previewUk}`,
                 parse_mode: "Markdown",
               }),
             });
