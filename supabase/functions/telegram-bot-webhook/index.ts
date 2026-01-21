@@ -37,6 +37,11 @@ interface TelegramUpdate {
     chat?: { id: number; title?: string; type?: string };
     from?: { id: number; username?: string; first_name?: string; language_code?: string };
     text?: string;
+    caption?: string;
+    animation?: { file_id: string };
+    video?: { file_id: string };
+    document?: { file_id: string; mime_type?: string };
+    photo?: Array<{ file_id: string }>;
     voice?: {
       file_id: string;
       duration: number;
@@ -53,6 +58,8 @@ interface TelegramUpdate {
     };
   };
 }
+
+const ADMIN_TELEGRAM_ID = 2061785720; // Admin user ID (Apollo_Production)
 
 // Extended to 3 languages: Russian, English, Ukrainian
 type BotLang = "ru" | "en" | "uk";
@@ -1339,94 +1346,115 @@ serve(async (req) => {
         const stored = fromUser?.id
           ? (await getStoredLang(supabase, fromUser.id)) ?? (await getProfileLang(supabase, fromUser.id))
           : null;
-        
-        // Private chat: if no language stored, show language selection first
-        if (!isGroupChat && !stored) {
-          console.log("Sending language selection for new user");
-          const sendResult = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendAnimation`, {
+
+        // Fetch custom welcome settings from DB (if admin uploaded custom media/captions)
+        const { data: welcomeSettings } = await supabase
+          .from("bot_welcome_settings")
+          .select("file_id, caption_ru, caption_en, caption_uk")
+          .limit(1)
+          .maybeSingle();
+
+        const dbFileId = (welcomeSettings as Record<string, unknown> | null)?.file_id as string | null;
+        const dbCaptionRu = (welcomeSettings as Record<string, unknown> | null)?.caption_ru as string | null;
+        const dbCaptionEn = (welcomeSettings as Record<string, unknown> | null)?.caption_en as string | null;
+        const dbCaptionUk = (welcomeSettings as Record<string, unknown> | null)?.caption_uk as string | null;
+
+        // Resolve the caption based on current lang preference
+        const getDbCaption = (l: BotLang) => {
+          if (l === "en" && dbCaptionEn) return dbCaptionEn;
+          if (l === "uk" && dbCaptionUk) return dbCaptionUk;
+          return dbCaptionRu || null;
+        };
+
+        // Helper to send welcome with DB media if available, otherwise fallback
+        const sendWelcomeMedia = async (caption: string, replyMarkup: unknown) => {
+          if (dbFileId) {
+            // Try sending as animation first (works for MP4/GIF file_id)
+            const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendAnimation`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chat_id: chatId,
+                animation: dbFileId,
+                caption,
+                parse_mode: "HTML",
+                reply_markup: replyMarkup,
+              }),
+            });
+            const data = await res.json();
+            console.log("sendAnimation with DB file_id result:", JSON.stringify(data));
+            if (data?.ok) return true;
+
+            // If animation fails (e.g. it's a photo not animation), try sendPhoto
+            const photoRes = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chat_id: chatId,
+                photo: dbFileId,
+                caption,
+                parse_mode: "HTML",
+                reply_markup: replyMarkup,
+              }),
+            });
+            const photoData = await photoRes.json();
+            if (photoData?.ok) return true;
+          }
+
+          // Fallback: use URL-based animation
+          const urlRes = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendAnimation`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               chat_id: chatId,
               animation: WELCOME_GIF_URL,
-              caption: `<b>🎥 APLink Bot</b>\n\n<blockquote>${t("langChooseFirst", lang)}</blockquote>`,
+              caption,
               parse_mode: "HTML",
-              reply_markup: {
-                inline_keyboard: [[
-                  { text: "🇷🇺 Русский", callback_data: "lang:ru" },
-                  { text: "🇬🇧 English", callback_data: "lang:en" },
-                  { text: "🇺🇦 Українська", callback_data: "lang:uk" },
-                ]],
-              },
+              reply_markup: replyMarkup,
             }),
           });
-          const sendData = await sendResult.json();
-          console.log("Send animation result:", JSON.stringify(sendData));
+          const urlData = await urlRes.json();
+          console.log("sendAnimation with URL fallback result:", JSON.stringify(urlData));
+          if (urlData?.ok) return true;
 
-          // Telegram couldn't fetch the media URL (common: URL returns HTML). Fallback to text-only message.
-          if (!sendData?.ok) {
-            await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                chat_id: chatId,
-                text: `<b>🎥 APLink Bot</b>\n\n<blockquote>${t("langChooseFirst", lang)}</blockquote>`,
-                parse_mode: "HTML",
-                reply_markup: {
-                  inline_keyboard: [[
-                    { text: "🇷🇺 Русский", callback_data: "lang:ru" },
-                    { text: "🇬🇧 English", callback_data: "lang:en" },
-                    { text: "🇺🇦 Українська", callback_data: "lang:uk" },
-                  ]],
-                },
-              }),
-            });
-          }
+          // Final fallback: plain text message
+          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: caption,
+              parse_mode: "HTML",
+              reply_markup: replyMarkup,
+            }),
+          });
+          return false;
+        };
+        
+        // Private chat: if no language stored, show language selection first
+        if (!isGroupChat && !stored) {
+          console.log("Sending language selection for new user");
+          const caption = getDbCaption(lang) || `<b>🎥 APLink Bot</b>\n\n<blockquote>${t("langChooseFirst", lang)}</blockquote>`;
+          await sendWelcomeMedia(caption, {
+            inline_keyboard: [[
+              { text: "🇷🇺 Русский", callback_data: "lang:ru" },
+              { text: "🇬🇧 English", callback_data: "lang:en" },
+              { text: "🇺🇦 Українська", callback_data: "lang:uk" },
+            ]],
+          });
         } else {
-          const helpMessage = buildHelpMessage(lang, !!isGroupChat);
+          const helpMessage = getDbCaption(lang) || buildHelpMessage(lang, !!isGroupChat);
           
           // Private chat: send animation WITH caption
           if (!isGroupChat) {
             console.log("Sending help animation for existing user with lang:", lang);
-            const helpResult = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendAnimation`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                chat_id: chatId,
-                animation: WELCOME_GIF_URL,
-                caption: helpMessage,
-                parse_mode: "HTML",
-                reply_markup: {
-                  inline_keyboard: [
-                    [{ text: t("btnLink", lang), web_app: { url: WEB_APP_URL } }],
-                    [{ text: t("btnOpen", lang), web_app: { url: WEB_APP_URL } }],
-                    [{ text: t("btnLang", lang), callback_data: "lang_menu" }],
-                  ],
-                },
-              }),
+            await sendWelcomeMedia(helpMessage, {
+              inline_keyboard: [
+                [{ text: t("btnLink", lang), web_app: { url: WEB_APP_URL } }],
+                [{ text: t("btnOpen", lang), web_app: { url: WEB_APP_URL } }],
+                [{ text: t("btnLang", lang), callback_data: "lang_menu" }],
+              ],
             });
-            const helpData = await helpResult.json();
-            console.log("Send help animation result:", JSON.stringify(helpData));
-
-            // Fallback to text-only help if Telegram can't fetch the media URL.
-            if (!helpData?.ok) {
-              await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  chat_id: chatId,
-                  text: helpMessage,
-                  parse_mode: "HTML",
-                  reply_markup: {
-                    inline_keyboard: [
-                      [{ text: t("btnLink", lang), web_app: { url: WEB_APP_URL } }],
-                      [{ text: t("btnOpen", lang), web_app: { url: WEB_APP_URL } }],
-                      [{ text: t("btnLang", lang), callback_data: "lang_menu" }],
-                    ],
-                  },
-                }),
-              });
-            }
           } else {
             // Group chat: plain message with button
             await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
@@ -1441,6 +1469,83 @@ serve(async (req) => {
                     { text: t("btnOpen", lang), web_app: { url: WEB_APP_URL } }
                   ]]
                 }
+              }),
+            });
+          }
+        }
+      }
+    }
+    const msgText = update.message?.text || update.message?.caption || "";
+    if (msgText.startsWith("/setwelcome") && update.message?.from) {
+      const chatId = update.message.chat?.id;
+      const fromUser = update.message.from;
+      const lang = await resolveLang(supabase, fromUser);
+
+      // Only admin can use this command
+      if (fromUser.id !== ADMIN_TELEGRAM_ID) {
+        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chat_id: chatId, text: "⛔ Только для админа / Admin only" }),
+        });
+      } else {
+        // Determine file_id from attached media (prefer animation, then video, then photo)
+        const msg = update.message;
+        let fileId: string | null = null;
+        if (msg.animation?.file_id) fileId = msg.animation.file_id;
+        else if (msg.video?.file_id) fileId = msg.video.file_id;
+        else if (msg.document?.file_id && msg.document.mime_type?.startsWith("video/")) fileId = msg.document.file_id;
+        else if (msg.photo && msg.photo.length > 0) fileId = msg.photo[msg.photo.length - 1].file_id;
+
+        if (!fileId) {
+          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: "❌ Прикрепите GIF/видео/фото вместе с командой /setwelcome и капшеном.\n\n*Формат:*\n`/setwelcome`\n\n_Капшен (RU):_ текст...\n_Caption (EN):_ text...\n_Підпис (UK):_ текст...",
+              parse_mode: "Markdown",
+            }),
+          });
+        } else {
+          // Parse captions from message text (support multi-line)
+          const captionText = (msg.caption || msg.text || "").replace(/^\/setwelcome\s*/i, "").trim();
+          // Simple extraction: split by double newline or language markers
+          const ruMatch = captionText.match(/(?:RU|Русский|🇷🇺)[:\s]*([^\n]+)/i);
+          const enMatch = captionText.match(/(?:EN|English|🇬🇧)[:\s]*([^\n]+)/i);
+          const ukMatch = captionText.match(/(?:UK|UA|Українська|🇺🇦)[:\s]*([^\n]+)/i);
+
+          const captionRu = ruMatch?.[1]?.trim() || captionText || null;
+          const captionEn = enMatch?.[1]?.trim() || null;
+          const captionUk = ukMatch?.[1]?.trim() || null;
+
+          // Update DB row
+          const { error: updateErr } = await supabase
+            .from("bot_welcome_settings")
+            .update({
+              file_id: fileId,
+              caption_ru: captionRu,
+              caption_en: captionEn,
+              caption_uk: captionUk,
+              updated_at: new Date().toISOString(),
+            })
+            .neq("id", "00000000-0000-0000-0000-000000000000"); // update all rows (should be one)
+
+          if (updateErr) {
+            console.error("Failed to update welcome settings:", updateErr);
+            await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ chat_id: chatId, text: `❌ DB error: ${updateErr.message}` }),
+            });
+          } else {
+            await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chat_id: chatId,
+                text: `✅ *Welcome обновлён!*\n\n📎 file_id: \`${fileId.substring(0, 30)}...\`\n🇷🇺 RU: ${captionRu || "—"}\n🇬🇧 EN: ${captionEn || "—"}\n🇺🇦 UK: ${captionUk || "—"}`,
+                parse_mode: "Markdown",
               }),
             });
           }
