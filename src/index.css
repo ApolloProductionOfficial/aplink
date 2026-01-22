@@ -563,6 +563,70 @@ All colors MUST be HSL.
   color: hsl(0 0% 100%);
 }
 
+/* Speaking indicator - glowing border when participant is speaking */
+.livekit-room-container [data-lk-speaking="true"] {
+  border-color: hsl(190 95% 55%);
+  box-shadow: 
+    0 0 20px rgba(6, 182, 228, 0.5),
+    0 0 40px rgba(6, 182, 228, 0.3),
+    0 0 60px rgba(6, 182, 228, 0.15),
+    inset 0 0 20px rgba(6, 182, 228, 0.1);
+  animation: speaking-glow 1.5s ease-in-out infinite;
+}
+
+@keyframes speaking-glow {
+  0%, 100% {
+    box-shadow: 
+      0 0 20px rgba(6, 182, 228, 0.5),
+      0 0 40px rgba(6, 182, 228, 0.3),
+      0 0 60px rgba(6, 182, 228, 0.15),
+      inset 0 0 20px rgba(6, 182, 228, 0.1);
+  }
+  50% {
+    box-shadow: 
+      0 0 30px rgba(6, 182, 228, 0.7),
+      0 0 60px rgba(6, 182, 228, 0.4),
+      0 0 90px rgba(6, 182, 228, 0.2),
+      inset 0 0 30px rgba(6, 182, 228, 0.15);
+  }
+}
+
+/* Audio level visualizer inside speaking tile */
+.livekit-room-container [data-lk-speaking="true"]::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsl(190 95% 55%) 25%,
+    hsl(190 100% 70%) 50%,
+    hsl(190 95% 55%) 75%,
+    transparent 100%
+  );
+  animation: audio-wave 0.8s ease-in-out infinite;
+}
+
+@keyframes audio-wave {
+  0%, 100% {
+    transform: scaleX(0.3);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+}
+
+/* Enhance the participant name when speaking */
+.livekit-room-container [data-lk-speaking="true"] .lk-participant-name {
+  color: hsl(190 95% 65%);
+  text-shadow: 0 0 10px rgba(6, 182, 228, 0.5);
+}
+
 @layer base {
   * {
     @apply border-border;
