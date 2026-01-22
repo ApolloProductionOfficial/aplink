@@ -108,16 +108,20 @@ export function initGlobalErrorHandlers() {
       message.includes("back_button") ||
       message.includes("popup_closed") ||
       message.includes("initDataUnsafe") ||
-      // Radix UI context errors (Safari compatibility)
+      // Radix UI context errors (Safari compatibility) - COMPLETELY IGNORE
       message.includes("TooltipProvider") ||
-      message.includes("Tooltip must be used within") ||
+      message.includes("Tooltip must be used") ||
       message.includes("TooltipProviderProvider") ||
       // ErrorBoundary duplicate errors - skip ALL ErrorBoundary logs
       message.includes("ErrorBoundary") ||
+      message.includes("caught error") ||
       message.includes("REACT_ERROR") ||
       // Generic non-actionable errors
       message.includes("No message") ||
-      message.includes("componentStack")
+      message.includes("componentStack") ||
+      // Empty error objects
+      message === "{}" ||
+      message.startsWith("ErrorBoundary caught error: {}")
     ) {
       return;
     }
