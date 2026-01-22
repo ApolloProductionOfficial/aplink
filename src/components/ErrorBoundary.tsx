@@ -28,8 +28,11 @@ class ErrorBoundary extends Component<Props, State> {
     const errorStack = error?.stack || '';
     const componentStack = errorInfo?.componentStack || '';
 
-    // Log for debugging
-    console.warn('ErrorBoundary caught:', errorMessage);
+    // Detect WebKit environment (Safari / Telegram Desktop macOS)
+    const isWebKit =
+      typeof navigator !== 'undefined' &&
+      /AppleWebKit/i.test(navigator.userAgent) &&
+      !/Chrome|Chromium|Edg/i.test(navigator.userAgent);
 
     // --- Filter out noise ---
     // 1. TooltipProvider context issues (Safari/Radix)
@@ -45,8 +48,20 @@ class ErrorBoundary extends Component<Props, State> {
       errorMessage === 'Unknown error' ||
       errorMessage.trim() === '';
 
-    // Skip notification for known noise
+    // For WebKit TooltipProvider crashes: try forced reload once per session
+    if (isTooltipError && isWebKit) {
+      const reloadKey = 'aplink_tooltip_reload_attempted';
+      if (!sessionStorage.getItem(reloadKey)) {
+        sessionStorage.setItem(reloadKey, 'true');
+        console.warn('TooltipProvider crash in WebKit detected, forcing reload...');
+        window.location.reload();
+        return;
+      }
+    }
+
+    // Skip notification for known noise (but still log quietly)
     if (isTooltipError || isEmptyError) {
+      console.warn('ErrorBoundary filtered noise:', errorMessage);
       return;
     }
 
