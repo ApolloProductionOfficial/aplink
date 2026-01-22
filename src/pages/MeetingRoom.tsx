@@ -114,13 +114,15 @@ const MeetingRoom = () => {
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const { t } = useTranslation();
 
-  // Prevent crashes on invalid / missing URL param
+  // Prevent crashes on invalid / missing URL param or auth still loading
   if (!roomId) return null;
 
   // Use room ID as-is for Jitsi (consistent room name)
   // Display with proper formatting (dashes to spaces)
-  const roomDisplayName = decodeURIComponent(roomId || '').replace(/-/g, ' ');
-  const roomSlug = roomId || '';
+  // Safe access with optional chaining and fallbacks
+  const roomDisplayName = decodeURIComponent(roomId ?? '').replace(/-/g, ' ') || 'Meeting';
+  const roomSlug = roomId ?? '';
+  const safeUserName = userName ?? user?.email?.split('@')[0] ?? 'Guest';
 
   // Helper to log diagnostic events (capped at 100 entries)
   const logDiagnostic = useCallback((event: string, data?: unknown) => {
