@@ -9,6 +9,12 @@ const WEB_APP_URL = "https://aplink.live";
 // Using the published domain is more reliable than custom domains/CDN that may return HTML.
 const WELCOME_GIF_URL = "https://aplink.lovable.app/animations/aplink-welcome.gif";
 
+// Cache-bust helper: appends __cb=timestamp to force WebKit to fetch fresh assets
+const cbUrl = (path: string): string => {
+  const separator = path.includes("?") ? "&" : "?";
+  return `${path}${separator}__cb=${Date.now()}`;
+};
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -413,9 +419,9 @@ serve(async (req) => {
                 parse_mode: "HTML",
                 reply_markup: {
                   inline_keyboard: isGroupChat
-                    ? [[{ text: t("btnOpen", requestedLang), web_app: { url: WEB_APP_URL } }]]
+                    ? [[{ text: t("btnOpen", requestedLang), web_app: { url: cbUrl(WEB_APP_URL) } }]]
                     : [
-                        [{ text: t("btnOpen", requestedLang), web_app: { url: WEB_APP_URL } }],
+                        [{ text: t("btnOpen", requestedLang), web_app: { url: cbUrl(WEB_APP_URL) } }],
                         [{ text: t("btnLang", requestedLang), callback_data: "lang_menu" }],
                       ],
                 },
@@ -436,9 +442,9 @@ serve(async (req) => {
                   parse_mode: "HTML",
                   reply_markup: {
                     inline_keyboard: isGroupChat
-                      ? [[{ text: t("btnOpen", requestedLang), web_app: { url: WEB_APP_URL } }]]
+                      ? [[{ text: t("btnOpen", requestedLang), web_app: { url: cbUrl(WEB_APP_URL) } }]]
                       : [
-                          [{ text: t("btnOpen", requestedLang), web_app: { url: WEB_APP_URL } }],
+                          [{ text: t("btnOpen", requestedLang), web_app: { url: cbUrl(WEB_APP_URL) } }],
                           [{ text: t("btnLang", requestedLang), callback_data: "lang_menu" }],
                         ],
                   },
@@ -539,7 +545,7 @@ serve(async (req) => {
               parse_mode: "Markdown",
               reply_markup: {
                 inline_keyboard: [[
-                  { text: t("btnOpen", lang), web_app: { url: `${WEB_APP_URL}/room/${callRequest.room_name}` } }
+                  { text: t("btnOpen", lang), web_app: { url: cbUrl(`${WEB_APP_URL}/room/${callRequest.room_name}`) } }
                 ]]
               }
             })
@@ -665,7 +671,7 @@ serve(async (req) => {
             parse_mode: "Markdown",
             reply_markup: {
               inline_keyboard: [[
-                { text: t("btnLink", lang), web_app: { url: WEB_APP_URL } }
+                { text: t("btnLink", lang), web_app: { url: cbUrl(`${WEB_APP_URL}/auth?mode=login&redirect=/`) } }
               ]]
             }
           })
@@ -696,7 +702,7 @@ serve(async (req) => {
               reply_markup: {
                 inline_keyboard: [
                   [{ text: dndEnabled ? t("settingsDndDisable", lang) : t("settingsDndEnable", lang), callback_data: dndEnabled ? "settings_dnd_off" : "settings_dnd_on" }],
-                  [{ text: t("btnOpen", lang), web_app: { url: WEB_APP_URL } }],
+                  [{ text: t("btnOpen", lang), web_app: { url: cbUrl(WEB_APP_URL) } }],
                 ]
               }
             })
@@ -718,7 +724,7 @@ serve(async (req) => {
                 inline_keyboard: [
                   [{ text: t("settingsDndEnable", lang), callback_data: "settings_dnd_on" }],
                   [{ text: t("settingsDndDisable", lang), callback_data: "settings_dnd_off" }],
-                  [{ text: t("btnOpen", lang), web_app: { url: WEB_APP_URL } }]
+                  [{ text: t("btnOpen", lang), web_app: { url: cbUrl(WEB_APP_URL) } }]
                 ]
               }
             })
@@ -858,7 +864,7 @@ Text in English
               inline_keyboard: [
                 [{ text: profile?.dnd_enabled ? t("settingsDndDisable", lang) : t("settingsDndEnable", lang), callback_data: profile?.dnd_enabled ? "settings_dnd_off" : "settings_dnd_on" }],
                 [{ text: t("btnLang", lang), callback_data: "lang_menu" }],
-                [{ text: t("btnOpen", lang), web_app: { url: WEB_APP_URL } }]
+                [{ text: t("btnOpen", lang), web_app: { url: cbUrl(WEB_APP_URL) } }]
               ]
             }
           })
@@ -1007,8 +1013,8 @@ Text in English
                   const callMessage = `${t("callIncoming", targetLang)}\n\n${t("callFrom", targetLang)} ${callerName}\n${t("callExpires", targetLang)}`;
                   
                   const keyboard = {
-                    inline_keyboard: [
-                      [{ text: t("callAcceptBtn", targetLang), web_app: { url: `${WEB_APP_URL}/room/${roomName}` } }],
+                  inline_keyboard: [
+                    [{ text: t("callAcceptBtn", targetLang), web_app: { url: cbUrl(`${WEB_APP_URL}/room/${roomName}`) } }],
                       [
                         { text: "⏰ 5 min", callback_data: `callback_5min:${callerProfile.user_id}` },
                         { text: "⏰ 15 min", callback_data: `callback_15min:${callerProfile.user_id}` }
@@ -1041,7 +1047,7 @@ Text in English
                       parse_mode: "Markdown",
                       reply_markup: {
                         inline_keyboard: [[
-                          { text: t("btnOpen", lang), web_app: { url: `${WEB_APP_URL}/room/${roomName}` } }
+                          { text: t("btnOpen", lang), web_app: { url: cbUrl(`${WEB_APP_URL}/room/${roomName}`) } }
                         ]]
                       }
                     })
@@ -1115,7 +1121,7 @@ Text in English
                   parse_mode: "Markdown",
                   reply_markup: {
                     inline_keyboard: [[
-                      { text: t("btnJoin", lang), web_app: { url: result.room_url } }
+                      { text: t("btnJoin", lang), web_app: { url: cbUrl(result.room_url) } }
                     ]]
                   }
                 })
@@ -1237,7 +1243,7 @@ Text in English
             parse_mode: "Markdown",
             reply_markup: {
               inline_keyboard: [[
-                { text: t("btnLink", lang), web_app: { url: WEB_APP_URL } }
+                { text: t("btnLink", lang), web_app: { url: cbUrl(`${WEB_APP_URL}/auth?mode=login&redirect=/`) } }
               ]]
             }
           })
@@ -1363,7 +1369,7 @@ Text in English
                 parse_mode: "Markdown",
                 reply_markup: {
                   inline_keyboard: [
-                    [{ text: t("btnJoin", lang), web_app: { url: `${WEB_APP_URL}/room/${roomName}` } }],
+                    [{ text: t("btnJoin", lang), web_app: { url: cbUrl(`${WEB_APP_URL}/room/${roomName}`) } }],
                     [{ text: t("btnDecline", lang), callback_data: `decline_group:${callRequest.id}` }]
                   ]
                 }
@@ -1511,7 +1517,7 @@ Text in English
           if (!isGroupChat) {
             console.log("Sending help animation for existing user with lang:", lang);
             const keyboard = [
-              [{ text: t("btnOpen", lang), web_app: { url: WEB_APP_URL } }],
+              [{ text: t("btnOpen", lang), web_app: { url: cbUrl(WEB_APP_URL) } }],
               [{ text: t("btnLang", lang), callback_data: "lang_menu" }],
             ];
             await sendWelcomeMedia(helpMessage, { inline_keyboard: keyboard });
@@ -1526,7 +1532,7 @@ Text in English
                 parse_mode: "HTML",
                 reply_markup: {
                   inline_keyboard: [[
-                    { text: t("btnOpen", lang), web_app: { url: WEB_APP_URL } }
+                    { text: t("btnOpen", lang), web_app: { url: cbUrl(WEB_APP_URL) } }
                   ]]
                 }
               }),

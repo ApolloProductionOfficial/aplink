@@ -48,21 +48,15 @@ class ErrorBoundary extends Component<Props, State> {
       errorMessage === 'Unknown error' ||
       errorMessage.trim() === '';
 
-    // For WebKit TooltipProvider crashes: try forced reload once per session
+    // For WebKit TooltipProvider crashes: redirect to /__refresh to force cache bypass
     if (isTooltipError && isWebKit) {
       const reloadKey = 'aplink_tooltip_reload_attempted';
       if (!sessionStorage.getItem(reloadKey)) {
         sessionStorage.setItem(reloadKey, 'true');
-        console.warn('TooltipProvider crash in WebKit detected, forcing reload...');
-        // WebKit (Safari / embedded WebViews) can aggressively cache old hashed assets.
-        // Add a cache-busting query param to maximize chance of fetching the newest build.
-        try {
-          const url = new URL(window.location.href);
-          url.searchParams.set('__cb', String(Date.now()));
-          window.location.replace(url.toString());
-        } catch {
-          window.location.reload();
-        }
+        console.warn('TooltipProvider crash in WebKit detected, redirecting to /__refresh...');
+        // Redirect to a dedicated refresh route that forces a fresh load
+        const currentPath = window.location.pathname + window.location.search;
+        window.location.replace(`/__refresh?to=${encodeURIComponent(currentPath)}&t=${Date.now()}`);
         return;
       }
     }
