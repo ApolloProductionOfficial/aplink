@@ -260,6 +260,16 @@ serve(async (req) => {
       );
     }
 
+    // --- Filter TooltipProvider noise at Edge level ---
+    const componentStack = extractComponentStack(details || null);
+    if (componentStack?.includes("TooltipProvider") || componentStack?.includes("Tooltip")) {
+      console.log("Ignoring TooltipProvider noise");
+      return new Response(
+        JSON.stringify({ success: true, ignored: "TooltipProvider noise filtered" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Создаём хеш ошибки для группировки
     // Normalize site so "Unknown" and actual site are grouped together
     const siteName = inferSiteName(details || null);

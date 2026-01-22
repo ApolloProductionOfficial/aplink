@@ -27,6 +27,7 @@ import ErrorStatsExport from '@/components/ErrorStatsExport';
 import SystemStatusDashboard from '@/components/SystemStatusDashboard';
 import DataBackupsManager from '@/components/DataBackupsManager';
 import WelcomeMessageEditor from '@/components/WelcomeMessageEditor';
+import UXAnomaliesPanel from '@/components/UXAnomaliesPanel';
 
 interface MeetingTranscript {
   id: string;
@@ -125,7 +126,7 @@ const AdminPanel = () => {
   const [participants, setParticipants] = useState<MeetingParticipant[]>([]);
   const [geoData, setGeoData] = useState<Map<string, ParticipantGeoData>>(new Map());
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'transcripts' | 'participants' | 'profile' | 'analytics' | 'users' | 'errors' | 'telegram'>('analytics');
+  const [activeTab, setActiveTab] = useState<'transcripts' | 'participants' | 'profile' | 'analytics' | 'users' | 'errors' | 'telegram' | 'ux'>('analytics');
   const [profile, setProfile] = useState<Profile | null>(null);
   const [displayName, setDisplayName] = useState('');
   const [username, setUsername] = useState('');
@@ -895,6 +896,15 @@ const AdminPanel = () => {
               <span className="hidden sm:inline">{admin.analytics || 'Статистика'}</span>
             </Button>
             <Button
+              variant={activeTab === 'ux' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setActiveTab('ux')}
+              className="gap-1 md:gap-2 px-2 md:px-3 text-xs md:text-sm"
+            >
+              <TrendingUp className="w-3.5 h-3.5 md:w-4 md:h-4" />
+              <span className="hidden sm:inline">UX</span>
+            </Button>
+            <Button
               variant={activeTab === 'transcripts' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setActiveTab('transcripts')}
@@ -962,6 +972,8 @@ const AdminPanel = () => {
           <div className="flex items-center justify-center py-20">
             <div className="w-12 h-12 rounded-full border-4 border-primary/30 border-t-primary animate-spin" />
           </div>
+        ) : activeTab === 'ux' ? (
+          <UXAnomaliesPanel />
         ) : activeTab === 'analytics' ? (
           <div className="space-y-6">
             <h1 className="text-2xl font-bold flex items-center gap-2">

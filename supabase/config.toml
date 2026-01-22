@@ -83,3 +83,6 @@ verify_jwt = false
 
 [functions.telegram-callback-handler]
 verify_jwt = false
+
+[functions.track-anonymous-event]
+verify_jwt = false
