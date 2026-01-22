@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
+import { Room, RoomEvent, DataPacket_Kind } from "livekit-client";
 import {
   ArrowLeft,
   Copy,
@@ -33,6 +34,7 @@ import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 import { useConnectionSounds } from "@/hooks/useConnectionSounds";
 import { RealtimeTranslator } from "@/components/RealtimeTranslator";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useLiveKitTranslationBroadcast } from "@/hooks/useLiveKitTranslationBroadcast";
 import apolloLogo from "@/assets/apollo-logo.mp4";
 import CustomCursor from "@/components/CustomCursor";
 import { MeetingEndSaveDialog, type MeetingSaveStatus } from "@/components/MeetingEndSaveDialog";
@@ -98,6 +100,65 @@ const MeetingRoom = () => {
   const [recordingDuration, setRecordingDuration] = useState(0);
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const { t } = useTranslation();
+  
+  // LiveKit room reference for translator integration
+  const [liveKitRoom, setLiveKitRoom] = useState<Room | null>(null);
+  const { 
+    isBroadcasting, 
+    startBroadcast, 
+    stopBroadcast, 
+    playTranslatedAudio,
+    sendTranslationToParticipants 
+  } = useLiveKitTranslationBroadcast(liveKitRoom);
+  
+  // Handle incoming translation data from other participants
+  useEffect(() => {
+    if (!liveKitRoom) return;
+    
+    const handleDataReceived = (payload: Uint8Array, participant: any) => {
+      try {
+        const decoder = new TextDecoder();
+        const message = JSON.parse(decoder.decode(payload));
+        
+        if (message.type === 'translation_audio' && message.audioBase64) {
+          console.log('[MeetingRoom] Received translation from:', message.senderName);
+          
+          // Play the translated audio
+          const audioUrl = `data:audio/mpeg;base64,${message.audioBase64}`;
+          playTranslatedAudio(audioUrl);
+          
+          toast({
+            title: `🌐 ${message.senderName}`,
+            description: message.text?.substring(0, 100) || 'Перевод получен',
+            duration: 3000,
+          });
+        }
+      } catch {
+        // Not a translation message
+      }
+    };
+    
+    liveKitRoom.on(RoomEvent.DataReceived, handleDataReceived);
+    
+    return () => {
+      liveKitRoom.off(RoomEvent.DataReceived, handleDataReceived);
+    };
+  }, [liveKitRoom, playTranslatedAudio, toast]);
+  
+  // Start/stop broadcast when translator is toggled
+  useEffect(() => {
+    if (showTranslator && liveKitRoom && !isBroadcasting) {
+      startBroadcast();
+    } else if (!showTranslator && isBroadcasting) {
+      stopBroadcast();
+    }
+  }, [showTranslator, liveKitRoom, isBroadcasting, startBroadcast, stopBroadcast]);
+  
+  // Callback when LiveKit room is ready
+  const handleRoomReady = useCallback((room: Room) => {
+    console.log('[MeetingRoom] LiveKit room ready');
+    setLiveKitRoom(room);
+  }, []);
 
   // Prevent crashes on invalid / missing URL param
   if (!roomId) return null;
@@ -687,15 +748,17 @@ const MeetingRoom = () => {
         onLeave={handleLeaveCall}
       />
       
-      {/* Realtime Translator - TODO: adapt for LiveKit */}
+      {/* Realtime Translator - integrated with LiveKit */}
       <RealtimeTranslator
         isActive={showTranslator}
         onToggle={() => setShowTranslator(false)}
         roomId={roomSlug}
         jitsiApi={null}
+        liveKitRoom={liveKitRoom}
         onTranslatedAudio={(audioUrl) => {
-          console.log('Broadcast translation audio ready');
+          console.log('[MeetingRoom] Translation audio ready for broadcast');
         }}
+        onSendTranslation={sendTranslationToParticipants}
       />
       
       {/* IP Panel for admins */}
@@ -988,6 +1051,7 @@ const MeetingRoom = () => {
           onParticipantJoined={handleParticipantJoined}
           onParticipantLeft={handleParticipantLeft}
           onError={handleLiveKitError}
+          onRoomReady={handleRoomReady}
         />
       </div>
     </div>

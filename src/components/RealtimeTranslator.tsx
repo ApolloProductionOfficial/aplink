@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { Room } from 'livekit-client';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
@@ -34,11 +35,15 @@ interface RealtimeTranslatorProps {
   roomId?: string;
   className?: string;
   jitsiApi?: any;
+  /** LiveKit room instance for broadcasting */
+  liveKitRoom?: Room | null;
   onTranslatedAudio?: (audioUrl: string) => void;
   /** Whether to broadcast translations to other participants */
   broadcastToOthers?: boolean;
   /** Callback when receiving translated audio from another participant */
   onReceivedTranslation?: (audioBase64: string, senderName: string) => void;
+  /** Callback to send translation via LiveKit data channel */
+  onSendTranslation?: (audioBase64: string, text: string, originalText: string, sourceLang: string) => Promise<void>;
 }
 
 // Language detection from text patterns
@@ -138,7 +143,9 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
   roomId,
   className,
   jitsiApi,
-  broadcastToOthers = true, // default: broadcast translations to all participants
+  liveKitRoom,
+  broadcastToOthers = true,
+  onSendTranslation,
 }) => {
   const { user } = useAuth();
   const { trackEvent } = useAnalytics();
@@ -602,20 +609,30 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
           audioQueueRef.current.push(audioUrl);
           playNextAudio();
           
-          // Broadcast audio to other participants via Jitsi data channel
-          if (enableBroadcast && jitsiApi) {
+          // Broadcast audio to other participants via LiveKit or Jitsi data channel
+          if (enableBroadcast) {
             try {
-              const translationPayload = JSON.stringify({
-                type: 'translation_audio',
-                audioBase64: result.audioContent,
-                text: result.translatedText,
-                originalText: result.originalText,
-                lang: targetLang,
-                sourceLang: myLanguage,
-              });
-              // Send to all participants via private message (empty recipient = broadcast)
-              jitsiApi.executeCommand('sendChatMessage', translationPayload, '', { ignorePrivacy: true });
-              console.log('Broadcast translation to other participants');
+              // Prefer LiveKit if available
+              if (onSendTranslation) {
+                await onSendTranslation(
+                  result.audioContent,
+                  result.translatedText,
+                  result.originalText,
+                  myLanguage
+                );
+                console.log('Broadcast translation via LiveKit');
+              } else if (jitsiApi) {
+                const translationPayload = JSON.stringify({
+                  type: 'translation_audio',
+                  audioBase64: result.audioContent,
+                  text: result.translatedText,
+                  originalText: result.originalText,
+                  lang: targetLang,
+                  sourceLang: myLanguage,
+                });
+                jitsiApi.executeCommand('sendChatMessage', translationPayload, '', { ignorePrivacy: true });
+                console.log('Broadcast translation via Jitsi');
+              }
             } catch (e) {
               console.log('Could not broadcast translation:', e);
             }
@@ -644,7 +661,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
     } finally {
       setIsProcessing(false);
     }
-  }, [myLanguage, detectedPartnerLanguage, selectedVoice, playNextAudio, user, roomId, trackEvent, enableBroadcast, jitsiApi]);
+  }, [myLanguage, detectedPartnerLanguage, selectedVoice, playNextAudio, user, roomId, trackEvent, enableBroadcast, jitsiApi, onSendTranslation]);
 
   const startVadRecording = useCallback(() => {
     if (!streamRef.current || vadRecordingRef.current) return;

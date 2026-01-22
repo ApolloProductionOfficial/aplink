@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import {
   LiveKitRoom as LKRoom,
   RoomAudioRenderer,
@@ -8,16 +8,12 @@ import {
   useParticipants,
   GridLayout,
   ParticipantTile,
-  FocusLayout,
-  FocusLayoutContainer,
-  CarouselLayout,
-  usePinnedTracks,
   LayoutContextProvider,
 } from "@livekit/components-react";
 import "@livekit/components-styles";
-import { Track, RoomEvent } from "livekit-client";
+import { Track, RoomEvent, Room, RemoteParticipant } from "livekit-client";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Video, VideoOff, Mic, MicOff, MonitorUp, Phone, Settings } from "lucide-react";
+import { Loader2, VideoOff } from "lucide-react";
 
 interface LiveKitRoomProps {
   roomName: string;
@@ -28,6 +24,8 @@ interface LiveKitRoomProps {
   onParticipantJoined?: (identity: string, name: string) => void;
   onParticipantLeft?: (identity: string) => void;
   onError?: (error: Error) => void;
+  /** Callback to get room reference for translator integration */
+  onRoomReady?: (room: Room) => void;
 }
 
 export function LiveKitRoom({
@@ -39,6 +37,7 @@ export function LiveKitRoom({
   onParticipantJoined,
   onParticipantLeft,
   onError,
+  onRoomReady,
 }: LiveKitRoomProps) {
   const [token, setToken] = useState<string | null>(null);
   const [serverUrl, setServerUrl] = useState<string | null>(null);
@@ -152,10 +151,13 @@ export function LiveKitRoom({
       }}
       style={{ height: "100%" }}
     >
-      <LiveKitContent
-        onParticipantJoined={onParticipantJoined}
-        onParticipantLeft={onParticipantLeft}
-      />
+      <LayoutContextProvider>
+        <LiveKitContent
+          onParticipantJoined={onParticipantJoined}
+          onParticipantLeft={onParticipantLeft}
+          onRoomReady={onRoomReady}
+        />
+      </LayoutContextProvider>
     </LKRoom>
   );
 }
@@ -163,21 +165,45 @@ export function LiveKitRoom({
 interface LiveKitContentProps {
   onParticipantJoined?: (identity: string, name: string) => void;
   onParticipantLeft?: (identity: string) => void;
+  onRoomReady?: (room: Room) => void;
 }
 
-function LiveKitContent({ onParticipantJoined, onParticipantLeft }: LiveKitContentProps) {
+function LiveKitContent({ onParticipantJoined, onParticipantLeft, onRoomReady }: LiveKitContentProps) {
   const room = useRoomContext();
   const participants = useParticipants();
+  const [newParticipants, setNewParticipants] = useState<Set<string>>(new Set());
+  const roomReadyCalledRef = useRef(false);
+
+  // Notify parent when room is ready
+  useEffect(() => {
+    if (room && onRoomReady && !roomReadyCalledRef.current) {
+      roomReadyCalledRef.current = true;
+      onRoomReady(room);
+    }
+  }, [room, onRoomReady]);
 
   useEffect(() => {
     if (!room) return;
 
-    const handleParticipantConnected = (participant: any) => {
+    const handleParticipantConnected = (participant: RemoteParticipant) => {
       console.log("[LiveKitRoom] Participant joined:", participant.identity, participant.name);
+      
+      // Add to new participants for animation
+      setNewParticipants(prev => new Set(prev).add(participant.identity));
+      
+      // Remove animation class after animation completes
+      setTimeout(() => {
+        setNewParticipants(prev => {
+          const next = new Set(prev);
+          next.delete(participant.identity);
+          return next;
+        });
+      }, 500);
+      
       onParticipantJoined?.(participant.identity, participant.name || participant.identity);
     };
 
-    const handleParticipantDisconnected = (participant: any) => {
+    const handleParticipantDisconnected = (participant: RemoteParticipant) => {
       console.log("[LiveKitRoom] Participant left:", participant.identity);
       onParticipantLeft?.(participant.identity);
     };
@@ -199,41 +225,27 @@ function LiveKitContent({ onParticipantJoined, onParticipantLeft }: LiveKitConte
     { onlySubscribed: false }
   );
 
-  const pinnedTracks = usePinnedTracks();
-  const hasPinned = pinnedTracks.length > 0;
-
   return (
-    <LayoutContextProvider>
-      <div className="flex flex-col h-full livekit-room-container bg-background">
-        <div className="flex-1 relative overflow-hidden">
-          {hasPinned ? (
-            <FocusLayoutContainer>
-              <FocusLayout trackRef={pinnedTracks[0]} />
-              <CarouselLayout tracks={tracks.filter(t => !pinnedTracks.includes(t))}>
-                <ParticipantTile />
-              </CarouselLayout>
-            </FocusLayoutContainer>
-          ) : (
-            <GridLayout tracks={tracks} className="p-3 gap-3">
-              <ParticipantTile className="rounded-xl overflow-hidden" />
-            </GridLayout>
-          )}
-        </div>
-        <ControlBar 
-          variation="minimal" 
-          controls={{
-            camera: true,
-            microphone: true,
-            screenShare: true,
-            leave: true,
-            chat: false,
-            settings: true,
-          }}
-          className="glass-dark border-t border-border/50"
-        />
-        <RoomAudioRenderer />
+    <div className="flex flex-col h-full livekit-room-container bg-background">
+      <div className="flex-1 relative overflow-hidden">
+        <GridLayout tracks={tracks} className="p-3 gap-3">
+          <ParticipantTile className="rounded-xl overflow-hidden animate-cosmic-appear" />
+        </GridLayout>
       </div>
-    </LayoutContextProvider>
+      <ControlBar 
+        variation="minimal" 
+        controls={{
+          camera: true,
+          microphone: true,
+          screenShare: true,
+          leave: true,
+          chat: false,
+          settings: true,
+        }}
+        className="glass-dark border-t border-border/50"
+      />
+      <RoomAudioRenderer />
+    </div>
   );
 }
 
