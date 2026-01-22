@@ -4,10 +4,10 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
 const WEB_APP_URL = "https://aplink.live";
 
-// Branded APLink welcome animation (MP4 works as GIF/animation in Telegram)
-// NOTE: Telegram fetches this URL server-side; it must return the raw MP4 bytes (not HTML).
+// Branded APLink welcome animation (GIF wolf animation)
+// NOTE: Telegram fetches this URL server-side; it must return raw bytes (not HTML).
 // Using the published domain is more reliable than custom domains/CDN that may return HTML.
-const WELCOME_GIF_URL = "https://aplink.lovable.app/animations/aplink-welcome.mp4";
+const WELCOME_GIF_URL = "https://aplink.lovable.app/animations/aplink-welcome.gif";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
