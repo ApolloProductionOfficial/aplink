@@ -128,7 +128,9 @@ const AdminPanel = () => {
   const [participants, setParticipants] = useState<MeetingParticipant[]>([]);
   const [geoData, setGeoData] = useState<Map<string, ParticipantGeoData>>(new Map());
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'transcripts' | 'participants' | 'profile' | 'analytics' | 'users' | 'errors' | 'telegram' | 'livekit'>('analytics');
+  const [activeTab, setActiveTab] = useState<'transcripts' | 'users-ip' | 'stats-errors' | 'profile' | 'telegram'>('stats-errors');
+  const [usersIpSubTab, setUsersIpSubTab] = useState<'users' | 'ip'>('users');
+  const [statsErrorsSubTab, setStatsErrorsSubTab] = useState<'analytics' | 'errors' | 'livekit'>('analytics');
   const [profile, setProfile] = useState<Profile | null>(null);
   const [displayName, setDisplayName] = useState('');
   const [username, setUsername] = useState('');
@@ -386,7 +388,7 @@ const AdminPanel = () => {
 
   // Load analytics data
   useEffect(() => {
-    if (!user || !isAdmin || activeTab !== 'analytics') return;
+    if (!user || !isAdmin || activeTab !== 'stats-errors' || statsErrorsSubTab !== 'analytics') return;
     
     const loadAnalytics = async () => {
       setAnalyticsLoading(true);
@@ -463,11 +465,11 @@ const AdminPanel = () => {
     };
 
     loadAnalytics();
-  }, [user, isAdmin, activeTab]);
+  }, [user, isAdmin, activeTab, statsErrorsSubTab]);
 
   // Load registered users
   useEffect(() => {
-    if (!user || !isAdmin || activeTab !== 'users') return;
+    if (!user || !isAdmin || activeTab !== 'users-ip' || usersIpSubTab !== 'users') return;
     
     const loadUsers = async () => {
       setUsersLoading(true);
@@ -488,11 +490,11 @@ const AdminPanel = () => {
     };
 
     loadUsers();
-  }, [user, isAdmin, activeTab]);
+  }, [user, isAdmin, activeTab, usersIpSubTab]);
 
   // Load error logs
   useEffect(() => {
-    if (!user || !isAdmin || activeTab !== 'errors') return;
+    if (!user || !isAdmin || activeTab !== 'stats-errors' || statsErrorsSubTab !== 'errors') return;
     
     const loadErrors = async () => {
       setErrorsLoading(true);
@@ -889,13 +891,18 @@ const AdminPanel = () => {
           
           <div className="flex gap-1.5 md:gap-2 flex-wrap justify-end">
             <Button
-              variant={activeTab === 'analytics' ? 'default' : 'outline'}
+              variant={activeTab === 'stats-errors' ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setActiveTab('analytics')}
-              className="gap-1 md:gap-2 px-2 md:px-3 text-xs md:text-sm"
+              onClick={() => setActiveTab('stats-errors')}
+              className="gap-1 md:gap-2 px-2 md:px-3 text-xs md:text-sm relative"
             >
               <BarChart3 className="w-3.5 h-3.5 md:w-4 md:h-4" />
-              <span className="hidden sm:inline">{admin.analytics || 'Статистика'}</span>
+              <span className="hidden sm:inline">Статистика</span>
+              {errorStats && errorStats.today > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 text-[10px] bg-destructive text-destructive-foreground rounded-full flex items-center justify-center">
+                  {errorStats.today > 9 ? '9+' : errorStats.today}
+                </span>
+              )}
             </Button>
             <Button
               variant={activeTab === 'transcripts' ? 'default' : 'outline'}
@@ -907,36 +914,13 @@ const AdminPanel = () => {
               <span className="hidden sm:inline">{admin.transcripts || 'Записи'}</span>
             </Button>
             <Button
-              variant={activeTab === 'participants' ? 'default' : 'outline'}
+              variant={activeTab === 'users-ip' ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setActiveTab('participants')}
-              className="gap-1 md:gap-2 px-2 md:px-3 text-xs md:text-sm"
-            >
-              <Globe className="w-3.5 h-3.5 md:w-4 md:h-4" />
-              <span className="hidden sm:inline">{admin.ipChecker || 'IP'}</span>
-            </Button>
-            <Button
-              variant={activeTab === 'users' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setActiveTab('users')}
+              onClick={() => setActiveTab('users-ip')}
               className="gap-1 md:gap-2 px-2 md:px-3 text-xs md:text-sm"
             >
               <Users className="w-3.5 h-3.5 md:w-4 md:h-4" />
-              <span className="hidden sm:inline">{admin.users || 'Юзеры'}</span>
-            </Button>
-            <Button
-              variant={activeTab === 'errors' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setActiveTab('errors')}
-              className="gap-1 md:gap-2 px-2 md:px-3 text-xs md:text-sm relative"
-            >
-              <Bug className="w-3.5 h-3.5 md:w-4 md:h-4" />
-              <span className="hidden sm:inline">Ошибки</span>
-              {errorStats && errorStats.today > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 text-[10px] bg-destructive text-destructive-foreground rounded-full flex items-center justify-center">
-                  {errorStats.today > 9 ? '9+' : errorStats.today}
-                </span>
-              )}
+              <span className="hidden sm:inline">Юзеры & IP</span>
             </Button>
             <Button
               variant={activeTab === 'telegram' ? 'default' : 'outline'}
@@ -946,15 +930,6 @@ const AdminPanel = () => {
             >
               <MessageCircle className="w-3.5 h-3.5 md:w-4 md:h-4" />
               <span className="hidden sm:inline">Telegram App</span>
-            </Button>
-            <Button
-              variant={activeTab === 'livekit' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setActiveTab('livekit')}
-              className="gap-1 md:gap-2 px-2 md:px-3 text-xs md:text-sm"
-            >
-              <Server className="w-3.5 h-3.5 md:w-4 md:h-4" />
-              <span className="hidden sm:inline">LiveKit</span>
             </Button>
             <Button
               variant={activeTab === 'profile' ? 'default' : 'outline'}
@@ -974,175 +949,253 @@ const AdminPanel = () => {
           <div className="flex items-center justify-center py-20">
             <div className="w-12 h-12 rounded-full border-4 border-primary/30 border-t-primary animate-spin" />
           </div>
-        ) : activeTab === 'analytics' ? (
+        ) : activeTab === 'stats-errors' ? (
           <div className="space-y-6">
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <BarChart3 className="w-6 h-6 text-primary" />
-              {admin.siteAnalytics || 'Аналитика сайта'}
-            </h1>
-            
-            
-            {analyticsLoading ? (
-              <div className="flex items-center justify-center py-20">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            {/* Sub-tabs for Stats & Errors */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-2xl font-bold flex items-center gap-2 mr-4">
+                <BarChart3 className="w-6 h-6 text-primary" />
+                Статистика & Мониторинг
+              </h1>
+              <div className="flex gap-1.5 bg-muted/50 p-1 rounded-lg">
+                <Button
+                  variant={statsErrorsSubTab === 'analytics' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setStatsErrorsSubTab('analytics')}
+                  className="gap-1.5 text-xs"
+                >
+                  <TrendingUp className="w-3.5 h-3.5" />
+                  Аналитика
+                </Button>
+                <Button
+                  variant={statsErrorsSubTab === 'errors' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setStatsErrorsSubTab('errors')}
+                  className="gap-1.5 text-xs relative"
+                >
+                  <Bug className="w-3.5 h-3.5" />
+                  Ошибки
+                  {errorStats && errorStats.today > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 text-[10px] bg-destructive text-destructive-foreground rounded-full flex items-center justify-center">
+                      {errorStats.today > 9 ? '9+' : errorStats.today}
+                    </span>
+                  )}
+                </Button>
+                <Button
+                  variant={statsErrorsSubTab === 'livekit' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setStatsErrorsSubTab('livekit')}
+                  className="gap-1.5 text-xs"
+                >
+                  <Server className="w-3.5 h-3.5" />
+                  LiveKit
+                </Button>
               </div>
-            ) : analyticsStats ? (
+            </div>
+
+            {/* Analytics Sub-tab */}
+            {statsErrorsSubTab === 'analytics' && (
               <>
-                {/* Stats cards */}
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                  <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-                    <CardContent className="pt-6">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-blue-500/20">
-                          <Eye className="w-5 h-5 text-blue-500" />
-                        </div>
-                        <div>
-                          <p className="text-2xl font-bold">{analyticsStats.totalPageViews}</p>
-                          <p className="text-xs text-muted-foreground">{admin.pageViews || 'Просмотров'}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-                    <CardContent className="pt-6">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-green-500/20">
-                          <Languages className="w-5 h-5 text-green-500" />
-                        </div>
-                        <div>
-                          <p className="text-2xl font-bold">{analyticsStats.totalTranslations}</p>
-                          <p className="text-xs text-muted-foreground">{admin.translations || 'Переводов'}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-                    <CardContent className="pt-6">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-purple-500/20">
-                          <MousePointer className="w-5 h-5 text-purple-500" />
-                        </div>
-                        <div>
-                          <p className="text-2xl font-bold">{analyticsStats.totalClicks}</p>
-                          <p className="text-xs text-muted-foreground">Кликов</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-                    <CardContent className="pt-6">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-amber-500/20">
-                          <Users className="w-5 h-5 text-amber-500" />
-                        </div>
-                        <div>
-                          <p className="text-2xl font-bold">{analyticsStats.totalRoomJoins}</p>
-                          <p className="text-xs text-muted-foreground">Входов в комнаты</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-                    <CardContent className="pt-6">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-cyan-500/20">
-                          <TrendingUp className="w-5 h-5 text-cyan-500" />
-                        </div>
-                        <div>
-                          <p className="text-2xl font-bold">{analyticsStats.uniqueSessions}</p>
-                          <p className="text-xs text-muted-foreground">Сессий</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-6">
-                  {/* Top pages */}
-                  <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-                    <CardHeader>
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <Eye className="w-5 h-5 text-primary" />
-                        Популярные страницы
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {analyticsStats.topPages.length === 0 ? (
-                        <p className="text-muted-foreground text-sm">Нет данных</p>
-                      ) : (
-                        <div className="space-y-2">
-                          {analyticsStats.topPages.map((page, i) => (
-                            <div key={i} className="flex items-center justify-between text-sm">
-                              <span className="truncate flex-1 mr-4">{page.path}</span>
-                              <Badge variant="secondary">{page.count}</Badge>
+                {analyticsLoading ? (
+                  <div className="flex items-center justify-center py-20">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                  </div>
+                ) : analyticsStats ? (
+                  <>
+                    {/* Stats cards */}
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                      <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+                        <CardContent className="pt-6">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-lg bg-blue-500/20">
+                              <Eye className="w-5 h-5 text-blue-500" />
                             </div>
-                          ))}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-
-                  {/* Translations by language */}
-                  <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-                    <CardHeader>
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <Languages className="w-5 h-5 text-primary" />
-                        Переводы по языкам
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {analyticsStats.translationsByLanguage.length === 0 ? (
-                        <p className="text-muted-foreground text-sm">Нет данных о переводах</p>
-                      ) : (
-                        <div className="space-y-2">
-                          {analyticsStats.translationsByLanguage.map((item, i) => (
-                            <div key={i} className="flex items-center justify-between text-sm">
-                              <span className="uppercase font-mono">{item.language}</span>
-                              <Badge variant="secondary">{item.count}</Badge>
+                            <div>
+                              <p className="text-2xl font-bold">{analyticsStats.totalPageViews}</p>
+                              <p className="text-xs text-muted-foreground">{admin.pageViews || 'Просмотров'}</p>
                             </div>
-                          ))}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Recent events */}
-                <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-                  <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Clock className="w-5 h-5 text-primary" />
-                      Последние события
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                      {analyticsStats.recentEvents.map((event, i) => (
-                        <div key={i} className="flex items-center gap-3 text-sm border-b border-border/30 pb-2 last:border-0">
-                          <Badge variant="outline" className="shrink-0 text-xs">
-                            {event.event_type.replace(/_/g, ' ')}
-                          </Badge>
-                          <span className="text-muted-foreground truncate flex-1">{event.page_path}</span>
-                          <span className="text-xs text-muted-foreground shrink-0">
-                            {new Date(event.created_at).toLocaleString('ru-RU')}
-                          </span>
-                        </div>
-                      ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+                        <CardContent className="pt-6">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-lg bg-green-500/20">
+                              <Languages className="w-5 h-5 text-green-500" />
+                            </div>
+                            <div>
+                              <p className="text-2xl font-bold">{analyticsStats.totalTranslations}</p>
+                              <p className="text-xs text-muted-foreground">{admin.translations || 'Переводов'}</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+                        <CardContent className="pt-6">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-lg bg-purple-500/20">
+                              <MousePointer className="w-5 h-5 text-purple-500" />
+                            </div>
+                            <div>
+                              <p className="text-2xl font-bold">{analyticsStats.totalClicks}</p>
+                              <p className="text-xs text-muted-foreground">Кликов</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+                        <CardContent className="pt-6">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-lg bg-amber-500/20">
+                              <Users className="w-5 h-5 text-amber-500" />
+                            </div>
+                            <div>
+                              <p className="text-2xl font-bold">{analyticsStats.totalRoomJoins}</p>
+                              <p className="text-xs text-muted-foreground">Входов в комнаты</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+                        <CardContent className="pt-6">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-lg bg-cyan-500/20">
+                              <TrendingUp className="w-5 h-5 text-cyan-500" />
+                            </div>
+                            <div>
+                              <p className="text-2xl font-bold">{analyticsStats.uniqueSessions}</p>
+                              <p className="text-xs text-muted-foreground">Сессий</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
                     </div>
-                  </CardContent>
-                </Card>
+
+                    <div className="grid md:grid-cols-2 gap-6">
+                      {/* Top pages */}
+                      <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+                        <CardHeader>
+                          <CardTitle className="text-lg flex items-center gap-2">
+                            <Eye className="w-5 h-5 text-primary" />
+                            Популярные страницы
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          {analyticsStats.topPages.length === 0 ? (
+                            <p className="text-muted-foreground text-sm">Нет данных</p>
+                          ) : (
+                            <div className="space-y-2">
+                              {analyticsStats.topPages.map((page, i) => (
+                                <div key={i} className="flex items-center justify-between text-sm">
+                                  <span className="truncate flex-1 mr-4">{page.path}</span>
+                                  <Badge variant="secondary">{page.count}</Badge>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+
+                      {/* Translations by language */}
+                      <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+                        <CardHeader>
+                          <CardTitle className="text-lg flex items-center gap-2">
+                            <Languages className="w-5 h-5 text-primary" />
+                            Переводы по языкам
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          {analyticsStats.translationsByLanguage.length === 0 ? (
+                            <p className="text-muted-foreground text-sm">Нет данных о переводах</p>
+                          ) : (
+                            <div className="space-y-2">
+                              {analyticsStats.translationsByLanguage.map((item, i) => (
+                                <div key={i} className="flex items-center justify-between text-sm">
+                                  <span className="uppercase font-mono">{item.language}</span>
+                                  <Badge variant="secondary">{item.count}</Badge>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </div>
+
+                    {/* Recent events */}
+                    <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+                      <CardHeader>
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <Clock className="w-5 h-5 text-primary" />
+                          Последние события
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                          {analyticsStats.recentEvents.map((event, i) => (
+                            <div key={i} className="flex items-center gap-3 text-sm border-b border-border/30 pb-2 last:border-0">
+                              <Badge variant="outline" className="shrink-0 text-xs">
+                                {event.event_type.replace(/_/g, ' ')}
+                              </Badge>
+                              <span className="text-muted-foreground truncate flex-1">{event.page_path}</span>
+                              <span className="text-xs text-muted-foreground shrink-0">
+                                {new Date(event.created_at).toLocaleString('ru-RU')}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </>
+                ) : (
+                  <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+                    <CardContent className="py-12 text-center text-muted-foreground">
+                      <BarChart3 className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <p>Нет данных аналитики</p>
+                    </CardContent>
+                  </Card>
+                )}
               </>
-            ) : (
-              <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-                <CardContent className="py-12 text-center text-muted-foreground">
-                  <BarChart3 className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>Нет данных аналитики</p>
-                </CardContent>
-              </Card>
+            )}
+
+            {/* Errors Sub-tab */}
+            {statsErrorsSubTab === 'errors' && (
+              <>
+                <div className="flex items-center justify-end">
+                  <ErrorStatsExport errorLogs={errorLogs} errorStats={errorStats} />
+                </div>
+
+                {errorsLoading ? (
+                  <div className="flex items-center justify-center py-20">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                  </div>
+                ) : (
+                  <>
+                    <SystemStatusDashboard 
+                      errorLogs={errorLogs}
+                      errorStats={errorStats}
+                      onClearOldLogs={handleClearOldLogs}
+                      clearingLogs={clearingOldLogs}
+                    />
+                    
+                    {/* UX Anomalies Panel */}
+                    <UXAnomaliesPanel />
+                    
+                    <DataBackupsManager />
+                  </>
+                )}
+              </>
+            )}
+
+            {/* LiveKit Sub-tab */}
+            {statsErrorsSubTab === 'livekit' && (
+              <>
+                <LiveKitMonitor />
+                {user && <ContactRequestsPanel userId={user.id} />}
+              </>
             )}
           </div>
         ) : activeTab === 'telegram' ? (
@@ -1166,47 +1219,6 @@ const AdminPanel = () => {
             
             {/* Call Scheduler */}
             <CallScheduler />
-          </div>
-        ) : activeTab === 'livekit' ? (
-          <div className="space-y-6">
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Server className="w-6 h-6 text-primary" />
-              LiveKit Server Monitoring
-            </h1>
-            
-            <LiveKitMonitor />
-            
-            {user && <ContactRequestsPanel userId={user.id} />}
-          </div>
-        ) : activeTab === 'errors' ? (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <h1 className="text-2xl font-bold flex items-center gap-2">
-                <Bug className="w-6 h-6 text-primary" />
-                Мониторинг и диагностика
-              </h1>
-              <ErrorStatsExport errorLogs={errorLogs} errorStats={errorStats} />
-            </div>
-
-            {errorsLoading ? (
-              <div className="flex items-center justify-center py-20">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
-              </div>
-            ) : (
-              <>
-                <SystemStatusDashboard 
-                  errorLogs={errorLogs}
-                  errorStats={errorStats}
-                  onClearOldLogs={handleClearOldLogs}
-                  clearingLogs={clearingOldLogs}
-                />
-                
-                {/* UX Anomalies Panel - moved to Errors section */}
-                <UXAnomaliesPanel />
-                
-                <DataBackupsManager />
-              </>
-            )}
           </div>
         ) : activeTab === 'transcripts' ? (
           <div className="space-y-6">
@@ -1497,121 +1509,147 @@ const AdminPanel = () => {
               </div>
             )}
           </div>
-        ) : activeTab === 'participants' ? (
+        ) : activeTab === 'users-ip' ? (
           <div className="space-y-6">
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Users className="w-6 h-6 text-primary" />
-              IP-чекер участников ({participants.length})
-            </h1>
-            
-            {participants.length === 0 ? (
-              <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-                <CardContent className="py-12 text-center text-muted-foreground">
-                  <Globe className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>Пока нет данных об участниках</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid gap-4">
-                {participants.map((participant) => {
-                  const geo = geoData.get(participant.id);
-                  return (
-                    <Card key={participant.id} className="bg-card/50 backdrop-blur-sm border-border/50">
-                      <CardContent className="py-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4">
-                            <div className="text-3xl">
-                              {getCountryFlag(geo?.country_code || null)}
-                            </div>
-                            <div>
-                              <h3 className="font-medium">{participant.user_name}</h3>
-                              <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                                <span className="flex items-center gap-1">
-                                  <MapPin className="w-3 h-3" />
-                                  {geo?.city || 'Unknown'}, {geo?.country || 'Unknown'}
-                                </span>
-                                <span className="flex items-center gap-1">
-                                  <Globe className="w-3 h-3" />
-                                  {geo?.ip_address || 'Unknown'}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
-                                <span className="flex items-center gap-1">
+            {/* Sub-tabs for Users & IP */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-2xl font-bold flex items-center gap-2 mr-4">
+                <Users className="w-6 h-6 text-primary" />
+                Пользователи & IP
+              </h1>
+              <div className="flex gap-1.5 bg-muted/50 p-1 rounded-lg">
+                <Button
+                  variant={usersIpSubTab === 'users' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setUsersIpSubTab('users')}
+                  className="gap-1.5 text-xs"
+                >
+                  <User className="w-3.5 h-3.5" />
+                  Пользователи ({registeredUsers.length})
+                </Button>
+                <Button
+                  variant={usersIpSubTab === 'ip' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setUsersIpSubTab('ip')}
+                  className="gap-1.5 text-xs"
+                >
+                  <Globe className="w-3.5 h-3.5" />
+                  IP-чекер ({participants.length})
+                </Button>
+              </div>
+            </div>
+
+            {/* Users Sub-tab */}
+            {usersIpSubTab === 'users' && (
+              <>
+                {usersLoading ? (
+                  <div className="flex items-center justify-center py-20">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                  </div>
+                ) : registeredUsers.length === 0 ? (
+                  <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+                    <CardContent className="py-12 text-center text-muted-foreground">
+                      <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <p>Пока нет зарегистрированных пользователей</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="grid gap-4">
+                    {registeredUsers.map((u) => (
+                      <Card key={u.id} className="bg-card/50 backdrop-blur-sm border-border/50">
+                        <CardContent className="py-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                              <Avatar className="w-12 h-12">
+                                <AvatarImage src={u.avatar_url || ''} />
+                                <AvatarFallback className="bg-primary/20 text-primary">
+                                  {u.display_name?.[0]?.toUpperCase() || 'U'}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <h3 className="font-medium">{u.display_name || 'Без имени'}</h3>
+                                {u.username && (
+                                  <span className="text-sm text-muted-foreground">@{u.username}</span>
+                                )}
+                                <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                                   <Clock className="w-3 h-3" />
-                                  Вошёл: {formatDate(participant.joined_at)}
-                                </span>
-                                {participant.left_at && (
-                                  <span>Вышел: {formatDate(participant.left_at)}</span>
+                                  Регистрация: {formatDate(u.created_at)}
+                                </div>
+                              </div>
+                            </div>
+                            <Badge variant="outline" className="text-xs">
+                              ID: {u.user_id.slice(0, 8)}...
+                            </Badge>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* IP Sub-tab */}
+            {usersIpSubTab === 'ip' && (
+              <>
+                {participants.length === 0 ? (
+                  <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+                    <CardContent className="py-12 text-center text-muted-foreground">
+                      <Globe className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <p>Пока нет данных об участниках</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="grid gap-4">
+                    {participants.map((participant) => {
+                      const geo = geoData.get(participant.id);
+                      return (
+                        <Card key={participant.id} className="bg-card/50 backdrop-blur-sm border-border/50">
+                          <CardContent className="py-4">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-4">
+                                <div className="text-3xl">
+                                  {getCountryFlag(geo?.country_code || null)}
+                                </div>
+                                <div>
+                                  <h3 className="font-medium">{participant.user_name}</h3>
+                                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                                    <span className="flex items-center gap-1">
+                                      <MapPin className="w-3 h-3" />
+                                      {geo?.city || 'Unknown'}, {geo?.country || 'Unknown'}
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                      <Globe className="w-3 h-3" />
+                                      {geo?.ip_address || 'Unknown'}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                                    <span className="flex items-center gap-1">
+                                      <Clock className="w-3 h-3" />
+                                      Вошёл: {formatDate(participant.joined_at)}
+                                    </span>
+                                    {participant.left_at && (
+                                      <span>Вышел: {formatDate(participant.left_at)}</span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <Badge variant="outline">{participant.room_id.replace(/-/g, ' ')}</Badge>
+                                {!participant.left_at && (
+                                  <Badge className="ml-2 bg-green-500/20 text-green-400 border-green-500/50">
+                                    Онлайн
+                                  </Badge>
                                 )}
                               </div>
                             </div>
-                          </div>
-                        <div className="text-right">
-                          <Badge variant="outline">{participant.room_id.replace(/-/g, ' ')}</Badge>
-                          {!participant.left_at && (
-                            <Badge className="ml-2 bg-green-500/20 text-green-400 border-green-500/50">
-                              Онлайн
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        ) : activeTab === 'users' ? (
-          <div className="space-y-6">
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Users className="w-6 h-6 text-primary" />
-              Зарегистрированные пользователи ({registeredUsers.length})
-            </h1>
-            
-            {usersLoading ? (
-              <div className="flex items-center justify-center py-20">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
-              </div>
-            ) : registeredUsers.length === 0 ? (
-              <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-                <CardContent className="py-12 text-center text-muted-foreground">
-                  <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>Пока нет зарегистрированных пользователей</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid gap-4">
-                {registeredUsers.map((u) => (
-                  <Card key={u.id} className="bg-card/50 backdrop-blur-sm border-border/50">
-                    <CardContent className="py-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <Avatar className="w-12 h-12">
-                            <AvatarImage src={u.avatar_url || ''} />
-                            <AvatarFallback className="bg-primary/20 text-primary">
-                              {u.display_name?.[0]?.toUpperCase() || 'U'}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <h3 className="font-medium">{u.display_name || 'Без имени'}</h3>
-                            {u.username && (
-                              <span className="text-sm text-muted-foreground">@{u.username}</span>
-                            )}
-                            <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              Регистрация: {formatDate(u.created_at)}
-                            </div>
-                          </div>
-                        </div>
-                        <Badge variant="outline" className="text-xs">
-                          ID: {u.user_id.slice(0, 8)}...
-                        </Badge>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
             )}
           </div>
         ) : activeTab === 'profile' ? (
