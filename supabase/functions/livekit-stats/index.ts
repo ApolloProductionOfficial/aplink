@@ -81,8 +81,18 @@ serve(async (req) => {
     if (!apiKey || !apiSecret || !livekitUrl) {
       console.error('[livekit-stats] Missing LiveKit configuration');
       return new Response(
-        JSON.stringify({ error: 'LiveKit configuration missing' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          error: 'LiveKit configuration missing',
+          activeRooms: 0,
+          totalParticipants: 0,
+          totalPublishers: 0,
+          activeRecordings: 0,
+          rooms: [],
+          resources: { estimatedRamMB: 0, estimatedBandwidthMbps: 0, serverCapacity: { maxParticipantsEstimate: 2000, utilizationPercent: 0 } },
+          timestamp: new Date().toISOString(),
+          status: 'config_missing'
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
     
@@ -94,71 +104,115 @@ serve(async (req) => {
     
     console.log(`[livekit-stats] Fetching rooms from ${apiUrl}`);
     
-    // Call LiveKit Twirp API to list rooms
-    const response = await fetch(`${apiUrl}/twirp/livekit.RoomService/ListRooms`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({}),
-    });
+    // Create AbortController for timeout (5 seconds)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
     
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`[livekit-stats] LiveKit API error: ${response.status} - ${errorText}`);
-      throw new Error(`LiveKit API error: ${response.status}`);
+    try {
+      // Call LiveKit Twirp API to list rooms
+      const response = await fetch(`${apiUrl}/twirp/livekit.RoomService/ListRooms`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({}),
+        signal: controller.signal,
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[livekit-stats] LiveKit API error: ${response.status} - ${errorText}`);
+        throw new Error(`LiveKit API error: ${response.status}`);
+      }
+      
+      const data: ListRoomsResponse = await response.json();
+      const rooms = data.rooms || [];
+      
+      console.log(`[livekit-stats] Found ${rooms.length} active rooms`);
+      
+      // Calculate statistics
+      const totalParticipants = rooms.reduce((sum, r) => sum + (r.numParticipants || 0), 0);
+      const totalPublishers = rooms.reduce((sum, r) => sum + (r.numPublishers || 0), 0);
+      const activeRecordings = rooms.filter(r => r.activeRecording).length;
+      
+      // Estimate resource usage (rough calculation)
+      const estimatedRamMB = totalParticipants * 50;
+      const estimatedBandwidthMbps = totalPublishers * 1.5;
+      
+      const stats = {
+        activeRooms: rooms.length,
+        totalParticipants,
+        totalPublishers,
+        activeRecordings,
+        rooms: rooms.map(r => ({
+          name: r.name,
+          sid: r.sid,
+          participants: r.numParticipants || 0,
+          publishers: r.numPublishers || 0,
+          createdAt: r.creationTime ? new Date(parseInt(r.creationTime) * 1000).toISOString() : null,
+          recording: r.activeRecording || false,
+        })),
+        resources: {
+          estimatedRamMB,
+          estimatedBandwidthMbps,
+          serverCapacity: {
+            maxParticipantsEstimate: 2000,
+            utilizationPercent: Math.round((estimatedRamMB / (128 * 1024)) * 100 * 10) / 10,
+          }
+        },
+        timestamp: new Date().toISOString(),
+        status: 'connected'
+      };
+      
+      return new Response(
+        JSON.stringify(stats),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+      
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      
+      // Return fallback data when LiveKit server is unreachable
+      console.warn('[livekit-stats] LiveKit server unreachable, returning fallback data:', fetchError);
+      
+      const fallbackStats = {
+        activeRooms: 0,
+        totalParticipants: 0,
+        totalPublishers: 0,
+        activeRecordings: 0,
+        rooms: [],
+        resources: {
+          estimatedRamMB: 0,
+          estimatedBandwidthMbps: 0,
+          serverCapacity: {
+            maxParticipantsEstimate: 2000,
+            utilizationPercent: 0,
+          }
+        },
+        timestamp: new Date().toISOString(),
+        status: 'server_unreachable',
+        error: 'LiveKit сервер недоступен из Supabase. Проверьте Caddy конфигурацию и firewall.',
+        hint: 'Добавьте в Caddyfile: reverse_proxy /twirp/* localhost:7880'
+      };
+      
+      return new Response(
+        JSON.stringify(fallbackStats),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
-    
-    const data: ListRoomsResponse = await response.json();
-    const rooms = data.rooms || [];
-    
-    console.log(`[livekit-stats] Found ${rooms.length} active rooms`);
-    
-    // Calculate statistics
-    const totalParticipants = rooms.reduce((sum, r) => sum + (r.numParticipants || 0), 0);
-    const totalPublishers = rooms.reduce((sum, r) => sum + (r.numPublishers || 0), 0);
-    const activeRecordings = rooms.filter(r => r.activeRecording).length;
-    
-    // Estimate resource usage (rough calculation)
-    // ~50MB RAM per participant, ~1.5 Mbps per participant for 720p
-    const estimatedRamMB = totalParticipants * 50;
-    const estimatedBandwidthMbps = totalPublishers * 1.5;
-    
-    const stats = {
-      activeRooms: rooms.length,
-      totalParticipants,
-      totalPublishers,
-      activeRecordings,
-      rooms: rooms.map(r => ({
-        name: r.name,
-        sid: r.sid,
-        participants: r.numParticipants || 0,
-        publishers: r.numPublishers || 0,
-        createdAt: r.creationTime ? new Date(parseInt(r.creationTime) * 1000).toISOString() : null,
-        recording: r.activeRecording || false,
-      })),
-      resources: {
-        estimatedRamMB,
-        estimatedBandwidthMbps,
-        serverCapacity: {
-          maxParticipantsEstimate: 2000, // Based on 128GB RAM
-          utilizationPercent: Math.round((estimatedRamMB / (128 * 1024)) * 100 * 10) / 10,
-        }
-      },
-      timestamp: new Date().toISOString(),
-    };
-    
-    return new Response(
-      JSON.stringify(stats),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
     
   } catch (error) {
     console.error('[livekit-stats] Error:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
-      JSON.stringify({ error: 'Failed to fetch stats', details: message }),
+      JSON.stringify({ 
+        error: 'Failed to fetch stats', 
+        details: message,
+        status: 'error'
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
