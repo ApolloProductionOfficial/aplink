@@ -258,6 +258,16 @@ const i18n = {
   voiceProcessing: { ru: "🎤 Обработка голосового сообщения...", en: "🎤 Processing voice message...", uk: "🎤 Обробка голосового повідомлення..." },
   voiceTranscription: { ru: "📝 *Транскрипция:*", en: "📝 *Transcription:*", uk: "📝 *Транскрипція:*" },
   voiceTranslateBtn: { ru: "Перевести", en: "Translate", uk: "Перекласти" },
+
+  // Contact requests
+  contactRequestTitle: { ru: "🤝 *Запрос в контакты*", en: "🤝 *Contact request*", uk: "🤝 *Запит у контакти*" },
+  contactRequestFrom: { ru: "От:", en: "From:", uk: "Від:" },
+  contactRequestMessage: { ru: "Сообщение:", en: "Message:", uk: "Повідомлення:" },
+  contactRequestAccept: { ru: "✅ Принять", en: "✅ Accept", uk: "✅ Прийняти" },
+  contactRequestDecline: { ru: "❌ Отклонить", en: "❌ Decline", uk: "❌ Відхилити" },
+  contactRequestAccepted: { ru: "✅ Вы приняли запрос в контакты", en: "✅ You accepted the contact request", uk: "✅ Ви прийняли запит у контакти" },
+  contactRequestDeclined: { ru: "❌ Вы отклонили запрос в контакты", en: "❌ You declined the contact request", uk: "❌ Ви відхилили запит у контакти" },
+  contactRequestYouAreNowContacts: { ru: "🎉 Теперь вы в контактах!", en: "🎉 You are now contacts!", uk: "🎉 Тепер ви в контактах!" },
 };
 
 const t = (key: keyof typeof i18n, lang: BotLang): string => {
@@ -772,6 +782,118 @@ Text in English
       } else if (callbackData === "noop") {
         // No-op for already handled buttons
         responseText = "";
+      
+      } else if (callbackData.startsWith("contact_accept:") || callbackData.startsWith("contact_decline:")) {
+        // Handle contact request Accept/Decline
+        const parts = callbackData.split(":");
+        const action = parts[0];
+        const requestId = parts[1];
+        
+        if (requestId && fromUser?.id) {
+          // Get the contact request
+          const { data: request } = await supabase
+            .from("contact_requests")
+            .select("id, from_user_id, to_user_id, status")
+            .eq("id", requestId)
+            .single();
+          
+          if (request && request.status === "pending") {
+            // Verify the responder is the to_user by checking their telegram_id
+            const { data: toProfile } = await supabase
+              .from("profiles")
+              .select("user_id")
+              .eq("telegram_id", fromUser.id)
+              .single();
+            
+            if (toProfile && toProfile.user_id === request.to_user_id) {
+              if (action === "contact_accept") {
+                // Update status to accepted (trigger will create mutual contacts)
+                await supabase
+                  .from("contact_requests")
+                  .update({ 
+                    status: "accepted", 
+                    responded_at: new Date().toISOString() 
+                  })
+                  .eq("id", requestId);
+                
+                responseText = t("contactRequestAccepted", lang);
+                
+                // Notify the sender
+                const { data: fromProfile } = await supabase
+                  .from("profiles")
+                  .select("telegram_id, display_name")
+                  .eq("user_id", request.from_user_id)
+                  .single();
+                
+                if (fromProfile?.telegram_id) {
+                  const toDisplayName = (await supabase
+                    .from("profiles")
+                    .select("display_name, username")
+                    .eq("user_id", request.to_user_id)
+                    .single())?.data;
+                  
+                  const toName = toDisplayName?.display_name || toDisplayName?.username || "User";
+                  
+                  await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      chat_id: fromProfile.telegram_id,
+                      text: `${t("contactRequestYouAreNowContacts", lang)}\n\n*${toName}* принял ваш запрос.`,
+                      parse_mode: "Markdown",
+                    }),
+                  });
+                }
+                
+                // Update the message to show accepted status
+                if (chatId && messageId) {
+                  await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageReplyMarkup`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      chat_id: chatId,
+                      message_id: messageId,
+                      reply_markup: { 
+                        inline_keyboard: [[{ text: "✅ Принято", callback_data: "noop" }]] 
+                      },
+                    }),
+                  });
+                }
+                
+              } else {
+                // Decline
+                await supabase
+                  .from("contact_requests")
+                  .update({ 
+                    status: "declined", 
+                    responded_at: new Date().toISOString() 
+                  })
+                  .eq("id", requestId);
+                
+                responseText = t("contactRequestDeclined", lang);
+                
+                // Update the message to show declined status
+                if (chatId && messageId) {
+                  await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageReplyMarkup`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      chat_id: chatId,
+                      message_id: messageId,
+                      reply_markup: { 
+                        inline_keyboard: [[{ text: "❌ Отклонено", callback_data: "noop" }]] 
+                      },
+                    }),
+                  });
+                }
+              }
+            } else {
+              responseText = "❌ Только получатель может ответить";
+            }
+          } else {
+            responseText = "⏰ Запрос уже обработан";
+          }
+        }
       }
       await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
         method: "POST",
