@@ -16,6 +16,7 @@ import AdminPanel from "./pages/AdminPanel";
 import Profile from "./pages/Profile";
 import SharedMeeting from "./pages/SharedMeeting";
 import NotFound from "./pages/NotFound";
+import Refresh from "./pages/Refresh";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,7 @@ function App() {
                 <Route path="/room/:roomId" element={<MeetingRoom />} />
                 <Route path="/history" element={<MeetingHistory />} />
                 <Route path="/shared/:token" element={<SharedMeeting />} />
+                <Route path="/__refresh" element={<Refresh />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>

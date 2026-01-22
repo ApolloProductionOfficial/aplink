@@ -55,12 +55,43 @@ export const useTelegramLinking = (userId: string | undefined) => {
       console.log('Telegram WebApp detected, attempting to link account:', telegramUser);
 
       try {
-        // Check current profile
-        const { data: profile } = await supabase
+        // Check current profile - use maybeSingle to handle missing profile gracefully
+        const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('telegram_id, telegram_username')
           .eq('user_id', userId)
-          .single();
+          .maybeSingle();
+
+        // If profile doesn't exist, create it first
+        if (!profile && !profileError) {
+          console.log('Profile not found, creating one for Telegram linking...');
+          const { error: insertError } = await supabase
+            .from('profiles')
+            .insert({
+              user_id: userId,
+              telegram_id: telegramUser.id,
+              telegram_username: telegramUser.username || null,
+            });
+
+          if (insertError) {
+            console.error('Failed to create profile for Telegram linking:', insertError);
+            return;
+          }
+
+          hasLinked.current = true;
+          console.log('Profile created and Telegram account linked successfully');
+
+          toast({
+            title: "✅ Telegram привязан!",
+            description: `Ваш Telegram${telegramUser.username ? ` (@${telegramUser.username})` : ''} успешно привязан к APLink.`,
+          });
+          return;
+        }
+
+        if (profileError) {
+          console.error('Error fetching profile:', profileError);
+          return;
+        }
 
         // Already linked with the same telegram_id
         if (profile?.telegram_id === telegramUser.id) {
