@@ -89,3 +89,6 @@ verify_jwt = false
 
 [functions.livekit-token]
 verify_jwt = false
+
+[functions.livekit-stats]
+verify_jwt = false

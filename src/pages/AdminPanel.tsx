@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, Users, Calendar, Clock, MapPin, Globe, Shield, User, Camera, Save, Trash2, Loader2, BarChart3, Languages, MousePointer, TrendingUp, Eye, Download, Share2, Search, X, Link2, Copy, Link2Off, AlertTriangle, Bug, XCircle, AlertCircle, Info, Send, Check, MessageCircle, Smartphone } from 'lucide-react';
+import { ArrowLeft, FileText, Users, Calendar, Clock, MapPin, Globe, Shield, User, Camera, Save, Trash2, Loader2, BarChart3, Languages, MousePointer, TrendingUp, Eye, Download, Share2, Search, X, Link2, Copy, Link2Off, AlertTriangle, Bug, XCircle, AlertCircle, Info, Send, Check, MessageCircle, Smartphone, Server } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -28,6 +28,8 @@ import SystemStatusDashboard from '@/components/SystemStatusDashboard';
 import DataBackupsManager from '@/components/DataBackupsManager';
 import WelcomeMessageEditor from '@/components/WelcomeMessageEditor';
 import UXAnomaliesPanel from '@/components/UXAnomaliesPanel';
+import LiveKitMonitor from '@/components/LiveKitMonitor';
+import ContactRequestsPanel from '@/components/ContactRequestsPanel';
 
 interface MeetingTranscript {
   id: string;
@@ -126,7 +128,7 @@ const AdminPanel = () => {
   const [participants, setParticipants] = useState<MeetingParticipant[]>([]);
   const [geoData, setGeoData] = useState<Map<string, ParticipantGeoData>>(new Map());
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'transcripts' | 'participants' | 'profile' | 'analytics' | 'users' | 'errors' | 'telegram'>('analytics');
+  const [activeTab, setActiveTab] = useState<'transcripts' | 'participants' | 'profile' | 'analytics' | 'users' | 'errors' | 'telegram' | 'livekit'>('analytics');
   const [profile, setProfile] = useState<Profile | null>(null);
   const [displayName, setDisplayName] = useState('');
   const [username, setUsername] = useState('');
@@ -946,6 +948,15 @@ const AdminPanel = () => {
               <span className="hidden sm:inline">Telegram App</span>
             </Button>
             <Button
+              variant={activeTab === 'livekit' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setActiveTab('livekit')}
+              className="gap-1 md:gap-2 px-2 md:px-3 text-xs md:text-sm"
+            >
+              <Server className="w-3.5 h-3.5 md:w-4 md:h-4" />
+              <span className="hidden sm:inline">LiveKit</span>
+            </Button>
+            <Button
               variant={activeTab === 'profile' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setActiveTab('profile')}
@@ -1155,6 +1166,17 @@ const AdminPanel = () => {
             
             {/* Call Scheduler */}
             <CallScheduler />
+          </div>
+        ) : activeTab === 'livekit' ? (
+          <div className="space-y-6">
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <Server className="w-6 h-6 text-primary" />
+              LiveKit Server Monitoring
+            </h1>
+            
+            <LiveKitMonitor />
+            
+            {user && <ContactRequestsPanel userId={user.id} />}
           </div>
         ) : activeTab === 'errors' ? (
           <div className="space-y-6">

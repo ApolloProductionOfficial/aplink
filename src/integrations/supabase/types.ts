@@ -178,6 +178,36 @@ export type Database = {
         }
         Relationships: []
       }
+      contact_requests: {
+        Row: {
+          created_at: string
+          from_user_id: string
+          id: string
+          message: string | null
+          responded_at: string | null
+          status: string
+          to_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          from_user_id: string
+          id?: string
+          message?: string | null
+          responded_at?: string | null
+          status?: string
+          to_user_id: string
+        }
+        Update: {
+          created_at?: string
+          from_user_id?: string
+          id?: string
+          message?: string | null
+          responded_at?: string | null
+          status?: string
+          to_user_id?: string
+        }
+        Relationships: []
+      }
       contacts: {
         Row: {
           contact_user_id: string
