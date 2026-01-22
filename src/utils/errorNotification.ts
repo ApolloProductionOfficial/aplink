@@ -27,8 +27,27 @@ const IGNORED_PATTERNS = [
   'extension://',
   'chrome-extension://',
   'moz-extension://',
+  'safari-extension://',
   // Ignore Jitsi-related parse errors
   'Failed to parse URL parameter',
+  // Browser extensions
+  'disconnected port',
+  'Extension context',
+  'grammarly',
+  'Grammarly',
+  'AdBlock',
+  'adblock',
+  'LastPass',
+  'Bitwarden',
+  '1Password',
+  '__REACT_DEVTOOLS',
+  'postMessage',
+  // Dynamic imports / chunk loading
+  'Loading chunk',
+  'dynamically imported module',
+  // Tooltip context errors (WebKit)
+  'TooltipProvider',
+  'Tooltip',
 ];
 
 // Patterns that are only warnings (log but don't email)

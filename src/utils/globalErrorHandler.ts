@@ -12,7 +12,7 @@ export function initGlobalErrorHandlers() {
   window.onerror = (message, source, lineno, colno, error) => {
     const errorMessage = String(message || error?.message || 'Unknown error');
 
-    // Filter out noise
+    // Filter out noise (browser extensions, non-app errors)
     if (
       errorMessage.includes('ResizeObserver') ||
       errorMessage.includes('Script error') ||
@@ -21,8 +21,20 @@ export function initGlobalErrorHandlers() {
       errorMessage.includes('Extension context') ||
       errorMessage.includes('chrome-extension://') ||
       errorMessage.includes('moz-extension://') ||
+      errorMessage.includes('safari-extension://') ||
       errorMessage.includes('TooltipProvider') ||
-      errorMessage.includes('Tooltip')
+      errorMessage.includes('Tooltip') ||
+      errorMessage.includes('grammarly') ||
+      errorMessage.includes('Grammarly') ||
+      errorMessage.includes('AdBlock') ||
+      errorMessage.includes('adblock') ||
+      errorMessage.includes('LastPass') ||
+      errorMessage.includes('Bitwarden') ||
+      errorMessage.includes('1Password') ||
+      errorMessage.includes('__REACT_DEVTOOLS') ||
+      errorMessage.includes('postMessage') ||
+      errorMessage.includes('Loading chunk') ||
+      errorMessage.includes('dynamically imported module')
     ) {
       return false;
     }
@@ -55,7 +67,7 @@ export function initGlobalErrorHandlers() {
     const errorMessage =
       reason?.message || (typeof reason === 'string' ? reason : 'Unhandled Promise Rejection');
 
-    // Filter out noise
+    // Filter out noise (network, extensions, non-app errors)
     if (
       errorMessage.includes('FunctionsFetchError') ||
       errorMessage.includes('AbortError') ||
@@ -63,7 +75,15 @@ export function initGlobalErrorHandlers() {
       errorMessage.includes('Load failed') ||
       errorMessage.includes('Failed to fetch') ||
       errorMessage.includes('TooltipProvider') ||
-      errorMessage.includes('Tooltip')
+      errorMessage.includes('Tooltip') ||
+      errorMessage.includes('chrome-extension://') ||
+      errorMessage.includes('moz-extension://') ||
+      errorMessage.includes('safari-extension://') ||
+      errorMessage.includes('disconnected port') ||
+      errorMessage.includes('grammarly') ||
+      errorMessage.includes('Grammarly') ||
+      errorMessage.includes('Loading chunk') ||
+      errorMessage.includes('dynamically imported module')
     ) {
       return;
     }
@@ -100,7 +120,7 @@ export function initGlobalErrorHandlers() {
       return;
     }
 
-    // Filter out noise
+    // Filter out noise (extensions, devtools, non-app errors)
     if (
       fullMessage.includes('DevTools') ||
       fullMessage.includes('favicon') ||
@@ -108,9 +128,21 @@ export function initGlobalErrorHandlers() {
       fullMessage.includes('disconnected port') ||
       fullMessage.includes('chrome-extension://') ||
       fullMessage.includes('moz-extension://') ||
+      fullMessage.includes('safari-extension://') ||
       fullMessage.includes('TooltipProvider') ||
       fullMessage.includes('Tooltip') ||
-      fullMessage.includes('ErrorBoundary caught') // Already handled by ErrorBoundary
+      fullMessage.includes('ErrorBoundary caught') || // Already handled by ErrorBoundary
+      fullMessage.includes('grammarly') ||
+      fullMessage.includes('Grammarly') ||
+      fullMessage.includes('AdBlock') ||
+      fullMessage.includes('adblock') ||
+      fullMessage.includes('LastPass') ||
+      fullMessage.includes('Bitwarden') ||
+      fullMessage.includes('1Password') ||
+      fullMessage.includes('__REACT_DEVTOOLS') ||
+      fullMessage.includes('postMessage') ||
+      fullMessage.includes('Loading chunk') ||
+      fullMessage.includes('dynamically imported module')
     ) {
       return;
     }
