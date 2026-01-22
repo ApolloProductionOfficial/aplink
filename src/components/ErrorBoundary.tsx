@@ -26,26 +26,16 @@ class ErrorBoundary extends Component<Props, State> {
     // Safe message extraction
     const errorMessage = error?.message || error?.toString?.() || "Unknown error";
     const componentStack = errorInfo?.componentStack || "";
+    const errorStack = error?.stack || "";
     
-    // COMPLETELY IGNORE TooltipProvider errors - Safari/Radix compatibility issue
-    // These are noise and should never be reported
-    const isTooltipError = 
-      componentStack.includes("TooltipProvider") ||
-      componentStack.includes("Tooltip") ||
-      errorMessage.includes("TooltipProvider") ||
-      errorMessage.includes("Tooltip must be used");
-    
-    // Also ignore empty/meaningless errors
-    const isEmptyError = 
-      errorMessage === "No message" || 
-      !errorMessage || 
-      errorMessage === "Unknown error" ||
-      errorMessage === "{}";
-    
-    if (isTooltipError || isEmptyError) {
-      // Silently ignore - do NOT log anything to prevent any notification
-      return;
-    }
+    // DIAGNOSTIC MODE: Log ALL errors for debugging call creation issues
+    console.warn("[DEBUG ErrorBoundary] Caught error:", {
+      message: errorMessage,
+      stack: errorStack.substring(0, 800),
+      componentStack: componentStack.substring(0, 500),
+      url: typeof window !== "undefined" ? window.location.href : "unknown",
+      timestamp: new Date().toISOString(),
+    });
     
     // Deduplicate - only send once per error message
     const errorKey = `${errorMessage}-${componentStack.substring(0, 100)}`;

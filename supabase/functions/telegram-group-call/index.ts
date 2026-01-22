@@ -27,15 +27,22 @@ serve(async (req) => {
   );
 
   try {
-    const { created_by, participants, room_name, notify_creator_on_error }: GroupCallRequest = await req.json();
+    const body = await req.json();
+    console.log("[telegram-group-call] Incoming request:", JSON.stringify(body));
+    
+    const { created_by, participants, room_name, notify_creator_on_error }: GroupCallRequest = body;
 
     if (!TELEGRAM_BOT_TOKEN) {
+      console.error("[telegram-group-call] TELEGRAM_BOT_TOKEN not configured");
       throw new Error("TELEGRAM_BOT_TOKEN not configured");
     }
 
     if (!created_by || !participants || participants.length === 0) {
+      console.error("[telegram-group-call] Missing required fields:", { created_by, participants });
       throw new Error("Missing required fields: created_by, participants");
     }
+    
+    console.log("[telegram-group-call] Processing call from:", created_by, "to:", participants);
 
     // Helper function to send error notification to creator
     const sendErrorToCreator = async (errorMessage: string, details?: Record<string, unknown>) => {

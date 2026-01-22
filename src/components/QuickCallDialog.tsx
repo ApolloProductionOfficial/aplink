@@ -100,7 +100,13 @@ const QuickCallDialog = ({ open, onOpenChange }: QuickCallDialogProps) => {
   };
 
   const handleQuickCall = async (targetUsername?: string) => {
-    if (!user) {
+    console.log("[QuickCallDialog] handleQuickCall called", { 
+      userId: user?.id, 
+      targetUsername 
+    });
+    
+    if (!user?.id) {
+      console.error("[QuickCallDialog] No user authenticated");
       toast.error("Необходимо авторизоваться");
       return;
     }
@@ -115,6 +121,8 @@ const QuickCallDialog = ({ open, onOpenChange }: QuickCallDialogProps) => {
     setCalling(true);
     setError(null);
 
+    console.log("[QuickCallDialog] Invoking telegram-group-call for:", cleanUsername);
+
     try {
       const { data, error: fnError } = await supabase.functions.invoke("telegram-group-call", {
         body: {
@@ -124,7 +132,12 @@ const QuickCallDialog = ({ open, onOpenChange }: QuickCallDialogProps) => {
         },
       });
 
-      if (fnError) throw fnError;
+      console.log("[QuickCallDialog] Response:", { data, error: fnError });
+
+      if (fnError) {
+        console.error("[QuickCallDialog] Function error:", fnError);
+        throw fnError;
+      }
 
       if (data.success) {
         const participant = data.participants[0];
@@ -151,9 +164,11 @@ const QuickCallDialog = ({ open, onOpenChange }: QuickCallDialogProps) => {
           setError(`Не удалось уведомить @${cleanUsername}`);
         }
       } else {
+        console.error("[QuickCallDialog] Call failed:", data.error);
         throw new Error(data.error || "Ошибка создания звонка");
       }
     } catch (err: unknown) {
+      console.error("[QuickCallDialog] Catch block:", err);
       const message = err instanceof Error ? err.message : "Неизвестная ошибка";
       setError(message);
       toast.error("Ошибка: " + message);
