@@ -128,16 +128,34 @@ function buildGroupingFingerprint(params: {
   // React ErrorBoundary duplicates:
   // - one event comes as REACT_ERROR (often with empty message)
   // - the second comes via console.error as CONSOLE_ERROR with "ErrorBoundary caught error..."
+  // We want BOTH to produce the same fingerprint so they merge into one Telegram message.
   const componentStack = extractComponentStack(details);
   const isBoundaryRelated =
     !!componentStack ||
     src.includes("errorboundary") ||
     msg.includes("errorboundary caught error") ||
-    msg.includes("componentstack");
+    msg.includes("errorboundary caught") ||
+    msg.includes("componentstack") ||
+    (type === "CONSOLE_ERROR" && msg.includes("errorboundary"));
 
   if (isBoundaryRelated && componentStack) {
     const signature = normalizeStackSignature(componentStack);
+    // Use REACT_BOUNDARY prefix regardless of original errorType
+    // This ensures REACT_ERROR and CONSOLE_ERROR with same stack merge together
     return { fingerprint: `REACT_BOUNDARY:${signature}`, normalizedType: "REACT_ERROR" };
+  }
+
+  // Also catch "ErrorBoundary caught error: {}" messages even without componentStack
+  if (msg.includes("errorboundary caught error")) {
+    // Try to extract any stack-like info from the message itself
+    const stackMatch = msg.match(/componentstack["\s:]+([^"]+)/i);
+    if (stackMatch) {
+      const signature = normalizeStackSignature(stackMatch[1]);
+      return { fingerprint: `REACT_BOUNDARY:${signature}`, normalizedType: "REACT_ERROR" };
+    }
+    // Fallback: use a generic boundary fingerprint with partial message
+    const partialMsg = msg.substring(0, 80);
+    return { fingerprint: `REACT_BOUNDARY:${partialMsg}`, normalizedType: "REACT_ERROR" };
   }
 
   const normalizedMsg = (errorMessage || "").substring(0, 160);
