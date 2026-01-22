@@ -1609,7 +1609,6 @@ const MeetingRoom = () => {
   const QualityIcon = qualityIndicator.icon;
 
   return (
-    <TooltipProvider delayDuration={300}>
     <div className="h-screen w-screen bg-background flex flex-col overflow-hidden cursor-none relative">
       <CustomCursor />
 
@@ -1960,7 +1959,6 @@ const MeetingRoom = () => {
         style={{ minHeight: 0 }}
       />
     </div>
-    </TooltipProvider>
   );
 };
 
