@@ -18,7 +18,7 @@ interface ScheduledCall {
   id: string;
   room_name: string;
   scheduled_at: string;
-  participants_telegram_ids: number[];
+  participants_telegram_ids: number[] | null;
   description: string | null;
   status: string;
   reminder_sent: boolean;
@@ -142,6 +142,13 @@ const CallScheduler = () => {
 
   const handleStartCall = async (call: ScheduledCall) => {
     try {
+      if (!user) {
+        toast.error('Нужно войти в аккаунт');
+        return;
+      }
+
+      const participantIds = call.participants_telegram_ids ?? [];
+
       // Update status
       await supabase
         .from('scheduled_calls')
@@ -152,9 +159,9 @@ const CallScheduler = () => {
       const { error } = await supabase
         .from('call_requests')
         .insert({
-          created_by: user?.id,
+          created_by: user.id,
           room_name: call.room_name,
-          is_group_call: call.participants_telegram_ids.length > 1,
+          is_group_call: participantIds.length > 1,
           status: 'active',
         });
       
