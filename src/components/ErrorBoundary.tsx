@@ -25,17 +25,25 @@ class ErrorBoundary extends Component<Props, State> {
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // Safe message extraction
     const errorMessage = error?.message || error?.toString?.() || "Unknown error";
-    
-    // Skip common non-actionable errors (TooltipProvider crashes in Safari)
     const componentStack = errorInfo?.componentStack || "";
+    
+    // COMPLETELY IGNORE TooltipProvider errors - Safari/Radix compatibility issue
+    // These are noise and should never be reported
     const isTooltipError = 
       componentStack.includes("TooltipProvider") ||
       componentStack.includes("Tooltip") ||
       errorMessage.includes("TooltipProvider") ||
       errorMessage.includes("Tooltip must be used");
     
-    if (isTooltipError || errorMessage === "No message" || !errorMessage || errorMessage === "Unknown error") {
-      // Don't log to console to prevent duplicate notifications
+    // Also ignore empty/meaningless errors
+    const isEmptyError = 
+      errorMessage === "No message" || 
+      !errorMessage || 
+      errorMessage === "Unknown error" ||
+      errorMessage === "{}";
+    
+    if (isTooltipError || isEmptyError) {
+      // Silently ignore - do NOT log anything to prevent any notification
       return;
     }
     
@@ -47,9 +55,7 @@ class ErrorBoundary extends Component<Props, State> {
     // Clear after 5 minutes
     setTimeout(() => sentBoundaryErrors.delete(errorKey), 5 * 60 * 1000);
 
-    // Log without triggering console.error notification (use warn instead)
-    console.warn("ErrorBoundary sending notification:", errorMessage.substring(0, 100));
-    
+    // Send notification (no console output to avoid duplicate detection)
     sendErrorNotification({
       errorType: "REACT_ERROR",
       errorMessage,
