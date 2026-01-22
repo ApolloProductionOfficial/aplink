@@ -92,3 +92,6 @@ verify_jwt = false
 
 [functions.livekit-stats]
 verify_jwt = false
+
+[functions.livekit-history]
+verify_jwt = false

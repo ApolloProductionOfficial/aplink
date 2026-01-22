@@ -382,6 +382,42 @@ export type Database = {
         }
         Relationships: []
       }
+      livekit_stats_history: {
+        Row: {
+          active_recordings: number
+          active_rooms: number
+          estimated_bandwidth_mbps: number
+          estimated_ram_mb: number
+          id: string
+          recorded_at: string
+          room_names: string[] | null
+          total_participants: number
+          total_publishers: number
+        }
+        Insert: {
+          active_recordings?: number
+          active_rooms?: number
+          estimated_bandwidth_mbps?: number
+          estimated_ram_mb?: number
+          id?: string
+          recorded_at?: string
+          room_names?: string[] | null
+          total_participants?: number
+          total_publishers?: number
+        }
+        Update: {
+          active_recordings?: number
+          active_rooms?: number
+          estimated_bandwidth_mbps?: number
+          estimated_ram_mb?: number
+          id?: string
+          recorded_at?: string
+          room_names?: string[] | null
+          total_participants?: number
+          total_publishers?: number
+        }
+        Relationships: []
+      }
       meeting_participants: {
         Row: {
           id: string
