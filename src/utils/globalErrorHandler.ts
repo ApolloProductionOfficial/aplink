@@ -69,13 +69,27 @@ export function initGlobalErrorHandlers() {
     originalConsoleError.apply(console, args);
     
     // Only send for significant errors (avoid noise)
-    const message = args.map(arg => 
-      typeof arg === "object" ? JSON.stringify(arg) : String(arg)
-    ).join(" ");
+    const message = args
+      .map((arg) => {
+        if (typeof arg === "object") {
+          try {
+            return JSON.stringify(arg);
+          } catch {
+            return String(arg);
+          }
+        }
+        return String(arg);
+      })
+      .join(" ");
     
     // Skip common non-critical errors, browser extension errors, and Telegram mini app specific errors
     if (
       message.includes("Warning:") ||
+      // Internal logging from our own handlers (prevents double-reporting)
+      message.includes("Global error:") ||
+      message.includes("Unhandled promise rejection:") ||
+      message.includes("Failed to log error to database") ||
+      message.includes("Failed to send error notification") ||
       message.includes("DevTools") ||
       message.includes("favicon") ||
       message.includes("ResizeObserver") ||
