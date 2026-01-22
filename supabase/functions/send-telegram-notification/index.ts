@@ -32,6 +32,33 @@ interface MessageOptions {
   isTest?: boolean;
 }
 
+function extractHostnameFromText(text?: string | null): string | null {
+  if (!text) return null;
+  // Try to find any URL-like substring and return its hostname
+  const match = text.match(/https?:\/\/([a-zA-Z0-9.-]+)/);
+  return match?.[1] || null;
+}
+
+function inferSiteName(details?: Record<string, unknown> | null): string {
+  try {
+    const url = (details?.url as string | undefined) || null;
+    if (url) return new URL(url).hostname;
+
+    const fromStack = extractHostnameFromText(details?.stack as string | undefined);
+    if (fromStack) return fromStack;
+
+    const fromComponentStack = extractHostnameFromText(details?.componentStack as string | undefined);
+    if (fromComponentStack) return fromComponentStack;
+
+    const fromFullMessage = extractHostnameFromText(details?.fullMessage as string | undefined);
+    if (fromFullMessage) return fromFullMessage;
+
+    return "aplink.live"; // fallback: this app
+  } catch {
+    return "aplink.live";
+  }
+}
+
 // Форматирование сообщения - один JSON блок для удобного копирования
 function formatMessage(opts: MessageOptions): string {
   const { errorType, errorMessage, source, severity, details, count, timestamp, firstSeen, isTest } = opts;
@@ -39,9 +66,8 @@ function formatMessage(opts: MessageOptions): string {
   const time = timestamp || new Date().toLocaleString("ru-RU", { timeZone: "Europe/Moscow" });
   const emoji = isTest ? "🧪" : severity === "critical" ? "🔴" : severity === "error" ? "🟠" : "🟡";
   
-  // Извлекаем URL сайта из details
-  const siteUrl = details?.url as string | undefined;
-  const siteName = siteUrl ? new URL(siteUrl).hostname : "Unknown";
+  const siteUrl = (details?.url as string | undefined) || null;
+  const siteName = inferSiteName(details || null);
   
   const errorReport = {
     timestamp: time,
@@ -130,7 +156,11 @@ serve(async (req) => {
     }
 
     // Создаём хеш ошибки для группировки
-    const errorHash = btoa(unescape(encodeURIComponent(`${errorType}:${source}:${(errorMessage || "").substring(0, 100)}`)));
+    // Normalize site so "Unknown" and actual site are grouped together
+    const siteName = inferSiteName(details || null);
+    const normalizedMsg = (errorMessage || "").substring(0, 140);
+    const normalizedType = errorType || "UNKNOWN";
+    const errorHash = btoa(unescape(encodeURIComponent(`${siteName}:${normalizedType}:${normalizedMsg}`)));
     const windowStart = new Date(now.getTime() - GROUP_WINDOW_MS);
 
     // Проверяем, есть ли недавняя похожая ошибка
