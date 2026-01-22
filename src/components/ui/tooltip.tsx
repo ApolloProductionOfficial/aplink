@@ -5,21 +5,28 @@ import { cn } from "@/lib/utils";
 
 const TooltipProvider = TooltipPrimitive.Provider;
 
+// Some WebKit environments (Safari + embedded WebViews like Telegram Desktop on macOS)
+// can crash with Radix Tooltip context/provider. We prefer stability over tooltips.
+const isProblematicWebKitEnv = () => {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent;
+
+  // Real WebKit (Safari / WKWebView). iOS Chrome/Firefox/Edge also contain AppleWebKit,
+  // but include their own markers; we exclude those to keep behavior consistent.
+  const isWebKit = /AppleWebKit/i.test(ua);
+  const isChromiumLike = /(Chrome|Chromium|Edg|CriOS|EdgiOS)/i.test(ua);
+  const isOtherIOSBrowser = /(FxiOS|OPiOS|YaBrowser)/i.test(ua);
+  return isWebKit && !isChromiumLike && !isOtherIOSBrowser;
+};
+
 // Our own scope marker to prevent accidentally nesting providers.
 // Radix TooltipProvider doesn't expose a safe public "is-in-provider" hook,
 // and some WebKit environments (e.g. Telegram Desktop on macOS) can crash on deep nesting.
 const TooltipProviderScopeContext = React.createContext(false);
 
 const SafeTooltipProvider = ({ children, ...props }: React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Provider>) => {
-  // Telegram Desktop Mini App (macOS) runs in a WebKit container that can crash on Radix TooltipProvider.
-  // In that environment, we disable the provider entirely to keep the app stable.
-  const isTelegramDesktopWebKit =
-    typeof navigator !== "undefined" &&
-    /Telegram/i.test(navigator.userAgent) &&
-    /AppleWebKit/i.test(navigator.userAgent) &&
-    !/Chrome|Chromium|Edg/i.test(navigator.userAgent);
-
-  if (isTelegramDesktopWebKit) return <>{children}</>;
+  // Disable provider entirely in problematic WebKit environments.
+  if (isProblematicWebKitEnv()) return <>{children}</>;
 
   const hasParentProvider = React.useContext(TooltipProviderScopeContext);
 
@@ -40,14 +47,8 @@ const SafeTooltipProvider = ({ children, ...props }: React.ComponentPropsWithout
 
 // Safe Tooltip that handles WebKit context issues
 const Tooltip = ({ children, ...props }: React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Root>) => {
-  // Detect Telegram Desktop WebKit - disable tooltips entirely to prevent crashes
-  const isTelegramDesktopWebKit =
-    typeof navigator !== "undefined" &&
-    /Telegram/i.test(navigator.userAgent) &&
-    /AppleWebKit/i.test(navigator.userAgent) &&
-    !/Chrome|Chromium|Edg/i.test(navigator.userAgent);
-
-  if (isTelegramDesktopWebKit) {
+  // Disable tooltips entirely in problematic WebKit environments.
+  if (isProblematicWebKitEnv()) {
     // Return only the trigger child, skip tooltip entirely
     return <>{children}</>;
   }
@@ -62,12 +63,7 @@ const Tooltip = ({ children, ...props }: React.ComponentPropsWithoutRef<typeof T
 // Helper to detect problematic WebKit environment
 const useIsTelegramDesktopWebKit = () => {
   return React.useMemo(() => {
-    if (typeof navigator === "undefined") return false;
-    return (
-      /Telegram/i.test(navigator.userAgent) &&
-      /AppleWebKit/i.test(navigator.userAgent) &&
-      !/Chrome|Chromium|Edg/i.test(navigator.userAgent)
-    );
+    return isProblematicWebKitEnv();
   }, []);
 };
 
