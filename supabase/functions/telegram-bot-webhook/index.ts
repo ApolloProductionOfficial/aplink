@@ -1487,19 +1487,12 @@ Text in English
           
           // Private chat: send animation WITH caption
           // Add admin button if user is admin
-          const isAdmin = fromUser?.id === ADMIN_TELEGRAM_ID;
           if (!isGroupChat) {
-            console.log("Sending help animation for existing user with lang:", lang, "isAdmin:", isAdmin);
-            const keyboard = isAdmin
-              ? [
-                  [{ text: t("btnOpen", lang), web_app: { url: WEB_APP_URL } }],
-                  [{ text: t("btnLang", lang), callback_data: "lang_menu" }],
-                  [{ text: "✏️ Сменить приветствие", callback_data: "admin_change_welcome" }],
-                ]
-              : [
-                  [{ text: t("btnOpen", lang), web_app: { url: WEB_APP_URL } }],
-                  [{ text: t("btnLang", lang), callback_data: "lang_menu" }],
-                ];
+            console.log("Sending help animation for existing user with lang:", lang);
+            const keyboard = [
+              [{ text: t("btnOpen", lang), web_app: { url: WEB_APP_URL } }],
+              [{ text: t("btnLang", lang), callback_data: "lang_menu" }],
+            ];
             await sendWelcomeMedia(helpMessage, { inline_keyboard: keyboard });
           } else {
             // Group chat: plain message with button
