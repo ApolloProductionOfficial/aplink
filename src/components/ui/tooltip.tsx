@@ -11,6 +11,16 @@ const TooltipProvider = TooltipPrimitive.Provider;
 const TooltipProviderScopeContext = React.createContext(false);
 
 const SafeTooltipProvider = ({ children, ...props }: React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Provider>) => {
+  // Telegram Desktop Mini App (macOS) runs in a WebKit container that can crash on Radix TooltipProvider.
+  // In that environment, we disable the provider entirely to keep the app stable.
+  const isTelegramDesktopWebKit =
+    typeof navigator !== "undefined" &&
+    /Telegram/i.test(navigator.userAgent) &&
+    /AppleWebKit/i.test(navigator.userAgent) &&
+    !/Chrome|Chromium|Edg/i.test(navigator.userAgent);
+
+  if (isTelegramDesktopWebKit) return <>{children}</>;
+
   const hasParentProvider = React.useContext(TooltipProviderScopeContext);
 
   // If a parent provider already exists, don't create another nested provider.
