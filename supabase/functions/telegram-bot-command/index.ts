@@ -4,7 +4,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 // Use REPORTS_BOT_TOKEN for error/diagnostic commands (Reports and Errors bot)
 // This is separate from TELEGRAM_BOT_TOKEN which is used for user notifications (APLink bot)
 const REPORTS_BOT_TOKEN = Deno.env.get("REPORTS_BOT_TOKEN");
+const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
 const ADMIN_CHAT_ID = "2061785720";
+const WELCOME_GIF_URL = "https://aplink.lovable.app/animations/aplink-welcome.gif";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,11 +19,7 @@ serve(async (req) => {
   }
 
   try {
-    if (!REPORTS_BOT_TOKEN) {
-      throw new Error("REPORTS_BOT_TOKEN not configured");
-    }
-
-    const { command } = await req.json();
+    const { command, telegram_id, caption, media_url, file_id } = await req.json();
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -30,7 +28,107 @@ serve(async (req) => {
 
     let responseText = "";
 
-    if (command === "stats" || command === "/stats") {
+    if (command === "send_test_welcome") {
+      // Send test welcome message to the specified telegram_id
+      if (!TELEGRAM_BOT_TOKEN) {
+        throw new Error("TELEGRAM_BOT_TOKEN not configured");
+      }
+      if (!telegram_id) {
+        throw new Error("telegram_id is required");
+      }
+
+      const testCaption = caption || "🧪 Тестовое приветственное сообщение";
+      let sent = false;
+
+      // Priority 1: Use file_id if available
+      if (file_id && !sent) {
+        const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendAnimation`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: telegram_id,
+            animation: file_id,
+            caption: `🧪 *ТЕСТ*\n\n${testCaption}`,
+            parse_mode: "Markdown",
+          }),
+        });
+        const data = await res.json();
+        console.log("Test sendAnimation with file_id:", JSON.stringify(data));
+        if (data?.ok) sent = true;
+
+        // Try as photo if animation fails
+        if (!sent) {
+          const photoRes = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: telegram_id,
+              photo: file_id,
+              caption: `🧪 *ТЕСТ*\n\n${testCaption}`,
+              parse_mode: "Markdown",
+            }),
+          });
+          const photoData = await photoRes.json();
+          if (photoData?.ok) sent = true;
+        }
+      }
+
+      // Priority 2: Use media_url
+      if (!sent) {
+        const urlToUse = media_url || WELCOME_GIF_URL;
+        console.log("Using media URL for test:", urlToUse);
+
+        const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendAnimation`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: telegram_id,
+            animation: urlToUse,
+            caption: `🧪 *ТЕСТ*\n\n${testCaption}`,
+            parse_mode: "Markdown",
+          }),
+        });
+        const data = await res.json();
+        console.log("Test sendAnimation with URL:", JSON.stringify(data));
+        if (data?.ok) sent = true;
+
+        // Try as photo if animation fails
+        if (!sent) {
+          const photoRes = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: telegram_id,
+              photo: urlToUse,
+              caption: `🧪 *ТЕСТ*\n\n${testCaption}`,
+              parse_mode: "Markdown",
+            }),
+          });
+          const photoData = await photoRes.json();
+          if (photoData?.ok) sent = true;
+        }
+      }
+
+      // Fallback: text only
+      if (!sent) {
+        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: telegram_id,
+            text: `🧪 *ТЕСТ*\n\n${testCaption}`,
+            parse_mode: "Markdown",
+          }),
+        });
+      }
+
+      responseText = "Test welcome message sent";
+
+    } else if (command === "stats" || command === "/stats") {
+      if (!REPORTS_BOT_TOKEN) {
+        throw new Error("REPORTS_BOT_TOKEN not configured");
+      }
+
       const today = new Date().toISOString().split("T")[0];
 
       const { count: totalLogs } = await supabase
@@ -65,6 +163,10 @@ serve(async (req) => {
       });
 
     } else if (command === "ping" || command === "/ping") {
+      if (!REPORTS_BOT_TOKEN) {
+        throw new Error("REPORTS_BOT_TOKEN not configured");
+      }
+
       responseText = `🏓 *Pong!*\n\nБот работает исправно.\n_${new Date().toLocaleString("ru-RU", { timeZone: "Europe/Moscow" })}_`;
 
       await fetch(`https://api.telegram.org/bot${REPORTS_BOT_TOKEN}/sendMessage`, {
@@ -78,6 +180,10 @@ serve(async (req) => {
       });
 
     } else if (command === "clear" || command === "/clear") {
+      if (!REPORTS_BOT_TOKEN) {
+        throw new Error("REPORTS_BOT_TOKEN not configured");
+      }
+
       const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
       const { data: deletedLogs } = await supabase

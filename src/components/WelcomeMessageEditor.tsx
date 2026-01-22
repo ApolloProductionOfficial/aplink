@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Loader2, Upload, Image, Video, Save, RefreshCw, Eye, MessageCircle, X, CheckCircle2 } from 'lucide-react';
+import { Loader2, Upload, Image, Video, Save, RefreshCw, Eye, MessageCircle, X, CheckCircle2, Send } from 'lucide-react';
 
 interface WelcomeSettings {
   id: string;
@@ -20,6 +20,7 @@ interface WelcomeSettings {
 export default function WelcomeMessageEditor() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [sendingTest, setSendingTest] = useState(false);
   const [settings, setSettings] = useState<WelcomeSettings | null>(null);
   const [captionRu, setCaptionRu] = useState('');
   const [captionEn, setCaptionEn] = useState('');
@@ -27,6 +28,7 @@ export default function WelcomeMessageEditor() {
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [adminTelegramId, setAdminTelegramId] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchSettings = async () => {
@@ -61,7 +63,55 @@ export default function WelcomeMessageEditor() {
 
   useEffect(() => {
     fetchSettings();
+    fetchAdminTelegramId();
   }, []);
+
+  const fetchAdminTelegramId = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('telegram_id')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (profile?.telegram_id) {
+        setAdminTelegramId(profile.telegram_id);
+      }
+    } catch (err) {
+      console.error('Failed to fetch admin telegram_id:', err);
+    }
+  };
+
+  const handleSendTest = async () => {
+    if (!adminTelegramId) {
+      toast.error('Telegram не привязан к вашему аккаунту. Используйте /start в боте.');
+      return;
+    }
+
+    setSendingTest(true);
+    try {
+      const { error } = await supabase.functions.invoke('telegram-bot-command', {
+        body: {
+          command: 'send_test_welcome',
+          telegram_id: adminTelegramId,
+          caption: captionRu || 'Тестовое приветствие',
+          media_url: settings?.media_url || null,
+          file_id: settings?.file_id || null,
+        },
+      });
+
+      if (error) throw error;
+      toast.success('Тестовое сообщение отправлено в Telegram!');
+    } catch (err) {
+      console.error('Failed to send test:', err);
+      toast.error('Ошибка отправки тестового сообщения');
+    } finally {
+      setSendingTest(false);
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -364,7 +414,7 @@ export default function WelcomeMessageEditor() {
         )}
 
         {/* Actions */}
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <Button onClick={handleSave} disabled={saving || uploading} className="gap-2">
             {saving || uploading ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -377,7 +427,27 @@ export default function WelcomeMessageEditor() {
             <RefreshCw className="w-4 h-4" />
             Обновить
           </Button>
+          <Button 
+            variant="secondary" 
+            onClick={handleSendTest} 
+            disabled={sendingTest || !adminTelegramId}
+            className="gap-2"
+            title={!adminTelegramId ? 'Привяжите Telegram через /start в боте' : 'Отправить тест себе'}
+          >
+            {sendingTest ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Send className="w-4 h-4" />
+            )}
+            Тест в Telegram
+          </Button>
         </div>
+
+        {!adminTelegramId && (
+          <p className="text-xs text-yellow-500 flex items-center gap-1">
+            ⚠️ Для тестовой отправки привяжите Telegram: отправьте /start боту @aplink_bot
+          </p>
+        )}
       </CardContent>
     </Card>
   );
