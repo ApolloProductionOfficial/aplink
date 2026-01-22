@@ -93,7 +93,11 @@ export function initGlobalErrorHandlers() {
       message.includes("main_button") ||
       message.includes("back_button") ||
       message.includes("popup_closed") ||
-      message.includes("initDataUnsafe")
+      message.includes("initDataUnsafe") ||
+      // Radix UI context errors (Safari compatibility)
+      message.includes("TooltipProvider") ||
+      message.includes("Tooltip must be used within") ||
+      message.includes("componentStack") && message.includes("TooltipProviderProvider")
     ) {
       return;
     }
