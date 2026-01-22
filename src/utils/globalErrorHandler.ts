@@ -97,7 +97,10 @@ export function initGlobalErrorHandlers() {
       // Radix UI context errors (Safari compatibility)
       message.includes("TooltipProvider") ||
       message.includes("Tooltip must be used within") ||
-      message.includes("componentStack") && message.includes("TooltipProviderProvider")
+      message.includes("componentStack") && message.includes("TooltipProviderProvider") ||
+      // ErrorBoundary duplicate errors
+      message.includes("ErrorBoundary caught error") ||
+      message.includes("REACT_ERROR") && message.includes("No message")
     ) {
       return;
     }

@@ -444,8 +444,8 @@ export default function WelcomeMessageEditor() {
         </div>
 
         {!adminTelegramId && (
-          <p className="text-xs text-yellow-500 flex items-center gap-1">
-            ⚠️ Для тестовой отправки привяжите Telegram: отправьте /start боту @aplink_bot
+          <p className="text-xs text-muted-foreground">
+            💡 Для тестовой отправки откройте бота @aplink_bot и нажмите /start
           </p>
         )}
       </CardContent>

@@ -39,17 +39,23 @@ function formatMessage(opts: MessageOptions): string {
   const time = timestamp || new Date().toLocaleString("ru-RU", { timeZone: "Europe/Moscow" });
   const emoji = isTest ? "🧪" : severity === "critical" ? "🔴" : severity === "error" ? "🟠" : "🟡";
   
+  // Извлекаем URL сайта из details
+  const siteUrl = details?.url as string | undefined;
+  const siteName = siteUrl ? new URL(siteUrl).hostname : "Unknown";
+  
   const errorReport = {
     timestamp: time,
+    site: siteName,
     source: source || "Unknown",
     errorType: errorType || "GENERAL_ERROR",
     errorMessage: errorMessage || "No message",
     details: details || null,
-    url: details?.url || null,
+    url: siteUrl || null,
     userAgent: details?.userAgent || null
   };
 
-  let header = isTest ? "🧪 ТЕСТ" : `${emoji} Ошибка Apollo`;
+  // Указываем конкретный сайт вместо "Apollo"
+  let header = isTest ? "🧪 ТЕСТ" : `${emoji} Ошибка сайта ${siteName}`;
     
   if (count && count > 1) {
     header += ` (×${count}, с ${firstSeen})`;

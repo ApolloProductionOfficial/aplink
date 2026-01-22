@@ -10,6 +10,9 @@ interface State {
   error?: Error;
 }
 
+// Track sent errors to avoid duplicates
+const sentBoundaryErrors = new Set<string>();
+
 class ErrorBoundary extends Component<Props, State> {
   public state: State = {
     hasError: false,
@@ -20,17 +23,37 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("ErrorBoundary caught error:", error, errorInfo);
-    
-    // Send notification with safe message extraction
+    // Safe message extraction
     const errorMessage = error?.message || error?.toString?.() || "Unknown error";
+    
+    // Skip common non-actionable errors
+    const componentStack = errorInfo?.componentStack || "";
+    if (
+      componentStack.includes("TooltipProvider") ||
+      errorMessage.includes("TooltipProvider") ||
+      errorMessage === "No message" ||
+      !errorMessage
+    ) {
+      console.warn("ErrorBoundary: Skipping non-actionable error:", errorMessage);
+      return;
+    }
+    
+    // Deduplicate - only send once per error message
+    const errorKey = `${errorMessage}-${componentStack.substring(0, 100)}`;
+    if (sentBoundaryErrors.has(errorKey)) return;
+    sentBoundaryErrors.add(errorKey);
+    
+    // Clear after 5 minutes
+    setTimeout(() => sentBoundaryErrors.delete(errorKey), 5 * 60 * 1000);
+
+    console.error("ErrorBoundary caught error:", errorMessage);
     
     sendErrorNotification({
       errorType: "REACT_ERROR",
       errorMessage,
       details: {
         stack: error?.stack || "No stack trace",
-        componentStack: errorInfo?.componentStack || "No component stack",
+        componentStack: componentStack || "No component stack",
       },
       source: "React ErrorBoundary",
     });
