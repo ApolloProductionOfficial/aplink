@@ -9,9 +9,10 @@ import {
   GridLayout,
   ParticipantTile,
   LayoutContextProvider,
+  ConnectionQualityIndicator,
 } from "@livekit/components-react";
 import "@livekit/components-styles";
-import { Track, RoomEvent, Room, RemoteParticipant } from "livekit-client";
+import { Track, RoomEvent, Room, RemoteParticipant, VideoPresets } from "livekit-client";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, VideoOff } from "lucide-react";
 
@@ -145,8 +146,34 @@ export function LiveKitRoom({
       options={{
         adaptiveStream: true,
         dynacast: true,
+        // Maximum HD video quality: 1080p @ 30fps
+        videoCaptureDefaults: {
+          resolution: {
+            width: 1920,
+            height: 1080,
+            frameRate: 30,
+          },
+        },
+        // High-quality stereo audio with noise suppression
+        audioCaptureDefaults: {
+          autoGainControl: true,
+          echoCancellation: true,
+          noiseSuppression: true,
+          sampleRate: 48000,
+          channelCount: 2,
+        },
         publishDefaults: {
           simulcast: true,
+          videoCodec: 'vp9', // Best compression quality
+          backupCodec: { codec: 'vp8' }, // Fallback for older browsers
+          dtx: true, // Discontinuous transmission - saves bandwidth during silence
+          red: true, // Audio redundancy for better reliability
+          videoSimulcastLayers: [
+            // Use VideoPresets for simulcast layers
+            VideoPresets.h360,
+            VideoPresets.h540,
+            VideoPresets.h1080,
+          ],
         },
       }}
       style={{ height: "100%" }}
@@ -229,7 +256,9 @@ function LiveKitContent({ onParticipantJoined, onParticipantLeft, onRoomReady }:
     <div className="flex flex-col h-full livekit-room-container bg-background">
       <div className="flex-1 relative overflow-hidden">
         <GridLayout tracks={tracks} className="p-3 gap-3">
-          <ParticipantTile className="rounded-xl overflow-hidden animate-cosmic-appear" />
+          <ParticipantTile className="rounded-xl overflow-hidden animate-cosmic-appear">
+            <ConnectionQualityIndicator className="lk-connection-quality" />
+          </ParticipantTile>
         </GridLayout>
       </div>
       <ControlBar 
