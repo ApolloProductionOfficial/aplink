@@ -1,5 +1,5 @@
-import React, { Component, ErrorInfo, ReactNode } from "react";
-import { sendErrorNotification } from "@/utils/errorNotification";
+import { Component, ErrorInfo, ReactNode } from 'react';
+import { sendErrorNotification } from '@/utils/errorNotification';
 
 interface Props {
   children: ReactNode;
@@ -10,7 +10,7 @@ interface State {
   error?: Error;
 }
 
-// Track sent errors to avoid duplicates
+// Dedupe: track errors we've already sent to prevent spam
 const sentBoundaryErrors = new Set<string>();
 
 class ErrorBoundary extends Component<Props, State> {
@@ -23,39 +23,52 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Safe message extraction
-    const errorMessage = error?.message || error?.toString?.() || "Unknown error";
-    const componentStack = errorInfo?.componentStack || "";
-    const errorStack = error?.stack || "";
-    
-    // DIAGNOSTIC MODE: Log ALL errors for debugging call creation issues
-    console.warn("[DEBUG ErrorBoundary] Caught error:", {
-      message: errorMessage,
-      stack: errorStack.substring(0, 800),
-      componentStack: componentStack.substring(0, 500),
-      url: typeof window !== "undefined" ? window.location.href : "unknown",
-      timestamp: new Date().toISOString(),
-    });
-    
-    // Deduplicate - only send once per error message
-    const errorKey = `${errorMessage}-${componentStack.substring(0, 100)}`;
-    if (sentBoundaryErrors.has(errorKey)) return;
+    // Extract safe strings
+    const errorMessage = error?.message || 'Unknown error';
+    const errorStack = error?.stack || '';
+    const componentStack = errorInfo?.componentStack || '';
+
+    // Log for debugging
+    console.warn('ErrorBoundary caught:', errorMessage);
+
+    // --- Filter out noise ---
+    // 1. TooltipProvider context issues (Safari/Radix)
+    const isTooltipError =
+      componentStack.includes('TooltipProvider') ||
+      componentStack.includes('Tooltip') ||
+      errorMessage.includes('TooltipProvider');
+
+    // 2. Empty or useless messages
+    const isEmptyError =
+      errorMessage === '{}' ||
+      errorMessage === 'No message' ||
+      errorMessage === 'Unknown error' ||
+      errorMessage.trim() === '';
+
+    // Skip notification for known noise
+    if (isTooltipError || isEmptyError) {
+      return;
+    }
+
+    // Dedupe key: message + first 100 chars of component stack
+    const errorKey = `${errorMessage}::${componentStack.substring(0, 100)}`;
+    if (sentBoundaryErrors.has(errorKey)) {
+      return;
+    }
     sentBoundaryErrors.add(errorKey);
-    
-    // Clear after 5 minutes
+
+    // Clear old keys after 5 minutes
     setTimeout(() => sentBoundaryErrors.delete(errorKey), 5 * 60 * 1000);
 
-    // Send notification (no console output to avoid duplicate detection)
+    // Send notification
     sendErrorNotification({
-      errorType: "REACT_ERROR",
+      errorType: 'REACT_ERROR',
       errorMessage,
       details: {
-        stack: error?.stack || "No stack trace",
-        componentStack: componentStack || "No component stack",
-        url: typeof window !== "undefined" ? window.location.href : null,
-        userAgent: typeof navigator !== "undefined" ? navigator.userAgent : null,
+        stack: errorStack.substring(0, 500),
+        componentStack: componentStack.substring(0, 300),
       },
-      source: "React ErrorBoundary",
+      source: 'React ErrorBoundary',
     });
   }
 
@@ -63,14 +76,12 @@ class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <div className="min-h-screen flex items-center justify-center bg-background p-4">
-          <div className="text-center space-y-4 max-w-md">
-            <h1 className="text-2xl font-bold text-destructive">Что-то пошло не так</h1>
-            <p className="text-muted-foreground">
-              Произошла ошибка. Администратор уже уведомлен.
-            </p>
+          <div className="text-center space-y-4">
+            <h1 className="text-2xl font-bold text-foreground">Что-то пошло не так</h1>
+            <p className="text-muted-foreground">Произошла ошибка при загрузке страницы</p>
             <button
               onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
             >
               Перезагрузить страницу
             </button>

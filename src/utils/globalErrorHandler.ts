@@ -1,127 +1,134 @@
-import { sendErrorNotification } from "./errorNotification";
+import { sendErrorNotification } from './errorNotification';
 
-// Track sent errors to avoid duplicates
+// Dedupe: track errors to prevent spam (5 min window)
 const sentErrors = new Set<string>();
 
 function getErrorKey(message: string, source?: string): string {
-  return `${message}-${source || "unknown"}`;
+  return `${message}::${source || 'unknown'}`;
 }
 
-// Initialize global error handlers
 export function initGlobalErrorHandlers() {
-  // Handle uncaught JavaScript errors
+  // --- window.onerror ---
   window.onerror = (message, source, lineno, colno, error) => {
-    const errorKey = getErrorKey(String(message), source);
-    
-    if (sentErrors.has(errorKey)) return;
+    const errorMessage = String(message || error?.message || 'Unknown error');
+
+    // Filter out noise
+    if (
+      errorMessage.includes('ResizeObserver') ||
+      errorMessage.includes('Script error') ||
+      errorMessage.includes('favicon') ||
+      errorMessage.includes('disconnected port') ||
+      errorMessage.includes('Extension context') ||
+      errorMessage.includes('chrome-extension://') ||
+      errorMessage.includes('moz-extension://') ||
+      errorMessage.includes('TooltipProvider') ||
+      errorMessage.includes('Tooltip')
+    ) {
+      return false;
+    }
+
+    const errorKey = getErrorKey(errorMessage, String(source));
+    if (sentErrors.has(errorKey)) return false;
     sentErrors.add(errorKey);
-    
-    // Clear after 5 minutes to allow re-reporting
     setTimeout(() => sentErrors.delete(errorKey), 5 * 60 * 1000);
 
-    console.error("Global error:", { message, source, lineno, colno, error });
+    console.error('[GlobalError]', errorMessage);
 
     sendErrorNotification({
-      errorType: "JAVASCRIPT_ERROR",
-      errorMessage: String(message),
+      errorType: 'JAVASCRIPT_ERROR',
+      errorMessage,
       details: {
-        source,
-        line: lineno,
-        column: colno,
-        stack: error?.stack,
-        url: window.location.href,
-        userAgent: navigator.userAgent,
+        source: String(source),
+        lineno,
+        colno,
+        stack: error?.stack?.substring(0, 500),
       },
-      source: "JavaScript Runtime",
+      source: 'JavaScript Runtime',
     });
 
     return false;
   };
 
-  // Handle unhandled promise rejections
+  // --- unhandledrejection ---
   window.onunhandledrejection = (event) => {
-    const message = event.reason?.message || String(event.reason);
-    const errorKey = getErrorKey(message, "promise");
-    
-    if (sentErrors.has(errorKey)) return;
-    sentErrors.add(errorKey);
-    
-    setTimeout(() => sentErrors.delete(errorKey), 5 * 60 * 1000);
+    const reason = event.reason;
+    const errorMessage =
+      reason?.message || (typeof reason === 'string' ? reason : 'Unhandled Promise Rejection');
 
-    console.error("Unhandled promise rejection:", event.reason);
-
-    sendErrorNotification({
-      errorType: "PROMISE_REJECTION",
-      errorMessage: message,
-      details: {
-        stack: event.reason?.stack,
-        reason: String(event.reason),
-        url: window.location.href,
-        userAgent: navigator.userAgent,
-      },
-      source: "Promise",
-    });
-  };
-
-  // Intercept console.error to catch logged errors
-  const originalConsoleError = console.error;
-  console.error = (...args) => {
-    originalConsoleError.apply(console, args);
-    
-    // Only send for significant errors (avoid noise)
-    const message = args
-      .map((arg) => {
-        if (typeof arg === "object") {
-          try {
-            return JSON.stringify(arg);
-          } catch {
-            return String(arg);
-          }
-        }
-        return String(arg);
-      })
-      .join(" ");
-    
-    // DIAGNOSTIC MODE: Only skip truly internal messages to prevent infinite loops
+    // Filter out noise
     if (
-      message.includes("[GlobalErrorHandler]") ||
-      message.includes("GlobalErrorHandler:") ||
-      message.includes("[DEBUG ErrorBoundary]") ||
-      message.includes("Download the React DevTools") ||
-      message.includes("Download the Apollo DevTools") ||
-      message.includes("favicon") ||
-      message.includes("ResizeObserver") ||
-      message.includes("Global error:") ||
-      message.includes("Unhandled promise rejection:") ||
-      message.includes("Failed to log error to database") ||
-      message.includes("Failed to send error notification")
+      errorMessage.includes('FunctionsFetchError') ||
+      errorMessage.includes('AbortError') ||
+      errorMessage.includes('NetworkError') ||
+      errorMessage.includes('Load failed') ||
+      errorMessage.includes('Failed to fetch') ||
+      errorMessage.includes('TooltipProvider') ||
+      errorMessage.includes('Tooltip')
     ) {
       return;
     }
-    
-    // DIAGNOSTIC: Log what we're seeing for debugging
-    console.warn("[GlobalErrorHandler DIAGNOSTIC]", message.substring(0, 300));
 
-    const errorKey = getErrorKey(message.substring(0, 100), "console");
+    const errorKey = getErrorKey(errorMessage, 'promise');
     if (sentErrors.has(errorKey)) return;
     sentErrors.add(errorKey);
-    
     setTimeout(() => sentErrors.delete(errorKey), 5 * 60 * 1000);
 
-    // Only send for actual errors, not warnings
-    if (message.toLowerCase().includes("error") || message.includes("failed")) {
-      sendErrorNotification({
-        errorType: "CONSOLE_ERROR",
-        errorMessage: message.substring(0, 500),
-        details: {
-          fullMessage: message,
-          url: window.location.href,
-          userAgent: navigator.userAgent,
-        },
-        source: "Console",
-      });
-    }
+    console.error('[UnhandledRejection]', errorMessage);
+
+    sendErrorNotification({
+      errorType: 'PROMISE_REJECTION',
+      errorMessage,
+      details: {
+        stack: reason?.stack?.substring(0, 500),
+      },
+      source: 'Promise',
+    });
   };
 
-  console.log("Global error handlers initialized");
+  // --- console.error capture ---
+  const originalConsoleError = console.error;
+  console.error = (...args) => {
+    originalConsoleError.apply(console, args);
+
+    const fullMessage = args
+      .map((arg) => (typeof arg === 'object' ? JSON.stringify(arg) : String(arg)))
+      .join(' ');
+
+    // Only report actual errors, not debug logs
+    const lowerMessage = fullMessage.toLowerCase();
+    if (!lowerMessage.includes('error') && !lowerMessage.includes('failed')) {
+      return;
+    }
+
+    // Filter out noise
+    if (
+      fullMessage.includes('DevTools') ||
+      fullMessage.includes('favicon') ||
+      fullMessage.includes('ResizeObserver') ||
+      fullMessage.includes('disconnected port') ||
+      fullMessage.includes('chrome-extension://') ||
+      fullMessage.includes('moz-extension://') ||
+      fullMessage.includes('TooltipProvider') ||
+      fullMessage.includes('Tooltip') ||
+      fullMessage.includes('ErrorBoundary caught') // Already handled by ErrorBoundary
+    ) {
+      return;
+    }
+
+    const errorKey = getErrorKey(fullMessage.substring(0, 200), 'console');
+    if (sentErrors.has(errorKey)) return;
+    sentErrors.add(errorKey);
+    setTimeout(() => sentErrors.delete(errorKey), 5 * 60 * 1000);
+
+    sendErrorNotification({
+      errorType: 'CONSOLE_ERROR',
+      errorMessage: fullMessage.substring(0, 500),
+      details: {
+        fullMessage: fullMessage.substring(0, 1000),
+        url: window.location.href,
+        userAgent: navigator.userAgent,
+      },
+      source: 'Console',
+    });
+  };
 }
