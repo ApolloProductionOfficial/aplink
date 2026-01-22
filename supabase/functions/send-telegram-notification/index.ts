@@ -7,7 +7,6 @@ const corsHeaders = {
 };
 
 // Use REPORTS_BOT_TOKEN for error/diagnostic notifications (Reports and Errors bot)
-// This is separate from TELEGRAM_BOT_TOKEN which is used for user notifications (APLink bot)
 const REPORTS_BOT_TOKEN = Deno.env.get("REPORTS_BOT_TOKEN");
 const ADMIN_CHAT_ID = "2061785720";
 const GROUP_WINDOW_MS = 5 * 60 * 1000; // 5 минут - окно группировки
@@ -33,7 +32,7 @@ interface MessageOptions {
   isTest?: boolean;
 }
 
-// Форматирование сообщения
+// Форматирование сообщения - один JSON блок для удобного копирования
 function formatMessage(opts: MessageOptions): string {
   const { errorType, errorMessage, source, severity, details, count, timestamp, firstSeen, isTest } = opts;
   
@@ -50,52 +49,18 @@ function formatMessage(opts: MessageOptions): string {
     userAgent: details?.userAgent || null
   };
 
-  let header = isTest 
-    ? "🧪 *Тестовое уведомление*" 
-    : `${emoji} *Ошибка в Apollo Production*`;
+  let header = isTest ? "🧪 ТЕСТ" : `${emoji} Ошибка Apollo`;
     
   if (count && count > 1) {
-    header += `\n🔁 Повторилась *${count} раз* с ${firstSeen}`;
+    header += ` (×${count}, с ${firstSeen})`;
   }
 
-  // Экранируем специальные символы Markdown
-  const safeMessage = (errorMessage || "").substring(0, 300)
-    .replace(/[_*`\[\]]/g, "\\$&");
+  // Единый JSON блок - легко копируется целиком
+  return `${header}
 
-  return `
-${header}
-
-📅 *Время:* ${time}
-📍 *Источник:* ${source || "Неизвестно"}
-🏷 *Тип:* \`${errorType || "ERROR"}\`
-⚠️ *Severity:* ${severity || "error"}
-
-💬 *Сообщение:*
-\`\`\`
-${safeMessage}
-\`\`\`
-
-📋 *JSON для Lovable:*
 \`\`\`json
 ${JSON.stringify(errorReport, null, 2)}
-\`\`\`
-`.trim();
-}
-
-// Inline-кнопки для быстрых действий
-function getInlineKeyboard(groupId?: string) {
-  return {
-    inline_keyboard: [
-      [
-        { text: "📋 Открыть админку", url: "https://aplink.live/admin" },
-        { text: "🔇 Игнорировать", callback_data: `ignore:${groupId || "new"}` }
-      ],
-      [
-        { text: "🗑 Очистить логи", callback_data: "clear_logs" },
-        { text: "📊 Статистика", callback_data: "show_stats" }
-      ]
-    ]
-  };
+\`\`\``;
 }
 
 serve(async (req) => {
@@ -181,7 +146,7 @@ serve(async (req) => {
 
       console.log(`Error grouped, count: ${newCount}`);
 
-      // Редактируем сообщение в Telegram
+      // Редактируем сообщение в Telegram (без кнопок)
       if (existingGroup.telegram_message_id) {
         const firstSeenFormatted = new Date(existingGroup.first_seen).toLocaleString("ru-RU", { timeZone: "Europe/Moscow" });
         
@@ -203,8 +168,7 @@ serve(async (req) => {
             chat_id: ADMIN_CHAT_ID,
             message_id: existingGroup.telegram_message_id,
             text: updatedMessage,
-            parse_mode: "Markdown",
-            reply_markup: getInlineKeyboard(existingGroup.id)
+            parse_mode: "Markdown"
           })
         });
       }
@@ -215,7 +179,7 @@ serve(async (req) => {
       );
     }
 
-    // Новая ошибка - отправляем новое сообщение
+    // Новая ошибка - отправляем новое сообщение (без кнопок)
     const message = formatMessage({
       errorType,
       errorMessage,
@@ -226,7 +190,6 @@ serve(async (req) => {
       timestamp
     });
 
-    // Отправляем сообщение с inline-кнопками через бот Reports and Errors
     const telegramResponse = await fetch(
       `https://api.telegram.org/bot${REPORTS_BOT_TOKEN}/sendMessage`,
       {
@@ -235,8 +198,7 @@ serve(async (req) => {
         body: JSON.stringify({
           chat_id: ADMIN_CHAT_ID,
           text: message,
-          parse_mode: "Markdown",
-          reply_markup: getInlineKeyboard()
+          parse_mode: "Markdown"
         })
       }
     );
