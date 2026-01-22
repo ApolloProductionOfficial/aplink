@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { useParams, useSearchParams, useNavigate, useBlocker } from "react-router-dom";
+import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   Copy,
@@ -150,37 +150,49 @@ const MeetingRoom = () => {
   });
 
   // Block navigation when in a call - prevents accidental back button exits
-  // This is key to preventing call disconnection on back button like Google Meet does
-  const blocker = useBlocker(
-    ({ currentLocation, nextLocation }) => {
+  // Using beforeunload event since useBlocker requires data router
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       // Only block if user is in an active call and hasn't initiated end
       const isInActiveCall = connectionStatus === 'connected' && !userInitiatedEndRef.current && !hasRedirectedRef.current;
-      const isNavigatingAway = currentLocation.pathname !== nextLocation.pathname;
-      return isInActiveCall && isNavigatingAway;
-    }
-  );
+      if (isInActiveCall) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
+    };
 
-  // Handle blocked navigation - show modal dialog
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [connectionStatus]);
+
+  // Handle back button with popstate event
   useEffect(() => {
-    if (blocker.state === 'blocked') {
-      // Show the modal dialog
-      setShowLeaveConfirm(true);
-    }
-  }, [blocker]);
+    const handlePopState = () => {
+      const isInActiveCall = connectionStatus === 'connected' && !userInitiatedEndRef.current && !hasRedirectedRef.current;
+      if (isInActiveCall) {
+        // Push state back to prevent navigation and show dialog
+        window.history.pushState(null, '', window.location.href);
+        setShowLeaveConfirm(true);
+      }
+    };
+
+    // Push initial state to enable popstate detection
+    window.history.pushState(null, '', window.location.href);
+    window.addEventListener('popstate', handlePopState);
+    
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [connectionStatus]);
 
   const handleStayInCall = () => {
     setShowLeaveConfirm(false);
-    if (blocker.state === 'blocked') {
-      blocker.reset();
-    }
   };
 
   const handleLeaveCall = () => {
     setShowLeaveConfirm(false);
     userInitiatedEndRef.current = true;
-    if (blocker.state === 'blocked') {
-      blocker.proceed();
-    }
+    // Navigate back since user confirmed leaving
+    navigate(-1);
   };
 
   // Page Lifecycle & Browser events for extended diagnostics
