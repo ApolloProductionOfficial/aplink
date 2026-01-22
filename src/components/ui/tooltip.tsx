@@ -38,14 +38,72 @@ const SafeTooltipProvider = ({ children, ...props }: React.ComponentPropsWithout
   }
 };
 
-const Tooltip = TooltipPrimitive.Root;
+// Safe Tooltip that handles WebKit context issues
+const Tooltip = ({ children, ...props }: React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Root>) => {
+  // Detect Telegram Desktop WebKit - disable tooltips entirely to prevent crashes
+  const isTelegramDesktopWebKit =
+    typeof navigator !== "undefined" &&
+    /Telegram/i.test(navigator.userAgent) &&
+    /AppleWebKit/i.test(navigator.userAgent) &&
+    !/Chrome|Chromium|Edg/i.test(navigator.userAgent);
 
-const TooltipTrigger = TooltipPrimitive.Trigger;
+  if (isTelegramDesktopWebKit) {
+    // Return only the trigger child, skip tooltip entirely
+    return <>{children}</>;
+  }
+
+  try {
+    return <TooltipPrimitive.Root {...props}>{children}</TooltipPrimitive.Root>;
+  } catch {
+    return <>{children}</>;
+  }
+};
+
+// Helper to detect problematic WebKit environment
+const useIsTelegramDesktopWebKit = () => {
+  return React.useMemo(() => {
+    if (typeof navigator === "undefined") return false;
+    return (
+      /Telegram/i.test(navigator.userAgent) &&
+      /AppleWebKit/i.test(navigator.userAgent) &&
+      !/Chrome|Chromium|Edg/i.test(navigator.userAgent)
+    );
+  }, []);
+};
+
+// Safe TooltipTrigger - renders children directly in problematic WebKit
+const TooltipTrigger = React.forwardRef<
+  React.ElementRef<typeof TooltipPrimitive.Trigger>,
+  React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Trigger>
+>(({ children, asChild, ...props }, ref) => {
+  const isTelegramDesktopWebKit = useIsTelegramDesktopWebKit();
+  
+  if (isTelegramDesktopWebKit) {
+    // Return the child directly without tooltip trigger wrapper
+    return <>{children}</>;
+  }
+
+  try {
+    return (
+      <TooltipPrimitive.Trigger ref={ref} asChild={asChild} {...props}>
+        {children}
+      </TooltipPrimitive.Trigger>
+    );
+  } catch {
+    return <>{children}</>;
+  }
+});
+TooltipTrigger.displayName = TooltipPrimitive.Trigger.displayName;
 
 const TooltipContent = React.forwardRef<
   React.ElementRef<typeof TooltipPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>
 >(({ className, sideOffset = 4, ...props }, ref) => {
+  const isTelegramDesktopWebKit = useIsTelegramDesktopWebKit();
+  
+  // Don't render content at all in problematic WebKit
+  if (isTelegramDesktopWebKit) return null;
+  
   // Safari compatibility: catch context errors gracefully
   try {
     return (
@@ -66,14 +124,7 @@ const TooltipContent = React.forwardRef<
 });
 TooltipContent.displayName = TooltipPrimitive.Content.displayName;
 
-// Safe Tooltip wrapper that doesn't crash on context issues
-const SafeTooltip = ({ children, ...props }: React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Root>) => {
-  try {
-    return <TooltipPrimitive.Root {...props}>{children}</TooltipPrimitive.Root>;
-  } catch {
-    // Return children without tooltip wrapper if context fails
-    return <>{children}</>;
-  }
-};
+// Legacy alias - now Tooltip is already safe
+const SafeTooltip = Tooltip;
 
 export { Tooltip, SafeTooltip, TooltipTrigger, TooltipContent, TooltipProvider, SafeTooltipProvider };
