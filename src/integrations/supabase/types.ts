@@ -84,6 +84,7 @@ export type Database = {
           caption_uk: string | null
           file_id: string | null
           id: string
+          media_url: string | null
           updated_at: string
           updated_by: string | null
         }
@@ -93,6 +94,7 @@ export type Database = {
           caption_uk?: string | null
           file_id?: string | null
           id?: string
+          media_url?: string | null
           updated_at?: string
           updated_by?: string | null
         }
@@ -102,6 +104,7 @@ export type Database = {
           caption_uk?: string | null
           file_id?: string | null
           id?: string
+          media_url?: string | null
           updated_at?: string
           updated_by?: string | null
         }

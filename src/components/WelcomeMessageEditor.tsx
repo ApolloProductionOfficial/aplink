@@ -5,11 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Loader2, Upload, Image, Video, Save, RefreshCw, Eye, MessageCircle } from 'lucide-react';
+import { Loader2, Upload, Image, Video, Save, RefreshCw, Eye, MessageCircle, X, CheckCircle2 } from 'lucide-react';
 
 interface WelcomeSettings {
   id: string;
   file_id: string | null;
+  media_url: string | null;
   caption_ru: string | null;
   caption_en: string | null;
   caption_uk: string | null;
@@ -40,10 +41,15 @@ export default function WelcomeMessageEditor() {
       if (error) throw error;
 
       if (data) {
-        setSettings(data as WelcomeSettings);
+        const settingsData = data as WelcomeSettings;
+        setSettings(settingsData);
         setCaptionRu(data.caption_ru || '');
         setCaptionEn(data.caption_en || '');
         setCaptionUk(data.caption_uk || '');
+        // Set preview from existing media_url
+        if (settingsData.media_url) {
+          setMediaPreview(settingsData.media_url);
+        }
       }
     } catch (err) {
       console.error('Failed to fetch welcome settings:', err);
@@ -83,7 +89,7 @@ export default function WelcomeMessageEditor() {
 
     setUploading(true);
     try {
-      const fileExt = mediaFile.name.split('.').pop();
+      const fileExt = mediaFile.name.split('.').pop()?.toLowerCase() || 'gif';
       const fileName = `welcome-media-${Date.now()}.${fileExt}`;
       const filePath = `bot/${fileName}`;
 
@@ -107,28 +113,35 @@ export default function WelcomeMessageEditor() {
     }
   };
 
+  const handleRemoveMedia = () => {
+    setMediaFile(null);
+    setMediaPreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handleSave = async () => {
     setSaving(true);
     try {
       // Upload media if new file selected
-      let mediaUrl: string | null = null;
+      let mediaUrl: string | null = settings?.media_url || null;
       if (mediaFile) {
-        mediaUrl = await uploadMedia();
-        if (!mediaUrl && mediaFile) {
+        const uploadedUrl = await uploadMedia();
+        if (!uploadedUrl) {
           setSaving(false);
           return;
         }
+        mediaUrl = uploadedUrl;
       }
 
       const updateData: Record<string, unknown> = {
         caption_ru: captionRu || null,
         caption_en: captionEn || null,
         caption_uk: captionUk || null,
+        media_url: mediaUrl,
         updated_at: new Date().toISOString(),
       };
-
-      // Note: file_id must be set via Telegram bot command (it's a Telegram-side identifier)
-      // Here we can only update captions from the web admin
 
       if (settings?.id) {
         const { error } = await supabase
@@ -145,16 +158,19 @@ export default function WelcomeMessageEditor() {
         if (error) throw error;
       }
 
-      toast.success('Приветствие сохранено!');
+      toast.success('Приветствие сохранено! Медиа будет отправляться в боте.');
       await fetchSettings();
       setMediaFile(null);
-      setMediaPreview(null);
     } catch (err) {
       console.error('Save error:', err);
       toast.error('Ошибка сохранения');
     } finally {
       setSaving(false);
     }
+  };
+
+  const isVideo = (url: string) => {
+    return url.toLowerCase().includes('.mp4') || url.toLowerCase().includes('.mov');
   };
 
   if (loading) {
@@ -172,40 +188,94 @@ export default function WelcomeMessageEditor() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <MessageCircle className="w-5 h-5 text-primary" />
-          Welcome Message
+          🎬 Приветствие бота
         </CardTitle>
         <CardDescription>
-          Настройте приветственное сообщение бота для команды /start.
-          <br />
-          <span className="text-yellow-500">⚠️ Медиафайл (GIF/видео) можно задать только через Telegram командой /setwelcome</span>
+          Настройте приветственное сообщение и медиа для команды /start
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Current Media Status */}
-        <div className="p-4 rounded-lg bg-muted/50 border border-border/50">
-          <div className="flex items-center gap-3">
-            {settings?.file_id ? (
-              <>
-                <Video className="w-5 h-5 text-green-500" />
-                <div>
-                  <p className="font-medium text-green-500">Медиа установлено</p>
-                  <p className="text-xs text-muted-foreground">
-                    file_id: {settings.file_id.substring(0, 20)}...
-                  </p>
+        {/* Media Upload Section */}
+        <div className="space-y-4">
+          <Label className="flex items-center gap-2 text-base font-medium">
+            <Video className="w-4 h-4" />
+            Медиафайл (GIF / Видео / Фото)
+          </Label>
+          
+          {/* Current/New Media Preview */}
+          {mediaPreview ? (
+            <div className="relative rounded-lg overflow-hidden border border-border bg-muted/30">
+              <div className="aspect-video flex items-center justify-center bg-black/20">
+                {isVideo(mediaPreview) ? (
+                  <video 
+                    src={mediaPreview} 
+                    className="max-h-64 w-auto rounded"
+                    autoPlay 
+                    loop 
+                    muted 
+                    playsInline
+                  />
+                ) : (
+                  <img 
+                    src={mediaPreview} 
+                    alt="Welcome media preview" 
+                    className="max-h-64 w-auto rounded object-contain"
+                  />
+                )}
+              </div>
+              <div className="absolute top-2 right-2 flex gap-2">
+                {mediaFile && (
+                  <span className="px-2 py-1 bg-green-500/90 text-white text-xs rounded-full flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3" />
+                    Новый файл
+                  </span>
+                )}
+                <Button
+                  variant="destructive"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={handleRemoveMedia}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+              {settings?.media_url && !mediaFile && (
+                <div className="absolute bottom-2 left-2">
+                  <span className="px-2 py-1 bg-primary/90 text-primary-foreground text-xs rounded-full">
+                    Текущее медиа
+                  </span>
                 </div>
-              </>
-            ) : (
-              <>
-                <Image className="w-5 h-5 text-muted-foreground" />
-                <div>
-                  <p className="font-medium">Медиа не установлено</p>
-                  <p className="text-xs text-muted-foreground">
-                    Используйте /setwelcome в Telegram для загрузки GIF/видео
-                  </p>
-                </div>
-              </>
-            )}
-          </div>
+              )}
+            </div>
+          ) : (
+            <div 
+              className="border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 hover:bg-muted/30 transition-colors"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Upload className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+              <p className="text-muted-foreground mb-1">Нажмите для загрузки</p>
+              <p className="text-xs text-muted-foreground">GIF, MP4, JPG, PNG, WEBP (до 20MB)</p>
+            </div>
+          )}
+          
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/gif,image/jpeg,image/png,image/webp,video/mp4,video/quicktime"
+            onChange={handleFileChange}
+            className="hidden"
+          />
+          
+          {mediaPreview && (
+            <Button
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+              className="gap-2"
+            >
+              <Upload className="w-4 h-4" />
+              Заменить файл
+            </Button>
+          )}
         </div>
 
         {/* Caption Fields */}
@@ -257,11 +327,33 @@ export default function WelcomeMessageEditor() {
         <div className="p-4 rounded-lg bg-muted/30 border border-border/50">
           <div className="flex items-center gap-2 mb-3">
             <Eye className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm font-medium">Предпросмотр (RU)</span>
+            <span className="text-sm font-medium">Предпросмотр сообщения (RU)</span>
           </div>
           <div className="p-3 bg-background rounded border text-sm whitespace-pre-wrap">
             {captionRu || <span className="text-muted-foreground italic">Текст не задан</span>}
           </div>
+        </div>
+
+        {/* Status Info */}
+        <div className="p-4 rounded-lg bg-muted/50 border border-border/50 space-y-2">
+          <div className="flex items-center gap-3">
+            {settings?.media_url || mediaFile ? (
+              <>
+                <CheckCircle2 className="w-5 h-5 text-green-500" />
+                <span className="text-green-500 font-medium">Медиа настроено</span>
+              </>
+            ) : (
+              <>
+                <Image className="w-5 h-5 text-yellow-500" />
+                <span className="text-yellow-500 font-medium">Медиа не загружено</span>
+              </>
+            )}
+          </div>
+          {settings?.file_id && (
+            <p className="text-xs text-muted-foreground">
+              Telegram file_id: {settings.file_id.substring(0, 30)}...
+            </p>
+          )}
         </div>
 
         {/* Last Updated */}
@@ -273,37 +365,18 @@ export default function WelcomeMessageEditor() {
 
         {/* Actions */}
         <div className="flex gap-3">
-          <Button onClick={handleSave} disabled={saving} className="gap-2">
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            Сохранить
+          <Button onClick={handleSave} disabled={saving || uploading} className="gap-2">
+            {saving || uploading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4" />
+            )}
+            {uploading ? 'Загрузка...' : saving ? 'Сохранение...' : 'Сохранить'}
           </Button>
           <Button variant="outline" onClick={fetchSettings} disabled={loading} className="gap-2">
             <RefreshCw className="w-4 h-4" />
             Обновить
           </Button>
-        </div>
-
-        {/* Telegram Command Help */}
-        <div className="mt-6 p-4 rounded-lg bg-primary/5 border border-primary/20">
-          <h4 className="font-medium mb-2 flex items-center gap-2">
-            💡 Как установить медиа через Telegram
-          </h4>
-          <div className="text-sm text-muted-foreground space-y-2">
-            <p>1. Отправьте GIF/видео/фото боту с командой в caption:</p>
-            <pre className="p-2 bg-muted rounded text-xs overflow-x-auto">
-{`/setwelcome
-
-🇷🇺 RU:
-Текст на русском
-
-🇬🇧 EN:
-Text in English
-
-🇺🇦 UK:
-Текст українською`}
-            </pre>
-            <p>2. Или ответьте /setwelcome reply на сообщение с медиа.</p>
-          </div>
         </div>
       </CardContent>
     </Card>
