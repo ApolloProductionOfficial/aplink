@@ -599,13 +599,15 @@ const MeetingRoom = () => {
 
   const goToCallsAfterSave = () => {
     setEndSaveDialogOpen(false);
-    navigate("/dashboard");
+    // Redirect to apolloproduction.studio after saving
+    window.location.href = 'https://apolloproduction.studio';
   };
 
   const exitWithoutSaving = () => {
     clearPendingBaseFromStorage();
     setEndSaveDialogOpen(false);
-    navigate("/");
+    // Redirect to apolloproduction.studio
+    window.location.href = 'https://apolloproduction.studio';
   };
 
   // LiveKit event handlers
@@ -637,9 +639,11 @@ const MeetingRoom = () => {
       setEndSaveStatus("saving");
       runMeetingSave();
     } else if (!hasRedirectedRef.current) {
-      navigate("/");
+      hasRedirectedRef.current = true;
+      // Redirect to apolloproduction.studio after call ends
+      window.location.href = 'https://apolloproduction.studio';
     }
-  }, [playDisconnectedSound, navigate]);
+  }, [playDisconnectedSound]);
 
   const handleParticipantJoined = useCallback((identity: string, name: string) => {
     console.log('Participant joined:', identity, name);
@@ -676,7 +680,8 @@ const MeetingRoom = () => {
     hasRedirectedRef.current = true;
 
     if (!hasStartedRecordingRef.current) {
-      navigate("/");
+      // Redirect to apolloproduction.studio
+      window.location.href = 'https://apolloproduction.studio';
       return;
     }
 
@@ -685,7 +690,7 @@ const MeetingRoom = () => {
     setEndSaveError(null);
 
     await runMeetingSave();
-  }, [navigate]);
+  }, []);
 
   // Don't render if no username - redirecting
   if (!userName) {
