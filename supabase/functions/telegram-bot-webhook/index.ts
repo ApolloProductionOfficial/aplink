@@ -1390,11 +1390,12 @@ Text in English
         // Fetch custom welcome settings from DB (if admin uploaded custom media/captions)
         const { data: welcomeSettings } = await supabase
           .from("bot_welcome_settings")
-          .select("file_id, caption_ru, caption_en, caption_uk")
+          .select("file_id, media_url, caption_ru, caption_en, caption_uk")
           .limit(1)
           .maybeSingle();
 
         const dbFileId = (welcomeSettings as Record<string, unknown> | null)?.file_id as string | null;
+        const dbMediaUrl = (welcomeSettings as Record<string, unknown> | null)?.media_url as string | null;
         const dbCaptionRu = (welcomeSettings as Record<string, unknown> | null)?.caption_ru as string | null;
         const dbCaptionEn = (welcomeSettings as Record<string, unknown> | null)?.caption_en as string | null;
         const dbCaptionUk = (welcomeSettings as Record<string, unknown> | null)?.caption_uk as string | null;
@@ -1408,6 +1409,7 @@ Text in English
 
         // Helper to send welcome with DB media if available, otherwise fallback
         const sendWelcomeMedia = async (caption: string, replyMarkup: unknown) => {
+          // Priority 1: Use Telegram file_id if available (fastest, cached by Telegram)
           if (dbFileId) {
             // Try sending as animation first (works for MP4/GIF file_id)
             const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendAnimation`, {
@@ -1441,21 +1443,40 @@ Text in English
             if (photoData?.ok) return true;
           }
 
-          // Fallback: use URL-based animation
+          // Priority 2: Use media_url from admin panel upload
+          const mediaUrlToUse = dbMediaUrl || WELCOME_GIF_URL;
+          console.log("Using media URL:", mediaUrlToUse);
+
+          // Try as animation (GIF/MP4)
           const urlRes = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendAnimation`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               chat_id: chatId,
-              animation: WELCOME_GIF_URL,
+              animation: mediaUrlToUse,
               caption,
               parse_mode: "HTML",
               reply_markup: replyMarkup,
             }),
           });
           const urlData = await urlRes.json();
-          console.log("sendAnimation with URL fallback result:", JSON.stringify(urlData));
+          console.log("sendAnimation with URL result:", JSON.stringify(urlData));
           if (urlData?.ok) return true;
+
+          // Try as photo if animation failed
+          const photoUrlRes = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: chatId,
+              photo: mediaUrlToUse,
+              caption,
+              parse_mode: "HTML",
+              reply_markup: replyMarkup,
+            }),
+          });
+          const photoUrlData = await photoUrlRes.json();
+          if (photoUrlData?.ok) return true;
 
           // Final fallback: plain text message
           await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
