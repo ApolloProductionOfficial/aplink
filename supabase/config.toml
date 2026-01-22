@@ -86,3 +86,6 @@ verify_jwt = false
 
 [functions.track-anonymous-event]
 verify_jwt = false
+
+[functions.livekit-token]
+verify_jwt = false
