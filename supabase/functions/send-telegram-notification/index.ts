@@ -59,6 +59,91 @@ function inferSiteName(details?: Record<string, unknown> | null): string {
   }
 }
 
+function extractComponentStack(details?: Record<string, unknown> | null): string | null {
+  if (!details) return null;
+
+  const direct = details.componentStack;
+  if (typeof direct === "string" && direct.trim()) return direct;
+
+  // Some clients send componentStack inside a JSON blob embedded in fullMessage.
+  const fullMessage = details.fullMessage;
+  if (typeof fullMessage === "string" && fullMessage.includes("componentStack")) {
+    // Try parsing the last JSON object found in the string.
+    const lastOpen = fullMessage.lastIndexOf("{");
+    const lastClose = fullMessage.lastIndexOf("}");
+    if (lastOpen !== -1 && lastClose !== -1 && lastClose > lastOpen) {
+      const maybeJson = fullMessage.slice(lastOpen, lastClose + 1);
+      try {
+        const parsed = JSON.parse(maybeJson);
+        if (typeof parsed?.componentStack === "string" && parsed.componentStack.trim()) {
+          return parsed.componentStack;
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  return null;
+}
+
+function normalizeStackSignature(stack: string): string {
+  const lines = stack
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean)
+    // Keep the signature stable but compact
+    .slice(0, 4);
+  return lines.join("|").substring(0, 280);
+}
+
+function inferDisplayMessage(errorMessage: string | undefined, details?: Record<string, unknown> | null): string {
+  const msg = (errorMessage || "").trim();
+  if (msg) return msg;
+
+  const stack = extractComponentStack(details) || (details?.stack as string | undefined) || null;
+  if (typeof stack === "string" && stack.trim()) {
+    const firstLine = stack
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean)[0];
+    if (firstLine) return firstLine;
+  }
+
+  return "No message";
+}
+
+function buildGroupingFingerprint(params: {
+  errorType?: string;
+  errorMessage?: string;
+  source?: string;
+  details?: Record<string, unknown> | null;
+}): { fingerprint: string; normalizedType: string } {
+  const { errorType, errorMessage, source, details } = params;
+
+  const type = (errorType || "UNKNOWN").toUpperCase();
+  const src = (source || "").toLowerCase();
+  const msg = (errorMessage || "").toLowerCase();
+
+  // React ErrorBoundary duplicates:
+  // - one event comes as REACT_ERROR (often with empty message)
+  // - the second comes via console.error as CONSOLE_ERROR with "ErrorBoundary caught error..."
+  const componentStack = extractComponentStack(details);
+  const isBoundaryRelated =
+    !!componentStack ||
+    src.includes("errorboundary") ||
+    msg.includes("errorboundary caught error") ||
+    msg.includes("componentstack");
+
+  if (isBoundaryRelated && componentStack) {
+    const signature = normalizeStackSignature(componentStack);
+    return { fingerprint: `REACT_BOUNDARY:${signature}`, normalizedType: "REACT_ERROR" };
+  }
+
+  const normalizedMsg = (errorMessage || "").substring(0, 160);
+  return { fingerprint: `${type}:${normalizedMsg}`, normalizedType: type };
+}
+
 // Форматирование сообщения - один JSON блок для удобного копирования
 function formatMessage(opts: MessageOptions): string {
   const { errorType, errorMessage, source, severity, details, count, timestamp, firstSeen, isTest } = opts;
@@ -69,12 +154,14 @@ function formatMessage(opts: MessageOptions): string {
   const siteUrl = (details?.url as string | undefined) || null;
   const siteName = inferSiteName(details || null);
   
+  const displayMessage = inferDisplayMessage(errorMessage, details || null);
+
   const errorReport = {
     timestamp: time,
     site: siteName,
     source: source || "Unknown",
     errorType: errorType || "GENERAL_ERROR",
-    errorMessage: errorMessage || "No message",
+    errorMessage: displayMessage,
     details: details || null,
     url: siteUrl || null,
     userAgent: details?.userAgent || null
@@ -158,9 +245,8 @@ serve(async (req) => {
     // Создаём хеш ошибки для группировки
     // Normalize site so "Unknown" and actual site are grouped together
     const siteName = inferSiteName(details || null);
-    const normalizedMsg = (errorMessage || "").substring(0, 140);
-    const normalizedType = errorType || "UNKNOWN";
-    const errorHash = btoa(unescape(encodeURIComponent(`${siteName}:${normalizedType}:${normalizedMsg}`)));
+    const { fingerprint } = buildGroupingFingerprint({ errorType, errorMessage, source, details: details || null });
+    const errorHash = btoa(unescape(encodeURIComponent(`${siteName}:${fingerprint}`)));
     const windowStart = new Date(now.getTime() - GROUP_WINDOW_MS);
 
     // Проверяем, есть ли недавняя похожая ошибка
