@@ -1,7 +1,7 @@
 import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { SafeTooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
@@ -23,7 +23,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <LanguageProvider>
         <ErrorBoundary>
-          <TooltipProvider delayDuration={300}>
+          <SafeTooltipProvider delayDuration={300}>
             <Toaster />
             <Sonner />
             <BrowserRouter>
@@ -39,7 +39,7 @@ function App() {
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
-          </TooltipProvider>
+          </SafeTooltipProvider>
         </ErrorBoundary>
       </LanguageProvider>
     </QueryClientProvider>
