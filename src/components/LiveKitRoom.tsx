@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import {
   LiveKitRoom as LKRoom,
-  VideoConference,
   RoomAudioRenderer,
   ControlBar,
   useRoomContext,
@@ -9,11 +8,16 @@ import {
   useParticipants,
   GridLayout,
   ParticipantTile,
+  FocusLayout,
+  FocusLayoutContainer,
+  CarouselLayout,
+  usePinnedTracks,
+  LayoutContextProvider,
 } from "@livekit/components-react";
 import "@livekit/components-styles";
-import { Track, RoomEvent, ConnectionState } from "livekit-client";
+import { Track, RoomEvent } from "livekit-client";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2 } from "lucide-react";
+import { Loader2, Video, VideoOff, Mic, MicOff, MonitorUp, Phone, Settings } from "lucide-react";
 
 interface LiveKitRoomProps {
   roomName: string;
@@ -97,9 +101,12 @@ export function LiveKitRoom({
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          <p className="text-muted-foreground">Подключение к комнате...</p>
+        <div className="glass-dark rounded-2xl p-8 flex flex-col items-center gap-4">
+          <div className="relative">
+            <Loader2 className="w-10 h-10 animate-spin text-primary" />
+            <div className="absolute inset-0 w-10 h-10 rounded-full animate-pulse-glow" />
+          </div>
+          <p className="text-muted-foreground text-lg">Подключение к комнате...</p>
         </div>
       </div>
     );
@@ -108,8 +115,11 @@ export function LiveKitRoom({
   if (error) {
     return (
       <div className="flex items-center justify-center h-full bg-background">
-        <div className="flex flex-col items-center gap-4 max-w-md text-center">
-          <p className="text-destructive font-medium">Ошибка подключения</p>
+        <div className="glass-dark rounded-2xl p-8 flex flex-col items-center gap-4 max-w-md text-center">
+          <div className="w-12 h-12 rounded-full bg-destructive/20 flex items-center justify-center">
+            <VideoOff className="w-6 h-6 text-destructive" />
+          </div>
+          <p className="text-destructive font-medium text-lg">Ошибка подключения</p>
           <p className="text-muted-foreground text-sm">{error}</p>
         </div>
       </div>
@@ -189,26 +199,41 @@ function LiveKitContent({ onParticipantJoined, onParticipantLeft }: LiveKitConte
     { onlySubscribed: false }
   );
 
+  const pinnedTracks = usePinnedTracks();
+  const hasPinned = pinnedTracks.length > 0;
+
   return (
-    <div className="flex flex-col h-full livekit-room-container">
-      <div className="flex-1 relative">
-        <GridLayout tracks={tracks}>
-          <ParticipantTile />
-        </GridLayout>
+    <LayoutContextProvider>
+      <div className="flex flex-col h-full livekit-room-container bg-background">
+        <div className="flex-1 relative overflow-hidden">
+          {hasPinned ? (
+            <FocusLayoutContainer>
+              <FocusLayout trackRef={pinnedTracks[0]} />
+              <CarouselLayout tracks={tracks.filter(t => !pinnedTracks.includes(t))}>
+                <ParticipantTile />
+              </CarouselLayout>
+            </FocusLayoutContainer>
+          ) : (
+            <GridLayout tracks={tracks} className="p-3 gap-3">
+              <ParticipantTile className="rounded-xl overflow-hidden" />
+            </GridLayout>
+          )}
+        </div>
+        <ControlBar 
+          variation="minimal" 
+          controls={{
+            camera: true,
+            microphone: true,
+            screenShare: true,
+            leave: true,
+            chat: false,
+            settings: true,
+          }}
+          className="glass-dark border-t border-border/50"
+        />
+        <RoomAudioRenderer />
       </div>
-      <ControlBar 
-        variation="minimal" 
-        controls={{
-          camera: true,
-          microphone: true,
-          screenShare: true,
-          leave: true,
-          chat: false,
-          settings: true,
-        }}
-      />
-      <RoomAudioRenderer />
-    </div>
+    </LayoutContextProvider>
   );
 }
 
