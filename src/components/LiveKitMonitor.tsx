@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,9 +13,21 @@ import {
   Server, 
   HardDrive,
   Radio,
-  Clock
+  Clock,
+  TrendingUp,
+  Bell
 } from "lucide-react";
 import { toast } from "sonner";
+import { 
+  AreaChart, 
+  Area, 
+  XAxis, 
+  YAxis, 
+  Tooltip, 
+  ResponsiveContainer,
+  Legend
+} from "recharts";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 interface RoomInfo {
   name: string;
@@ -40,16 +52,47 @@ interface LiveKitStats {
       utilizationPercent: number;
     };
   };
+  newRooms?: string[];
   timestamp: string;
+}
+
+interface HistoryPoint {
+  hour: string;
+  rooms: number;
+  participants: number;
+  publishers: number;
+  ram: number;
+  bandwidth: number;
 }
 
 export function LiveKitMonitor() {
   const [stats, setStats] = useState<LiveKitStats | null>(null);
+  const [history, setHistory] = useState<HistoryPoint[]>([]);
   const [loading, setLoading] = useState(true);
+  const [historyLoading, setHistoryLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  
+  const { sendNotification, requestPermission } = usePushNotifications();
 
-  const fetchStats = async () => {
+  const fetchHistory = useCallback(async () => {
+    try {
+      setHistoryLoading(true);
+      const { data, error: fnError } = await supabase.functions.invoke("livekit-history");
+      
+      if (fnError) throw new Error(fnError.message);
+      if (data?.error) throw new Error(data.error);
+      
+      setHistory(data.history || []);
+    } catch (err) {
+      console.error("[LiveKitMonitor] History fetch error:", err);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, []);
+
+  const fetchStats = useCallback(async () => {
     try {
       setError(null);
       const { data, error: fnError } = await supabase.functions.invoke("livekit-stats");
@@ -58,6 +101,22 @@ export function LiveKitMonitor() {
       if (data?.error) throw new Error(data.error);
       
       setStats(data);
+      
+      // Send push notification for new rooms
+      if (data.newRooms?.length > 0 && notificationsEnabled) {
+        const roomName = data.newRooms[0];
+        sendNotification(
+          `🎥 Новая комната: ${roomName}`,
+          {
+            body: data.newRooms.length > 1 
+              ? `И ещё ${data.newRooms.length - 1} новых комнат`
+              : 'Кто-то начал видеозвонок',
+            tag: 'livekit-new-room',
+            icon: '/favicon.png'
+          }
+        );
+        toast.success(`Новая комната: ${roomName}`);
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to fetch stats";
       setError(message);
@@ -65,16 +124,31 @@ export function LiveKitMonitor() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [notificationsEnabled, sendNotification]);
 
   useEffect(() => {
     fetchStats();
+    fetchHistory();
     
     if (autoRefresh) {
-      const interval = setInterval(fetchStats, 10000); // 10 seconds
-      return () => clearInterval(interval);
+      const statsInterval = setInterval(fetchStats, 10000); // 10 seconds
+      const historyInterval = setInterval(fetchHistory, 5 * 60 * 1000); // 5 minutes
+      return () => {
+        clearInterval(statsInterval);
+        clearInterval(historyInterval);
+      };
     }
-  }, [autoRefresh]);
+  }, [autoRefresh, fetchStats, fetchHistory]);
+
+  const handleEnableNotifications = async () => {
+    const granted = await requestPermission();
+    if (granted) {
+      setNotificationsEnabled(true);
+      toast.success("Уведомления включены");
+    } else {
+      toast.error("Уведомления заблокированы браузером");
+    }
+  };
 
   const formatDuration = (createdAt: string | null) => {
     if (!createdAt) return "N/A";
@@ -113,6 +187,15 @@ export function LiveKitMonitor() {
             LiveKit Server Monitor
           </CardTitle>
           <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleEnableNotifications}
+              className={notificationsEnabled ? "text-primary" : "text-muted-foreground"}
+              title={notificationsEnabled ? "Уведомления включены" : "Включить уведомления"}
+            >
+              <Bell className={`w-4 h-4 ${notificationsEnabled ? "fill-current" : ""}`} />
+            </Button>
             <Button
               variant="ghost"
               size="sm"
@@ -176,6 +259,80 @@ export function LiveKitMonitor() {
                 </div>
                 <p className="text-2xl font-bold text-orange-500">{stats.activeRecordings}</p>
               </div>
+            </div>
+
+            {/* 24h Activity Chart */}
+            <div className="p-4 rounded-lg bg-background/30 border border-border/30">
+              <h4 className="text-sm font-medium flex items-center gap-2 mb-3">
+                <TrendingUp className="w-4 h-4" />
+                Активность за 24 часа
+              </h4>
+              {historyLoading ? (
+                <div className="h-[150px] flex items-center justify-center">
+                  <RefreshCw className="w-5 h-5 animate-spin text-muted-foreground" />
+                </div>
+              ) : history.length > 0 ? (
+                <ResponsiveContainer width="100%" height={150}>
+                  <AreaChart data={history}>
+                    <defs>
+                      <linearGradient id="colorParticipants" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                      </linearGradient>
+                      <linearGradient id="colorRooms" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#22c55e" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <XAxis 
+                      dataKey="hour" 
+                      tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                      axisLine={false}
+                      tickLine={false}
+                      interval="preserveStartEnd"
+                    />
+                    <YAxis 
+                      tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                      axisLine={false}
+                      tickLine={false}
+                      width={30}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--card))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px',
+                        fontSize: '12px'
+                      }}
+                      labelStyle={{ color: 'hsl(var(--foreground))' }}
+                    />
+                    <Legend 
+                      wrapperStyle={{ fontSize: '11px' }}
+                      iconSize={8}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="participants" 
+                      stroke="hsl(var(--primary))"
+                      strokeWidth={2}
+                      fill="url(#colorParticipants)"
+                      name="Участники"
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="rooms" 
+                      stroke="#22c55e"
+                      strokeWidth={2}
+                      fill="url(#colorRooms)"
+                      name="Комнаты"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[150px] flex items-center justify-center text-muted-foreground text-sm">
+                  Нет данных за последние 24 часа
+                </div>
+              )}
             </div>
             
             {/* Resource Usage */}

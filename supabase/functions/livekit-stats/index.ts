@@ -1,9 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+const SNAPSHOT_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
 // Generate LiveKit API JWT for server-to-server calls
 async function createApiToken(apiKey: string, apiSecret: string): Promise<string> {
@@ -142,6 +145,65 @@ serve(async (req) => {
       const estimatedRamMB = totalParticipants * 50;
       const estimatedBandwidthMbps = totalPublishers * 1.5;
       
+      const currentRoomNames = rooms.map(r => r.name);
+      
+      // Initialize Supabase client for storing snapshots
+      const supabaseUrl = Deno.env.get('SUPABASE_URL');
+      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+      
+      let newRooms: string[] = [];
+      let snapshotSaved = false;
+      
+      if (supabaseUrl && supabaseKey) {
+        const supabase = createClient(supabaseUrl, supabaseKey);
+        
+        try {
+          // Get last snapshot to check timing and detect new rooms
+          const { data: lastSnapshot } = await supabase
+            .from('livekit_stats_history')
+            .select('room_names, recorded_at')
+            .order('recorded_at', { ascending: false })
+            .limit(1)
+            .single();
+          
+          const timeSinceLastSnapshot = lastSnapshot 
+            ? Date.now() - new Date(lastSnapshot.recorded_at).getTime() 
+            : Infinity;
+          
+          // Detect new rooms
+          const previousRoomNames = lastSnapshot?.room_names || [];
+          newRooms = currentRoomNames.filter(name => !previousRoomNames.includes(name));
+          
+          if (newRooms.length > 0) {
+            console.log(`[livekit-stats] New rooms detected: ${newRooms.join(', ')}`);
+          }
+          
+          // Save snapshot every 5 minutes
+          if (timeSinceLastSnapshot > SNAPSHOT_INTERVAL_MS) {
+            const { error: insertError } = await supabase
+              .from('livekit_stats_history')
+              .insert({
+                active_rooms: rooms.length,
+                total_participants: totalParticipants,
+                total_publishers: totalPublishers,
+                active_recordings: activeRecordings,
+                estimated_ram_mb: estimatedRamMB,
+                estimated_bandwidth_mbps: estimatedBandwidthMbps,
+                room_names: currentRoomNames
+              });
+            
+            if (insertError) {
+              console.error('[livekit-stats] Failed to save snapshot:', insertError);
+            } else {
+              snapshotSaved = true;
+              console.log('[livekit-stats] Snapshot saved to history');
+            }
+          }
+        } catch (dbError) {
+          console.warn('[livekit-stats] Database operation failed:', dbError);
+        }
+      }
+      
       const stats = {
         activeRooms: rooms.length,
         totalParticipants,
@@ -163,6 +225,8 @@ serve(async (req) => {
             utilizationPercent: Math.round((estimatedRamMB / (128 * 1024)) * 100 * 10) / 10,
           }
         },
+        newRooms: newRooms.length > 0 ? newRooms : undefined,
+        snapshotSaved,
         timestamp: new Date().toISOString(),
         status: 'connected'
       };
