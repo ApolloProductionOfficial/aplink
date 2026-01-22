@@ -54,7 +54,15 @@ class ErrorBoundary extends Component<Props, State> {
       if (!sessionStorage.getItem(reloadKey)) {
         sessionStorage.setItem(reloadKey, 'true');
         console.warn('TooltipProvider crash in WebKit detected, forcing reload...');
-        window.location.reload();
+        // WebKit (Safari / embedded WebViews) can aggressively cache old hashed assets.
+        // Add a cache-busting query param to maximize chance of fetching the newest build.
+        try {
+          const url = new URL(window.location.href);
+          url.searchParams.set('__cb', String(Date.now()));
+          window.location.replace(url.toString());
+        } catch {
+          window.location.reload();
+        }
         return;
       }
     }
