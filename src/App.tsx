@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import AnalyticsRouteTracker from "@/components/AnalyticsRouteTracker";
 import Index from "./pages/Index";
 import MeetingRoom from "./pages/MeetingRoom";
 import MeetingHistory from "./pages/MeetingHistory";
@@ -27,6 +28,7 @@ function App() {
             <Toaster />
             <Sonner />
             <BrowserRouter>
+              <AnalyticsRouteTracker />
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />

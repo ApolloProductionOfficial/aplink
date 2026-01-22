@@ -266,13 +266,16 @@ serve(async (req) => {
     const { fingerprint } = buildGroupingFingerprint({ errorType, errorMessage, source, details: details || null });
     const errorHash = btoa(unescape(encodeURIComponent(`${siteName}:${fingerprint}`)));
     const windowStart = new Date(now.getTime() - GROUP_WINDOW_MS);
+    const windowStartIso = windowStart.toISOString();
 
     // Проверяем, есть ли недавняя похожая ошибка
     const { data: existingGroup } = await supabase
       .from("error_groups")
       .select("*")
       .eq("error_hash", errorHash)
-      .gte("last_seen", windowStart.toISOString())
+      // Backward compatible: some old rows may have last_seen = null.
+      // We treat (last_seen within window) OR (last_seen null AND first_seen within window) as an active group.
+      .or(`last_seen.gte.${windowStartIso},and(last_seen.is.null,first_seen.gte.${windowStartIso})`)
       .single();
 
     if (existingGroup) {
@@ -354,7 +357,10 @@ serve(async (req) => {
         error_message: (errorMessage || "").substring(0, 500),
         source,
         severity,
-        telegram_message_id: telegramData.result?.message_id
+        telegram_message_id: telegramData.result?.message_id,
+        occurrence_count: 1,
+        first_seen: now.toISOString(),
+        last_seen: now.toISOString(),
       });
     }
 
