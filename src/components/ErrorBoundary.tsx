@@ -26,15 +26,16 @@ class ErrorBoundary extends Component<Props, State> {
     // Safe message extraction
     const errorMessage = error?.message || error?.toString?.() || "Unknown error";
     
-    // Skip common non-actionable errors
+    // Skip common non-actionable errors (TooltipProvider crashes in Safari)
     const componentStack = errorInfo?.componentStack || "";
-    if (
+    const isTooltipError = 
       componentStack.includes("TooltipProvider") ||
+      componentStack.includes("Tooltip") ||
       errorMessage.includes("TooltipProvider") ||
-      errorMessage === "No message" ||
-      !errorMessage
-    ) {
-      console.warn("ErrorBoundary: Skipping non-actionable error:", errorMessage);
+      errorMessage.includes("Tooltip must be used");
+    
+    if (isTooltipError || errorMessage === "No message" || !errorMessage || errorMessage === "Unknown error") {
+      // Don't log to console to prevent duplicate notifications
       return;
     }
     
@@ -46,7 +47,8 @@ class ErrorBoundary extends Component<Props, State> {
     // Clear after 5 minutes
     setTimeout(() => sentBoundaryErrors.delete(errorKey), 5 * 60 * 1000);
 
-    console.error("ErrorBoundary caught error:", errorMessage);
+    // Log without triggering console.error notification (use warn instead)
+    console.warn("ErrorBoundary sending notification:", errorMessage.substring(0, 100));
     
     sendErrorNotification({
       errorType: "REACT_ERROR",
@@ -54,6 +56,8 @@ class ErrorBoundary extends Component<Props, State> {
       details: {
         stack: error?.stack || "No stack trace",
         componentStack: componentStack || "No component stack",
+        url: typeof window !== "undefined" ? window.location.href : null,
+        userAgent: typeof navigator !== "undefined" ? navigator.userAgent : null,
       },
       source: "React ErrorBoundary",
     });
