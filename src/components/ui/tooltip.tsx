@@ -5,6 +5,29 @@ import { cn } from "@/lib/utils";
 
 const TooltipProvider = TooltipPrimitive.Provider;
 
+// Our own scope marker to prevent accidentally nesting providers.
+// Radix TooltipProvider doesn't expose a safe public "is-in-provider" hook,
+// and some WebKit environments (e.g. Telegram Desktop on macOS) can crash on deep nesting.
+const TooltipProviderScopeContext = React.createContext(false);
+
+const SafeTooltipProvider = ({ children, ...props }: React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Provider>) => {
+  const hasParentProvider = React.useContext(TooltipProviderScopeContext);
+
+  // If a parent provider already exists, don't create another nested provider.
+  if (hasParentProvider) return <>{children}</>;
+
+  // Safari/WebKit compatibility: catch provider/context errors gracefully.
+  try {
+    return (
+      <TooltipProviderScopeContext.Provider value={true}>
+        <TooltipPrimitive.Provider {...props}>{children}</TooltipPrimitive.Provider>
+      </TooltipProviderScopeContext.Provider>
+    );
+  } catch {
+    return <>{children}</>;
+  }
+};
+
 const Tooltip = TooltipPrimitive.Root;
 
 const TooltipTrigger = TooltipPrimitive.Trigger;
@@ -43,4 +66,4 @@ const SafeTooltip = ({ children, ...props }: React.ComponentPropsWithoutRef<type
   }
 };
 
-export { Tooltip, SafeTooltip, TooltipTrigger, TooltipContent, TooltipProvider };
+export { Tooltip, SafeTooltip, TooltipTrigger, TooltipContent, TooltipProvider, SafeTooltipProvider };
