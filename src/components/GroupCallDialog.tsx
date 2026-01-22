@@ -108,7 +108,13 @@ const GroupCallDialog = ({ open, onOpenChange }: GroupCallDialogProps) => {
   };
 
   const handleStartGroupCall = async () => {
-    if (!user) {
+    console.log("[GroupCallDialog] handleStartGroupCall called", { 
+      userId: user?.id, 
+      selectedCount: selectedContacts.size 
+    });
+    
+    if (!user?.id) {
+      console.error("[GroupCallDialog] No user authenticated");
       toast.error("Необходимо авторизоваться");
       return;
     }
@@ -126,15 +132,23 @@ const GroupCallDialog = ({ open, onOpenChange }: GroupCallDialogProps) => {
       .map((c) => c.profile?.username)
       .filter(Boolean) as string[];
 
+    console.log("[GroupCallDialog] Calling with participants:", participants);
+
     try {
       const { data, error } = await supabase.functions.invoke("telegram-group-call", {
         body: {
-          created_by: user?.id,
+          created_by: user.id,
           participants,
+          notify_creator_on_error: true,
         },
       });
 
-      if (error) throw error;
+      console.log("[GroupCallDialog] Response:", { data, error });
+
+      if (error) {
+        console.error("[GroupCallDialog] Function error:", error);
+        throw error;
+      }
 
       if (data.success) {
         const notifiedCount = data.participants.filter(
@@ -158,9 +172,11 @@ const GroupCallDialog = ({ open, onOpenChange }: GroupCallDialogProps) => {
           navigate(`/room/${data.room_name}`);
         }, 2000);
       } else {
+        console.error("[GroupCallDialog] Call failed:", data.error);
         throw new Error(data.error || "Ошибка создания звонка");
       }
     } catch (err: unknown) {
+      console.error("[GroupCallDialog] Catch block:", err);
       const message = err instanceof Error ? err.message : "Неизвестная ошибка";
       toast.error("Ошибка: " + message);
     } finally {

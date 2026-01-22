@@ -82,49 +82,25 @@ export function initGlobalErrorHandlers() {
       })
       .join(" ");
     
-    // Skip common non-critical errors, browser extension errors, and Telegram mini app specific errors
+    // DIAGNOSTIC MODE: Only skip truly internal messages to prevent infinite loops
     if (
-      message.includes("Warning:") ||
-      // Internal logging from our own handlers (prevents double-reporting)
+      message.includes("[GlobalErrorHandler]") ||
+      message.includes("GlobalErrorHandler:") ||
+      message.includes("[DEBUG ErrorBoundary]") ||
+      message.includes("Download the React DevTools") ||
+      message.includes("Download the Apollo DevTools") ||
+      message.includes("favicon") ||
+      message.includes("ResizeObserver") ||
       message.includes("Global error:") ||
       message.includes("Unhandled promise rejection:") ||
       message.includes("Failed to log error to database") ||
-      message.includes("Failed to send error notification") ||
-      message.includes("DevTools") ||
-      message.includes("favicon") ||
-      message.includes("ResizeObserver") ||
-      message.includes("ChunkLoadError") ||
-      message.includes("chrome-extension://") ||
-      message.includes("disconnected port object") ||
-      message.includes("TelegramGameProxy") ||
-      message.includes("TelegramWebviewProxy") ||
-      message.includes("Telegram.WebApp") ||
-      message.includes("postEvent") ||
-      message.includes("web_app_") ||
-      message.includes("tgWebAppData") ||
-      message.includes("themeParams") ||
-      message.includes("viewport_changed") ||
-      message.includes("main_button") ||
-      message.includes("back_button") ||
-      message.includes("popup_closed") ||
-      message.includes("initDataUnsafe") ||
-      // Radix UI context errors (Safari compatibility) - COMPLETELY IGNORE
-      message.includes("TooltipProvider") ||
-      message.includes("Tooltip must be used") ||
-      message.includes("TooltipProviderProvider") ||
-      // ErrorBoundary duplicate errors - skip ALL ErrorBoundary logs
-      message.includes("ErrorBoundary") ||
-      message.includes("caught error") ||
-      message.includes("REACT_ERROR") ||
-      // Generic non-actionable errors
-      message.includes("No message") ||
-      message.includes("componentStack") ||
-      // Empty error objects
-      message === "{}" ||
-      message.startsWith("ErrorBoundary caught error: {}")
+      message.includes("Failed to send error notification")
     ) {
       return;
     }
+    
+    // DIAGNOSTIC: Log what we're seeing for debugging
+    console.warn("[GlobalErrorHandler DIAGNOSTIC]", message.substring(0, 300));
 
     const errorKey = getErrorKey(message.substring(0, 100), "console");
     if (sentErrors.has(errorKey)) return;
