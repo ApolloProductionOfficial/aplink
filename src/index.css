@@ -19,15 +19,35 @@
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
 }
 
-/* Custom cursor */
-* {
+/* Custom cursor - only apply to pages with CustomCursor component */
+.custom-cursor-active * {
   cursor: none !important;
 }
 
 @media (max-width: 768px) {
-  * {
+  .custom-cursor-active * {
     cursor: auto !important;
   }
+}
+
+/* Emoji float animation for reactions */
+@keyframes emoji-float-up {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-80px) scale(1.3);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-200px) scale(0.8);
+  }
+}
+
+.animate-emoji-float {
+  animation: emoji-float-up 2.5s ease-out forwards;
 }
 
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 

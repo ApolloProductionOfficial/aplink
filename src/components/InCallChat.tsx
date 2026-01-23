@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Room, RoomEvent, DataPacket_Kind } from "livekit-client";
-import { MessageCircle, Send, X, ChevronDown } from "lucide-react";
+import { Room, RoomEvent } from "livekit-client";
+import { MessageCircle, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { useConnectionSounds } from "@/hooks/useConnectionSounds";
 
 interface ChatMessage {
   id: string;
@@ -28,6 +29,7 @@ export function InCallChat({ room, participantName, isOpen, onToggle }: InCallCh
   const [unreadCount, setUnreadCount] = useState(0);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { playMessageSound } = useConnectionSounds();
 
   // Auto-scroll to bottom when new messages arrive
   const scrollToBottom = useCallback(() => {
@@ -60,8 +62,10 @@ export function InCallChat({ room, participantName, isOpen, onToggle }: InCallCh
 
           setMessages(prev => [...prev, newMessage]);
           
+          // Play sound and increment unread if chat is closed
           if (!isOpen) {
             setUnreadCount(prev => prev + 1);
+            playMessageSound();
           }
         }
       } catch {

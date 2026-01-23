@@ -67,10 +67,21 @@ export const useConnectionSounds = () => {
     createSound(440, 0.3, 'warning'); // A4
   }, []);
 
+  const playMessageSound = useCallback(() => {
+    const now = Date.now();
+    if (now - lastSoundRef.current < 500) return; // 500ms between chat sounds
+    lastSoundRef.current = now;
+    
+    // Pleasant double ping for new message
+    createSound(880, 0.08, 'success');  // A5
+    setTimeout(() => createSound(1046.5, 0.1, 'success'), 80); // C6
+  }, []);
+
   return {
     playConnectedSound,
     playDisconnectedSound,
     playReconnectingSound,
+    playMessageSound,
   };
 };
 
