@@ -109,8 +109,8 @@ export function EmojiReactions({ room, participantName }: EmojiReactionsProps) {
 
   return (
     <>
-      {/* Floating reactions overlay - covers the ENTIRE screen */}
-      <div className="fixed inset-0 pointer-events-none z-[70] overflow-hidden">
+      {/* Floating reactions overlay - ENTIRE VIEWPORT with portal-like z-index */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 9999 }}>
         {reactions.map((reaction) => (
           <div
             key={reaction.id}
@@ -121,8 +121,8 @@ export function EmojiReactions({ room, participantName }: EmojiReactionsProps) {
             }}
           >
             <div className="flex flex-col items-center">
-              <span className="text-6xl drop-shadow-2xl">{reaction.emoji}</span>
-              <span className="text-xs text-white/80 bg-black/40 px-2 py-0.5 rounded-full backdrop-blur-sm mt-1 font-medium">
+              <span className="text-7xl drop-shadow-2xl" style={{ filter: 'drop-shadow(0 0 20px rgba(0,0,0,0.5))' }}>{reaction.emoji}</span>
+              <span className="text-xs text-white/90 bg-black/50 px-2.5 py-0.5 rounded-full backdrop-blur-md mt-1.5 font-medium shadow-lg">
                 {reaction.senderName}
               </span>
             </div>

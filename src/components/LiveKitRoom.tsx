@@ -503,7 +503,7 @@ function LiveKitContent({
         </>
       )}
 
-      {/* Top Header Panel - auto-hide with smooth gradient and soft rounded design */}
+      {/* Top Header Panel - soft ultra-rounded with slide animation */}
       {headerButtons && (
         <div 
           className={cn(
@@ -511,34 +511,34 @@ function LiveKitContent({
             "transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
             showTopPanel 
               ? "translate-y-0 opacity-100 scale-100" 
-              : "-translate-y-4 opacity-0 scale-95 pointer-events-none"
+              : "-translate-y-8 opacity-0 scale-90 pointer-events-none"
           )}
         >
-          <div className="flex items-center gap-2 px-3 py-2 rounded-full bg-gradient-to-b from-black/50 via-black/30 to-transparent backdrop-blur-xl border border-white/10 shadow-2xl">
-            {/* Minimize button - soft rounded */}
+          <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-[2rem] bg-gradient-to-b from-black/60 via-black/40 to-black/20 backdrop-blur-2xl border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.05)]">
+            {/* Minimize button */}
             <button
               onClick={onMinimize}
-              className="flex items-center justify-center w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 transition-all hover:scale-105"
+              className="flex items-center justify-center w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 border border-white/[0.08] transition-all hover:scale-105 hover:shadow-lg"
               title="Свернуть звонок"
             >
               <Minimize className="w-4 h-4" />
             </button>
 
-            {/* Room name - just text, no frame */}
+            {/* Room name */}
             {roomDisplayName && (
               <span className="text-sm font-medium truncate max-w-[120px] px-2">{roomDisplayName}</span>
             )}
 
             {/* Divider */}
-            <div className="w-px h-5 bg-white/15" />
+            <div className="w-px h-5 bg-white/10" />
 
-            {/* Header buttons from parent (REC, Translate, Link, IP) */}
+            {/* Header buttons from parent */}
             {headerButtons}
 
             {/* Divider */}
-            <div className="w-px h-5 bg-white/15" />
+            <div className="w-px h-5 bg-white/10" />
 
-            {/* Connection indicator */}
+            {/* Connection indicator - styled more beautifully */}
             {connectionIndicator}
           </div>
         </div>
@@ -579,41 +579,63 @@ function LiveKitContent({
         </div>
       )}
 
-      {/* Main video grid */}
+      {/* Main video grid - with screen share priority layout */}
       <div className="flex-1 relative overflow-hidden">
-        <GridLayout tracks={tracks} className="p-3 gap-3">
-          <ParticipantTile className="rounded-xl overflow-hidden" />
-        </GridLayout>
+        {(() => {
+          // Find screen share tracks
+          const screenShareTracks = tracks.filter(t => t.source === Track.Source.ScreenShare);
+          const cameraTracks = tracks.filter(t => t.source === Track.Source.Camera);
+          
+          // If there's a screen share - use focus layout
+          if (screenShareTracks.length > 0) {
+            return (
+              <div className="flex h-full w-full gap-3 p-3">
+                {/* Main screen share area */}
+                <div className="flex-1 relative rounded-2xl overflow-hidden bg-black/40 border border-white/10">
+                  <GridLayout tracks={screenShareTracks} className="h-full">
+                    <ParticipantTile className="rounded-xl overflow-hidden" />
+                  </GridLayout>
+                </div>
+                
+                {/* Side panel with camera feeds - vertical strip */}
+                {cameraTracks.length > 0 && (
+                  <div className="w-44 flex flex-col gap-2 overflow-y-auto">
+                    <GridLayout tracks={cameraTracks} className="flex flex-col gap-2">
+                      <ParticipantTile className="rounded-xl overflow-hidden aspect-video" />
+                    </GridLayout>
+                  </div>
+                )}
+              </div>
+            );
+          }
+          
+          // Default grid layout
+          return (
+            <GridLayout tracks={tracks} className="p-3 gap-3">
+              <ParticipantTile className="rounded-xl overflow-hidden" />
+            </GridLayout>
+          );
+        })()}
       </div>
 
-      {/* In-call Chat - panel only, button is in bottom bar */}
-      {showChat && (
-        <InCallChat
-          room={room}
-          participantName={participantName}
-          isOpen={showChat}
-          onToggle={() => setShowChat(!showChat)}
-        />
-      )}
-
-      {/* Bottom Control Bar - auto-hide with smooth gradient and soft rounded buttons */}
+      {/* Bottom Control Bar - soft ultra-rounded with glass effect */}
       <div 
         className={cn(
           "absolute bottom-4 left-1/2 -translate-x-1/2 z-50",
           "transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
           showBottomPanel 
             ? "translate-y-0 opacity-100 scale-100" 
-            : "translate-y-8 opacity-0 scale-95 pointer-events-none"
+            : "translate-y-12 opacity-0 scale-90 pointer-events-none"
         )}
       >
-        <div className="flex items-center gap-2 px-4 py-3 rounded-full bg-gradient-to-t from-black/50 via-black/30 to-transparent backdrop-blur-xl border border-white/10 shadow-2xl">
-          {/* Camera toggle - rounded-full */}
+        <div className="flex items-center gap-2.5 px-5 py-3.5 rounded-[2rem] bg-gradient-to-t from-black/60 via-black/40 to-black/20 backdrop-blur-2xl border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.05)]">
+          {/* Camera toggle */}
           <Button
             onClick={toggleCamera}
             variant={isCameraEnabled ? "outline" : "secondary"}
             size="icon"
             className={cn(
-              "w-12 h-12 rounded-full border-white/20 transition-all hover:scale-105",
+              "w-12 h-12 rounded-full border-white/[0.12] transition-all hover:scale-105 hover:shadow-lg",
               isCameraEnabled 
                 ? "bg-white/10 hover:bg-white/20" 
                 : "bg-destructive/30 border-destructive/50 hover:bg-destructive/40"
@@ -626,13 +648,13 @@ function LiveKitContent({
             )}
           </Button>
 
-          {/* Mic toggle - rounded-full */}
+          {/* Mic toggle */}
           <Button
             onClick={toggleMicrophone}
             variant={isMicrophoneEnabled ? "outline" : "secondary"}
             size="icon"
             className={cn(
-              "w-12 h-12 rounded-full border-white/20 transition-all hover:scale-105",
+              "w-12 h-12 rounded-full border-white/[0.12] transition-all hover:scale-105 hover:shadow-lg",
               isMicrophoneEnabled 
                 ? "bg-white/10 hover:bg-white/20" 
                 : "bg-destructive/30 border-destructive/50 hover:bg-destructive/40"
@@ -645,13 +667,13 @@ function LiveKitContent({
             )}
           </Button>
 
-          {/* Screen share toggle - rounded-full */}
+          {/* Screen share toggle */}
           <Button
             onClick={toggleScreenShare}
             variant={isScreenShareEnabled ? "default" : "outline"}
             size="icon"
             className={cn(
-              "w-12 h-12 rounded-full border-white/20 transition-all hover:scale-105",
+              "w-12 h-12 rounded-full border-white/[0.12] transition-all hover:scale-105 hover:shadow-lg",
               isScreenShareEnabled 
                 ? "bg-green-500/30 border-green-500/50 hover:bg-green-500/40" 
                 : "bg-white/10 hover:bg-white/20"
@@ -664,7 +686,7 @@ function LiveKitContent({
           </Button>
 
           {/* Divider */}
-          <div className="w-px h-8 bg-white/20 mx-1" />
+          <div className="w-px h-8 bg-white/10 mx-0.5" />
 
           {/* Virtual Background selector */}
           <VirtualBackgroundSelector
@@ -681,23 +703,24 @@ function LiveKitContent({
             participantName={participantName}
           />
 
-          {/* Chat toggle - just the button */}
+          {/* Chat toggle button - buttonOnly mode for bottom panel */}
           <InCallChat
             room={room}
             participantName={participantName}
             isOpen={showChat}
             onToggle={() => setShowChat(!showChat)}
+            buttonOnly
           />
 
           {/* Divider */}
-          <div className="w-px h-7 bg-white/15 mx-1" />
+          <div className="w-px h-8 bg-white/10 mx-0.5" />
 
-          {/* Fullscreen toggle - rounded-full */}
+          {/* Fullscreen toggle */}
           <Button
             variant="outline"
             size="icon"
             onClick={toggleFullscreen}
-            className="w-12 h-12 rounded-full border-white/20 bg-white/10 hover:bg-white/20 transition-all hover:scale-105"
+            className="w-12 h-12 rounded-full border-white/[0.12] bg-white/10 hover:bg-white/20 transition-all hover:scale-105 hover:shadow-lg"
           >
             {isFullscreen ? (
               <Minimize2 className="w-5 h-5" />
@@ -706,13 +729,23 @@ function LiveKitContent({
             )}
           </Button>
 
-          {/* Leave button - soft rounded */}
-          <DisconnectButton className="flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-destructive/80 hover:bg-destructive text-destructive-foreground transition-all hover:scale-105">
+          {/* Leave button */}
+          <DisconnectButton className="flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-destructive/80 hover:bg-destructive text-destructive-foreground transition-all hover:scale-105 hover:shadow-lg border border-destructive/50">
             <PhoneOff className="w-5 h-5" />
-            <span className="text-sm font-medium">Завершить</span>
+            <span className="text-sm font-medium">Выйти</span>
           </DisconnectButton>
         </div>
       </div>
+
+      {/* Floating Chat Panel - separate instance for the panel */}
+      {showChat && (
+        <InCallChat
+          room={room}
+          participantName={participantName}
+          isOpen={true}
+          onToggle={() => setShowChat(false)}
+        />
+      )}
 
       <RoomAudioRenderer />
     </div>
