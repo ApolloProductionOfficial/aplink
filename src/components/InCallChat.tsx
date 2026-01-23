@@ -21,9 +21,11 @@ interface InCallChatProps {
   participantName: string;
   isOpen: boolean;
   onToggle: () => void;
+  /** If true, only renders the toggle button (for use in bottom panel) */
+  buttonOnly?: boolean;
 }
 
-export function InCallChat({ room, participantName, isOpen, onToggle }: InCallChatProps) {
+export function InCallChat({ room, participantName, isOpen, onToggle, buttonOnly = false }: InCallChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [unreadCount, setUnreadCount] = useState(0);
@@ -187,30 +189,43 @@ export function InCallChat({ room, participantName, isOpen, onToggle }: InCallCh
     return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
   };
 
-  // Only render button when chat is closed (button goes in bottom panel)
+  // Button component (used in both modes)
+  const ChatButton = (
+    <Button
+      onClick={onToggle}
+      variant="outline"
+      size="icon"
+      className={cn(
+        "relative w-12 h-12 rounded-full border-white/[0.12] transition-all hover:scale-105 hover:shadow-lg",
+        isOpen 
+          ? "bg-primary/20 border-primary/50" 
+          : "bg-white/10 hover:bg-white/20"
+      )}
+    >
+      <MessageCircle className="w-5 h-5" />
+      {unreadCount > 0 && !isOpen && (
+        <span className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground text-xs rounded-full flex items-center justify-center animate-pulse font-bold">
+          {unreadCount > 9 ? '9+' : unreadCount}
+        </span>
+      )}
+    </Button>
+  );
+
+  // If buttonOnly mode, always return just the button
+  if (buttonOnly) {
+    return ChatButton;
+  }
+
+  // If not open and not buttonOnly, return button
   if (!isOpen) {
-    return (
-      <Button
-        onClick={onToggle}
-        variant="outline"
-        size="icon"
-        className="relative w-12 h-12 rounded-full border-white/20 bg-white/10 hover:bg-white/20 transition-all hover:scale-105"
-      >
-        <MessageCircle className="w-5 h-5" />
-        {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground text-xs rounded-full flex items-center justify-center animate-pulse font-bold">
-            {unreadCount > 9 ? '9+' : unreadCount}
-          </span>
-        )}
-      </Button>
-    );
+    return ChatButton;
   }
 
   // Draggable chat panel (when open)
   return (
     <div
       className={cn(
-        "fixed z-[60] w-80 h-[420px] glass-dark rounded-2xl border border-white/10 shadow-2xl flex flex-col overflow-hidden",
+        "fixed z-[60] w-80 h-[420px] glass-dark rounded-[1.5rem] border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden",
         isDragging && "cursor-grabbing select-none"
       )}
       style={{
@@ -220,7 +235,7 @@ export function InCallChat({ room, participantName, isOpen, onToggle }: InCallCh
     >
       {/* Header - drag handle */}
       <div
-        className="flex items-center justify-between p-3 border-b border-white/10 cursor-grab active:cursor-grabbing bg-black/20"
+        className="flex items-center justify-between p-3 border-b border-white/[0.08] cursor-grab active:cursor-grabbing bg-black/30"
         onMouseDown={handleDragStart}
       >
         <div className="flex items-center gap-2">
@@ -280,7 +295,7 @@ export function InCallChat({ room, participantName, isOpen, onToggle }: InCallCh
       </ScrollArea>
 
       {/* Input */}
-      <div className="p-3 border-t border-white/10 bg-black/20">
+      <div className="p-3 border-t border-white/[0.08] bg-black/30">
         <div className="flex gap-2">
           <Input
             ref={inputRef}
@@ -288,7 +303,7 @@ export function InCallChat({ room, participantName, isOpen, onToggle }: InCallCh
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Сообщение..."
-            className="flex-1 h-10 bg-white/10 border-white/10 rounded-full px-4 text-sm focus:border-primary/50"
+            className="flex-1 h-10 bg-white/10 border-white/[0.08] rounded-full px-4 text-sm focus:border-primary/50"
           />
           <Button
             onClick={sendMessage}

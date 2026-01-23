@@ -696,11 +696,11 @@ const MeetingRoom = () => {
     await runMeetingSave();
   }, []);
 
-  // Handle minimize - navigate to dashboard
+  // Handle minimize - navigate to home page (Index)
   const handleMinimize = useCallback(() => {
     setIsMinimized(true);
-    navigate(user ? '/dashboard' : '/');
-  }, [navigate, user]);
+    navigate('/');
+  }, [navigate]);
 
   // Handle maximize (return from minimized)
   const handleMaximize = useCallback(() => {

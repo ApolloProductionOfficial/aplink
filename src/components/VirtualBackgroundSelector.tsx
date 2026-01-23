@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Palette, X, Loader2, Sparkles, Building2, Trees, Rocket, Umbrella } from "lucide-react";
+import { useState, useRef } from "react";
+import { Palette, Loader2, Sparkles, Building2, Trees, Rocket, Umbrella, Crown, Upload, Image } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -22,6 +22,13 @@ const BLUR_OPTIONS = [
 ];
 
 const IMAGE_OPTIONS = [
+  { 
+    id: 'apollo', 
+    url: '/videos/apollo-logo-bg.mp4', 
+    label: 'Apollo',
+    icon: Crown,
+    isVideo: true
+  },
   { 
     id: 'office', 
     url: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=1920&q=80', 
@@ -56,19 +63,47 @@ export function VirtualBackgroundSelector({
   isProcessing,
 }: VirtualBackgroundSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [customImageUrl, setCustomImageUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleBlurSelect = (intensity: number, id: string) => {
-    onSelectBlur(intensity);
+    if (selectedId === id) {
+      // Toggle off - remove background
+      onRemove();
+      setSelectedId(null);
+    } else {
+      onSelectBlur(intensity);
+      setSelectedId(id);
+    }
   };
 
-  const handleImageSelect = (url: string) => {
-    onSelectImage(url);
+  const handleImageSelect = (url: string, id: string) => {
+    if (selectedId === id) {
+      // Toggle off - remove background
+      onRemove();
+      setSelectedId(null);
+    } else {
+      onSelectImage(url);
+      setSelectedId(id);
+    }
   };
 
-  const handleRemove = () => {
-    onRemove();
-    setIsOpen(false);
+  const handleCustomUpload = () => {
+    fileInputRef.current?.click();
   };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setCustomImageUrl(url);
+      onSelectImage(url);
+      setSelectedId('custom');
+    }
+  };
+
+  const isSelected = (id: string) => selectedId === id;
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -78,7 +113,7 @@ export function VirtualBackgroundSelector({
           size="icon"
           className={cn(
             "w-12 h-12 rounded-full border-white/20 transition-all hover:scale-105",
-            currentBackground !== 'none' 
+            selectedId 
               ? "bg-primary/20 border-primary/50 hover:bg-primary/30" 
               : "bg-white/10 hover:bg-white/20"
           )}
@@ -92,29 +127,16 @@ export function VirtualBackgroundSelector({
         </Button>
       </PopoverTrigger>
       <PopoverContent 
-        className="w-72 p-4 glass-dark border-white/10 rounded-2xl" 
+        className="w-80 p-4 glass-dark border-white/10 rounded-[1.5rem]" 
         side="top"
         align="center"
         sideOffset={12}
       >
         <div className="space-y-4">
           {/* Header */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-primary" />
-              <span className="font-medium text-sm">Виртуальный фон</span>
-            </div>
-            {currentBackground !== 'none' && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleRemove}
-                className="h-7 px-2 text-xs text-muted-foreground hover:text-destructive rounded-full"
-              >
-                <X className="w-3 h-3 mr-1" />
-                Убрать
-              </Button>
-            )}
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-primary" />
+            <span className="font-medium text-sm">Виртуальный фон</span>
           </div>
 
           {/* Blur options */}
@@ -129,8 +151,8 @@ export function VirtualBackgroundSelector({
                   className={cn(
                     "flex items-center justify-center gap-2 py-2.5 px-4 rounded-full transition-all",
                     "border hover:border-primary/50 hover:scale-[1.02]",
-                    currentBackground === option.id
-                      ? "bg-primary/20 border-primary/50"
+                    isSelected(option.id)
+                      ? "bg-primary/30 border-primary/60 shadow-lg shadow-primary/20"
                       : "bg-white/5 border-white/10 hover:bg-white/10"
                   )}
                 >
@@ -143,35 +165,78 @@ export function VirtualBackgroundSelector({
           {/* Image options */}
           <div className="space-y-2">
             <span className="text-xs text-muted-foreground font-medium">Изображения</span>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-5 gap-2">
               {IMAGE_OPTIONS.map((option) => {
                 const IconComponent = option.icon;
                 return (
                   <button
                     key={option.id}
-                    onClick={() => handleImageSelect(option.url)}
+                    onClick={() => handleImageSelect(option.url, option.id)}
                     disabled={isProcessing}
                     className={cn(
-                      "flex flex-col items-center gap-1.5 p-2.5 rounded-xl transition-all",
+                      "flex flex-col items-center gap-1 p-2 rounded-xl transition-all",
                       "border hover:border-primary/50 hover:scale-105",
-                      currentBackground === 'image'
-                        ? "bg-primary/20 border-primary/50"
+                      isSelected(option.id)
+                        ? "bg-primary/30 border-primary/60 shadow-lg shadow-primary/20"
                         : "bg-white/5 border-white/10 hover:bg-white/10"
                     )}
                   >
-                    <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                      <IconComponent className="w-4 h-4 text-primary" />
+                    <div className={cn(
+                      "w-8 h-8 rounded-lg flex items-center justify-center",
+                      option.id === 'apollo' 
+                        ? "bg-gradient-to-br from-amber-500/30 to-amber-600/10" 
+                        : "bg-gradient-to-br from-primary/20 to-primary/5"
+                    )}>
+                      <IconComponent className={cn(
+                        "w-4 h-4",
+                        option.id === 'apollo' ? "text-amber-400" : "text-primary"
+                      )} />
                     </div>
-                    <span className="text-[10px] text-muted-foreground">{option.label}</span>
+                    <span className="text-[9px] text-muted-foreground truncate w-full text-center">{option.label}</span>
                   </button>
                 );
               })}
             </div>
           </div>
 
+          {/* Custom upload */}
+          <div className="space-y-2">
+            <span className="text-xs text-muted-foreground font-medium">Свой фон</span>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+            <button
+              onClick={handleCustomUpload}
+              disabled={isProcessing}
+              className={cn(
+                "w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-full transition-all",
+                "border border-dashed hover:border-primary/50",
+                isSelected('custom')
+                  ? "bg-primary/30 border-primary/60 border-solid shadow-lg shadow-primary/20"
+                  : "bg-white/5 border-white/20 hover:bg-white/10"
+              )}
+            >
+              {customImageUrl && isSelected('custom') ? (
+                <>
+                  <Image className="w-4 h-4 text-primary" />
+                  <span className="text-sm">Загружен</span>
+                </>
+              ) : (
+                <>
+                  <Upload className="w-4 h-4" />
+                  <span className="text-sm">Загрузить изображение</span>
+                </>
+              )}
+            </button>
+          </div>
+
           {/* Note */}
           <p className="text-[10px] text-muted-foreground/70 text-center">
-            Виртуальные фоны могут влиять на производительность
+            Нажмите повторно для отмены • Влияет на производительность
           </p>
         </div>
       </PopoverContent>

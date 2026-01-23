@@ -81,7 +81,42 @@
   animation: subtle-bounce-up 2.5s ease-in-out infinite;
 }
 
-/* Pulsing name glow when speaking */
+/* ENERGY speaking glow - radiating waves effect */
+@keyframes name-energy-pulse {
+  0%, 100% {
+    text-shadow: 
+      0 0 8px rgba(6, 182, 228, 0.5),
+      0 0 16px rgba(6, 182, 228, 0.3),
+      0 0 24px rgba(6, 182, 228, 0.2);
+    filter: drop-shadow(0 0 4px rgba(6, 182, 228, 0.4));
+  }
+  25% {
+    text-shadow: 
+      0 0 12px rgba(6, 182, 228, 0.7),
+      0 0 24px rgba(6, 182, 228, 0.5),
+      0 0 36px rgba(6, 182, 228, 0.3),
+      0 0 48px rgba(6, 182, 228, 0.15);
+    filter: drop-shadow(0 0 8px rgba(6, 182, 228, 0.6));
+  }
+  50% {
+    text-shadow: 
+      0 0 20px rgba(6, 182, 228, 0.9),
+      0 0 40px rgba(6, 182, 228, 0.6),
+      0 0 60px rgba(6, 182, 228, 0.4),
+      0 0 80px rgba(6, 182, 228, 0.2);
+    filter: drop-shadow(0 0 16px rgba(6, 182, 228, 0.8)) drop-shadow(0 0 32px rgba(6, 182, 228, 0.4));
+  }
+  75% {
+    text-shadow: 
+      0 0 12px rgba(6, 182, 228, 0.7),
+      0 0 24px rgba(6, 182, 228, 0.5),
+      0 0 36px rgba(6, 182, 228, 0.3),
+      0 0 48px rgba(6, 182, 228, 0.15);
+    filter: drop-shadow(0 0 8px rgba(6, 182, 228, 0.6));
+  }
+}
+
+/* Legacy alias for backwards compatibility */
 @keyframes name-pulse-glow {
   0%, 100% {
     text-shadow: 
@@ -94,6 +129,41 @@
       0 0 32px rgba(6, 182, 228, 0.4),
       0 0 48px rgba(6, 182, 228, 0.2);
   }
+}
+
+/* Panel slide-up animation with blur */
+@keyframes panel-slide-up {
+  0% {
+    transform: translateY(100%) scale(0.95);
+    opacity: 0;
+    filter: blur(8px);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+@keyframes panel-slide-down {
+  0% {
+    transform: translateY(-100%) scale(0.95);
+    opacity: 0;
+    filter: blur(8px);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+.animate-panel-slide-up {
+  animation: panel-slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-panel-slide-down {
+  animation: panel-slide-down 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
@@ -534,26 +604,33 @@ All colors MUST be HSL.
 .livekit-room-container .lk-grid-layout > *:nth-child(8) { animation-delay: 0.56s; }
 .livekit-room-container .lk-grid-layout > *:nth-child(9) { animation-delay: 0.64s; }
 
-/* Participant name - clean without background, pulsing glow when speaking */
+/* Participant name - FULLY TRANSPARENT background, energy glow when speaking */
 .livekit-room-container [data-lk-participant-name],
-.livekit-room-container .lk-participant-name {
-  background: transparent;
-  backdrop-filter: none;
+.livekit-room-container .lk-participant-name,
+.livekit-room-container .lk-participant-metadata,
+.livekit-room-container .lk-participant-metadata-item {
+  background: transparent !important;
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
   padding: 0.25rem 0.5rem;
   border-radius: 0;
-  font-size: 0.9rem;
+  border: none !important;
+  font-size: 0.95rem;
   font-weight: 600;
   color: hsl(0 0% 100%);
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.95), 0 4px 20px rgba(0, 0, 0, 0.8);
   transition: all 0.3s ease;
   letter-spacing: 0.02em;
 }
 
-/* Pulsing glow effect when participant is speaking */
+/* ENERGY speaking effect - radiating waves from the name */
 .livekit-room-container [data-lk-speaking="true"] .lk-participant-name,
-.livekit-room-container [data-lk-speaking="true"] [data-lk-participant-name] {
-  color: hsl(190 95% 75%);
-  animation: name-pulse-glow 1.5s ease-in-out infinite;
+.livekit-room-container [data-lk-speaking="true"] [data-lk-participant-name],
+.livekit-room-container [data-lk-speaking="true"] .lk-participant-metadata-item {
+  color: hsl(190 100% 80%) !important;
+  animation: name-energy-pulse 0.8s ease-in-out infinite !important;
 }
 
 /* Disable layout shifts when speaking - prevent video jumping */
