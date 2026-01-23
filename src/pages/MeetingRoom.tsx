@@ -39,6 +39,7 @@ import { invokeBackendFunctionKeepalive } from "@/utils/invokeBackendFunctionKee
 import LeaveCallDialog from "@/components/LeaveCallDialog";
 import { LiveKitRoom } from "@/components/LiveKitRoom";
 import { MinimizedCallWidget } from "@/components/MinimizedCallWidget";
+import CallQualityWidget from "@/components/CallQualityWidget";
 import { cn } from "@/lib/utils";
 
 const MeetingRoom = () => {
@@ -860,6 +861,11 @@ const MeetingRoom = () => {
             <p className="text-xs">{t.meetingRoom.ipTooltip}</p>
           </TooltipContent>
         </Tooltip>
+      )}
+      
+      {/* Call Quality Widget */}
+      {liveKitRoom && (
+        <CallQualityWidget room={liveKitRoom} />
       )}
     </>
   );
