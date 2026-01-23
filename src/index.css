@@ -693,11 +693,14 @@ All colors MUST be HSL.
 .livekit-room-container .lk-grid-layout > *:nth-child(8) { animation-delay: 0.56s; }
 .livekit-room-container .lk-grid-layout > *:nth-child(9) { animation-delay: 0.64s; }
 
-/* СКРЫТЬ плашку с именем участника */
+/* СКРЫТЬ плашку с именем и иконки состояния участника */
 .livekit-room-container [data-lk-participant-name],
 .livekit-room-container .lk-participant-name,
 .livekit-room-container .lk-participant-metadata,
-.livekit-room-container .lk-participant-metadata-item {
+.livekit-room-container .lk-participant-metadata-item,
+.livekit-room-container .lk-participant-tile svg.lk-icon,
+.livekit-room-container .lk-participant-tile [data-lk-muted],
+.livekit-room-container .lk-focus-layout-wrapper svg.lk-icon {
   display: none !important;
 }
 
