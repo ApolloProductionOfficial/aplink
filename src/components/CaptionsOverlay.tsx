@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { Room } from "livekit-client";
-import { Subtitles, ChevronDown, X } from "lucide-react";
+import { Subtitles, X, GripHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -58,7 +58,11 @@ export function CaptionsOverlay({
   onToggle,
 }: CaptionsOverlayProps) {
   const [targetLang, setTargetLang] = useState(loadSavedLanguage);
-  const [isExpanded, setIsExpanded] = useState(false);
+
+  // Drag state
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragRef = useRef({ startX: 0, startY: 0, startPosX: 0, startPosY: 0 });
 
   const { captions, isProcessing, clearCaptions } = useRealtimeCaptions({
     room,
@@ -73,6 +77,44 @@ export function CaptionsOverlay({
     clearCaptions(); // Clear captions when language changes
   };
 
+  // Drag handlers
+  const handleDragStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+    dragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      startPosX: position.x,
+      startPosY: position.y,
+    };
+  }, [position]);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      const deltaX = e.clientX - dragRef.current.startX;
+      const deltaY = e.clientY - dragRef.current.startY;
+      setPosition({
+        x: dragRef.current.startPosX + deltaX,
+        y: dragRef.current.startPosY + deltaY,
+      });
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging]);
+
   // Get last 4 captions for display
   const displayCaptions = captions.slice(-4);
   const selectedLang = LANGUAGES.find(l => l.code === targetLang);
@@ -82,15 +124,23 @@ export function CaptionsOverlay({
 
   const overlayContent = (
     <div 
-      className="fixed bottom-28 left-1/2 -translate-x-1/2 z-[9998] pointer-events-auto"
-      style={{ maxWidth: 'min(90vw, 800px)' }}
+      className={cn(
+        "fixed z-[9998] pointer-events-auto",
+        isDragging && "cursor-grabbing select-none"
+      )}
+      style={{ 
+        maxWidth: 'min(90vw, 800px)',
+        left: `calc(50% + ${position.x}px)`,
+        bottom: `calc(7rem - ${position.y}px)`,
+        transform: 'translateX(-50%)',
+      }}
     >
       <div className="flex flex-col items-center gap-2">
         {/* Captions display */}
         <div 
           className={cn(
-            "w-full rounded-2xl bg-black/70 backdrop-blur-xl border border-white/10",
-            "transition-all duration-300",
+            "w-full rounded-2xl bg-black/60 backdrop-blur-2xl border border-white/[0.08]",
+            "transition-all duration-300 shadow-[0_0_1px_rgba(255,255,255,0.1)]",
             displayCaptions.length > 0 ? "p-4" : "p-2"
           )}
         >
@@ -139,6 +189,14 @@ export function CaptionsOverlay({
 
         {/* Controls bar */}
         <div className="flex items-center gap-2">
+          {/* Drag handle */}
+          <div 
+            className="flex items-center justify-center w-8 h-8 rounded-full bg-black/50 border border-white/20 cursor-grab active:cursor-grabbing backdrop-blur-md"
+            onMouseDown={handleDragStart}
+          >
+            <GripHorizontal className="w-4 h-4 text-white/40" />
+          </div>
+
           {/* Language selector */}
           <Select value={targetLang} onValueChange={handleLanguageChange}>
             <SelectTrigger className="h-8 w-auto min-w-[100px] bg-black/50 border-white/20 rounded-full text-xs backdrop-blur-md">

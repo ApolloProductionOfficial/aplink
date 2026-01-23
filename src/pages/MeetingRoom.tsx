@@ -174,10 +174,18 @@ const MeetingRoom = () => {
   // Track presence in this room
   usePresence(roomDisplayName);
 
-  // Block navigation when in a call
+  // Block navigation when in a call + warn about recording
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       const isInActiveCall = connectionStatus === 'connected' && !userInitiatedEndRef.current && !hasRedirectedRef.current;
+      
+      // Warn if recording is active
+      if (isRecordingRef.current && !hasRedirectedRef.current) {
+        e.preventDefault();
+        e.returnValue = 'У вас есть активная запись. Если вы уйдёте, запись будет сохранена автоматически.';
+        return e.returnValue;
+      }
+      
       if (isInActiveCall) {
         e.preventDefault();
         e.returnValue = '';

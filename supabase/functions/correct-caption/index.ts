@@ -43,24 +43,9 @@ serve(async (req) => {
     const targetLangName = langNames[targetLang] || targetLang;
     const sourceLangName = sourceLang ? (langNames[sourceLang] || sourceLang) : 'автоопределение';
 
-    const systemPrompt = `Ты профессиональный транскрибатор и переводчик субтитров в реальном времени.
-
-Твоя задача:
-1. Исправить ошибки распознавания речи (опечатки, неправильные слова, грамматику)
-2. Перевести текст на ${targetLangName} язык
-3. Сохранить естественную разговорную речь
-
-Правила:
-- НЕ добавляй никаких пояснений
-- Верни ТОЛЬКО JSON объект
-- Исходный язык: ${sourceLangName}
-- Целевой язык: ${targetLangName}`;
-
-    const userPrompt = `Исправь и переведи:
-"${originalText}"
-
-Верни строго JSON:
-{"corrected": "исправленный оригинальный текст", "translated": "перевод на ${targetLangName}"}`;
+    const prompt = `Fix STT errors and translate. Source: ${sourceLangName}. Target: ${targetLangName}.
+Text: "${originalText}"
+Reply ONLY JSON: {"corrected":"fixed text","translated":"${targetLangName} translation"}`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -69,12 +54,12 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "google/gemini-2.5-flash-lite",
         messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt }
+          { role: "user", content: prompt }
         ],
-        temperature: 0.3,
+        temperature: 0.2,
+        max_tokens: 200,
       }),
     });
 

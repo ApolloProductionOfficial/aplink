@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Languages, Mic, MicOff, Volume2, Loader2, X, Minimize2, Maximize2, 
-  Download, History, Trash2, Play, Keyboard, Activity, ArrowRight
+  Download, History, Trash2, Play, Keyboard, Activity, ArrowRight, GripHorizontal
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -941,7 +941,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
   if (isMinimized) {
     return (
       <Card className={cn(
-        "fixed bottom-4 right-4 z-50 w-auto bg-background/95 backdrop-blur border-primary/20 shadow-lg",
+        "fixed bottom-4 right-4 z-50 w-auto bg-black/40 backdrop-blur-2xl border border-white/[0.08] shadow-lg",
         className
       )}>
         <CardContent className="p-3 flex items-center gap-3">
@@ -974,15 +974,69 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
     );
   }
 
+  // Dragging state for translator
+  const [translatorPosition, setTranslatorPosition] = useState({ x: 0, y: 0 });
+  const [isTranslatorDragging, setIsTranslatorDragging] = useState(false);
+  const translatorDragRef = useRef({ startX: 0, startY: 0, startPosX: 0, startPosY: 0 });
+
+  // Drag handlers for translator
+  const handleTranslatorDragStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsTranslatorDragging(true);
+    translatorDragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      startPosX: translatorPosition.x,
+      startPosY: translatorPosition.y,
+    };
+  }, [translatorPosition]);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isTranslatorDragging) return;
+      const deltaX = e.clientX - translatorDragRef.current.startX;
+      const deltaY = e.clientY - translatorDragRef.current.startY;
+      setTranslatorPosition({
+        x: translatorDragRef.current.startPosX + deltaX,
+        y: translatorDragRef.current.startPosY + deltaY,
+      });
+    };
+
+    const handleMouseUp = () => {
+      setIsTranslatorDragging(false);
+    };
+
+    if (isTranslatorDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isTranslatorDragging]);
+
   return (
-    <Card className={cn(
-      "fixed bottom-4 right-4 z-50 w-[380px] max-h-[60vh] bg-background/95 backdrop-blur border-primary/20 shadow-lg flex flex-col",
-      className
-    )}>
+    <Card 
+      className={cn(
+        "fixed bottom-4 z-50 w-[380px] max-h-[60vh] bg-black/40 backdrop-blur-2xl border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.5),0_0_1px_rgba(255,255,255,0.1)] flex flex-col",
+        isTranslatorDragging && "cursor-grabbing select-none",
+        className
+      )}
+      style={{
+        right: `calc(1rem - ${translatorPosition.x}px)`,
+        bottom: `calc(1rem - ${translatorPosition.y}px)`,
+      }}
+    >
       <CardContent className="p-3 flex flex-col gap-2 flex-1 overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between">
+        {/* Header - drag handle */}
+        <div 
+          className="flex items-center justify-between cursor-grab active:cursor-grabbing"
+          onMouseDown={handleTranslatorDragStart}
+        >
           <div className="flex items-center gap-2">
+            <GripHorizontal className="h-4 w-4 text-white/30" />
             <Languages className="h-4 w-4 text-primary" />
             <span className="font-semibold text-sm">{t.translator.title}</span>
             {(isVadRecording || isPushToTalkActive || isProcessing) && (

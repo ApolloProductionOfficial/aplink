@@ -225,7 +225,7 @@ export function InCallChat({ room, participantName, isOpen, onToggle, buttonOnly
   return (
     <div
       className={cn(
-        "fixed z-[60] w-80 h-[420px] glass-dark rounded-[1.5rem] border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden",
+        "fixed z-[60] w-80 h-[420px] bg-black/40 backdrop-blur-2xl rounded-[1.5rem] border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.5),0_0_1px_rgba(255,255,255,0.1)] flex flex-col overflow-hidden",
         isDragging && "cursor-grabbing select-none"
       )}
       style={{
@@ -282,7 +282,7 @@ export function InCallChat({ room, participantName, isOpen, onToggle, buttonOnly
                   className={cn(
                     "max-w-[85%] px-3 py-2 rounded-2xl text-sm",
                     msg.isLocal
-                      ? "bg-primary text-primary-foreground rounded-br-md"
+                      ? "bg-primary/40 text-white rounded-br-md border border-primary/20"
                       : "bg-white/10 rounded-bl-md"
                   )}
                 >
