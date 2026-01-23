@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Room, RoomEvent } from "livekit-client";
-import { MessageCircle, Send, X } from "lucide-react";
+import { MessageCircle, Send, X, GripHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -30,6 +30,11 @@ export function InCallChat({ room, participantName, isOpen, onToggle }: InCallCh
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { playMessageSound } = useConnectionSounds();
+
+  // Dragging state
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragRef = useRef({ startX: 0, startY: 0, startPosX: 0, startPosY: 0 });
 
   // Auto-scroll to bottom when new messages arrive
   const scrollToBottom = useCallback(() => {
@@ -78,7 +83,7 @@ export function InCallChat({ room, participantName, isOpen, onToggle }: InCallCh
     return () => {
       room.off(RoomEvent.DataReceived, handleDataReceived);
     };
-  }, [room, isOpen]);
+  }, [room, isOpen, playMessageSound]);
 
   // Clear unread count when chat opens
   useEffect(() => {
@@ -95,6 +100,44 @@ export function InCallChat({ room, participantName, isOpen, onToggle }: InCallCh
       scrollToBottom();
     }
   }, [messages, isOpen, scrollToBottom]);
+
+  // Drag handlers
+  const handleDragStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+    dragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      startPosX: position.x,
+      startPosY: position.y,
+    };
+  }, [position]);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      const deltaX = e.clientX - dragRef.current.startX;
+      const deltaY = e.clientY - dragRef.current.startY;
+      setPosition({
+        x: dragRef.current.startPosX + deltaX,
+        y: dragRef.current.startPosY + deltaY,
+      });
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging]);
 
   // Send message
   const sendMessage = useCallback(async () => {
@@ -144,109 +187,119 @@ export function InCallChat({ room, participantName, isOpen, onToggle }: InCallCh
     return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
   };
 
-  return (
-    <>
-      {/* Chat Toggle Button */}
+  // Only render button when chat is closed (button goes in bottom panel)
+  if (!isOpen) {
+    return (
       <Button
         onClick={onToggle}
-        variant={isOpen ? "default" : "outline"}
+        variant="outline"
         size="icon"
-        className={cn(
-          "relative w-12 h-12 rounded-xl border-border/50 transition-all",
-          isOpen ? "bg-primary/20 border-primary/50" : "bg-card hover:bg-card/80"
-        )}
+        className="relative w-12 h-12 rounded-full border-white/20 bg-white/10 hover:bg-white/20 transition-all hover:scale-105"
       >
         <MessageCircle className="w-5 h-5" />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground text-xs rounded-full flex items-center justify-center animate-pulse">
+          <span className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground text-xs rounded-full flex items-center justify-center animate-pulse font-bold">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </Button>
+    );
+  }
 
-      {/* Chat Panel */}
-      {isOpen && (
-        <div className="fixed right-4 bottom-24 z-[60] w-80 h-96 glass-dark rounded-2xl border border-border/50 flex flex-col overflow-hidden animate-scale-in shadow-2xl">
-          {/* Header */}
-          <div className="flex items-center justify-between p-3 border-b border-border/30">
-            <div className="flex items-center gap-2">
-              <MessageCircle className="w-4 h-4 text-primary" />
-              <span className="font-medium text-sm">Чат</span>
-              <span className="text-xs text-muted-foreground">({messages.length})</span>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={onToggle}
-            >
-              <X className="w-4 h-4" />
-            </Button>
-          </div>
-
-          {/* Messages */}
-          <ScrollArea ref={scrollAreaRef} className="flex-1 p-3">
-            {messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-                <MessageCircle className="w-10 h-10 mb-2 opacity-30" />
-                <p className="text-sm">Нет сообщений</p>
-                <p className="text-xs mt-1">Начните общение!</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {messages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={cn(
-                      "flex flex-col gap-1",
-                      msg.isLocal ? "items-end" : "items-start"
-                    )}
-                  >
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <span className="font-medium">
-                        {msg.isLocal ? "Вы" : msg.senderName}
-                      </span>
-                      <span>{formatTime(msg.timestamp)}</span>
-                    </div>
-                    <div
-                      className={cn(
-                        "max-w-[85%] px-3 py-2 rounded-xl text-sm",
-                        msg.isLocal
-                          ? "bg-primary text-primary-foreground rounded-br-sm"
-                          : "bg-card border border-border/50 rounded-bl-sm"
-                      )}
-                    >
-                      {msg.text}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </ScrollArea>
-
-          {/* Input */}
-          <div className="p-3 border-t border-border/30">
-            <div className="flex gap-2">
-              <Input
-                ref={inputRef}
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Введите сообщение..."
-                className="flex-1 h-9 bg-background/50 border-border/50"
-              />
-              <Button
-                onClick={sendMessage}
-                size="icon"
-                className="h-9 w-9"
-                disabled={!inputValue.trim()}
-              >
-                <Send className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        </div>
+  // Draggable chat panel (when open)
+  return (
+    <div
+      className={cn(
+        "fixed z-[60] w-80 h-[420px] glass-dark rounded-2xl border border-white/10 shadow-2xl flex flex-col overflow-hidden",
+        isDragging && "cursor-grabbing select-none"
       )}
-    </>
+      style={{
+        right: `calc(1rem - ${position.x}px)`,
+        bottom: `calc(6rem - ${position.y}px)`,
+      }}
+    >
+      {/* Header - drag handle */}
+      <div
+        className="flex items-center justify-between p-3 border-b border-white/10 cursor-grab active:cursor-grabbing bg-black/20"
+        onMouseDown={handleDragStart}
+      >
+        <div className="flex items-center gap-2">
+          <GripHorizontal className="w-4 h-4 text-white/30" />
+          <MessageCircle className="w-4 h-4 text-primary" />
+          <span className="font-medium text-sm">Чат</span>
+          <span className="text-xs text-muted-foreground">({messages.length})</span>
+        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 rounded-full hover:bg-white/10"
+          onClick={onToggle}
+        >
+          <X className="w-4 h-4" />
+        </Button>
+      </div>
+
+      {/* Messages */}
+      <ScrollArea ref={scrollAreaRef} className="flex-1 p-3">
+        {messages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+            <MessageCircle className="w-10 h-10 mb-2 opacity-30" />
+            <p className="text-sm">Нет сообщений</p>
+            <p className="text-xs mt-1">Начните общение!</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {messages.map((msg) => (
+              <div
+                key={msg.id}
+                className={cn(
+                  "flex flex-col gap-1",
+                  msg.isLocal ? "items-end" : "items-start"
+                )}
+              >
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span className="font-medium">
+                    {msg.isLocal ? "Вы" : msg.senderName}
+                  </span>
+                  <span>{formatTime(msg.timestamp)}</span>
+                </div>
+                <div
+                  className={cn(
+                    "max-w-[85%] px-3 py-2 rounded-2xl text-sm",
+                    msg.isLocal
+                      ? "bg-primary text-primary-foreground rounded-br-md"
+                      : "bg-white/10 rounded-bl-md"
+                  )}
+                >
+                  {msg.text}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </ScrollArea>
+
+      {/* Input */}
+      <div className="p-3 border-t border-white/10 bg-black/20">
+        <div className="flex gap-2">
+          <Input
+            ref={inputRef}
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder="Сообщение..."
+            className="flex-1 h-10 bg-white/10 border-white/10 rounded-full px-4 text-sm focus:border-primary/50"
+          />
+          <Button
+            onClick={sendMessage}
+            size="icon"
+            className="h-10 w-10 rounded-full shrink-0"
+            disabled={!inputValue.trim()}
+          >
+            <Send className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }
