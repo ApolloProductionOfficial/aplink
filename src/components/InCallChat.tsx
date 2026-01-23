@@ -1,12 +1,14 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Room, RoomEvent } from "livekit-client";
-import { MessageCircle, Send, X, GripHorizontal, Smile } from "lucide-react";
+import { MessageCircle, Send, X, GripHorizontal, Smile, Mic, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { useConnectionSounds } from "@/hooks/useConnectionSounds";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 const CHAT_EMOJIS = ['😀', '😂', '❤️', '🔥', '👍', '💰', '🍑', '🍆', '💎', '💋', '🥵', '💸', '👑', '🎬', '🚀'];
 
@@ -35,6 +37,12 @@ export function InCallChat({ room, participantName, isOpen, onToggle, buttonOnly
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { playMessageSound } = useConnectionSounds();
+
+  // Voice recording state
+  const [isRecordingVoice, setIsRecordingVoice] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
 
   // Dragging state
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -179,6 +187,102 @@ export function InCallChat({ room, participantName, isOpen, onToggle, buttonOnly
     }
   }, [room, inputValue, participantName]);
 
+  // Voice message recording
+  const startVoiceRecording = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+      audioChunksRef.current = [];
+      
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          audioChunksRef.current.push(e.data);
+        }
+      };
+      
+      recorder.start(100);
+      mediaRecorderRef.current = recorder;
+      setIsRecordingVoice(true);
+    } catch (err) {
+      console.error('Failed to start voice recording:', err);
+      toast({ title: "Не удалось начать запись", variant: "destructive" });
+    }
+  }, []);
+
+  const stopVoiceRecording = useCallback(async () => {
+    if (!mediaRecorderRef.current) return;
+    
+    return new Promise<void>((resolve) => {
+      const recorder = mediaRecorderRef.current!;
+      
+      recorder.onstop = async () => {
+        setIsRecordingVoice(false);
+        
+        // Stop all tracks
+        recorder.stream.getTracks().forEach(track => track.stop());
+        
+        if (audioChunksRef.current.length === 0) {
+          resolve();
+          return;
+        }
+        
+        setIsTranscribing(true);
+        
+        try {
+          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+          
+          // Convert to FormData for edge function
+          const formData = new FormData();
+          formData.append('audio', audioBlob, 'voice.webm');
+          
+          const { data, error } = await supabase.functions.invoke('elevenlabs-transcribe', {
+            body: formData,
+          });
+          
+          if (error) throw error;
+          
+          if (data?.text && data.text.trim()) {
+            // Send as voice message with emoji prefix
+            const voiceText = `🎤 ${data.text.trim()}`;
+            
+            if (room) {
+              const messageData = {
+                type: 'chat_message',
+                senderName: participantName,
+                senderIdentity: room.localParticipant.identity,
+                text: voiceText,
+                timestamp: new Date().toISOString(),
+              };
+              
+              const encoder = new TextEncoder();
+              await room.localParticipant.publishData(encoder.encode(JSON.stringify(messageData)), { reliable: true });
+              
+              setMessages(prev => [...prev, {
+                id: `${Date.now()}-voice`,
+                senderName: participantName,
+                senderIdentity: room.localParticipant.identity,
+                text: voiceText,
+                timestamp: new Date(),
+                isLocal: true,
+              }]);
+            }
+          } else {
+            toast({ title: "Не удалось распознать речь", description: "Попробуйте говорить громче", variant: "destructive" });
+          }
+        } catch (err) {
+          console.error('Failed to transcribe voice:', err);
+          toast({ title: "Ошибка транскрипции", variant: "destructive" });
+        } finally {
+          setIsTranscribing(false);
+        }
+        
+        resolve();
+      };
+      
+      recorder.stop();
+    });
+  }, [room, participantName]);
+
   // Handle key press
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -307,6 +411,7 @@ export function InCallChat({ room, participantName, isOpen, onToggle, buttonOnly
             onKeyPress={handleKeyPress}
             placeholder="Сообщение..."
             className="flex-1 h-10 bg-white/10 border-white/[0.08] rounded-full px-4 text-sm focus:border-primary/50"
+            disabled={isRecordingVoice || isTranscribing}
           />
           <Popover>
             <PopoverTrigger asChild>
@@ -328,15 +433,50 @@ export function InCallChat({ room, participantName, isOpen, onToggle, buttonOnly
               </div>
             </PopoverContent>
           </Popover>
+          
+          {/* Voice message button - hold to record */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn(
+              "h-10 w-10 rounded-full shrink-0 transition-all",
+              isRecordingVoice 
+                ? "bg-destructive/40 hover:bg-destructive/50 animate-pulse" 
+                : "hover:bg-white/10",
+              isTranscribing && "opacity-50 pointer-events-none"
+            )}
+            onMouseDown={startVoiceRecording}
+            onMouseUp={stopVoiceRecording}
+            onMouseLeave={() => isRecordingVoice && stopVoiceRecording()}
+            onTouchStart={startVoiceRecording}
+            onTouchEnd={stopVoiceRecording}
+            disabled={isTranscribing}
+            title="Удерживайте для записи голосового сообщения"
+          >
+            {isTranscribing ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Mic className={cn("w-4 h-4", isRecordingVoice && "text-destructive")} />
+            )}
+          </Button>
+          
           <Button
             onClick={sendMessage}
             size="icon"
             className="h-10 w-10 rounded-full shrink-0"
-            disabled={!inputValue.trim()}
+            disabled={!inputValue.trim() || isRecordingVoice || isTranscribing}
           >
             <Send className="w-4 h-4" />
           </Button>
         </div>
+        
+        {/* Recording indicator */}
+        {isRecordingVoice && (
+          <div className="mt-2 text-xs text-destructive flex items-center gap-1.5 justify-center animate-pulse">
+            <span className="w-2 h-2 rounded-full bg-destructive animate-pulse" />
+            Запись... отпустите для отправки
+          </div>
+        )}
       </div>
     </div>
   );
