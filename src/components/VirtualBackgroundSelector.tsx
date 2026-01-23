@@ -58,7 +58,7 @@ const AI_THEMES = [
 // Static Apollo Production background
 const APOLLO_BACKGROUND = {
   id: 'apollo',
-  url: '/images/apollo-logo.png',
+  url: '/images/apollo-production-bg.png',
   label: 'Apollo',
   icon: Crown,
 };

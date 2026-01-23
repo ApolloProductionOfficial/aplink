@@ -32,6 +32,8 @@ import {
   Hand,
   Volume2,
   VolumeX,
+  Sparkles,
+  PictureInPicture2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -525,14 +527,27 @@ function LiveKitContent({
               : "-translate-y-8 opacity-0 scale-90 pointer-events-none"
           )}
         >
-          <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-[2.5rem] bg-white/[0.008] backdrop-blur-2xl border border-white/[0.08] shadow-[0_0_1px_rgba(255,255,255,0.1),inset_0_0_20px_rgba(255,255,255,0.02)]">
-            {/* Minimize button */}
+          <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-[2.5rem] bg-transparent backdrop-blur-[2px] border border-white/[0.1] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)]">
+            {/* Picture-in-Picture button */}
             <button
-              onClick={onMinimize}
+              onClick={async () => {
+                try {
+                  const videoEl = document.querySelector('.lk-participant-tile video') as HTMLVideoElement;
+                  if (videoEl && document.pictureInPictureEnabled) {
+                    await videoEl.requestPictureInPicture();
+                    onMinimize?.();
+                  } else {
+                    onMinimize?.();
+                  }
+                } catch (err) {
+                  console.error('PiP not supported:', err);
+                  onMinimize?.();
+                }
+              }}
               className="flex items-center justify-center w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 border border-white/[0.08] transition-all hover:scale-105 hover:shadow-lg"
-              title="Свернуть звонок"
+              title="Картинка в картинке"
             >
-              <Minimize className="w-4 h-4" />
+              <PictureInPicture2 className="w-4 h-4" />
             </button>
 
             {/* Room name */}
@@ -545,6 +560,22 @@ function LiveKitContent({
 
             {/* Header buttons from parent */}
             {headerButtons}
+
+            {/* Divider */}
+            <div className="w-px h-5 bg-white/10" />
+
+            {/* Reset effects button */}
+            <button
+              onClick={() => {
+                removeBackground();
+                if (isNoiseSuppressionEnabled) toggleNoiseSuppression();
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-red-500/30 border border-white/[0.08] transition-all text-xs hover:border-red-500/50"
+              title="Сбросить все эффекты"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Сброс</span>
+            </button>
 
             {/* Divider */}
             <div className="w-px h-5 bg-white/10" />
@@ -627,23 +658,23 @@ function LiveKitContent({
                 <ParticipantTile className="rounded-xl overflow-hidden" />
               </GridLayout>
               
-              {/* Raised hand indicators overlay */}
-              {Array.from(raisedHands.entries()).map(([identity, hand]) => {
-                const participant = participants.find(p => p.identity === identity);
-                if (!participant) return null;
-                
-                return (
-                  <div
-                    key={identity}
-                    className="absolute top-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none"
-                  >
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-yellow-500/90 shadow-lg animate-bounce-hand animate-hand-glow">
-                      <Hand className="w-5 h-5 text-white" />
-                      <span className="text-white text-sm font-medium">{hand.participantName}</span>
-                    </div>
+              {/* Raised hand indicators - BIG fullscreen overlay */}
+              {raisedHands.size > 0 && (
+                <div className="fixed inset-0 pointer-events-none z-[99998] flex justify-center pt-20">
+                  <div className="flex flex-col gap-3">
+                    {Array.from(raisedHands.entries()).map(([identity, hand]) => (
+                      <div
+                        key={identity}
+                        className="flex items-center gap-3 px-6 py-3.5 rounded-full bg-yellow-500/90 shadow-[0_0_40px_rgba(234,179,8,0.6),0_0_80px_rgba(234,179,8,0.3)] animate-bounce"
+                      >
+                        <Hand className="w-7 h-7 text-white animate-pulse" />
+                        <span className="text-white text-lg font-bold">{hand.participantName}</span>
+                        <span className="text-yellow-100 text-sm">поднял руку</span>
+                      </div>
+                    ))}
                   </div>
-                );
-              })}
+                </div>
+              )}
             </div>
           );
         })()}
@@ -659,7 +690,7 @@ function LiveKitContent({
             : "translate-y-12 opacity-0 scale-90 pointer-events-none"
         )}
       >
-        <div className="flex items-center gap-2.5 px-5 py-3.5 rounded-[2.5rem] bg-white/[0.008] backdrop-blur-2xl border border-white/[0.08] shadow-[0_0_1px_rgba(255,255,255,0.1),inset_0_0_20px_rgba(255,255,255,0.02)]">
+        <div className="flex items-center gap-2.5 px-5 py-3.5 rounded-[2.5rem] bg-transparent backdrop-blur-[2px] border border-white/[0.1] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)]">
           {/* Camera toggle */}
           <Button
             onClick={toggleCamera}

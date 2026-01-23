@@ -24,7 +24,7 @@ interface EmojiReactionsProps {
   participantName: string;
 }
 
-const REACTION_EMOJIS = ['👍', '❤️', '😂', '🎉', '👏', '🔥', '💯', '🙌', '😮', '🤔', '👎', '😢'];
+const REACTION_EMOJIS = ['💰', '🍑', '🍆', '💎', '🔥', '💋', '🥵', '💸', '👑', '🎬', '💜', '🚀'];
 
 export function EmojiReactions({ room, participantName }: EmojiReactionsProps) {
   const [reactions, setReactions] = useState<EmojiReaction[]>([]);
