@@ -525,7 +525,7 @@ function LiveKitContent({
               : "-translate-y-8 opacity-0 scale-90 pointer-events-none"
           )}
         >
-          <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-[2.5rem] bg-white/[0.02] backdrop-blur-3xl border border-white/[0.03] shadow-[inset_0_0_0_0.5px_rgba(255,255,255,0.04)]">
+          <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-[2.5rem] bg-white/[0.008] backdrop-blur-2xl border border-white/[0.08] shadow-[0_0_1px_rgba(255,255,255,0.1),inset_0_0_20px_rgba(255,255,255,0.02)]">
             {/* Minimize button */}
             <button
               onClick={onMinimize}
@@ -659,7 +659,7 @@ function LiveKitContent({
             : "translate-y-12 opacity-0 scale-90 pointer-events-none"
         )}
       >
-        <div className="flex items-center gap-2.5 px-5 py-3.5 rounded-[2.5rem] bg-white/[0.02] backdrop-blur-3xl border border-white/[0.03] shadow-[inset_0_0_0_0.5px_rgba(255,255,255,0.04)]">
+        <div className="flex items-center gap-2.5 px-5 py-3.5 rounded-[2.5rem] bg-white/[0.008] backdrop-blur-2xl border border-white/[0.08] shadow-[0_0_1px_rgba(255,255,255,0.1),inset_0_0_20px_rgba(255,255,255,0.02)]">
           {/* Camera toggle */}
           <Button
             onClick={toggleCamera}

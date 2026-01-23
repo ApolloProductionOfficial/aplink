@@ -120,8 +120,8 @@ const ParticipantsIPPanel = ({ roomId, isOpen, onClose }: ParticipantsIPPanelPro
   if (!isOpen) return null;
 
   return (
-    <div className="absolute top-16 right-4 z-50 w-80 max-h-96 bg-card/95 backdrop-blur-xl border border-border rounded-lg shadow-2xl overflow-hidden animate-in slide-in-from-top-2 fade-in duration-200">
-      <div className="flex items-center justify-between p-3 border-b border-border/50">
+    <div className="absolute top-16 right-4 z-50 w-80 max-h-96 bg-black/40 backdrop-blur-2xl border border-white/[0.08] rounded-2xl shadow-[0_0_1px_rgba(255,255,255,0.1)] overflow-hidden animate-in slide-in-from-top-2 fade-in duration-200">
+      <div className="flex items-center justify-between p-3 border-b border-white/[0.08]">
         <div className="flex items-center gap-2">
           <Globe className="w-4 h-4 text-primary" />
           <span className="font-medium text-sm">Участники ({participants.length})</span>
@@ -144,7 +144,7 @@ const ParticipantsIPPanel = ({ roomId, isOpen, onClose }: ParticipantsIPPanelPro
           participants.map((participant) => (
             <div
               key={participant.id}
-              className="p-3 bg-background/50 rounded-lg border border-border/30 space-y-2"
+              className="p-3 bg-white/[0.03] rounded-xl border border-white/[0.05] space-y-2"
             >
               <div className="flex items-center justify-between">
                 <span className="font-medium text-sm truncate max-w-[150px]">

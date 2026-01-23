@@ -914,6 +914,17 @@ All colors MUST be HSL.
   height: 16px;
 }
 
+/* Hide default fullscreen button from focus layout */
+.lk-focus-layout button[aria-label*="fullscreen" i],
+.lk-focus-layout button[data-lk-source="screen_share"][aria-label*="focus" i],
+.livekit-room-container button[aria-label*="fullscreen" i],
+.livekit-room-container button[aria-label*="Fullscreen" i],
+.livekit-room-container .lk-focus-toggle,
+.livekit-room-container [data-lk-button="toggle-fullscreen"],
+button.lk-button[aria-label*="fullscreen" i] {
+  display: none !important;
+}
+
 @layer base {
   * {
     @apply border-border;
