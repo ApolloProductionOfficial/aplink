@@ -693,58 +693,78 @@ All colors MUST be HSL.
 .livekit-room-container .lk-grid-layout > *:nth-child(8) { animation-delay: 0.56s; }
 .livekit-room-container .lk-grid-layout > *:nth-child(9) { animation-delay: 0.64s; }
 
-/* Participant name - semi-transparent with smooth cosmic glow when speaking */
+/* Participant name - ПОЛУПРОЗРАЧНОЕ с плавным свечением при говорении */
 .livekit-room-container [data-lk-participant-name],
 .livekit-room-container .lk-participant-name,
 .livekit-room-container .lk-participant-metadata,
 .livekit-room-container .lk-participant-metadata-item {
-  background: rgba(0, 0, 0, 0.3) !important;
-  background-color: rgba(0, 0, 0, 0.3) !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
+  background: rgba(0, 0, 0, 0.2) !important;
+  background-color: rgba(0, 0, 0, 0.2) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
   box-shadow: none !important;
-  padding: 0.35rem 0.75rem;
-  border-radius: 0.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.85);
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
-  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-  letter-spacing: 0.02em;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.65) !important; /* ПОЛУПРОЗРАЧНЫЙ белый текст */
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
+  transition: 
+    text-shadow 1.8s cubic-bezier(0.4, 0, 0.2, 1),
+    color 1.8s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 1.8s cubic-bezier(0.4, 0, 0.2, 1),
+    background 1.8s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  letter-spacing: 0 !important;
 }
 
-/* SMOOTH speaking effect - soft glow that fades in/out gradually */
-.livekit-room-container [data-lk-speaking="true"] .lk-participant-name,
-.livekit-room-container [data-lk-speaking="true"] [data-lk-participant-name],
-.livekit-room-container [data-lk-speaking="true"] .lk-participant-metadata-item {
-  color: hsl(190 95% 90%) !important;
-  background: rgba(6, 182, 228, 0.15) !important;
-  border-color: rgba(6, 182, 228, 0.3) !important;
-  text-shadow: 
-    0 0 10px rgba(6, 182, 228, 0.6),
-    0 0 20px rgba(6, 182, 228, 0.4),
-    0 0 30px rgba(6, 182, 228, 0.2),
-    0 2px 8px rgba(0, 0, 0, 0.9) !important;
-  animation: name-smooth-glow 2s ease-in-out infinite !important;
-  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1) !important;
-}
-
+/* ПЛАВНОЕ свечение при говорении - мягкое затухание */
 @keyframes name-smooth-glow {
   0%, 100% {
     text-shadow: 
-      0 0 8px rgba(6, 182, 228, 0.5),
-      0 0 16px rgba(6, 182, 228, 0.3),
-      0 0 24px rgba(6, 182, 228, 0.15),
-      0 2px 8px rgba(0, 0, 0, 0.9);
+      0 0 6px rgba(6, 182, 228, 0.25),
+      0 0 12px rgba(6, 182, 228, 0.12),
+      0 1px 4px rgba(0, 0, 0, 0.7);
+    box-shadow: 
+      0 0 8px rgba(6, 182, 228, 0.15),
+      inset 0 0 3px rgba(6, 182, 228, 0.05);
   }
   50% {
     text-shadow: 
-      0 0 12px rgba(6, 182, 228, 0.7),
-      0 0 24px rgba(6, 182, 228, 0.5),
-      0 0 36px rgba(6, 182, 228, 0.25),
-      0 2px 8px rgba(0, 0, 0, 0.9);
+      0 0 10px rgba(6, 182, 228, 0.45),
+      0 0 18px rgba(6, 182, 228, 0.25),
+      0 0 28px rgba(6, 182, 228, 0.1),
+      0 1px 4px rgba(0, 0, 0, 0.7);
+    box-shadow: 
+      0 0 14px rgba(6, 182, 228, 0.25),
+      inset 0 0 6px rgba(6, 182, 228, 0.08);
   }
+}
+
+/* SMOOTH speaking effect - очень медленное и плавное */
+.livekit-room-container [data-lk-speaking="true"] .lk-participant-name,
+.livekit-room-container [data-lk-speaking="true"] [data-lk-participant-name],
+.livekit-room-container [data-lk-speaking="true"] .lk-participant-metadata-item {
+  color: rgba(255, 255, 255, 0.92) !important;
+  background: rgba(0, 0, 0, 0.22) !important;
+  border-color: rgba(6, 182, 228, 0.15) !important;
+  animation: name-smooth-glow 3.5s ease-in-out infinite !important;
+}
+
+/* Screenshot flash overlay */
+@keyframes screenshot-flash {
+  0% { opacity: 0; }
+  12% { opacity: 0.88; }
+  100% { opacity: 0; }
+}
+
+.screenshot-flash {
+  position: fixed;
+  inset: 0;
+  background: white;
+  pointer-events: none;
+  z-index: 999999;
+  animation: screenshot-flash 0.35s ease-out forwards;
 }
 
 /* Disable layout shifts when speaking - prevent video jumping */

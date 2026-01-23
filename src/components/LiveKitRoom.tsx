@@ -32,7 +32,9 @@ import {
   PictureInPicture2,
   Pencil,
   Mic2,
+  Check,
 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { InCallChat } from "@/components/InCallChat";
@@ -285,6 +287,7 @@ function LiveKitContent({
   const [showWhiteboard, setShowWhiteboard] = useState(false);
   const [currentBackground, setCurrentBackground] = useState<'none' | 'blur-light' | 'blur-strong' | 'image'>('none');
   const [isProcessingBackground, setIsProcessingBackground] = useState(false);
+  const [showScreenshotFlash, setShowScreenshotFlash] = useState(false);
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -468,7 +471,43 @@ function LiveKitContent({
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
-  // Listen for raise hand events for voice notifications
+  // Screenshot detection and flash
+  useEffect(() => {
+    const triggerFlash = () => {
+      setShowScreenshotFlash(true);
+      
+      // Notify other participants
+      if (room) {
+        const message = {
+          type: 'SCREENSHOT_TAKEN',
+          participantName,
+          participantIdentity: localParticipant?.identity,
+        };
+        room.localParticipant.publishData(
+          new TextEncoder().encode(JSON.stringify(message)),
+          { reliable: true }
+        );
+      }
+      
+      setTimeout(() => setShowScreenshotFlash(false), 350);
+    };
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // PrintScreen on Windows/Linux
+      if (e.key === 'PrintScreen') {
+        triggerFlash();
+      }
+      // Cmd+Shift+3 or Cmd+Shift+4 on Mac
+      if (e.metaKey && e.shiftKey && (e.key === '3' || e.key === '4')) {
+        triggerFlash();
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [room, participantName, localParticipant]);
+
+  // Listen for raise hand events for voice notifications + screenshot notifications
   useEffect(() => {
     if (!room) return;
 
@@ -477,6 +516,12 @@ function LiveKitContent({
         const message = JSON.parse(new TextDecoder().decode(payload));
         if (message.type === 'RAISE_HAND' && message.raised && message.participantIdentity !== localParticipant?.identity) {
           announceHandRaised(message.participantName);
+        }
+        // Screenshot notification from another participant
+        if (message.type === 'SCREENSHOT_TAKEN' && message.participantIdentity !== localParticipant?.identity) {
+          setShowScreenshotFlash(true);
+          toast({ title: `📸 ${message.participantName} сделал скриншот` });
+          setTimeout(() => setShowScreenshotFlash(false), 350);
         }
       } catch {
         // Ignore non-JSON messages
@@ -721,7 +766,10 @@ function LiveKitContent({
         })()}
       </div>
 
-      {/* Bottom Control Bar - with enhanced contrast like top panel */}
+      {/* Screenshot flash overlay */}
+      {showScreenshotFlash && <div className="screenshot-flash" />}
+
+      {/* Bottom Control Bar - ПРОЗРАЧНАЯ панель, контраст только на иконках */}
       <div 
         className={cn(
           "absolute bottom-4 left-1/2 -translate-x-1/2 z-50",
@@ -731,44 +779,92 @@ function LiveKitContent({
             : "translate-y-12 opacity-0 scale-90 pointer-events-none"
         )}
       >
-        <div className="flex items-center gap-2.5 px-5 py-3.5 rounded-[2.5rem] bg-black/50 backdrop-blur-xl border border-white/[0.15] shadow-[0_0_30px_rgba(0,0,0,0.5),inset_0_0_0_1px_rgba(255,255,255,0.08)]">
+        <div className="flex items-center gap-2.5 px-5 py-3.5 rounded-[2.5rem] bg-transparent backdrop-blur-[2px] border border-white/[0.08]">
           {/* Camera toggle */}
           <Button
             onClick={toggleCamera}
             variant={isCameraEnabled ? "outline" : "secondary"}
             size="icon"
             className={cn(
-              "w-12 h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg [&_svg]:stroke-[2.5]",
+              "w-12 h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg border-white/20",
               isCameraEnabled 
-                ? "bg-white/20 hover:bg-white/30 border-white/20" 
+                ? "bg-white/15 hover:bg-white/25" 
                 : "bg-destructive/40 border-destructive/60 hover:bg-destructive/50"
             )}
           >
             {isCameraEnabled ? (
-              <Video className="w-5 h-5 drop-shadow-[0_0_3px_rgba(255,255,255,0.6)]" />
+              <Video className="w-5 h-5 stroke-[2.5] drop-shadow-[0_0_6px_rgba(255,255,255,0.9)] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" />
             ) : (
-              <VideoOff className="w-5 h-5 text-destructive drop-shadow-[0_0_3px_rgba(255,255,255,0.4)]" />
+              <VideoOff className="w-5 h-5 stroke-[2.5] text-destructive drop-shadow-[0_0_6px_rgba(255,255,255,0.7)] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" />
             )}
           </Button>
 
-          {/* Mic toggle */}
-          <Button
-            onClick={toggleMicrophone}
-            variant={isMicrophoneEnabled ? "outline" : "secondary"}
-            size="icon"
-            className={cn(
-              "w-12 h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg [&_svg]:stroke-[2.5]",
-              isMicrophoneEnabled 
-                ? "bg-white/20 hover:bg-white/30 border-white/20" 
-                : "bg-destructive/40 border-destructive/60 hover:bg-destructive/50"
-            )}
-          >
-            {isMicrophoneEnabled ? (
-              <Mic className="w-5 h-5 drop-shadow-[0_0_3px_rgba(255,255,255,0.6)]" />
-            ) : (
-              <MicOff className="w-5 h-5 text-destructive drop-shadow-[0_0_3px_rgba(255,255,255,0.4)]" />
-            )}
-          </Button>
+          {/* Mic toggle with popup menu */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant={isMicrophoneEnabled ? "outline" : "secondary"}
+                size="icon"
+                className={cn(
+                  "w-12 h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg border-white/20",
+                  isMicrophoneEnabled 
+                    ? "bg-white/15 hover:bg-white/25" 
+                    : "bg-destructive/40 border-destructive/60 hover:bg-destructive/50"
+                )}
+              >
+                {isMicrophoneEnabled ? (
+                  <Mic className="w-5 h-5 stroke-[2.5] drop-shadow-[0_0_6px_rgba(255,255,255,0.9)] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" />
+                ) : (
+                  <MicOff className="w-5 h-5 stroke-[2.5] text-destructive drop-shadow-[0_0_6px_rgba(255,255,255,0.7)] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" />
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent 
+              side="top" 
+              align="center" 
+              sideOffset={12}
+              className="w-52 p-2 bg-black/85 backdrop-blur-xl border-white/10 rounded-xl"
+            >
+              <div className="flex flex-col gap-1">
+                {/* Toggle Mic */}
+                <button
+                  onClick={toggleMicrophone}
+                  className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg hover:bg-white/10 text-sm transition-colors"
+                >
+                  {isMicrophoneEnabled ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                  <span>{isMicrophoneEnabled ? "Выключить микрофон" : "Включить микрофон"}</span>
+                </button>
+                
+                {/* Noise Suppression */}
+                <button
+                  onClick={toggleNoiseSuppression}
+                  className={cn(
+                    "flex items-center gap-2.5 px-3 py-2.5 rounded-lg hover:bg-white/10 text-sm transition-colors",
+                    isNoiseSuppressionEnabled && "text-primary"
+                  )}
+                >
+                  <Volume2 className="w-4 h-4" />
+                  <span>{isNoiseSuppressionEnabled ? "Выкл. шумоподавление" : "Вкл. шумоподавление"}</span>
+                  {isNoiseSuppressionEnabled && <Check className="w-3.5 h-3.5 ml-auto" />}
+                </button>
+                
+                {/* Voice Commands */}
+                {voiceCommandsSupported && (
+                  <button
+                    onClick={toggleVoiceCommands}
+                    className={cn(
+                      "flex items-center gap-2.5 px-3 py-2.5 rounded-lg hover:bg-white/10 text-sm transition-colors",
+                      isVoiceCommandsActive && "text-purple-400"
+                    )}
+                  >
+                    <Mic2 className="w-4 h-4" />
+                    <span>{isVoiceCommandsActive ? "Выкл. голос. команды" : "Голосовые команды"}</span>
+                    {isVoiceCommandsActive && <Check className="w-3.5 h-3.5 ml-auto" />}
+                  </button>
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
 
           {/* Screen share toggle */}
           <Button
@@ -776,14 +872,14 @@ function LiveKitContent({
             variant={isScreenShareEnabled ? "default" : "outline"}
             size="icon"
             className={cn(
-              "w-12 h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg [&_svg]:stroke-[2.5]",
+              "w-12 h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg border-white/20",
               isScreenShareEnabled 
                 ? "bg-green-500/40 border-green-500/60 hover:bg-green-500/50" 
-                : "bg-white/20 hover:bg-white/30 border-white/20"
+                : "bg-white/15 hover:bg-white/25"
             )}
           >
             <MonitorUp className={cn(
-              "w-5 h-5 drop-shadow-[0_0_3px_rgba(255,255,255,0.6)]",
+              "w-5 h-5 stroke-[2.5] drop-shadow-[0_0_6px_rgba(255,255,255,0.9)] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]",
               isScreenShareEnabled && "text-green-400"
             )} />
           </Button>
@@ -811,10 +907,10 @@ function LiveKitContent({
             onClick={() => setShowWhiteboard(true)}
             variant="outline"
             size="icon"
-            className="w-12 h-12 rounded-full bg-white/20 hover:bg-white/30 border-white/20 transition-all hover:scale-105 hover:shadow-lg [&_svg]:stroke-[2.5]"
+            className="w-12 h-12 rounded-full bg-white/15 hover:bg-white/25 border-white/20 transition-all hover:scale-105 hover:shadow-lg"
             title="Доска для рисования"
           >
-            <Pencil className="w-5 h-5 drop-shadow-[0_0_3px_rgba(255,255,255,0.6)]" />
+            <Pencil className="w-5 h-5 stroke-[2.5] drop-shadow-[0_0_6px_rgba(255,255,255,0.9)] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" />
           </Button>
 
           {/* Emoji Reactions */}
@@ -829,53 +925,18 @@ function LiveKitContent({
             variant="outline"
             size="icon"
             className={cn(
-              "w-12 h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg [&_svg]:stroke-[2.5]",
+              "w-12 h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg border-white/20",
               isHandRaised 
                 ? "bg-yellow-500/40 border-yellow-500/60 hover:bg-yellow-500/50 animate-pulse" 
-                : "bg-white/20 hover:bg-white/30 border-white/20"
+                : "bg-white/15 hover:bg-white/25"
             )}
             title={isHandRaised ? "Опустить руку" : "Поднять руку"}
           >
-            <Hand className={cn("w-5 h-5 drop-shadow-[0_0_3px_rgba(255,255,255,0.6)]", isHandRaised && "text-yellow-400")} />
+            <Hand className={cn(
+              "w-5 h-5 stroke-[2.5] drop-shadow-[0_0_6px_rgba(255,255,255,0.9)] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]", 
+              isHandRaised && "text-yellow-400"
+            )} />
           </Button>
-
-          {/* Noise Suppression toggle */}
-          <Button
-            onClick={toggleNoiseSuppression}
-            variant="outline"
-            size="icon"
-            className={cn(
-              "w-12 h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg [&_svg]:stroke-[2.5]",
-              isNoiseSuppressionEnabled 
-                ? "bg-primary/40 border-primary/60 hover:bg-primary/50" 
-                : "bg-white/20 hover:bg-white/30 border-white/20"
-            )}
-            title={isNoiseSuppressionEnabled ? "Выключить шумоподавление" : "Включить шумоподавление"}
-          >
-            {isNoiseSuppressionEnabled ? (
-              <Volume2 className="w-5 h-5 text-primary drop-shadow-[0_0_3px_rgba(255,255,255,0.6)]" />
-            ) : (
-              <VolumeX className="w-5 h-5 drop-shadow-[0_0_3px_rgba(255,255,255,0.6)]" />
-            )}
-          </Button>
-
-          {/* Voice Commands toggle */}
-          {voiceCommandsSupported && (
-            <Button
-              onClick={toggleVoiceCommands}
-              variant="outline"
-              size="icon"
-              className={cn(
-                "w-12 h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg [&_svg]:stroke-[2.5]",
-                isVoiceCommandsActive 
-                  ? "bg-purple-500/40 border-purple-500/60 hover:bg-purple-500/50 animate-pulse" 
-                  : "bg-white/20 hover:bg-white/30 border-white/20"
-              )}
-              title={isVoiceCommandsActive ? "Выключить голосовые команды" : "Голосовые команды"}
-            >
-              <Mic2 className={cn("w-5 h-5 drop-shadow-[0_0_3px_rgba(255,255,255,0.6)]", isVoiceCommandsActive && "text-purple-400")} />
-            </Button>
-          )}
 
           {/* Chat toggle button - buttonOnly mode for bottom panel */}
           <InCallChat
@@ -890,8 +951,8 @@ function LiveKitContent({
           <div className="w-px h-8 bg-white/10 mx-0.5" />
 
           {/* Leave button */}
-          <DisconnectButton className="flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-destructive/90 hover:bg-destructive text-destructive-foreground transition-all hover:scale-105 hover:shadow-lg border border-destructive/60 shadow-[0_0_15px_rgba(220,50,50,0.3)] [&_svg]:stroke-[2.5]">
-            <PhoneOff className="w-5 h-5 drop-shadow-[0_0_3px_rgba(255,255,255,0.6)]" />
+          <DisconnectButton className="flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-destructive/90 hover:bg-destructive text-destructive-foreground transition-all hover:scale-105 hover:shadow-lg border border-destructive/60 shadow-[0_0_15px_rgba(220,50,50,0.3)]">
+            <PhoneOff className="w-5 h-5 stroke-[2.5] drop-shadow-[0_0_6px_rgba(255,255,255,0.9)] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" />
             <span className="text-sm font-bold tracking-wide">Выйти</span>
           </DisconnectButton>
         </div>
