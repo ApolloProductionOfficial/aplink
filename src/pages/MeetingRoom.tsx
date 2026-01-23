@@ -2,7 +2,6 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { Room, RoomEvent, DataPacket_Kind } from "livekit-client";
 import {
-  ArrowLeft,
   Copy,
   Check,
   Users,
@@ -18,13 +17,11 @@ import {
   SignalLow,
   SignalMedium,
   SignalHigh,
-  Bug,
   Link2,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import ParticipantsIPPanel from "@/components/ParticipantsIPPanel";
 import { Button } from "@/components/ui/button";
-import { ToastAction } from "@/components/ui/toast";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -35,12 +32,12 @@ import { useConnectionSounds } from "@/hooks/useConnectionSounds";
 import { RealtimeTranslator } from "@/components/RealtimeTranslator";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useLiveKitTranslationBroadcast } from "@/hooks/useLiveKitTranslationBroadcast";
-import apolloLogo from "@/assets/apollo-logo.mp4";
-import CustomCursor from "@/components/CustomCursor";
 import { MeetingEndSaveDialog, type MeetingSaveStatus } from "@/components/MeetingEndSaveDialog";
 import { invokeBackendFunctionKeepalive } from "@/utils/invokeBackendFunctionKeepalive";
 import LeaveCallDialog from "@/components/LeaveCallDialog";
 import { LiveKitRoom } from "@/components/LiveKitRoom";
+import { MinimizedCallWidget } from "@/components/MinimizedCallWidget";
+import { cn } from "@/lib/utils";
 
 const MeetingRoom = () => {
   const { roomId } = useParams();
@@ -55,6 +52,9 @@ const MeetingRoom = () => {
   const [showIPPanel, setShowIPPanel] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'reconnecting'>('connecting');
   const connectionStatusRef = useRef(connectionStatus);
+  
+  // Minimized call state
+  const [isMinimized, setIsMinimized] = useState(false);
   
   useEffect(() => {
     connectionStatusRef.current = connectionStatus;
@@ -692,6 +692,16 @@ const MeetingRoom = () => {
     await runMeetingSave();
   }, []);
 
+  // Handle minimize
+  const handleMinimize = useCallback(() => {
+    setIsMinimized(true);
+  }, []);
+
+  // Handle maximize (return from minimized)
+  const handleMaximize = useCallback(() => {
+    setIsMinimized(false);
+  }, []);
+
   // Don't render if no username - redirecting
   if (!userName) {
     return null;
@@ -713,13 +723,169 @@ const MeetingRoom = () => {
   const qualityIndicator = getQualityIndicator();
   const QualityIcon = qualityIndicator.icon;
 
-  return (
-    <div className="h-screen w-screen bg-background flex flex-col overflow-hidden cursor-none relative">
-      <CustomCursor />
+  // Header buttons for LiveKitRoom
+  const headerButtons = (
+    <>
+      {/* Recording button */}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            onClick={toggleRecording}
+            variant={isRecording ? "destructive" : "outline"}
+            size="sm"
+            disabled={isTranscribing}
+            className={cn(
+              "flex items-center gap-1.5 h-9 px-3 transition-all duration-300",
+              isRecording ? "scale-105 shadow-lg shadow-destructive/30" : "border-primary/50 hover:bg-primary/10"
+            )}
+          >
+            {isTranscribing ? (
+              <div className="w-4 h-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+            ) : isRecording ? (
+              <>
+                <span className="relative w-2 h-2 bg-white rounded-full">
+                  <span className="absolute inset-0 w-full h-full bg-white rounded-full animate-ping opacity-75" />
+                </span>
+                <MicOff className="w-4 h-4" />
+                <span className="text-xs font-mono">{formatRecordingTime(recordingDuration)}</span>
+              </>
+            ) : (
+              <>
+                <Mic className="w-4 h-4" />
+                <span className="text-xs">{t.meetingRoom.record}</span>
+              </>
+            )}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">
+          <p className="text-xs">{isRecording ? t.meetingRoom.stopRecordTooltip : t.meetingRoom.recordTooltip}</p>
+        </TooltipContent>
+      </Tooltip>
+      
+      {/* Translator button */}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            onClick={() => setShowTranslator(!showTranslator)}
+            variant={showTranslator ? "default" : "outline"}
+            size="sm"
+            className="flex items-center gap-1.5 h-9 px-3 border-primary/50 hover:bg-primary/10"
+          >
+            <Languages className="w-4 h-4" />
+            <span className="text-xs hidden sm:inline">{t.meetingRoom.translate}</span>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">
+          <p className="text-xs">{t.meetingRoom.translateTooltip}</p>
+        </TooltipContent>
+      </Tooltip>
+      
+      {/* Copy link button */}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            onClick={copyLink}
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-1.5 h-9 px-3 border-primary/50 hover:bg-primary/10"
+          >
+            {copied ? (
+              <>
+                <Check className="w-4 h-4 text-green-500" />
+                <span className="text-xs text-green-500 hidden sm:inline">{t.meetingRoom.done}</span>
+              </>
+            ) : (
+              <>
+                <Link2 className="w-4 h-4" />
+                <span className="text-xs hidden sm:inline">{t.meetingRoom.link}</span>
+              </>
+            )}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">
+          <p className="text-xs">{t.meetingRoom.linkTooltip}</p>
+        </TooltipContent>
+      </Tooltip>
+      
+      {/* IP Panel button - only for admins */}
+      {isAdmin && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              onClick={() => setShowIPPanel(!showIPPanel)}
+              variant={showIPPanel ? "default" : "outline"}
+              size="sm"
+              className="flex items-center gap-1.5 h-9 px-3 border-primary/50 hover:bg-primary/10"
+            >
+              <Globe className="w-4 h-4" />
+              <span className="text-xs hidden sm:inline">{t.meetingRoom.ip}</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            <p className="text-xs">{t.meetingRoom.ipTooltip}</p>
+          </TooltipContent>
+        </Tooltip>
+      )}
+    </>
+  );
 
+  // If minimized, show the floating widget
+  if (isMinimized) {
+    return (
+      <>
+        {/* Minimized widget */}
+        <MinimizedCallWidget
+          roomName={roomDisplayName}
+          onMaximize={handleMaximize}
+          onEndCall={handleEndCall}
+        />
+
+        {/* Hidden LiveKit room - maintains connection */}
+        <div className="fixed inset-0 pointer-events-none opacity-0" aria-hidden="true">
+          <LiveKitRoom
+            roomName={roomSlug}
+            participantName={safeUserName}
+            participantIdentity={user?.id}
+            onConnected={handleLiveKitConnected}
+            onDisconnected={handleLiveKitDisconnected}
+            onParticipantJoined={handleParticipantJoined}
+            onParticipantLeft={handleParticipantLeft}
+            onError={handleLiveKitError}
+            onRoomReady={handleRoomReady}
+          />
+        </div>
+
+        {/* Dialogs */}
+        <MeetingEndSaveDialog
+          open={endSaveDialogOpen}
+          status={endSaveStatus}
+          errorMessage={endSaveError}
+          onRetry={retryEndSave}
+          onGoToCalls={goToCallsAfterSave}
+          onExitWithoutSaving={exitWithoutSaving}
+          onLoginToSave={
+            endSaveNeedsLogin
+              ? () => {
+                  navigate(`/auth?redirect=${encodeURIComponent("/dashboard")}`);
+                }
+              : undefined
+          }
+        />
+
+        <LeaveCallDialog
+          open={showLeaveConfirm}
+          onStay={handleStayInCall}
+          onLeave={handleLeaveCall}
+        />
+      </>
+    );
+  }
+
+  return (
+    <div className="h-screen w-screen bg-background flex flex-col overflow-hidden relative">
       {/* Recording Indicator - Fixed top-left */}
       {isRecording && (
-        <div className="fixed top-20 left-4 z-[100] flex items-center gap-2 bg-destructive/90 backdrop-blur-sm text-destructive-foreground px-3 py-1.5 rounded-full shadow-lg animate-fade-in">
+        <div className="fixed top-4 left-4 z-[100] flex items-center gap-2 bg-destructive/90 backdrop-blur-sm text-destructive-foreground px-3 py-1.5 rounded-full shadow-lg animate-fade-in">
           <span className="relative w-3 h-3">
             <span className="absolute inset-0 bg-white rounded-full animate-ping opacity-75" />
             <span className="absolute inset-0 bg-white rounded-full" />
@@ -775,167 +941,6 @@ const MeetingRoom = () => {
         />
       )}
 
-      {/* Header */}
-      <header className="flex flex-col px-3 sm:px-4 py-2 sm:py-3 bg-card/90 backdrop-blur-xl border-b border-border/50 z-50 absolute top-0 left-0 right-0 gap-3">
-        {/* Top row: Logo and room name */}
-        <div className="flex items-center justify-between w-full">
-          <button
-            onClick={() => navigate('/')}
-            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            <div className="relative w-10 h-10 sm:w-12 sm:h-12">
-              <div className="absolute inset-0 rounded-full bg-primary/40 blur-md animate-pulse" />
-              <div className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden ring-2 ring-primary/50 shadow-[0_0_20px_hsl(var(--primary)/0.6)]">
-                <video 
-                  src={apolloLogo} 
-                  autoPlay 
-                  loop 
-                  muted 
-                  playsInline
-                  preload="auto"
-                  poster=""
-                  className="absolute inset-0 w-full h-full object-cover scale-[1.3] origin-center"
-                  style={{ willChange: 'transform' }}
-                />
-              </div>
-            </div>
-            <span className="font-semibold text-sm sm:text-base">APLink</span>
-          </button>
-          
-          <div className="flex items-center gap-2 bg-background/50 px-3 py-1.5 rounded-full border border-border/30">
-            <Users className="w-4 h-4 text-primary" />
-            <span className="text-sm font-medium truncate max-w-[100px] sm:max-w-[200px]">{roomDisplayName}</span>
-          </div>
-        </div>
-        
-        {/* Bottom row: Control buttons */}
-        <div className="grid grid-cols-4 sm:flex sm:flex-wrap sm:justify-center gap-2 w-full">
-          {/* Recording button */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                onClick={toggleRecording}
-                variant={isRecording ? "destructive" : "outline"}
-                size="sm"
-                disabled={isTranscribing}
-                className={`flex flex-col sm:flex-row items-center justify-center gap-1 h-auto py-2 px-2 sm:px-3 focus-visible:ring-0 ring-0 transition-all duration-300 ${isRecording ? "scale-105 shadow-lg shadow-destructive/30" : "border-primary/50 hover:bg-primary/10"}`}
-              >
-                {isTranscribing ? (
-                  <>
-                    <div className="w-5 h-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                    <span className="text-[10px] sm:text-xs">...</span>
-                  </>
-                ) : isRecording ? (
-                  <>
-                    <div className="relative animate-fade-in flex items-center gap-1">
-                      <span className="relative w-2.5 h-2.5 bg-red-500 rounded-full">
-                        <span className="absolute inset-0 w-full h-full bg-red-500 rounded-full animate-ping opacity-75" />
-                      </span>
-                      <MicOff className="w-5 h-5 animate-pulse" />
-                    </div>
-                    <span className="text-[10px] sm:text-xs font-bold font-mono animate-fade-in text-red-100">
-                      {formatRecordingTime(recordingDuration)}
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <Mic className="w-5 h-5 transition-transform duration-200" />
-                    <span className="text-[10px] sm:text-xs font-medium">{t.meetingRoom.record}</span>
-                  </>
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="max-w-[200px]">
-              <p className="text-xs">{isRecording ? t.meetingRoom.stopRecordTooltip : t.meetingRoom.recordTooltip}</p>
-            </TooltipContent>
-          </Tooltip>
-          
-          {/* Translator button */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                onClick={() => setShowTranslator(!showTranslator)}
-                variant={showTranslator ? "default" : "outline"}
-                size="sm"
-                className={`flex flex-col sm:flex-row items-center justify-center gap-1 h-auto py-2 px-2 sm:px-3 focus-visible:ring-0 ${showTranslator ? "ring-0" : "border-primary/50 hover:bg-primary/10"}`}
-              >
-                <Languages className="w-5 h-5" />
-                <span className="text-[10px] sm:text-xs font-medium">{t.meetingRoom.translate}</span>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="max-w-[200px]">
-              <p className="text-xs">{t.meetingRoom.translateTooltip}</p>
-            </TooltipContent>
-          </Tooltip>
-          
-          {/* Copy link button */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                onClick={copyLink}
-                variant="outline"
-                size="sm"
-                className="flex flex-col sm:flex-row items-center justify-center gap-1 h-auto py-2 px-2 sm:px-3 border-primary/50 hover:bg-primary/10 focus-visible:ring-0"
-              >
-                {copied ? (
-                  <>
-                    <Check className="w-5 h-5 text-green-500" />
-                    <span className="text-[10px] sm:text-xs font-medium text-green-500">{t.meetingRoom.done}</span>
-                  </>
-                ) : (
-                  <>
-                    <Link2 className="w-5 h-5" />
-                    <span className="text-[10px] sm:text-xs font-medium">{t.meetingRoom.link}</span>
-                  </>
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="max-w-[200px]">
-              <p className="text-xs">{t.meetingRoom.linkTooltip}</p>
-            </TooltipContent>
-          </Tooltip>
-          
-          {/* IP Panel button - only for admins */}
-          {isAdmin && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  onClick={() => setShowIPPanel(!showIPPanel)}
-                  variant={showIPPanel ? "default" : "outline"}
-                  size="sm"
-                  className="flex flex-col sm:flex-row items-center justify-center gap-1 h-auto py-2 px-2 sm:px-3 focus-visible:ring-0 border-primary/50 hover:bg-primary/10"
-                >
-                  <Globe className="w-5 h-5" />
-                  <span className="text-[10px] sm:text-xs font-medium">{t.meetingRoom.ip}</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="max-w-[200px]">
-                <p className="text-xs">{t.meetingRoom.ipTooltip}</p>
-              </TooltipContent>
-            </Tooltip>
-          )}
-
-          {/* End Call button */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                onClick={handleEndCall}
-                variant="destructive"
-                size="sm"
-                className="flex flex-col sm:flex-row items-center justify-center gap-1 h-auto py-2 px-2 sm:px-3 focus-visible:ring-0"
-              >
-                <WifiOff className="w-5 h-5" />
-                <span className="text-[10px] sm:text-xs font-medium">Выйти</span>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="max-w-[200px]">
-              <p className="text-xs">Завершить звонок</p>
-            </TooltipContent>
-          </Tooltip>
-        </div>
-      </header>
-
       {/* Registration hint for non-authenticated users */}
       {showRegistrationHint && !user && (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 glass rounded-xl px-4 py-3 border border-primary/30 animate-slide-up max-w-sm">
@@ -979,11 +984,12 @@ const MeetingRoom = () => {
 
       {/* Connection Status Indicator */}
       {connectionStatus !== 'connected' && !isLoading && (
-        <div className={`absolute top-20 right-4 z-40 flex items-center gap-2 glass rounded-full px-4 py-2 border animate-fade-in ${
+        <div className={cn(
+          "absolute top-4 right-4 z-40 flex items-center gap-2 glass rounded-full px-4 py-2 border animate-fade-in",
           connectionStatus === 'disconnected' ? 'border-red-500/50' : 
           connectionStatus === 'reconnecting' ? 'border-yellow-500/50' : 
           'border-primary/50'
-        }`}>
+        )}>
           {connectionStatus === 'disconnected' ? (
             <>
               <WifiOff className="w-4 h-4 text-red-500" />
@@ -1014,7 +1020,7 @@ const MeetingRoom = () => {
       
       {/* Connected indicator with quality */}
       {connectionStatus === 'connected' && (
-        <div className="absolute top-20 right-4 z-40 flex items-center gap-3 glass rounded-full px-4 py-2 border border-green-500/30">
+        <div className="absolute top-4 right-4 z-40 flex items-center gap-3 glass rounded-full px-4 py-2 border border-green-500/30">
           <div className="flex items-center gap-2">
             <Wifi className="w-3 h-3 text-green-500" />
             <span className="text-xs text-green-500">{t.meetingRoom.done || "Подключено"}</span>
@@ -1027,26 +1033,8 @@ const MeetingRoom = () => {
         </div>
       )}
 
-      {/* Recording Indicator Overlay */}
-      {(isRecording || isTranscribing) && (
-        <div className="absolute top-20 left-4 z-40 flex items-center gap-2 glass rounded-full px-4 py-2 border border-red-500/50 animate-fade-in">
-          {isTranscribing ? (
-            <>
-              <div className="w-3 h-3 rounded-full bg-yellow-500 animate-pulse" />
-              <span className="text-sm font-medium text-yellow-500">{t.meetingRoom.transcribing}</span>
-            </>
-          ) : (
-            <>
-              <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
-              <span className="text-sm font-medium text-red-500">REC</span>
-              <span className="text-xs text-muted-foreground">{t.meetingRoom.recording}</span>
-            </>
-          )}
-        </div>
-      )}
-
-      {/* LiveKit Room Container */}
-      <div className="flex-1 w-full z-10 relative pt-28" style={{ minHeight: 0 }}>
+      {/* LiveKit Room Container - Full height */}
+      <div className="flex-1 w-full z-10 relative" style={{ minHeight: 0 }}>
         <LiveKitRoom
           roomName={roomSlug}
           participantName={safeUserName}
@@ -1057,6 +1045,9 @@ const MeetingRoom = () => {
           onParticipantLeft={handleParticipantLeft}
           onError={handleLiveKitError}
           onRoomReady={handleRoomReady}
+          headerButtons={headerButtons}
+          roomDisplayName={roomDisplayName}
+          onMinimize={handleMinimize}
         />
       </div>
     </div>
