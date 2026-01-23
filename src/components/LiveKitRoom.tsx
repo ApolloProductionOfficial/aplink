@@ -29,12 +29,17 @@ import {
   ChevronUp,
   ChevronDown,
   Minimize,
+  Hand,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { InCallChat } from "@/components/InCallChat";
 import { VirtualBackgroundSelector } from "@/components/VirtualBackgroundSelector";
 import { EmojiReactions } from "@/components/EmojiReactions";
+import { useRaiseHand } from "@/hooks/useRaiseHand";
+import { useNoiseSuppression } from "@/hooks/useNoiseSuppression";
 
 interface LiveKitRoomProps {
   roomName: string;
@@ -252,6 +257,12 @@ function LiveKitContent({
   const { localParticipant } = useLocalParticipant();
   const [newParticipants, setNewParticipants] = useState<Set<string>>(new Set());
   const roomReadyCalledRef = useRef(false);
+  
+  // Raise hand hook
+  const { isHandRaised, raisedHands, toggleHand } = useRaiseHand(room, participantName);
+  
+  // Noise suppression hook
+  const { isEnabled: isNoiseSuppressionEnabled, toggle: toggleNoiseSuppression } = useNoiseSuppression();
   
   // Auto-hide panels state
   const [showTopPanel, setShowTopPanel] = useState(true);
@@ -609,11 +620,31 @@ function LiveKitContent({
             );
           }
           
-          // Default grid layout
+          // Default grid layout with raised hand indicators
           return (
-            <GridLayout tracks={tracks} className="p-3 gap-3">
-              <ParticipantTile className="rounded-xl overflow-hidden" />
-            </GridLayout>
+            <div className="relative h-full">
+              <GridLayout tracks={tracks} className="p-3 gap-3">
+                <ParticipantTile className="rounded-xl overflow-hidden" />
+              </GridLayout>
+              
+              {/* Raised hand indicators overlay */}
+              {Array.from(raisedHands.entries()).map(([identity, hand]) => {
+                const participant = participants.find(p => p.identity === identity);
+                if (!participant) return null;
+                
+                return (
+                  <div
+                    key={identity}
+                    className="absolute top-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none"
+                  >
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-yellow-500/90 shadow-lg animate-bounce-hand animate-hand-glow">
+                      <Hand className="w-5 h-5 text-white" />
+                      <span className="text-white text-sm font-medium">{hand.participantName}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           );
         })()}
       </div>
@@ -703,6 +734,42 @@ function LiveKitContent({
             participantName={participantName}
           />
 
+          {/* Raise Hand button */}
+          <Button
+            onClick={toggleHand}
+            variant="outline"
+            size="icon"
+            className={cn(
+              "w-12 h-12 rounded-full border-white/[0.12] transition-all hover:scale-105 hover:shadow-lg",
+              isHandRaised 
+                ? "bg-yellow-500/30 border-yellow-500/50 hover:bg-yellow-500/40 animate-pulse" 
+                : "bg-white/10 hover:bg-white/20"
+            )}
+            title={isHandRaised ? "Опустить руку" : "Поднять руку"}
+          >
+            <Hand className={cn("w-5 h-5", isHandRaised && "text-yellow-400")} />
+          </Button>
+
+          {/* Noise Suppression toggle */}
+          <Button
+            onClick={toggleNoiseSuppression}
+            variant="outline"
+            size="icon"
+            className={cn(
+              "w-12 h-12 rounded-full border-white/[0.12] transition-all hover:scale-105 hover:shadow-lg",
+              isNoiseSuppressionEnabled 
+                ? "bg-primary/30 border-primary/50 hover:bg-primary/40" 
+                : "bg-white/10 hover:bg-white/20"
+            )}
+            title={isNoiseSuppressionEnabled ? "Выключить шумоподавление" : "Включить шумоподавление"}
+          >
+            {isNoiseSuppressionEnabled ? (
+              <Volume2 className="w-5 h-5 text-primary" />
+            ) : (
+              <VolumeX className="w-5 h-5" />
+            )}
+          </Button>
+
           {/* Chat toggle button - buttonOnly mode for bottom panel */}
           <InCallChat
             room={room}
@@ -714,20 +781,6 @@ function LiveKitContent({
 
           {/* Divider */}
           <div className="w-px h-8 bg-white/10 mx-0.5" />
-
-          {/* Fullscreen toggle */}
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={toggleFullscreen}
-            className="w-12 h-12 rounded-full border-white/[0.12] bg-white/10 hover:bg-white/20 transition-all hover:scale-105 hover:shadow-lg"
-          >
-            {isFullscreen ? (
-              <Minimize2 className="w-5 h-5" />
-            ) : (
-              <Maximize2 className="w-5 h-5" />
-            )}
-          </Button>
 
           {/* Leave button */}
           <DisconnectButton className="flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-destructive/80 hover:bg-destructive text-destructive-foreground transition-all hover:scale-105 hover:shadow-lg border border-destructive/50">
