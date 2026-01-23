@@ -1,11 +1,14 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Room, RoomEvent } from "livekit-client";
-import { MessageCircle, Send, X, GripHorizontal } from "lucide-react";
+import { MessageCircle, Send, X, GripHorizontal, Smile } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { useConnectionSounds } from "@/hooks/useConnectionSounds";
+
+const CHAT_EMOJIS = ['😀', '😂', '❤️', '🔥', '👍', '💰', '🍑', '🍆', '💎', '💋', '🥵', '💸', '👑', '🎬', '🚀'];
 
 interface ChatMessage {
   id: string;
@@ -305,6 +308,26 @@ export function InCallChat({ room, participantName, isOpen, onToggle, buttonOnly
             placeholder="Сообщение..."
             className="flex-1 h-10 bg-white/10 border-white/[0.08] rounded-full px-4 text-sm focus:border-primary/50"
           />
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full shrink-0 hover:bg-white/10">
+                <Smile className="w-4 h-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent side="top" align="end" className="w-auto p-2 bg-black/80 backdrop-blur-xl border-white/10 rounded-xl">
+              <div className="grid grid-cols-5 gap-1">
+                {CHAT_EMOJIS.map(emoji => (
+                  <button
+                    key={emoji}
+                    onClick={() => setInputValue(prev => prev + emoji)}
+                    className="text-xl p-1.5 hover:bg-white/20 rounded-lg transition-colors"
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
           <Button
             onClick={sendMessage}
             size="icon"
