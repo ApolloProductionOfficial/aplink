@@ -696,15 +696,17 @@ const MeetingRoom = () => {
     await runMeetingSave();
   }, []);
 
-  // Handle minimize
+  // Handle minimize - navigate to dashboard
   const handleMinimize = useCallback(() => {
     setIsMinimized(true);
-  }, []);
+    navigate(user ? '/dashboard' : '/');
+  }, [navigate, user]);
 
   // Handle maximize (return from minimized)
   const handleMaximize = useCallback(() => {
     setIsMinimized(false);
-  }, []);
+    navigate(`/room/${roomId}?name=${encodeURIComponent(safeUserName)}`);
+  }, [navigate, roomId, safeUserName]);
 
   // Don't render if no username - redirecting
   if (!userName) {
@@ -727,7 +729,7 @@ const MeetingRoom = () => {
   const qualityIndicator = getQualityIndicator();
   const QualityIcon = qualityIndicator.icon;
 
-  // Header buttons for LiveKitRoom
+  // Header buttons for LiveKitRoom - matching soft rounded style
   const headerButtons = (
     <>
       {/* Recording button */}
@@ -739,24 +741,25 @@ const MeetingRoom = () => {
             size="sm"
             disabled={isTranscribing}
             className={cn(
-              "flex items-center gap-1.5 h-9 px-3 transition-all duration-300",
-              isRecording ? "scale-105 shadow-lg shadow-destructive/30" : "border-primary/50 hover:bg-primary/10"
+              "flex items-center gap-1.5 h-8 px-3 rounded-full transition-all",
+              isRecording 
+                ? "scale-105 shadow-lg shadow-destructive/30" 
+                : "border-white/20 bg-white/10 hover:bg-white/20"
             )}
           >
             {isTranscribing ? (
-              <div className="w-4 h-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              <div className="w-3 h-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
             ) : isRecording ? (
               <>
                 <span className="relative w-2 h-2 bg-white rounded-full">
                   <span className="absolute inset-0 w-full h-full bg-white rounded-full animate-ping opacity-75" />
                 </span>
-                <MicOff className="w-4 h-4" />
                 <span className="text-xs font-mono">{formatRecordingTime(recordingDuration)}</span>
               </>
             ) : (
               <>
-                <Mic className="w-4 h-4" />
-                <span className="text-xs">{t.meetingRoom.record}</span>
+                <Mic className="w-3.5 h-3.5" />
+                <span className="text-xs hidden sm:inline">REC</span>
               </>
             )}
           </Button>
@@ -773,10 +776,14 @@ const MeetingRoom = () => {
             onClick={() => setShowTranslator(!showTranslator)}
             variant={showTranslator ? "default" : "outline"}
             size="sm"
-            className="flex items-center gap-1.5 h-9 px-3 border-primary/50 hover:bg-primary/10"
+            className={cn(
+              "flex items-center gap-1.5 h-8 px-3 rounded-full transition-all",
+              showTranslator 
+                ? "bg-primary/30 border-primary/50" 
+                : "border-white/20 bg-white/10 hover:bg-white/20"
+            )}
           >
-            <Languages className="w-4 h-4" />
-            <span className="text-xs hidden sm:inline">{t.meetingRoom.translate}</span>
+            <Languages className="w-3.5 h-3.5" />
           </Button>
         </TooltipTrigger>
         <TooltipContent side="bottom">
@@ -791,18 +798,12 @@ const MeetingRoom = () => {
             onClick={copyLink}
             variant="outline"
             size="sm"
-            className="flex items-center gap-1.5 h-9 px-3 border-primary/50 hover:bg-primary/10"
+            className="flex items-center gap-1.5 h-8 px-3 rounded-full border-white/20 bg-white/10 hover:bg-white/20 transition-all"
           >
             {copied ? (
-              <>
-                <Check className="w-4 h-4 text-green-500" />
-                <span className="text-xs text-green-500 hidden sm:inline">{t.meetingRoom.done}</span>
-              </>
+              <Check className="w-3.5 h-3.5 text-green-500" />
             ) : (
-              <>
-                <Link2 className="w-4 h-4" />
-                <span className="text-xs hidden sm:inline">{t.meetingRoom.link}</span>
-              </>
+              <Link2 className="w-3.5 h-3.5" />
             )}
           </Button>
         </TooltipTrigger>
@@ -819,10 +820,14 @@ const MeetingRoom = () => {
               onClick={() => setShowIPPanel(!showIPPanel)}
               variant={showIPPanel ? "default" : "outline"}
               size="sm"
-              className="flex items-center gap-1.5 h-9 px-3 border-primary/50 hover:bg-primary/10"
+              className={cn(
+                "flex items-center gap-1.5 h-8 px-3 rounded-full transition-all",
+                showIPPanel 
+                  ? "bg-primary/30 border-primary/50" 
+                  : "border-white/20 bg-white/10 hover:bg-white/20"
+              )}
             >
-              <Globe className="w-4 h-4" />
-              <span className="text-xs hidden sm:inline">{t.meetingRoom.ip}</span>
+              <Globe className="w-3.5 h-3.5" />
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom">
@@ -885,11 +890,11 @@ const MeetingRoom = () => {
     );
   }
 
-  // Connection indicator element to pass to LiveKitRoom
+  // Connection indicator element to pass to LiveKitRoom - soft rounded style
   const connectionIndicator = connectionStatus === 'connected' ? (
-    <div className="flex items-center gap-2 bg-green-500/10 px-3 py-1.5 rounded-full border border-green-500/30">
+    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-500/10 border border-green-500/30">
       <Wifi className="w-3 h-3 text-green-500" />
-      <QualityIcon className={`w-4 h-4 ${qualityIndicator.color}`} />
+      <QualityIcon className={`w-3.5 h-3.5 ${qualityIndicator.color}`} />
     </div>
   ) : connectionStatus === 'disconnected' ? (
     <div className="flex items-center gap-2 bg-red-500/10 px-3 py-1.5 rounded-full border border-red-500/30">

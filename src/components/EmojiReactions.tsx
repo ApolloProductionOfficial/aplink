@@ -14,6 +14,7 @@ interface EmojiReaction {
   emoji: string;
   senderName: string;
   x: number;
+  y: number;
   timestamp: number;
 }
 
@@ -33,8 +34,8 @@ export function EmojiReactions({ room, participantName }: EmojiReactionsProps) {
     if (reactions.length === 0) return;
     
     const timer = setTimeout(() => {
-      setReactions(prev => prev.filter(r => Date.now() - r.timestamp < 2500));
-    }, 2500);
+      setReactions(prev => prev.filter(r => Date.now() - r.timestamp < 3500));
+    }, 3500);
 
     return () => clearTimeout(timer);
   }, [reactions]);
@@ -53,7 +54,8 @@ export function EmojiReactions({ room, participantName }: EmojiReactionsProps) {
             id: `${Date.now()}-${Math.random()}`,
             emoji: message.emoji,
             senderName: message.senderName,
-            x: 20 + Math.random() * 60, // Random position 20-80%
+            x: 10 + Math.random() * 80, // Random position 10-90% horizontal
+            y: 15 + Math.random() * 30, // Random position 15-45% from bottom
             timestamp: Date.now(),
           };
 
@@ -93,7 +95,8 @@ export function EmojiReactions({ room, participantName }: EmojiReactionsProps) {
         id: `${Date.now()}-local`,
         emoji,
         senderName: participantName,
-        x: 20 + Math.random() * 60,
+        x: 10 + Math.random() * 80,
+        y: 15 + Math.random() * 30,
         timestamp: Date.now(),
       };
 
@@ -106,7 +109,7 @@ export function EmojiReactions({ room, participantName }: EmojiReactionsProps) {
 
   return (
     <>
-      {/* Floating reactions overlay */}
+      {/* Floating reactions overlay - covers the ENTIRE screen */}
       <div className="fixed inset-0 pointer-events-none z-[70] overflow-hidden">
         {reactions.map((reaction) => (
           <div
@@ -114,12 +117,12 @@ export function EmojiReactions({ room, participantName }: EmojiReactionsProps) {
             className="absolute animate-emoji-float"
             style={{ 
               left: `${reaction.x}%`, 
-              bottom: '25%',
+              bottom: `${reaction.y}%`,
             }}
           >
             <div className="flex flex-col items-center">
-              <span className="text-5xl drop-shadow-lg">{reaction.emoji}</span>
-              <span className="text-xs text-white/80 bg-black/40 px-2 py-0.5 rounded-full backdrop-blur-sm mt-1">
+              <span className="text-6xl drop-shadow-2xl">{reaction.emoji}</span>
+              <span className="text-xs text-white/80 bg-black/40 px-2 py-0.5 rounded-full backdrop-blur-sm mt-1 font-medium">
                 {reaction.senderName}
               </span>
             </div>
@@ -133,15 +136,16 @@ export function EmojiReactions({ room, participantName }: EmojiReactionsProps) {
           <Button
             variant="outline"
             size="icon"
-            className="w-12 h-12 rounded-xl border-border/50 bg-card hover:bg-card/80 transition-all"
+            className="w-12 h-12 rounded-full border-white/20 bg-white/10 hover:bg-white/20 transition-all hover:scale-105"
           >
             <Smile className="w-5 h-5" />
           </Button>
         </PopoverTrigger>
         <PopoverContent 
-          className="w-64 p-2 glass-dark border-border/50" 
+          className="w-auto p-3 glass-dark border-white/10 rounded-2xl" 
           side="top"
           align="center"
+          sideOffset={12}
         >
           <div className="grid grid-cols-6 gap-1">
             {REACTION_EMOJIS.map((emoji) => (
@@ -149,8 +153,8 @@ export function EmojiReactions({ room, participantName }: EmojiReactionsProps) {
                 key={emoji}
                 onClick={() => sendReaction(emoji)}
                 className={cn(
-                  "text-2xl p-2 rounded-lg transition-all",
-                  "hover:bg-primary/20 hover:scale-110 active:scale-95"
+                  "text-2xl p-2.5 rounded-xl transition-all",
+                  "hover:bg-white/20 hover:scale-125 active:scale-95"
                 )}
               >
                 {emoji}

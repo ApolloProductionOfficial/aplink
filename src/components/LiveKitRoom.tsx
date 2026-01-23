@@ -488,28 +488,22 @@ function LiveKitContent({
       className="flex flex-col h-full livekit-room-container bg-background relative cursor-default"
       onMouseMove={handleMouseMove}
     >
-      {/* Onboarding hints */}
+      {/* Subtle onboarding arrow hints */}
       {showOnboarding && (
         <>
-          {/* Top hint */}
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[60] animate-bounce">
-            <div className="flex flex-col items-center gap-2 glass rounded-xl px-4 py-2 border border-primary/30">
-              <ChevronUp className="w-5 h-5 text-primary" />
-              <span className="text-xs text-muted-foreground">Наведите сюда для панели</span>
-            </div>
+          {/* Top arrow - minimal */}
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[60]">
+            <ChevronUp className="w-5 h-5 text-white/40 animate-subtle-bounce-up" />
           </div>
           
-          {/* Bottom hint */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[60] animate-bounce" style={{ animationDelay: '0.2s' }}>
-            <div className="flex flex-col items-center gap-2 glass rounded-xl px-4 py-2 border border-primary/30">
-              <span className="text-xs text-muted-foreground">Наведите сюда для управления</span>
-              <ChevronDown className="w-5 h-5 text-primary" />
-            </div>
+          {/* Bottom arrow - minimal */}
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-[60]">
+            <ChevronDown className="w-5 h-5 text-white/40 animate-subtle-bounce-down" />
           </div>
         </>
       )}
 
-      {/* Top Header Panel - auto-hide with smooth gradient */}
+      {/* Top Header Panel - auto-hide with smooth gradient and soft rounded design */}
       {headerButtons && (
         <div 
           className={cn(
@@ -520,31 +514,29 @@ function LiveKitContent({
               : "-translate-y-4 opacity-0 scale-95 pointer-events-none"
           )}
         >
-          <div className="flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-gradient-to-b from-black/60 via-black/40 to-transparent backdrop-blur-xl border border-white/10 shadow-2xl">
-            {/* Minimize button */}
+          <div className="flex items-center gap-2 px-3 py-2 rounded-full bg-gradient-to-b from-black/50 via-black/30 to-transparent backdrop-blur-xl border border-white/10 shadow-2xl">
+            {/* Minimize button - soft rounded */}
             <button
               onClick={onMinimize}
-              className="flex items-center justify-center w-9 h-9 rounded-xl bg-background/30 hover:bg-background/50 border border-white/10 transition-all hover:scale-105"
+              className="flex items-center justify-center w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 transition-all hover:scale-105"
               title="Свернуть звонок"
             >
               <Minimize className="w-4 h-4" />
             </button>
 
-            {/* Room name */}
+            {/* Room name - just text, no frame */}
             {roomDisplayName && (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-background/20 border border-white/10">
-                <span className="text-sm font-medium truncate max-w-[120px]">{roomDisplayName}</span>
-              </div>
+              <span className="text-sm font-medium truncate max-w-[120px] px-2">{roomDisplayName}</span>
             )}
 
             {/* Divider */}
-            <div className="w-px h-6 bg-white/20" />
+            <div className="w-px h-5 bg-white/15" />
 
             {/* Header buttons from parent (REC, Translate, Link, IP) */}
             {headerButtons}
 
             {/* Divider */}
-            <div className="w-px h-6 bg-white/20" />
+            <div className="w-px h-5 bg-white/15" />
 
             {/* Connection indicator */}
             {connectionIndicator}
@@ -604,7 +596,7 @@ function LiveKitContent({
         />
       )}
 
-      {/* Bottom Control Bar - auto-hide with smooth gradient */}
+      {/* Bottom Control Bar - auto-hide with smooth gradient and soft rounded buttons */}
       <div 
         className={cn(
           "absolute bottom-4 left-1/2 -translate-x-1/2 z-50",
@@ -614,14 +606,14 @@ function LiveKitContent({
             : "translate-y-8 opacity-0 scale-95 pointer-events-none"
         )}
       >
-        <div className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-gradient-to-t from-black/60 via-black/40 to-transparent backdrop-blur-xl border border-white/10 shadow-2xl">
-          {/* Camera toggle */}
+        <div className="flex items-center gap-2 px-4 py-3 rounded-full bg-gradient-to-t from-black/50 via-black/30 to-transparent backdrop-blur-xl border border-white/10 shadow-2xl">
+          {/* Camera toggle - rounded-full */}
           <Button
             onClick={toggleCamera}
             variant={isCameraEnabled ? "outline" : "secondary"}
             size="icon"
             className={cn(
-              "w-12 h-12 rounded-xl border-white/10 transition-all hover:scale-105",
+              "w-12 h-12 rounded-full border-white/20 transition-all hover:scale-105",
               isCameraEnabled 
                 ? "bg-white/10 hover:bg-white/20" 
                 : "bg-destructive/30 border-destructive/50 hover:bg-destructive/40"
@@ -634,13 +626,13 @@ function LiveKitContent({
             )}
           </Button>
 
-          {/* Mic toggle */}
+          {/* Mic toggle - rounded-full */}
           <Button
             onClick={toggleMicrophone}
             variant={isMicrophoneEnabled ? "outline" : "secondary"}
             size="icon"
             className={cn(
-              "w-12 h-12 rounded-xl border-white/10 transition-all hover:scale-105",
+              "w-12 h-12 rounded-full border-white/20 transition-all hover:scale-105",
               isMicrophoneEnabled 
                 ? "bg-white/10 hover:bg-white/20" 
                 : "bg-destructive/30 border-destructive/50 hover:bg-destructive/40"
@@ -653,13 +645,13 @@ function LiveKitContent({
             )}
           </Button>
 
-          {/* Screen share toggle */}
+          {/* Screen share toggle - rounded-full */}
           <Button
             onClick={toggleScreenShare}
             variant={isScreenShareEnabled ? "default" : "outline"}
             size="icon"
             className={cn(
-              "w-12 h-12 rounded-xl border-white/10 transition-all hover:scale-105",
+              "w-12 h-12 rounded-full border-white/20 transition-all hover:scale-105",
               isScreenShareEnabled 
                 ? "bg-green-500/30 border-green-500/50 hover:bg-green-500/40" 
                 : "bg-white/10 hover:bg-white/20"
@@ -698,14 +690,14 @@ function LiveKitContent({
           />
 
           {/* Divider */}
-          <div className="w-px h-8 bg-white/20 mx-1" />
+          <div className="w-px h-7 bg-white/15 mx-1" />
 
-          {/* Fullscreen toggle */}
+          {/* Fullscreen toggle - rounded-full */}
           <Button
             variant="outline"
             size="icon"
             onClick={toggleFullscreen}
-            className="w-12 h-12 rounded-xl border-white/10 bg-white/10 hover:bg-white/20 transition-all hover:scale-105"
+            className="w-12 h-12 rounded-full border-white/20 bg-white/10 hover:bg-white/20 transition-all hover:scale-105"
           >
             {isFullscreen ? (
               <Minimize2 className="w-5 h-5" />
@@ -714,8 +706,8 @@ function LiveKitContent({
             )}
           </Button>
 
-          {/* Leave button */}
-          <DisconnectButton className="flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-destructive/80 hover:bg-destructive text-destructive-foreground transition-all hover:scale-105">
+          {/* Leave button - soft rounded */}
+          <DisconnectButton className="flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-destructive/80 hover:bg-destructive text-destructive-foreground transition-all hover:scale-105">
             <PhoneOff className="w-5 h-5" />
             <span className="text-sm font-medium">Завершить</span>
           </DisconnectButton>
