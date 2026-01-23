@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { Palette, Loader2, Sparkles, Building2, Trees, Rocket, Umbrella, Crown, Upload, Image, RefreshCw, X } from "lucide-react";
+import { useState, useRef, useCallback } from "react";
+import { Palette, Loader2, Sparkles, Building2, Trees, Rocket, Umbrella, Crown, Upload, Image, RefreshCw, X, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -17,6 +17,9 @@ interface VirtualBackgroundSelectorProps {
   currentBackground: 'none' | 'blur-light' | 'blur-strong' | 'image';
   isProcessing: boolean;
   onResetAllEffects?: () => void;
+  // Face filter integration
+  activeFaceFilter?: string;
+  onSelectFaceFilter?: (filterId: string) => void;
 }
 
 const BLUR_OPTIONS = [
@@ -56,6 +59,40 @@ const AI_THEMES = [
   },
 ];
 
+// Face filters with visual previews
+const FACE_FILTERS = [
+  { 
+    id: 'beauty', 
+    label: 'Красота',
+    gradient: 'from-pink-400 to-rose-500',
+    cssFilter: 'blur(0.3px) brightness(1.08) contrast(0.95)',
+  },
+  { 
+    id: 'glow', 
+    label: 'Сияние',
+    gradient: 'from-yellow-300 to-orange-400',
+    cssFilter: 'brightness(1.15) contrast(0.9)',
+  },
+  { 
+    id: 'vintage', 
+    label: 'Винтаж',
+    gradient: 'from-amber-600 to-yellow-700',
+    cssFilter: 'sepia(0.3) contrast(1.1)',
+  },
+  { 
+    id: 'cool', 
+    label: 'Холод',
+    gradient: 'from-blue-400 to-cyan-500',
+    cssFilter: 'saturate(1.1) hue-rotate(-10deg)',
+  },
+  { 
+    id: 'warm', 
+    label: 'Тепло',
+    gradient: 'from-orange-400 to-red-500',
+    cssFilter: 'saturate(1.15) hue-rotate(10deg)',
+  },
+];
+
 // Static Apollo Production background
 const APOLLO_BACKGROUND = {
   id: 'apollo',
@@ -71,12 +108,15 @@ export function VirtualBackgroundSelector({
   currentBackground,
   isProcessing,
   onResetAllEffects,
+  activeFaceFilter = 'none',
+  onSelectFaceFilter,
 }: VirtualBackgroundSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [customImageUrl, setCustomImageUrl] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatingTheme, setGeneratingTheme] = useState<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -90,19 +130,60 @@ export function VirtualBackgroundSelector({
     }
   };
 
-  const handleStaticImageSelect = (url: string, id: string) => {
+  // Mirror image helper for Apollo background
+  const mirrorImage = useCallback(async (imageUrl: string): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const img = new window.Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d')!;
+        
+        // Mirror horizontally
+        ctx.translate(canvas.width, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(img, 0, 0);
+        
+        resolve(canvas.toDataURL('image/png'));
+      };
+      img.onerror = reject;
+      img.src = imageUrl;
+    });
+  }, []);
+
+  const handleStaticImageSelect = async (url: string, id: string) => {
     if (selectedId === id) {
       onRemove();
       setSelectedId(null);
     } else {
-      onSelectImage(url);
-      setSelectedId(id);
+      try {
+        // Mirror the Apollo background to fix orientation
+        if (id === 'apollo') {
+          const mirroredUrl = await mirrorImage(url);
+          onSelectImage(mirroredUrl);
+        } else {
+          onSelectImage(url);
+        }
+        setSelectedId(id);
+      } catch (err) {
+        console.error('Failed to process image:', err);
+        onSelectImage(url);
+        setSelectedId(id);
+      }
     }
   };
 
   // Generate new AI background on each click
   const handleAIThemeSelect = async (theme: string) => {
     if (isGenerating) return;
+
+    // Cancel previous request if any
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
 
     setIsGenerating(true);
     setGeneratingTheme(theme);
@@ -132,7 +213,11 @@ export function VirtualBackgroundSelector({
         throw new Error('No image URL received');
       }
 
-    } catch (err) {
+    } catch (err: any) {
+      if (err?.name === 'AbortError') {
+        console.log('Generation cancelled');
+        return;
+      }
       console.error('Failed to generate background:', err);
       toast({
         title: "Ошибка генерации",
@@ -145,6 +230,29 @@ export function VirtualBackgroundSelector({
       setGeneratingTheme(null);
     }
   };
+
+  const handleReset = useCallback(() => {
+    // Cancel any ongoing generation
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    setIsGenerating(false);
+    setGeneratingTheme(null);
+    
+    // Reset background
+    onRemove();
+    setSelectedId(null);
+    
+    // Reset face filter
+    if (onSelectFaceFilter) {
+      onSelectFaceFilter('none');
+    }
+    
+    // Reset other effects
+    if (onResetAllEffects) {
+      onResetAllEffects();
+    }
+  }, [onRemove, onSelectFaceFilter, onResetAllEffects]);
 
   const handleCustomUpload = () => {
     fileInputRef.current?.click();
@@ -160,7 +268,18 @@ export function VirtualBackgroundSelector({
     }
   };
 
+  const handleFaceFilterSelect = (filterId: string) => {
+    if (onSelectFaceFilter) {
+      if (activeFaceFilter === filterId) {
+        onSelectFaceFilter('none');
+      } else {
+        onSelectFaceFilter(filterId);
+      }
+    }
+  };
+
   const isSelected = (id: string) => selectedId === id;
+  const hasAnyEffect = selectedId !== null || activeFaceFilter !== 'none';
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -169,22 +288,22 @@ export function VirtualBackgroundSelector({
           variant="outline"
           size="icon"
           className={cn(
-            "w-12 h-12 rounded-full border-white/20 transition-all hover:scale-105",
-            selectedId 
+            "w-12 h-12 rounded-full border-white/[0.12] transition-all hover:scale-105 [&_svg]:drop-shadow-[0_0_2px_rgba(255,255,255,0.5)] [&_svg]:stroke-[2.5]",
+            hasAnyEffect 
               ? "bg-primary/20 border-primary/50 hover:bg-primary/30" 
-              : "bg-white/10 hover:bg-white/20"
+              : "bg-white/15 hover:bg-white/25"
           )}
           disabled={isProcessing || isGenerating}
         >
           {isProcessing || isGenerating ? (
             <Loader2 className="w-5 h-5 animate-spin" />
           ) : (
-            <Palette className="w-5 h-5" />
+            <Wand2 className="w-5 h-5" />
           )}
         </Button>
       </PopoverTrigger>
       <PopoverContent 
-        className="w-80 p-4 glass-dark border-white/10 rounded-[1.5rem]" 
+        className="w-[340px] p-4 glass-dark border-white/10 rounded-[1.5rem]" 
         side="top"
         align="center"
         sideOffset={12}
@@ -194,19 +313,13 @@ export function VirtualBackgroundSelector({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-primary" />
-              <span className="font-medium text-sm">Виртуальный фон</span>
+              <span className="font-semibold text-sm">Эффекты и фон</span>
             </div>
             
             {/* Reset button - shows when any effect is active */}
-            {selectedId && (
+            {hasAnyEffect && (
               <button
-                onClick={() => {
-                  onRemove();
-                  setSelectedId(null);
-                  if (onResetAllEffects) {
-                    onResetAllEffects();
-                  }
-                }}
+                onClick={handleReset}
                 className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500/20 hover:bg-red-500/40 border border-red-500/30 transition-all text-xs text-red-300"
               >
                 <X className="w-3 h-3" />
@@ -215,9 +328,41 @@ export function VirtualBackgroundSelector({
             )}
           </div>
 
+          {/* Face Filters section */}
+          {onSelectFaceFilter && (
+            <div className="space-y-2">
+              <span className="text-xs text-muted-foreground font-medium">Фильтры лица</span>
+              <div className="grid grid-cols-5 gap-2">
+                {FACE_FILTERS.map((filter) => (
+                  <button
+                    key={filter.id}
+                    onClick={() => handleFaceFilterSelect(filter.id)}
+                    disabled={isProcessing || isGenerating}
+                    className={cn(
+                      "flex flex-col items-center gap-1 p-2 rounded-xl transition-all",
+                      "border hover:border-pink-500/50 hover:scale-105",
+                      activeFaceFilter === filter.id
+                        ? "bg-pink-500/30 border-pink-500/60 shadow-lg shadow-pink-500/20"
+                        : "bg-white/5 border-white/10 hover:bg-white/10"
+                    )}
+                  >
+                    <div 
+                      className={cn(
+                        "w-8 h-8 rounded-full bg-gradient-to-br",
+                        filter.gradient
+                      )}
+                      style={{ filter: filter.cssFilter }}
+                    />
+                    <span className="text-[8px] text-muted-foreground truncate w-full text-center">{filter.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Blur options */}
           <div className="space-y-2">
-            <span className="text-xs text-muted-foreground font-medium">Размытие</span>
+            <span className="text-xs text-muted-foreground font-medium">Размытие фона</span>
             <div className="grid grid-cols-2 gap-2">
               {BLUR_OPTIONS.map((option) => (
                 <button
@@ -232,7 +377,7 @@ export function VirtualBackgroundSelector({
                       : "bg-white/5 border-white/10 hover:bg-white/10"
                   )}
                 >
-                  <span className="text-sm">{option.label}</span>
+                  <span className="text-sm font-medium">{option.label}</span>
                 </button>
               ))}
             </div>
@@ -241,10 +386,10 @@ export function VirtualBackgroundSelector({
           {/* AI Generated backgrounds */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground font-medium">AI-генерация</span>
+              <span className="text-xs text-muted-foreground font-medium">AI-генерация фона</span>
               <span className="text-[10px] text-muted-foreground/60">Клик = новый фон</span>
             </div>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-5 gap-2">
               {/* Apollo static background */}
               <button
                 onClick={() => handleStaticImageSelect(APOLLO_BACKGROUND.url, APOLLO_BACKGROUND.id)}
@@ -322,12 +467,12 @@ export function VirtualBackgroundSelector({
               {customImageUrl && isSelected('custom') ? (
                 <>
                   <Image className="w-4 h-4 text-primary" />
-                  <span className="text-sm">Загружен</span>
+                  <span className="text-sm font-medium">Загружен</span>
                 </>
               ) : (
                 <>
                   <Upload className="w-4 h-4" />
-                  <span className="text-sm">Загрузить изображение</span>
+                  <span className="text-sm font-medium">Загрузить изображение</span>
                 </>
               )}
             </button>
@@ -335,7 +480,7 @@ export function VirtualBackgroundSelector({
 
           {/* Note */}
           <p className="text-[10px] text-muted-foreground/70 text-center">
-            Нажмите повторно для отмены • AI темы создают новый уникальный фон
+            Нажмите повторно для отмены • AI создаёт уникальный фон
           </p>
         </div>
       </PopoverContent>

@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Room, RoomEvent, DataPacket_Kind } from 'livekit-client';
-import { Pencil, Eraser, Trash2, X, Circle } from 'lucide-react';
+import { Room, RoomEvent } from 'livekit-client';
+import { Pencil, Eraser, Trash2, X, Circle, Download, FileText } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
+import jsPDF from 'jspdf';
 
 interface Stroke {
   from: { x: number; y: number };
@@ -106,6 +107,57 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
       { reliable: true }
     );
   }, [room, participantName]);
+
+  // Export as PNG
+  const exportAsImage = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    // Create a temporary canvas with dark background
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
+    const tempCtx = tempCanvas.getContext('2d')!;
+    
+    // Fill with dark background
+    tempCtx.fillStyle = '#1a1a2e';
+    tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+    
+    // Draw the whiteboard content
+    tempCtx.drawImage(canvas, 0, 0);
+    
+    const link = document.createElement('a');
+    link.download = `whiteboard-${Date.now()}.png`;
+    link.href = tempCanvas.toDataURL('image/png');
+    link.click();
+  }, []);
+
+  // Export as PDF
+  const exportAsPDF = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    // Create a temporary canvas with background
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
+    const tempCtx = tempCanvas.getContext('2d')!;
+    
+    // Fill with dark background
+    tempCtx.fillStyle = '#1a1a2e';
+    tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+    tempCtx.drawImage(canvas, 0, 0);
+    
+    const pdf = new jsPDF('l', 'mm', 'a4'); // Landscape A4
+    const imgData = tempCanvas.toDataURL('image/png');
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+    
+    // Add some padding
+    const padding = 10;
+    pdf.addImage(imgData, 'PNG', padding, padding, pdfWidth - padding * 2, pdfHeight - padding * 2);
+    pdf.save(`whiteboard-${Date.now()}.pdf`);
+  }, []);
 
   // Listen for incoming data
   useEffect(() => {
@@ -248,6 +300,34 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
             >
               <Trash2 className="w-4 h-4" />
             </Button>
+
+            {/* Divider */}
+            <div className="w-px h-6 bg-white/20" />
+
+            {/* Export PNG */}
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={exportAsImage}
+              className="w-10 h-10 rounded-full hover:bg-green-500/20 hover:border-green-500/50"
+              title="Скачать PNG"
+            >
+              <Download className="w-4 h-4 text-green-400" />
+            </Button>
+
+            {/* Export PDF */}
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={exportAsPDF}
+              className="w-10 h-10 rounded-full hover:bg-blue-500/20 hover:border-blue-500/50"
+              title="Скачать PDF"
+            >
+              <FileText className="w-4 h-4 text-blue-400" />
+            </Button>
+
+            {/* Divider */}
+            <div className="w-px h-6 bg-white/20" />
 
             {/* Close button */}
             <Button 

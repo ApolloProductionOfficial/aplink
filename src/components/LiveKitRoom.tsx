@@ -19,8 +19,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { 
   Loader2, 
   VideoOff, 
-  Maximize2, 
-  Minimize2, 
   Video, 
   Mic, 
   MicOff,
@@ -28,7 +26,6 @@ import {
   PhoneOff,
   ChevronUp,
   ChevronDown,
-  Minimize,
   Hand,
   Volume2,
   VolumeX,
@@ -40,11 +37,11 @@ import { cn } from "@/lib/utils";
 import { InCallChat } from "@/components/InCallChat";
 import { VirtualBackgroundSelector } from "@/components/VirtualBackgroundSelector";
 import { EmojiReactions } from "@/components/EmojiReactions";
+import { CallTimer } from "@/components/CallTimer";
 import { useRaiseHand } from "@/hooks/useRaiseHand";
 import { useNoiseSuppression } from "@/hooks/useNoiseSuppression";
 import { useVoiceNotifications } from "@/hooks/useVoiceNotifications";
 import { useFaceFilters } from "@/hooks/useFaceFilters";
-import { FaceFilterSelector } from "@/components/FaceFilterSelector";
 import { CollaborativeWhiteboard } from "@/components/CollaborativeWhiteboard";
 import { toast } from "@/hooks/use-toast";
 
@@ -459,6 +456,25 @@ function LiveKitContent({
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
+  // Listen for raise hand events for voice notifications
+  useEffect(() => {
+    if (!room) return;
+
+    const handleData = (payload: Uint8Array) => {
+      try {
+        const message = JSON.parse(new TextDecoder().decode(payload));
+        if (message.type === 'RAISE_HAND' && message.raised && message.participantIdentity !== localParticipant?.identity) {
+          announceHandRaised(message.participantName);
+        }
+      } catch {
+        // Ignore non-JSON messages
+      }
+    };
+
+    room.on(RoomEvent.DataReceived, handleData);
+    return () => { room.off(RoomEvent.DataReceived, handleData); };
+  }, [room, announceHandRaised, localParticipant]);
+
   useEffect(() => {
     if (!room) return;
 
@@ -496,7 +512,7 @@ function LiveKitContent({
       room.off(RoomEvent.ParticipantConnected, handleParticipantConnected);
       room.off(RoomEvent.ParticipantDisconnected, handleParticipantDisconnected);
     };
-  }, [room, onParticipantJoined, onParticipantLeft]);
+  }, [room, onParticipantJoined, onParticipantLeft, announceParticipantJoined, announceParticipantLeft]);
 
   // Get all tracks including screen shares
   const tracks = useTracks(
@@ -567,7 +583,7 @@ function LiveKitContent({
                   // Don't call onMinimize on error - stay in room
                 }
               }}
-              className="flex items-center justify-center w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 border border-white/[0.08] transition-all hover:scale-105 hover:shadow-lg"
+              className="flex items-center justify-center w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 border border-white/[0.08] transition-all hover:scale-105 hover:shadow-lg [&_svg]:stroke-[2.5]"
               title="Картинка в картинке"
             >
               <PictureInPicture2 className="w-4 h-4" />
@@ -575,7 +591,7 @@ function LiveKitContent({
 
             {/* Room name */}
             {roomDisplayName && (
-              <span className="text-sm font-medium truncate max-w-[120px] px-2">{roomDisplayName}</span>
+              <span className="text-sm font-semibold truncate max-w-[120px] px-2">{roomDisplayName}</span>
             )}
 
             {/* Divider */}
@@ -583,6 +599,12 @@ function LiveKitContent({
 
             {/* Header buttons from parent */}
             {headerButtons}
+
+            {/* Divider */}
+            <div className="w-px h-5 bg-white/10" />
+
+            {/* Timer button */}
+            <CallTimer room={room} isHost={true} />
 
             {/* Divider */}
             <div className="w-px h-5 bg-white/10" />
@@ -704,7 +726,7 @@ function LiveKitContent({
             variant={isCameraEnabled ? "outline" : "secondary"}
             size="icon"
             className={cn(
-              "w-12 h-12 rounded-full border-white/[0.12] transition-all hover:scale-105 hover:shadow-lg [&_svg]:drop-shadow-[0_0_2px_rgba(255,255,255,0.5)]",
+              "w-12 h-12 rounded-full border-white/[0.12] transition-all hover:scale-105 hover:shadow-lg [&_svg]:drop-shadow-[0_0_2px_rgba(255,255,255,0.5)] [&_svg]:stroke-[2.5]",
               isCameraEnabled 
                 ? "bg-white/15 hover:bg-white/25" 
                 : "bg-destructive/30 border-destructive/50 hover:bg-destructive/40"
@@ -723,7 +745,7 @@ function LiveKitContent({
             variant={isMicrophoneEnabled ? "outline" : "secondary"}
             size="icon"
             className={cn(
-              "w-12 h-12 rounded-full border-white/[0.12] transition-all hover:scale-105 hover:shadow-lg [&_svg]:drop-shadow-[0_0_2px_rgba(255,255,255,0.5)]",
+              "w-12 h-12 rounded-full border-white/[0.12] transition-all hover:scale-105 hover:shadow-lg [&_svg]:drop-shadow-[0_0_2px_rgba(255,255,255,0.5)] [&_svg]:stroke-[2.5]",
               isMicrophoneEnabled 
                 ? "bg-white/15 hover:bg-white/25" 
                 : "bg-destructive/30 border-destructive/50 hover:bg-destructive/40"
@@ -742,7 +764,7 @@ function LiveKitContent({
             variant={isScreenShareEnabled ? "default" : "outline"}
             size="icon"
             className={cn(
-              "w-12 h-12 rounded-full border-white/[0.12] transition-all hover:scale-105 hover:shadow-lg [&_svg]:drop-shadow-[0_0_2px_rgba(255,255,255,0.5)]",
+              "w-12 h-12 rounded-full border-white/[0.12] transition-all hover:scale-105 hover:shadow-lg [&_svg]:drop-shadow-[0_0_2px_rgba(255,255,255,0.5)] [&_svg]:stroke-[2.5]",
               isScreenShareEnabled 
                 ? "bg-green-500/30 border-green-500/50 hover:bg-green-500/40" 
                 : "bg-white/15 hover:bg-white/25"
@@ -757,7 +779,7 @@ function LiveKitContent({
           {/* Divider */}
           <div className="w-px h-8 bg-white/10 mx-0.5" />
 
-          {/* Virtual Background selector */}
+          {/* Virtual Background + Face Filters combined selector */}
           <VirtualBackgroundSelector
             onSelectBlur={applyBlurBackground}
             onSelectImage={applyImageBackground}
@@ -766,13 +788,10 @@ function LiveKitContent({
             isProcessing={isProcessingBackground}
             onResetAllEffects={() => {
               if (isNoiseSuppressionEnabled) toggleNoiseSuppression();
+              setFaceFilter('none');
             }}
-          />
-
-          {/* Face Filter selector */}
-          <FaceFilterSelector
-            activeFilter={activeFilter}
-            onSelectFilter={setFaceFilter}
+            activeFaceFilter={activeFilter}
+            onSelectFaceFilter={setFaceFilter}
           />
 
           {/* Whiteboard button */}
@@ -780,7 +799,7 @@ function LiveKitContent({
             onClick={() => setShowWhiteboard(true)}
             variant="outline"
             size="icon"
-            className="w-12 h-12 rounded-full border-white/[0.12] bg-white/15 hover:bg-white/25 transition-all hover:scale-105 hover:shadow-lg [&_svg]:drop-shadow-[0_0_2px_rgba(255,255,255,0.5)]"
+            className="w-12 h-12 rounded-full border-white/[0.12] bg-white/15 hover:bg-white/25 transition-all hover:scale-105 hover:shadow-lg [&_svg]:drop-shadow-[0_0_2px_rgba(255,255,255,0.5)] [&_svg]:stroke-[2.5]"
             title="Доска для рисования"
           >
             <Pencil className="w-5 h-5" />
@@ -798,7 +817,7 @@ function LiveKitContent({
             variant="outline"
             size="icon"
             className={cn(
-              "w-12 h-12 rounded-full border-white/[0.12] transition-all hover:scale-105 hover:shadow-lg",
+              "w-12 h-12 rounded-full border-white/[0.12] transition-all hover:scale-105 hover:shadow-lg [&_svg]:drop-shadow-[0_0_2px_rgba(255,255,255,0.5)] [&_svg]:stroke-[2.5]",
               isHandRaised 
                 ? "bg-yellow-500/30 border-yellow-500/50 hover:bg-yellow-500/40 animate-pulse" 
                 : "bg-white/10 hover:bg-white/20"
@@ -814,7 +833,7 @@ function LiveKitContent({
             variant="outline"
             size="icon"
             className={cn(
-              "w-12 h-12 rounded-full border-white/[0.12] transition-all hover:scale-105 hover:shadow-lg",
+              "w-12 h-12 rounded-full border-white/[0.12] transition-all hover:scale-105 hover:shadow-lg [&_svg]:drop-shadow-[0_0_2px_rgba(255,255,255,0.5)] [&_svg]:stroke-[2.5]",
               isNoiseSuppressionEnabled 
                 ? "bg-primary/30 border-primary/50 hover:bg-primary/40" 
                 : "bg-white/10 hover:bg-white/20"
@@ -841,9 +860,9 @@ function LiveKitContent({
           <div className="w-px h-8 bg-white/10 mx-0.5" />
 
           {/* Leave button */}
-          <DisconnectButton className="flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-destructive/80 hover:bg-destructive text-destructive-foreground transition-all hover:scale-105 hover:shadow-lg border border-destructive/50">
+          <DisconnectButton className="flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-destructive/80 hover:bg-destructive text-destructive-foreground transition-all hover:scale-105 hover:shadow-lg border border-destructive/50 [&_svg]:stroke-[2.5]">
             <PhoneOff className="w-5 h-5" />
-            <span className="text-sm font-medium">Выйти</span>
+            <span className="text-sm font-semibold">Выйти</span>
           </DisconnectButton>
         </div>
       </div>
