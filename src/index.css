@@ -771,11 +771,29 @@ All colors MUST be HSL.
 .livekit-room-container .lk-participant-tile {
   transition: box-shadow 0.3s ease, border-color 0.3s ease;
   transform: none !important;
+  border-bottom: none !important;
 }
 
 .livekit-room-container [data-lk-speaking="true"] .lk-participant-tile,
 .livekit-room-container .lk-participant-tile[data-lk-speaking="true"] {
   transform: none !important;
+}
+
+/* Убрать чёрную линию внизу */
+.livekit-room-container .lk-grid-layout,
+.livekit-room-container .lk-focus-layout,
+.livekit-room-container .lk-grid-layout::after,
+.livekit-room-container .lk-grid-layout::before,
+.livekit-room-container .lk-focus-layout::after,
+.livekit-room-container .lk-focus-layout::before {
+  border: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+}
+
+.livekit-room-container .lk-participant-metadata {
+  border: none !important;
+  box-shadow: none !important;
 }
 
 /* Control bar */
