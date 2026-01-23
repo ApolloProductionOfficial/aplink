@@ -8,12 +8,9 @@ import {
   GridLayout,
   ParticipantTile,
   LayoutContextProvider,
-  ConnectionQualityIndicator,
   useLocalParticipant,
   VideoTrack,
-  TrackToggle,
   DisconnectButton,
-  usePersistentUserChoices,
 } from "@livekit/components-react";
 import "@livekit/components-styles";
 import { Track, RoomEvent, Room, RemoteParticipant, VideoPresets, LocalParticipant } from "livekit-client";
@@ -23,14 +20,13 @@ import {
   VideoOff, 
   Maximize2, 
   Minimize2, 
-  Settings, 
   Video, 
   Mic, 
+  MicOff,
   MonitorUp, 
   PhoneOff,
   ChevronUp,
   ChevronDown,
-  X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -46,6 +42,12 @@ interface LiveKitRoomProps {
   onError?: (error: Error) => void;
   /** Callback to get room reference for translator integration */
   onRoomReady?: (room: Room) => void;
+  /** Header buttons passed from parent */
+  headerButtons?: React.ReactNode;
+  /** Room display name for header */
+  roomDisplayName?: string;
+  /** Callback when user clicks minimize (logo) */
+  onMinimize?: () => void;
 }
 
 export function LiveKitRoom({
@@ -58,6 +60,9 @@ export function LiveKitRoom({
   onParticipantLeft,
   onError,
   onRoomReady,
+  headerButtons,
+  roomDisplayName,
+  onMinimize,
 }: LiveKitRoomProps) {
   const [token, setToken] = useState<string | null>(null);
   const [serverUrl, setServerUrl] = useState<string | null>(null);
@@ -204,6 +209,9 @@ export function LiveKitRoom({
           onParticipantJoined={onParticipantJoined}
           onParticipantLeft={onParticipantLeft}
           onRoomReady={onRoomReady}
+          headerButtons={headerButtons}
+          roomDisplayName={roomDisplayName}
+          onMinimize={onMinimize}
         />
       </LayoutContextProvider>
     </LKRoom>
@@ -214,9 +222,19 @@ interface LiveKitContentProps {
   onParticipantJoined?: (identity: string, name: string) => void;
   onParticipantLeft?: (identity: string) => void;
   onRoomReady?: (room: Room) => void;
+  headerButtons?: React.ReactNode;
+  roomDisplayName?: string;
+  onMinimize?: () => void;
 }
 
-function LiveKitContent({ onParticipantJoined, onParticipantLeft, onRoomReady }: LiveKitContentProps) {
+function LiveKitContent({ 
+  onParticipantJoined, 
+  onParticipantLeft, 
+  onRoomReady,
+  headerButtons,
+  roomDisplayName,
+  onMinimize,
+}: LiveKitContentProps) {
   const room = useRoomContext();
   const participants = useParticipants();
   const { localParticipant } = useLocalParticipant();
@@ -228,9 +246,13 @@ function LiveKitContent({ onParticipantJoined, onParticipantLeft, onRoomReady }:
   const [showBottomPanel, setShowBottomPanel] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Local track states
+  const isCameraEnabled = localParticipant?.isCameraEnabled ?? false;
+  const isMicrophoneEnabled = localParticipant?.isMicrophoneEnabled ?? false;
+  const isScreenShareEnabled = localParticipant?.isScreenShareEnabled ?? false;
 
   // Notify parent when room is ready
   useEffect(() => {
@@ -278,13 +300,13 @@ function LiveKitContent({ onParticipantJoined, onParticipantLeft, onRoomReady }:
     const y = e.clientY - rect.top;
     const height = rect.height;
 
-    // Show top panel when mouse is in top 80px
-    if (y < 80) {
+    // Show top panel when mouse is in top 100px
+    if (y < 100) {
       setShowTopPanel(true);
     }
     
-    // Show bottom panel when mouse is in bottom 80px
-    if (y > height - 80) {
+    // Show bottom panel when mouse is in bottom 100px
+    if (y > height - 100) {
       setShowBottomPanel(true);
     }
 
@@ -297,6 +319,33 @@ function LiveKitContent({ onParticipantJoined, onParticipantLeft, onRoomReady }:
       setShowBottomPanel(false);
     }, 3000);
   }, []);
+
+  // Toggle camera
+  const toggleCamera = useCallback(async () => {
+    try {
+      await localParticipant?.setCameraEnabled(!isCameraEnabled);
+    } catch (err) {
+      console.error('Failed to toggle camera:', err);
+    }
+  }, [localParticipant, isCameraEnabled]);
+
+  // Toggle microphone
+  const toggleMicrophone = useCallback(async () => {
+    try {
+      await localParticipant?.setMicrophoneEnabled(!isMicrophoneEnabled);
+    } catch (err) {
+      console.error('Failed to toggle microphone:', err);
+    }
+  }, [localParticipant, isMicrophoneEnabled]);
+
+  // Toggle screen share
+  const toggleScreenShare = useCallback(async () => {
+    try {
+      await localParticipant?.setScreenShareEnabled(!isScreenShareEnabled);
+    } catch (err) {
+      console.error('Failed to toggle screen share:', err);
+    }
+  }, [localParticipant, isScreenShareEnabled]);
 
   // Fullscreen toggle
   const toggleFullscreen = useCallback(() => {
@@ -365,8 +414,6 @@ function LiveKitContent({ onParticipantJoined, onParticipantLeft, onRoomReady }:
   // Get local camera track for self-view
   const localVideoTrack = localParticipant?.getTrackPublication(Track.Source.Camera)?.track;
   const localScreenTrack = localParticipant?.getTrackPublication(Track.Source.ScreenShare)?.track;
-  const isCameraEnabled = localParticipant?.isCameraEnabled;
-  const isScreenSharing = !!localScreenTrack;
 
   return (
     <div 
@@ -395,6 +442,52 @@ function LiveKitContent({ onParticipantJoined, onParticipantLeft, onRoomReady }:
         </>
       )}
 
+      {/* Top Header Panel - auto-hide */}
+      {headerButtons && (
+        <div 
+          className={cn(
+            "absolute top-0 left-0 right-0 z-50",
+            "transition-all duration-300 ease-out",
+            showTopPanel 
+              ? "translate-y-0 opacity-100" 
+              : "-translate-y-full opacity-0 pointer-events-none"
+          )}
+        >
+          <div className="glass-dark border-b border-border/50 p-3">
+            <div className="flex items-center justify-between">
+              {/* Logo / Minimize button */}
+              <button
+                onClick={onMinimize}
+                className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors group"
+                title="Свернуть звонок"
+              >
+                <div className="relative w-8 h-8 rounded-full overflow-hidden ring-2 ring-primary/50 shadow-[0_0_15px_hsl(var(--primary)/0.5)] group-hover:shadow-[0_0_25px_hsl(var(--primary)/0.7)] transition-shadow">
+                  <div className="absolute inset-0 bg-primary/30 animate-pulse" />
+                </div>
+                <div className="flex flex-col items-start">
+                  <span className="font-semibold text-sm">APLink</span>
+                  <span className="text-[10px] text-muted-foreground group-hover:text-primary transition-colors">
+                    Свернуть
+                  </span>
+                </div>
+              </button>
+
+              {/* Room name */}
+              {roomDisplayName && (
+                <div className="flex items-center gap-2 bg-background/50 px-3 py-1.5 rounded-full border border-border/30">
+                  <span className="text-sm font-medium truncate max-w-[150px]">{roomDisplayName}</span>
+                </div>
+              )}
+
+              {/* Header buttons from parent */}
+              <div className="flex items-center gap-2">
+                {headerButtons}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Self-view (Picture-in-Picture style) */}
       {isCameraEnabled && localVideoTrack && (
         <div className="absolute bottom-24 right-4 z-50 w-48 h-36 rounded-xl overflow-hidden border-2 border-primary/50 shadow-[0_0_20px_hsl(var(--primary)/0.3)] bg-black">
@@ -413,7 +506,7 @@ function LiveKitContent({ onParticipantJoined, onParticipantLeft, onRoomReady }:
       )}
 
       {/* Screen share self-view (when sharing) */}
-      {isScreenSharing && localScreenTrack && (
+      {isScreenShareEnabled && localScreenTrack && (
         <div className="absolute top-24 right-4 z-50 w-64 h-40 rounded-xl overflow-hidden border-2 border-green-500/50 shadow-[0_0_20px_hsl(142,76%,36%,0.3)] bg-black">
           <VideoTrack 
             trackRef={{ 
@@ -433,16 +526,15 @@ function LiveKitContent({ onParticipantJoined, onParticipantLeft, onRoomReady }:
       {/* Main video grid */}
       <div className="flex-1 relative overflow-hidden">
         <GridLayout tracks={tracks} className="p-3 gap-3">
-          <ParticipantTile className="rounded-xl overflow-hidden animate-cosmic-appear">
-            <ConnectionQualityIndicator className="lk-connection-quality" />
-          </ParticipantTile>
+          <ParticipantTile className="rounded-xl overflow-hidden animate-cosmic-appear" />
         </GridLayout>
       </div>
 
       {/* Bottom Control Bar - auto-hide */}
       <div 
         className={cn(
-          "absolute bottom-0 left-0 right-0 z-50 transition-all duration-300 ease-out",
+          "absolute bottom-0 left-0 right-0 z-50",
+          "transition-all duration-300 ease-out",
           showBottomPanel 
             ? "translate-y-0 opacity-100" 
             : "translate-y-full opacity-0 pointer-events-none"
@@ -450,41 +542,60 @@ function LiveKitContent({ onParticipantJoined, onParticipantLeft, onRoomReady }:
       >
         <div className="glass-dark border-t border-border/50 p-3">
           <div className="flex items-center justify-center gap-3">
-            {/* Camera toggle */}
-            <TrackToggle 
-              source={Track.Source.Camera}
-              className="lk-button flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-card hover:bg-card/80 border border-border/50 transition-all"
-            >
-              <Video className="w-5 h-5" />
-            </TrackToggle>
-
-            {/* Mic toggle */}
-            <TrackToggle 
-              source={Track.Source.Microphone}
-              className="lk-button flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-card hover:bg-card/80 border border-border/50 transition-all"
-            >
-              <Mic className="w-5 h-5" />
-            </TrackToggle>
-
-            {/* Screen share toggle */}
-            <TrackToggle 
-              source={Track.Source.ScreenShare}
-              className="lk-button flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-card hover:bg-card/80 border border-border/50 transition-all"
-            >
-              <MonitorUp className="w-5 h-5" />
-            </TrackToggle>
-
-            {/* Settings button */}
+            {/* Camera toggle - custom button */}
             <Button
-              variant="outline"
+              onClick={toggleCamera}
+              variant={isCameraEnabled ? "outline" : "secondary"}
               size="icon"
-              onClick={() => setShowSettings(!showSettings)}
               className={cn(
-                "rounded-lg border-border/50",
-                showSettings && "bg-primary/20 border-primary/50"
+                "w-12 h-12 rounded-xl border-border/50 transition-all",
+                isCameraEnabled 
+                  ? "bg-card hover:bg-card/80" 
+                  : "bg-destructive/20 border-destructive/50 hover:bg-destructive/30"
               )}
             >
-              <Settings className="w-5 h-5" />
+              {isCameraEnabled ? (
+                <Video className="w-5 h-5" />
+              ) : (
+                <VideoOff className="w-5 h-5 text-destructive" />
+              )}
+            </Button>
+
+            {/* Mic toggle - custom button */}
+            <Button
+              onClick={toggleMicrophone}
+              variant={isMicrophoneEnabled ? "outline" : "secondary"}
+              size="icon"
+              className={cn(
+                "w-12 h-12 rounded-xl border-border/50 transition-all",
+                isMicrophoneEnabled 
+                  ? "bg-card hover:bg-card/80" 
+                  : "bg-destructive/20 border-destructive/50 hover:bg-destructive/30"
+              )}
+            >
+              {isMicrophoneEnabled ? (
+                <Mic className="w-5 h-5" />
+              ) : (
+                <MicOff className="w-5 h-5 text-destructive" />
+              )}
+            </Button>
+
+            {/* Screen share toggle - custom button */}
+            <Button
+              onClick={toggleScreenShare}
+              variant={isScreenShareEnabled ? "default" : "outline"}
+              size="icon"
+              className={cn(
+                "w-12 h-12 rounded-xl border-border/50 transition-all",
+                isScreenShareEnabled 
+                  ? "bg-green-500/20 border-green-500/50 hover:bg-green-500/30" 
+                  : "bg-card hover:bg-card/80"
+              )}
+            >
+              <MonitorUp className={cn(
+                "w-5 h-5",
+                isScreenShareEnabled && "text-green-500"
+              )} />
             </Button>
 
             {/* Fullscreen toggle */}
@@ -492,7 +603,7 @@ function LiveKitContent({ onParticipantJoined, onParticipantLeft, onRoomReady }:
               variant="outline"
               size="icon"
               onClick={toggleFullscreen}
-              className="rounded-lg border-border/50"
+              className="w-12 h-12 rounded-xl border-border/50 bg-card hover:bg-card/80"
             >
               {isFullscreen ? (
                 <Minimize2 className="w-5 h-5" />
@@ -502,60 +613,13 @@ function LiveKitContent({ onParticipantJoined, onParticipantLeft, onRoomReady }:
             </Button>
 
             {/* Leave button */}
-            <DisconnectButton className="lk-button flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-destructive hover:bg-destructive/90 text-destructive-foreground transition-all">
+            <DisconnectButton className="flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-destructive hover:bg-destructive/90 text-destructive-foreground transition-all">
               <PhoneOff className="w-5 h-5" />
-              <span className="text-sm font-medium">Выйти</span>
+              <span className="text-sm font-medium">Завершить</span>
             </DisconnectButton>
           </div>
         </div>
       </div>
-
-      {/* Settings Panel */}
-      {showSettings && (
-        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-50 glass-dark rounded-xl p-4 border border-border/50 min-w-[300px] animate-fade-in">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-medium">Настройки</h3>
-            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setShowSettings(false)}>
-              <X className="w-4 h-4" />
-            </Button>
-          </div>
-          
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Камера</span>
-              <TrackToggle 
-                source={Track.Source.Camera}
-                className="lk-button px-3 py-1.5 rounded-md bg-card hover:bg-card/80 border border-border/50 text-sm"
-              />
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Микрофон</span>
-              <TrackToggle 
-                source={Track.Source.Microphone}
-                className="lk-button px-3 py-1.5 rounded-md bg-card hover:bg-card/80 border border-border/50 text-sm"
-              />
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Демонстрация экрана</span>
-              <TrackToggle 
-                source={Track.Source.ScreenShare}
-                className="lk-button px-3 py-1.5 rounded-md bg-card hover:bg-card/80 border border-border/50 text-sm"
-              />
-            </div>
-
-            <div className="pt-2 border-t border-border/30">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Полный экран</span>
-                <Button variant="outline" size="sm" onClick={toggleFullscreen}>
-                  {isFullscreen ? 'Выйти' : 'Включить'}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       <RoomAudioRenderer />
     </div>
