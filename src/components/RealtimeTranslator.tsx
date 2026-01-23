@@ -936,45 +936,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
     setTranslations([]);
   }, []);
 
-  if (!isActive) return null;
-
-  if (isMinimized) {
-    return (
-      <Card className={cn(
-        "fixed bottom-4 right-4 z-50 w-auto bg-black/40 backdrop-blur-2xl border border-white/[0.08] shadow-lg",
-        className
-      )}>
-        <CardContent className="p-3 flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <Languages className="h-4 w-4 text-primary" />
-            {(isVadRecording || isPushToTalkActive || isProcessing) && (
-              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-            )}
-            {pushToTalkMode && isPushToTalkActive && (
-              <Badge variant="destructive" className="animate-pulse">
-                <Mic className="h-3 w-3 mr-1" />
-                REC
-              </Badge>
-            )}
-            {!pushToTalkMode && isListening && (
-              <Badge variant="default" className="bg-green-600">
-                <Mic className="h-3 w-3 mr-1" />
-                LIVE
-              </Badge>
-            )}
-          </div>
-          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setIsMinimized(false)}>
-            <Maximize2 className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onToggle}>
-            <X className="h-4 w-4" />
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Dragging state for translator
+  // Dragging state for translator - MUST be before any conditional returns
   const [translatorPosition, setTranslatorPosition] = useState({ x: 0, y: 0 });
   const [isTranslatorDragging, setIsTranslatorDragging] = useState(false);
   const translatorDragRef = useRef({ startX: 0, startY: 0, startPosX: 0, startPosY: 0 });
@@ -1016,6 +978,45 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
       document.removeEventListener('mouseup', handleMouseUp);
     };
   }, [isTranslatorDragging]);
+
+  // Early returns AFTER all hooks
+  if (!isActive) return null;
+
+  if (isMinimized) {
+    return (
+      <Card className={cn(
+        "fixed bottom-4 right-4 z-50 w-auto bg-black/40 backdrop-blur-2xl border border-white/[0.08] shadow-lg",
+        className
+      )}>
+        <CardContent className="p-3 flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Languages className="h-4 w-4 text-primary" />
+            {(isVadRecording || isPushToTalkActive || isProcessing) && (
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+            )}
+            {pushToTalkMode && isPushToTalkActive && (
+              <Badge variant="destructive" className="animate-pulse">
+                <Mic className="h-3 w-3 mr-1" />
+                REC
+              </Badge>
+            )}
+            {!pushToTalkMode && isListening && (
+              <Badge variant="default" className="bg-green-600">
+                <Mic className="h-3 w-3 mr-1" />
+                LIVE
+              </Badge>
+            )}
+          </div>
+          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setIsMinimized(false)}>
+            <Maximize2 className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onToggle}>
+            <X className="h-4 w-4" />
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card 
