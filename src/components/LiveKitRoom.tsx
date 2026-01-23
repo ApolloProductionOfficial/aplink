@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { InCallChat } from "@/components/InCallChat";
 
 interface LiveKitRoomProps {
   roomName: string;
@@ -48,6 +49,8 @@ interface LiveKitRoomProps {
   roomDisplayName?: string;
   /** Callback when user clicks minimize (logo) */
   onMinimize?: () => void;
+  /** Connection quality indicator element */
+  connectionIndicator?: React.ReactNode;
 }
 
 export function LiveKitRoom({
@@ -63,6 +66,7 @@ export function LiveKitRoom({
   headerButtons,
   roomDisplayName,
   onMinimize,
+  connectionIndicator,
 }: LiveKitRoomProps) {
   const [token, setToken] = useState<string | null>(null);
   const [serverUrl, setServerUrl] = useState<string | null>(null);
@@ -212,6 +216,8 @@ export function LiveKitRoom({
           headerButtons={headerButtons}
           roomDisplayName={roomDisplayName}
           onMinimize={onMinimize}
+          participantName={participantName}
+          connectionIndicator={connectionIndicator}
         />
       </LayoutContextProvider>
     </LKRoom>
@@ -225,6 +231,8 @@ interface LiveKitContentProps {
   headerButtons?: React.ReactNode;
   roomDisplayName?: string;
   onMinimize?: () => void;
+  participantName: string;
+  connectionIndicator?: React.ReactNode;
 }
 
 function LiveKitContent({ 
@@ -234,6 +242,8 @@ function LiveKitContent({
   headerButtons,
   roomDisplayName,
   onMinimize,
+  participantName,
+  connectionIndicator,
 }: LiveKitContentProps) {
   const room = useRoomContext();
   const participants = useParticipants();
@@ -246,6 +256,7 @@ function LiveKitContent({
   const [showBottomPanel, setShowBottomPanel] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showChat, setShowChat] = useState(false);
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -253,6 +264,10 @@ function LiveKitContent({
   const isCameraEnabled = localParticipant?.isCameraEnabled ?? false;
   const isMicrophoneEnabled = localParticipant?.isMicrophoneEnabled ?? false;
   const isScreenShareEnabled = localParticipant?.isScreenShareEnabled ?? false;
+
+  // Check if there are remote participants (for self-view logic)
+  const remoteParticipants = participants.filter(p => p.identity !== localParticipant?.identity);
+  const hasRemoteParticipants = remoteParticipants.length > 0;
 
   // Notify parent when room is ready
   useEffect(() => {
@@ -418,7 +433,7 @@ function LiveKitContent({
   return (
     <div 
       ref={containerRef}
-      className="flex flex-col h-full livekit-room-container bg-background relative"
+      className="flex flex-col h-full livekit-room-container bg-background relative cursor-default"
       onMouseMove={handleMouseMove}
     >
       {/* Onboarding hints */}
@@ -472,12 +487,15 @@ function LiveKitContent({
                 </div>
               </button>
 
-              {/* Room name */}
-              {roomDisplayName && (
-                <div className="flex items-center gap-2 bg-background/50 px-3 py-1.5 rounded-full border border-border/30">
-                  <span className="text-sm font-medium truncate max-w-[150px]">{roomDisplayName}</span>
-                </div>
-              )}
+              {/* Room name + connection indicator */}
+              <div className="flex items-center gap-3">
+                {roomDisplayName && (
+                  <div className="flex items-center gap-2 bg-background/50 px-3 py-1.5 rounded-full border border-border/30">
+                    <span className="text-sm font-medium truncate max-w-[150px]">{roomDisplayName}</span>
+                  </div>
+                )}
+                {connectionIndicator}
+              </div>
 
               {/* Header buttons from parent */}
               <div className="flex items-center gap-2">
@@ -488,8 +506,8 @@ function LiveKitContent({
         </div>
       )}
 
-      {/* Self-view (Picture-in-Picture style) */}
-      {isCameraEnabled && localVideoTrack && (
+      {/* Self-view (Picture-in-Picture style) - only when there are other participants */}
+      {hasRemoteParticipants && isCameraEnabled && localVideoTrack && (
         <div className="absolute bottom-24 right-4 z-50 w-48 h-36 rounded-xl overflow-hidden border-2 border-primary/50 shadow-[0_0_20px_hsl(var(--primary)/0.3)] bg-black">
           <VideoTrack 
             trackRef={{ 
@@ -499,7 +517,7 @@ function LiveKitContent({
             }} 
             className="w-full h-full object-cover mirror"
           />
-          <div className="absolute bottom-1 left-2 text-xs text-white/80 bg-black/50 px-1.5 py-0.5 rounded">
+          <div className="absolute bottom-1 left-2 text-xs text-white/90 px-1.5 py-0.5 rounded">
             Вы
           </div>
         </div>
@@ -516,7 +534,7 @@ function LiveKitContent({
             }} 
             className="w-full h-full object-contain"
           />
-          <div className="absolute bottom-1 left-2 text-xs text-white/80 bg-black/50 px-1.5 py-0.5 rounded flex items-center gap-1">
+          <div className="absolute bottom-1 left-2 text-xs text-white/90 px-1.5 py-0.5 rounded flex items-center gap-1">
             <MonitorUp className="w-3 h-3" />
             Ваш экран
           </div>
@@ -526,9 +544,17 @@ function LiveKitContent({
       {/* Main video grid */}
       <div className="flex-1 relative overflow-hidden">
         <GridLayout tracks={tracks} className="p-3 gap-3">
-          <ParticipantTile className="rounded-xl overflow-hidden animate-cosmic-appear" />
+          <ParticipantTile className="rounded-xl overflow-hidden" />
         </GridLayout>
       </div>
+
+      {/* In-call Chat */}
+      <InCallChat
+        room={room}
+        participantName={participantName}
+        isOpen={showChat}
+        onToggle={() => setShowChat(!showChat)}
+      />
 
       {/* Bottom Control Bar - auto-hide */}
       <div 
@@ -597,6 +623,14 @@ function LiveKitContent({
                 isScreenShareEnabled && "text-green-500"
               )} />
             </Button>
+
+            {/* Chat toggle */}
+            <InCallChat
+              room={room}
+              participantName={participantName}
+              isOpen={showChat}
+              onToggle={() => setShowChat(!showChat)}
+            />
 
             {/* Fullscreen toggle */}
             <Button

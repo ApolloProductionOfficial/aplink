@@ -881,8 +881,26 @@ const MeetingRoom = () => {
     );
   }
 
+  // Connection indicator element to pass to LiveKitRoom
+  const connectionIndicator = connectionStatus === 'connected' ? (
+    <div className="flex items-center gap-2 bg-green-500/10 px-3 py-1.5 rounded-full border border-green-500/30">
+      <Wifi className="w-3 h-3 text-green-500" />
+      <QualityIcon className={`w-4 h-4 ${qualityIndicator.color}`} />
+    </div>
+  ) : connectionStatus === 'disconnected' ? (
+    <div className="flex items-center gap-2 bg-red-500/10 px-3 py-1.5 rounded-full border border-red-500/30">
+      <WifiOff className="w-3 h-3 text-red-500" />
+      <span className="text-xs text-red-500">Отключено</span>
+    </div>
+  ) : connectionStatus === 'reconnecting' ? (
+    <div className="flex items-center gap-2 bg-yellow-500/10 px-3 py-1.5 rounded-full border border-yellow-500/30">
+      <RefreshCw className="w-3 h-3 text-yellow-500 animate-spin" />
+      <span className="text-xs text-yellow-500">Переподключение...</span>
+    </div>
+  ) : null;
+
   return (
-    <div className="h-screen w-screen bg-background flex flex-col overflow-hidden relative">
+    <div className="h-screen w-screen bg-background flex flex-col overflow-hidden relative cursor-default">
       {/* Recording Indicator - Fixed top-left */}
       {isRecording && (
         <div className="fixed top-4 left-4 z-[100] flex items-center gap-2 bg-destructive/90 backdrop-blur-sm text-destructive-foreground px-3 py-1.5 rounded-full shadow-lg animate-fade-in">
@@ -982,57 +1000,6 @@ const MeetingRoom = () => {
         </div>
       )}
 
-      {/* Connection Status Indicator */}
-      {connectionStatus !== 'connected' && !isLoading && (
-        <div className={cn(
-          "absolute top-4 right-4 z-40 flex items-center gap-2 glass rounded-full px-4 py-2 border animate-fade-in",
-          connectionStatus === 'disconnected' ? 'border-red-500/50' : 
-          connectionStatus === 'reconnecting' ? 'border-yellow-500/50' : 
-          'border-primary/50'
-        )}>
-          {connectionStatus === 'disconnected' ? (
-            <>
-              <WifiOff className="w-4 h-4 text-red-500" />
-              <span className="text-sm font-medium text-red-500">{t.meetingRoom.disconnected || "Отключено"}</span>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-6 px-2 ml-2"
-                onClick={() => window.location.reload()}
-              >
-                <RefreshCw className="w-3 h-3 mr-1" />
-                {t.meetingRoom.reconnect || "Переподключить"}
-              </Button>
-            </>
-          ) : connectionStatus === 'reconnecting' ? (
-            <>
-              <RefreshCw className="w-4 h-4 text-yellow-500 animate-spin" />
-              <span className="text-sm font-medium text-yellow-500">{t.meetingRoom.reconnecting || "Переподключение..."}</span>
-            </>
-          ) : (
-            <>
-              <Wifi className="w-4 h-4 text-primary animate-pulse" />
-              <span className="text-sm font-medium text-primary">{t.meetingRoom.connecting || "Подключение..."}</span>
-            </>
-          )}
-        </div>
-      )}
-      
-      {/* Connected indicator with quality */}
-      {connectionStatus === 'connected' && (
-        <div className="absolute top-4 right-4 z-40 flex items-center gap-3 glass rounded-full px-4 py-2 border border-green-500/30">
-          <div className="flex items-center gap-2">
-            <Wifi className="w-3 h-3 text-green-500" />
-            <span className="text-xs text-green-500">{t.meetingRoom.done || "Подключено"}</span>
-          </div>
-          <div className="h-4 w-px bg-border/50" />
-          <div className="flex items-center gap-1.5">
-            <QualityIcon className={`w-4 h-4 ${qualityIndicator.color}`} />
-            <span className={`text-xs ${qualityIndicator.color}`}>{qualityIndicator.label}</span>
-          </div>
-        </div>
-      )}
-
       {/* LiveKit Room Container - Full height */}
       <div className="flex-1 w-full z-10 relative" style={{ minHeight: 0 }}>
         <LiveKitRoom
@@ -1048,6 +1015,7 @@ const MeetingRoom = () => {
           headerButtons={headerButtons}
           roomDisplayName={roomDisplayName}
           onMinimize={handleMinimize}
+          connectionIndicator={connectionIndicator}
         />
       </div>
     </div>
