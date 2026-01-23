@@ -32,8 +32,8 @@ import {
   Hand,
   Volume2,
   VolumeX,
-  Sparkles,
   PictureInPicture2,
+  Pencil,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -42,6 +42,11 @@ import { VirtualBackgroundSelector } from "@/components/VirtualBackgroundSelecto
 import { EmojiReactions } from "@/components/EmojiReactions";
 import { useRaiseHand } from "@/hooks/useRaiseHand";
 import { useNoiseSuppression } from "@/hooks/useNoiseSuppression";
+import { useVoiceNotifications } from "@/hooks/useVoiceNotifications";
+import { useFaceFilters } from "@/hooks/useFaceFilters";
+import { FaceFilterSelector } from "@/components/FaceFilterSelector";
+import { CollaborativeWhiteboard } from "@/components/CollaborativeWhiteboard";
+import { toast } from "@/hooks/use-toast";
 
 interface LiveKitRoomProps {
   roomName: string;
@@ -266,12 +271,19 @@ function LiveKitContent({
   // Noise suppression hook
   const { isEnabled: isNoiseSuppressionEnabled, toggle: toggleNoiseSuppression } = useNoiseSuppression();
   
+  // Voice notifications hook
+  const { announceHandRaised, announceParticipantJoined, announceParticipantLeft } = useVoiceNotifications();
+  
+  // Face filters hook
+  const { activeFilter, setActiveFilter: setFaceFilter } = useFaceFilters();
+  
   // Auto-hide panels state
   const [showTopPanel, setShowTopPanel] = useState(true);
   const [showBottomPanel, setShowBottomPanel] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showChat, setShowChat] = useState(false);
+  const [showWhiteboard, setShowWhiteboard] = useState(false);
   const [currentBackground, setCurrentBackground] = useState<'none' | 'blur-light' | 'blur-strong' | 'image'>('none');
   const [isProcessingBackground, setIsProcessingBackground] = useState(false);
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -456,6 +468,9 @@ function LiveKitContent({
       // Add to new participants for animation
       setNewParticipants(prev => new Set(prev).add(participant.identity));
       
+      // Voice notification
+      announceParticipantJoined(participant.name || participant.identity);
+      
       // Remove animation class after animation completes
       setTimeout(() => {
         setNewParticipants(prev => {
@@ -470,6 +485,7 @@ function LiveKitContent({
 
     const handleParticipantDisconnected = (participant: RemoteParticipant) => {
       console.log("[LiveKitRoom] Participant left:", participant.identity);
+      announceParticipantLeft(participant.name || participant.identity);
       onParticipantLeft?.(participant.identity);
     };
 
@@ -533,15 +549,22 @@ function LiveKitContent({
               onClick={async () => {
                 try {
                   const videoEl = document.querySelector('.lk-participant-tile video') as HTMLVideoElement;
-                  if (videoEl && document.pictureInPictureEnabled) {
+                  if (videoEl && document.pictureInPictureEnabled && videoEl.readyState >= 2) {
                     await videoEl.requestPictureInPicture();
+                    // Small delay for stability before navigating away
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                    onMinimize?.();
+                  } else if (!document.pictureInPictureEnabled) {
+                    toast({ title: "PiP не поддерживается", description: "Ваш браузер не поддерживает картинку в картинке", variant: "destructive" });
                     onMinimize?.();
                   } else {
+                    // Video not ready yet
                     onMinimize?.();
                   }
                 } catch (err) {
-                  console.error('PiP not supported:', err);
-                  onMinimize?.();
+                  console.error('PiP failed:', err);
+                  toast({ title: "PiP недоступен", description: "Попробуйте ещё раз", variant: "destructive" });
+                  // Don't call onMinimize on error - stay in room
                 }
               }}
               className="flex items-center justify-center w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 border border-white/[0.08] transition-all hover:scale-105 hover:shadow-lg"
@@ -560,22 +583,6 @@ function LiveKitContent({
 
             {/* Header buttons from parent */}
             {headerButtons}
-
-            {/* Divider */}
-            <div className="w-px h-5 bg-white/10" />
-
-            {/* Reset effects button */}
-            <button
-              onClick={() => {
-                removeBackground();
-                if (isNoiseSuppressionEnabled) toggleNoiseSuppression();
-              }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-red-500/30 border border-white/[0.08] transition-all text-xs hover:border-red-500/50"
-              title="Сбросить все эффекты"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Сброс</span>
-            </button>
 
             {/* Divider */}
             <div className="w-px h-5 bg-white/10" />
@@ -697,9 +704,9 @@ function LiveKitContent({
             variant={isCameraEnabled ? "outline" : "secondary"}
             size="icon"
             className={cn(
-              "w-12 h-12 rounded-full border-white/[0.12] transition-all hover:scale-105 hover:shadow-lg",
+              "w-12 h-12 rounded-full border-white/[0.12] transition-all hover:scale-105 hover:shadow-lg [&_svg]:drop-shadow-[0_0_2px_rgba(255,255,255,0.5)]",
               isCameraEnabled 
-                ? "bg-white/10 hover:bg-white/20" 
+                ? "bg-white/15 hover:bg-white/25" 
                 : "bg-destructive/30 border-destructive/50 hover:bg-destructive/40"
             )}
           >
@@ -716,9 +723,9 @@ function LiveKitContent({
             variant={isMicrophoneEnabled ? "outline" : "secondary"}
             size="icon"
             className={cn(
-              "w-12 h-12 rounded-full border-white/[0.12] transition-all hover:scale-105 hover:shadow-lg",
+              "w-12 h-12 rounded-full border-white/[0.12] transition-all hover:scale-105 hover:shadow-lg [&_svg]:drop-shadow-[0_0_2px_rgba(255,255,255,0.5)]",
               isMicrophoneEnabled 
-                ? "bg-white/10 hover:bg-white/20" 
+                ? "bg-white/15 hover:bg-white/25" 
                 : "bg-destructive/30 border-destructive/50 hover:bg-destructive/40"
             )}
           >
@@ -735,10 +742,10 @@ function LiveKitContent({
             variant={isScreenShareEnabled ? "default" : "outline"}
             size="icon"
             className={cn(
-              "w-12 h-12 rounded-full border-white/[0.12] transition-all hover:scale-105 hover:shadow-lg",
+              "w-12 h-12 rounded-full border-white/[0.12] transition-all hover:scale-105 hover:shadow-lg [&_svg]:drop-shadow-[0_0_2px_rgba(255,255,255,0.5)]",
               isScreenShareEnabled 
                 ? "bg-green-500/30 border-green-500/50 hover:bg-green-500/40" 
-                : "bg-white/10 hover:bg-white/20"
+                : "bg-white/15 hover:bg-white/25"
             )}
           >
             <MonitorUp className={cn(
@@ -757,7 +764,27 @@ function LiveKitContent({
             onRemove={removeBackground}
             currentBackground={currentBackground}
             isProcessing={isProcessingBackground}
+            onResetAllEffects={() => {
+              if (isNoiseSuppressionEnabled) toggleNoiseSuppression();
+            }}
           />
+
+          {/* Face Filter selector */}
+          <FaceFilterSelector
+            activeFilter={activeFilter}
+            onSelectFilter={setFaceFilter}
+          />
+
+          {/* Whiteboard button */}
+          <Button
+            onClick={() => setShowWhiteboard(true)}
+            variant="outline"
+            size="icon"
+            className="w-12 h-12 rounded-full border-white/[0.12] bg-white/15 hover:bg-white/25 transition-all hover:scale-105 hover:shadow-lg [&_svg]:drop-shadow-[0_0_2px_rgba(255,255,255,0.5)]"
+            title="Доска для рисования"
+          >
+            <Pencil className="w-5 h-5" />
+          </Button>
 
           {/* Emoji Reactions */}
           <EmojiReactions
@@ -830,6 +857,14 @@ function LiveKitContent({
           onToggle={() => setShowChat(false)}
         />
       )}
+
+      {/* Collaborative Whiteboard */}
+      <CollaborativeWhiteboard
+        room={room}
+        participantName={participantName}
+        isOpen={showWhiteboard}
+        onClose={() => setShowWhiteboard(false)}
+      />
 
       <RoomAudioRenderer />
     </div>

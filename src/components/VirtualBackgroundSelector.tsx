@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Palette, Loader2, Sparkles, Building2, Trees, Rocket, Umbrella, Crown, Upload, Image, RefreshCw } from "lucide-react";
+import { Palette, Loader2, Sparkles, Building2, Trees, Rocket, Umbrella, Crown, Upload, Image, RefreshCw, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -16,6 +16,7 @@ interface VirtualBackgroundSelectorProps {
   onRemove: () => void;
   currentBackground: 'none' | 'blur-light' | 'blur-strong' | 'image';
   isProcessing: boolean;
+  onResetAllEffects?: () => void;
 }
 
 const BLUR_OPTIONS = [
@@ -69,6 +70,7 @@ export function VirtualBackgroundSelector({
   onRemove,
   currentBackground,
   isProcessing,
+  onResetAllEffects,
 }: VirtualBackgroundSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -188,10 +190,29 @@ export function VirtualBackgroundSelector({
         sideOffset={12}
       >
         <div className="space-y-4">
-          {/* Header */}
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-primary" />
-            <span className="font-medium text-sm">Виртуальный фон</span>
+          {/* Header with reset button */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-primary" />
+              <span className="font-medium text-sm">Виртуальный фон</span>
+            </div>
+            
+            {/* Reset button - shows when any effect is active */}
+            {selectedId && (
+              <button
+                onClick={() => {
+                  onRemove();
+                  setSelectedId(null);
+                  if (onResetAllEffects) {
+                    onResetAllEffects();
+                  }
+                }}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500/20 hover:bg-red-500/40 border border-red-500/30 transition-all text-xs text-red-300"
+              >
+                <X className="w-3 h-3" />
+                <span>Сброс</span>
+              </button>
+            )}
           </div>
 
           {/* Blur options */}
