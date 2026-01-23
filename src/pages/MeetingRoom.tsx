@@ -18,6 +18,7 @@ import {
   SignalMedium,
   SignalHigh,
   Link2,
+  Subtitles,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import ParticipantsIPPanel from "@/components/ParticipantsIPPanel";
@@ -30,6 +31,7 @@ import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 import { useConnectionSounds } from "@/hooks/useConnectionSounds";
 import { RealtimeTranslator } from "@/components/RealtimeTranslator";
+import { CaptionsOverlay } from "@/components/CaptionsOverlay";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useLiveKitTranslationBroadcast } from "@/hooks/useLiveKitTranslationBroadcast";
 import { MeetingEndSaveDialog, type MeetingSaveStatus } from "@/components/MeetingEndSaveDialog";
@@ -96,6 +98,7 @@ const MeetingRoom = () => {
   const { playConnectedSound, playDisconnectedSound, playReconnectingSound } = useConnectionSounds();
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [showTranslator, setShowTranslator] = useState(false);
+  const [showCaptions, setShowCaptions] = useState(false);
   const [connectionQuality, setConnectionQuality] = useState<number>(100);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -769,6 +772,29 @@ const MeetingRoom = () => {
         </TooltipContent>
       </Tooltip>
       
+      {/* Captions button */}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            onClick={() => setShowCaptions(!showCaptions)}
+            variant={showCaptions ? "default" : "outline"}
+            size="sm"
+            className={cn(
+              "flex items-center gap-1.5 h-8 px-3 rounded-full transition-all",
+              showCaptions 
+                ? "bg-primary/30 border-primary/50" 
+                : "border-white/20 bg-white/10 hover:bg-white/20"
+            )}
+          >
+            <Subtitles className="w-3.5 h-3.5" />
+            <span className="text-xs hidden sm:inline">CC</span>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">
+          <p className="text-xs">Субтитры с AI-переводом</p>
+        </TooltipContent>
+      </Tooltip>
+      
       {/* Translator button */}
       <Tooltip>
         <TooltipTrigger asChild>
@@ -890,15 +916,19 @@ const MeetingRoom = () => {
     );
   }
 
-  // Connection indicator element to pass to LiveKitRoom - beautiful gradient glass style
+  // Connection indicator element - simplified to just a pulsing dot that changes color
   const connectionIndicator = connectionStatus === 'connected' ? (
-    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-green-500/15 via-green-400/10 to-transparent border border-green-500/25 backdrop-blur-sm">
-      <div className="relative">
-        <Wifi className="w-3.5 h-3.5 text-green-400" />
-        <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-      </div>
-      <QualityIcon className={`w-4 h-4 ${qualityIndicator.color}`} />
-      <span className="text-[10px] font-medium text-green-400/90">{connectionQuality}%</span>
+    <div className="flex items-center gap-1.5">
+      <span 
+        className={cn(
+          "w-2 h-2 rounded-full transition-colors duration-700",
+          connectionQuality >= 80 && "bg-green-500 animate-pulse",
+          connectionQuality >= 50 && connectionQuality < 80 && "bg-yellow-500 animate-pulse",
+          connectionQuality >= 20 && connectionQuality < 50 && "bg-orange-500 animate-pulse",
+          connectionQuality < 20 && "bg-red-500 animate-pulse"
+        )}
+        style={{ animationDuration: '2s' }}
+      />
     </div>
   ) : connectionStatus === 'disconnected' ? (
     <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-red-500/15 via-red-400/10 to-transparent border border-red-500/25 backdrop-blur-sm">
@@ -971,6 +1001,14 @@ const MeetingRoom = () => {
           onClose={() => setShowIPPanel(false)}
         />
       )}
+      
+      {/* Real-time Captions Overlay */}
+      <CaptionsOverlay
+        room={liveKitRoom}
+        participantName={safeUserName}
+        isEnabled={showCaptions}
+        onToggle={() => setShowCaptions(false)}
+      />
 
       {/* Registration hint for non-authenticated users */}
       {showRegistrationHint && !user && (

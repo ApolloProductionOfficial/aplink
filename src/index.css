@@ -30,7 +30,7 @@
   }
 }
 
-/* Emoji float animation for reactions - full screen height */
+/* Emoji float animation for reactions - FULLSCREEN via Portal */
 @keyframes emoji-float-up {
   0% {
     opacity: 1;
@@ -46,8 +46,28 @@
   }
 }
 
+/* NEW: Fullscreen emoji animation - much larger travel distance */
+@keyframes emoji-float-fullscreen {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  15% {
+    opacity: 1;
+    transform: translateY(-80px) scale(1.6);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-65vh) scale(0.7);
+  }
+}
+
 .animate-emoji-float {
   animation: emoji-float-up 3.5s ease-out forwards;
+}
+
+.animate-emoji-float-fullscreen {
+  animation: emoji-float-fullscreen 4s ease-out forwards;
 }
 
 /* Subtle bounce animation for arrow hints */
@@ -81,38 +101,19 @@
   animation: subtle-bounce-up 2.5s ease-in-out infinite;
 }
 
-/* ENERGY speaking glow - radiating waves effect */
+/* SUBTLE energy speaking glow - less intense, slower fade */
 @keyframes name-energy-pulse {
   0%, 100% {
     text-shadow: 
-      0 0 8px rgba(6, 182, 228, 0.5),
-      0 0 16px rgba(6, 182, 228, 0.3),
-      0 0 24px rgba(6, 182, 228, 0.2);
-    filter: drop-shadow(0 0 4px rgba(6, 182, 228, 0.4));
-  }
-  25% {
-    text-shadow: 
-      0 0 12px rgba(6, 182, 228, 0.7),
-      0 0 24px rgba(6, 182, 228, 0.5),
-      0 0 36px rgba(6, 182, 228, 0.3),
-      0 0 48px rgba(6, 182, 228, 0.15);
-    filter: drop-shadow(0 0 8px rgba(6, 182, 228, 0.6));
+      0 0 4px rgba(6, 182, 228, 0.3),
+      0 0 8px rgba(6, 182, 228, 0.15);
+    filter: none;
   }
   50% {
     text-shadow: 
-      0 0 20px rgba(6, 182, 228, 0.9),
-      0 0 40px rgba(6, 182, 228, 0.6),
-      0 0 60px rgba(6, 182, 228, 0.4),
-      0 0 80px rgba(6, 182, 228, 0.2);
-    filter: drop-shadow(0 0 16px rgba(6, 182, 228, 0.8)) drop-shadow(0 0 32px rgba(6, 182, 228, 0.4));
-  }
-  75% {
-    text-shadow: 
-      0 0 12px rgba(6, 182, 228, 0.7),
-      0 0 24px rgba(6, 182, 228, 0.5),
-      0 0 36px rgba(6, 182, 228, 0.3),
-      0 0 48px rgba(6, 182, 228, 0.15);
-    filter: drop-shadow(0 0 8px rgba(6, 182, 228, 0.6));
+      0 0 6px rgba(6, 182, 228, 0.5),
+      0 0 12px rgba(6, 182, 228, 0.25);
+    filter: none;
   }
 }
 
@@ -120,14 +121,13 @@
 @keyframes name-pulse-glow {
   0%, 100% {
     text-shadow: 
-      0 0 8px rgba(6, 182, 228, 0.4),
-      0 0 16px rgba(6, 182, 228, 0.2);
+      0 0 4px rgba(6, 182, 228, 0.3),
+      0 0 8px rgba(6, 182, 228, 0.15);
   }
   50% {
     text-shadow: 
-      0 0 16px rgba(6, 182, 228, 0.7),
-      0 0 32px rgba(6, 182, 228, 0.4),
-      0 0 48px rgba(6, 182, 228, 0.2);
+      0 0 6px rgba(6, 182, 228, 0.4),
+      0 0 12px rgba(6, 182, 228, 0.2);
   }
 }
 
@@ -652,12 +652,13 @@ All colors MUST be HSL.
   letter-spacing: 0.02em;
 }
 
-/* ENERGY speaking effect - radiating waves from the name */
+/* SUBTLE speaking effect - slower, softer glow with smooth fade */
 .livekit-room-container [data-lk-speaking="true"] .lk-participant-name,
 .livekit-room-container [data-lk-speaking="true"] [data-lk-participant-name],
 .livekit-room-container [data-lk-speaking="true"] .lk-participant-metadata-item {
-  color: hsl(190 100% 80%) !important;
-  animation: name-energy-pulse 0.8s ease-in-out infinite !important;
+  color: hsl(190 95% 85%) !important;
+  animation: name-energy-pulse 1.8s ease-in-out infinite !important;
+  transition: text-shadow 0.8s ease-out, color 0.8s ease-out !important;
 }
 
 /* Disable layout shifts when speaking - prevent video jumping */
@@ -862,16 +863,15 @@ All colors MUST be HSL.
   text-shadow: 0 0 10px rgba(6, 182, 228, 0.5);
 }
 
-/* Connection quality indicator styling */
+/* Connection quality indicator styling - HIDE on participant tiles */
 .livekit-room-container .lk-connection-quality {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 10;
-  padding: 4px 8px;
-  border-radius: 6px;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(8px);
+  display: none !important;
+}
+
+/* Hide any built-in fullscreen buttons */
+.livekit-room-container .lk-fullscreen-button,
+.livekit-room-container [data-lk-button="toggle-fullscreen"] {
+  display: none !important;
 }
 
 /* Excellent connection - green */

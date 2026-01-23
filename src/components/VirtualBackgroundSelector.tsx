@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Palette, Loader2, Sparkles, Building2, Trees, Rocket, Umbrella, Crown, Upload, Image } from "lucide-react";
+import { Palette, Loader2, Sparkles, Building2, Trees, Rocket, Umbrella, Crown, Upload, Image, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -7,6 +7,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface VirtualBackgroundSelectorProps {
   onSelectBlur: (intensity: number) => void;
@@ -21,39 +23,45 @@ const BLUR_OPTIONS = [
   { id: 'blur-strong', intensity: 15, label: 'Сильное' },
 ];
 
-const IMAGE_OPTIONS = [
+// AI-generated themes - each click generates a new unique image
+const AI_THEMES = [
   { 
-    id: 'apollo', 
-    url: '/videos/apollo-logo-bg.mp4', 
-    label: 'Apollo',
-    icon: Crown,
-    isVideo: true
+    id: 'space', 
+    label: 'Космос',
+    icon: Rocket,
+    gradient: 'from-purple-500/30 to-blue-600/10',
+    iconColor: 'text-purple-400'
   },
   { 
     id: 'office', 
-    url: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=1920&q=80', 
     label: 'Офис',
-    icon: Building2
+    icon: Building2,
+    gradient: 'from-blue-500/30 to-cyan-600/10',
+    iconColor: 'text-blue-400'
   },
   { 
     id: 'nature', 
-    url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1920&q=80', 
     label: 'Природа',
-    icon: Trees
-  },
-  { 
-    id: 'space', 
-    url: 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=1920&q=80', 
-    label: 'Космос',
-    icon: Rocket
+    icon: Trees,
+    gradient: 'from-green-500/30 to-emerald-600/10',
+    iconColor: 'text-green-400'
   },
   { 
     id: 'beach', 
-    url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1920&q=80', 
     label: 'Пляж',
-    icon: Umbrella
+    icon: Umbrella,
+    gradient: 'from-cyan-500/30 to-teal-600/10',
+    iconColor: 'text-cyan-400'
   },
 ];
+
+// Static Apollo Production background
+const APOLLO_BACKGROUND = {
+  id: 'apollo',
+  url: '/images/apollo-logo.png',
+  label: 'Apollo',
+  icon: Crown,
+};
 
 export function VirtualBackgroundSelector({
   onSelectBlur,
@@ -65,11 +73,13 @@ export function VirtualBackgroundSelector({
   const [isOpen, setIsOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [customImageUrl, setCustomImageUrl] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatingTheme, setGeneratingTheme] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   const handleBlurSelect = (intensity: number, id: string) => {
     if (selectedId === id) {
-      // Toggle off - remove background
       onRemove();
       setSelectedId(null);
     } else {
@@ -78,14 +88,59 @@ export function VirtualBackgroundSelector({
     }
   };
 
-  const handleImageSelect = (url: string, id: string) => {
+  const handleStaticImageSelect = (url: string, id: string) => {
     if (selectedId === id) {
-      // Toggle off - remove background
       onRemove();
       setSelectedId(null);
     } else {
       onSelectImage(url);
       setSelectedId(id);
+    }
+  };
+
+  // Generate new AI background on each click
+  const handleAIThemeSelect = async (theme: string) => {
+    if (isGenerating) return;
+
+    setIsGenerating(true);
+    setGeneratingTheme(theme);
+    setSelectedId(theme);
+
+    try {
+      toast({
+        title: "🎨 Генерация фона...",
+        description: "AI создаёт уникальное изображение",
+      });
+
+      const { data, error } = await supabase.functions.invoke('generate-background', {
+        body: { theme }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data?.imageUrl) {
+        onSelectImage(data.imageUrl);
+        toast({
+          title: "✨ Фон применён!",
+          description: "AI-сгенерированный фон успешно установлен",
+        });
+      } else {
+        throw new Error('No image URL received');
+      }
+
+    } catch (err) {
+      console.error('Failed to generate background:', err);
+      toast({
+        title: "Ошибка генерации",
+        description: "Не удалось создать AI-фон. Попробуйте ещё раз.",
+        variant: "destructive",
+      });
+      setSelectedId(null);
+    } finally {
+      setIsGenerating(false);
+      setGeneratingTheme(null);
     }
   };
 
@@ -117,9 +172,9 @@ export function VirtualBackgroundSelector({
               ? "bg-primary/20 border-primary/50 hover:bg-primary/30" 
               : "bg-white/10 hover:bg-white/20"
           )}
-          disabled={isProcessing}
+          disabled={isProcessing || isGenerating}
         >
-          {isProcessing ? (
+          {isProcessing || isGenerating ? (
             <Loader2 className="w-5 h-5 animate-spin" />
           ) : (
             <Palette className="w-5 h-5" />
@@ -147,7 +202,7 @@ export function VirtualBackgroundSelector({
                 <button
                   key={option.id}
                   onClick={() => handleBlurSelect(option.intensity, option.id)}
-                  disabled={isProcessing}
+                  disabled={isProcessing || isGenerating}
                   className={cn(
                     "flex items-center justify-center gap-2 py-2.5 px-4 rounded-full transition-all",
                     "border hover:border-primary/50 hover:scale-[1.02]",
@@ -162,37 +217,60 @@ export function VirtualBackgroundSelector({
             </div>
           </div>
 
-          {/* Image options */}
+          {/* AI Generated backgrounds */}
           <div className="space-y-2">
-            <span className="text-xs text-muted-foreground font-medium">Изображения</span>
-            <div className="grid grid-cols-5 gap-2">
-              {IMAGE_OPTIONS.map((option) => {
-                const IconComponent = option.icon;
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground font-medium">AI-генерация</span>
+              <span className="text-[10px] text-muted-foreground/60">Клик = новый фон</span>
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+              {/* Apollo static background */}
+              <button
+                onClick={() => handleStaticImageSelect(APOLLO_BACKGROUND.url, APOLLO_BACKGROUND.id)}
+                disabled={isProcessing || isGenerating}
+                className={cn(
+                  "flex flex-col items-center gap-1 p-2 rounded-xl transition-all",
+                  "border hover:border-amber-500/50 hover:scale-105",
+                  isSelected(APOLLO_BACKGROUND.id)
+                    ? "bg-amber-500/30 border-amber-500/60 shadow-lg shadow-amber-500/20"
+                    : "bg-white/5 border-white/10 hover:bg-white/10"
+                )}
+              >
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-gradient-to-br from-amber-500/30 to-amber-600/10">
+                  <Crown className="w-5 h-5 text-amber-400" />
+                </div>
+                <span className="text-[9px] text-muted-foreground truncate w-full text-center">{APOLLO_BACKGROUND.label}</span>
+              </button>
+
+              {/* AI themes */}
+              {AI_THEMES.map((theme) => {
+                const IconComponent = theme.icon;
+                const isThisGenerating = generatingTheme === theme.id;
+                
                 return (
                   <button
-                    key={option.id}
-                    onClick={() => handleImageSelect(option.url, option.id)}
-                    disabled={isProcessing}
+                    key={theme.id}
+                    onClick={() => handleAIThemeSelect(theme.id)}
+                    disabled={isProcessing || isGenerating}
                     className={cn(
-                      "flex flex-col items-center gap-1 p-2 rounded-xl transition-all",
+                      "flex flex-col items-center gap-1 p-2 rounded-xl transition-all relative",
                       "border hover:border-primary/50 hover:scale-105",
-                      isSelected(option.id)
+                      isSelected(theme.id)
                         ? "bg-primary/30 border-primary/60 shadow-lg shadow-primary/20"
                         : "bg-white/5 border-white/10 hover:bg-white/10"
                     )}
                   >
                     <div className={cn(
-                      "w-8 h-8 rounded-lg flex items-center justify-center",
-                      option.id === 'apollo' 
-                        ? "bg-gradient-to-br from-amber-500/30 to-amber-600/10" 
-                        : "bg-gradient-to-br from-primary/20 to-primary/5"
+                      "w-10 h-10 rounded-lg flex items-center justify-center bg-gradient-to-br",
+                      theme.gradient
                     )}>
-                      <IconComponent className={cn(
-                        "w-4 h-4",
-                        option.id === 'apollo' ? "text-amber-400" : "text-primary"
-                      )} />
+                      {isThisGenerating ? (
+                        <RefreshCw className="w-5 h-5 animate-spin text-primary" />
+                      ) : (
+                        <IconComponent className={cn("w-5 h-5", theme.iconColor)} />
+                      )}
                     </div>
-                    <span className="text-[9px] text-muted-foreground truncate w-full text-center">{option.label}</span>
+                    <span className="text-[9px] text-muted-foreground truncate w-full text-center">{theme.label}</span>
                   </button>
                 );
               })}
@@ -211,7 +289,7 @@ export function VirtualBackgroundSelector({
             />
             <button
               onClick={handleCustomUpload}
-              disabled={isProcessing}
+              disabled={isProcessing || isGenerating}
               className={cn(
                 "w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-full transition-all",
                 "border border-dashed hover:border-primary/50",
@@ -236,7 +314,7 @@ export function VirtualBackgroundSelector({
 
           {/* Note */}
           <p className="text-[10px] text-muted-foreground/70 text-center">
-            Нажмите повторно для отмены • Влияет на производительность
+            Нажмите повторно для отмены • AI темы создают новый уникальный фон
           </p>
         </div>
       </PopoverContent>

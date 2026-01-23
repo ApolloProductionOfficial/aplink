@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { Room, RoomEvent } from "livekit-client";
 import { Smile } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -34,8 +35,8 @@ export function EmojiReactions({ room, participantName }: EmojiReactionsProps) {
     if (reactions.length === 0) return;
     
     const timer = setTimeout(() => {
-      setReactions(prev => prev.filter(r => Date.now() - r.timestamp < 3500));
-    }, 3500);
+      setReactions(prev => prev.filter(r => Date.now() - r.timestamp < 4000));
+    }, 4000);
 
     return () => clearTimeout(timer);
   }, [reactions]);
@@ -55,7 +56,7 @@ export function EmojiReactions({ room, participantName }: EmojiReactionsProps) {
             emoji: message.emoji,
             senderName: message.senderName,
             x: 10 + Math.random() * 80, // Random position 10-90% horizontal
-            y: 15 + Math.random() * 30, // Random position 15-45% from bottom
+            y: 20 + Math.random() * 25, // Random position 20-45% from bottom
             timestamp: Date.now(),
           };
 
@@ -96,7 +97,7 @@ export function EmojiReactions({ room, participantName }: EmojiReactionsProps) {
         emoji,
         senderName: participantName,
         x: 10 + Math.random() * 80,
-        y: 15 + Math.random() * 30,
+        y: 20 + Math.random() * 25,
         timestamp: Date.now(),
       };
 
@@ -107,28 +108,45 @@ export function EmojiReactions({ room, participantName }: EmojiReactionsProps) {
     }
   }, [room, participantName]);
 
+  // Fullscreen emoji overlay rendered via Portal
+  const emojiOverlay = reactions.length > 0 && typeof window !== 'undefined' && createPortal(
+    <div 
+      className="fixed inset-0 pointer-events-none overflow-hidden"
+      style={{ zIndex: 99999 }}
+    >
+      {reactions.map((reaction) => (
+        <div
+          key={reaction.id}
+          className="absolute animate-emoji-float-fullscreen"
+          style={{ 
+            left: `${reaction.x}%`, 
+            bottom: `${reaction.y}%`,
+          }}
+        >
+          <div className="flex flex-col items-center">
+            <span 
+              className="text-8xl drop-shadow-2xl"
+              style={{ 
+                filter: 'drop-shadow(0 0 30px rgba(255,255,255,0.4)) drop-shadow(0 4px 20px rgba(0,0,0,0.5))',
+                textShadow: '0 0 40px rgba(255,255,255,0.3)',
+              }}
+            >
+              {reaction.emoji}
+            </span>
+            <span className="text-sm text-white/95 bg-black/50 px-3 py-1 rounded-full backdrop-blur-xl mt-2 font-medium shadow-xl border border-white/10">
+              {reaction.senderName}
+            </span>
+          </div>
+        </div>
+      ))}
+    </div>,
+    document.body
+  );
+
   return (
     <>
-      {/* Floating reactions overlay - ENTIRE VIEWPORT with portal-like z-index */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 9999 }}>
-        {reactions.map((reaction) => (
-          <div
-            key={reaction.id}
-            className="absolute animate-emoji-float"
-            style={{ 
-              left: `${reaction.x}%`, 
-              bottom: `${reaction.y}%`,
-            }}
-          >
-            <div className="flex flex-col items-center">
-              <span className="text-7xl drop-shadow-2xl" style={{ filter: 'drop-shadow(0 0 20px rgba(0,0,0,0.5))' }}>{reaction.emoji}</span>
-              <span className="text-xs text-white/90 bg-black/50 px-2.5 py-0.5 rounded-full backdrop-blur-md mt-1.5 font-medium shadow-lg">
-                {reaction.senderName}
-              </span>
-            </div>
-          </div>
-        ))}
-      </div>
+      {/* Portal emoji overlay - renders on entire viewport */}
+      {emojiOverlay}
 
       {/* Emoji picker button */}
       <Popover open={isOpen} onOpenChange={setIsOpen}>
