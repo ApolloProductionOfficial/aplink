@@ -693,29 +693,12 @@ All colors MUST be HSL.
 .livekit-room-container .lk-grid-layout > *:nth-child(8) { animation-delay: 0.56s; }
 .livekit-room-container .lk-grid-layout > *:nth-child(9) { animation-delay: 0.64s; }
 
-/* Username - ПОЛНОСТЬЮ прозрачная плашка как нижняя панель */
+/* СКРЫТЬ плашку с именем участника */
 .livekit-room-container [data-lk-participant-name],
 .livekit-room-container .lk-participant-name,
 .livekit-room-container .lk-participant-metadata,
 .livekit-room-container .lk-participant-metadata-item {
-  background: rgba(255, 255, 255, 0.08) !important;
-  background-color: rgba(255, 255, 255, 0.08) !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
-  padding: 6px 14px !important;
-  border-radius: 999px !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.75) !important;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
-  transition: 
-    text-shadow 1.2s cubic-bezier(0.4, 0, 0.2, 1),
-    color 1.2s cubic-bezier(0.4, 0, 0.2, 1),
-    border-color 1.2s cubic-bezier(0.4, 0, 0.2, 1),
-    box-shadow 1.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
-  letter-spacing: 0 !important;
+  display: none !important;
 }
 
 /* ПЛАВНОЕ СИНЕЕ свечение при говорении - как индикатор сверху */
