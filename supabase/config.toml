@@ -95,3 +95,9 @@ verify_jwt = false
 
 [functions.livekit-history]
 verify_jwt = false
+
+[functions.correct-caption]
+verify_jwt = false
+
+[functions.generate-background]
+verify_jwt = false
