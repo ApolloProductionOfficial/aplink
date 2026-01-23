@@ -890,21 +890,25 @@ const MeetingRoom = () => {
     );
   }
 
-  // Connection indicator element to pass to LiveKitRoom - soft rounded style
+  // Connection indicator element to pass to LiveKitRoom - beautiful gradient glass style
   const connectionIndicator = connectionStatus === 'connected' ? (
-    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-500/10 border border-green-500/30">
-      <Wifi className="w-3 h-3 text-green-500" />
-      <QualityIcon className={`w-3.5 h-3.5 ${qualityIndicator.color}`} />
+    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-green-500/15 via-green-400/10 to-transparent border border-green-500/25 backdrop-blur-sm">
+      <div className="relative">
+        <Wifi className="w-3.5 h-3.5 text-green-400" />
+        <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+      </div>
+      <QualityIcon className={`w-4 h-4 ${qualityIndicator.color}`} />
+      <span className="text-[10px] font-medium text-green-400/90">{connectionQuality}%</span>
     </div>
   ) : connectionStatus === 'disconnected' ? (
-    <div className="flex items-center gap-2 bg-red-500/10 px-3 py-1.5 rounded-full border border-red-500/30">
-      <WifiOff className="w-3 h-3 text-red-500" />
-      <span className="text-xs text-red-500">Отключено</span>
+    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-red-500/15 via-red-400/10 to-transparent border border-red-500/25 backdrop-blur-sm">
+      <WifiOff className="w-3.5 h-3.5 text-red-400" />
+      <span className="text-xs text-red-400">Отключено</span>
     </div>
   ) : connectionStatus === 'reconnecting' ? (
-    <div className="flex items-center gap-2 bg-yellow-500/10 px-3 py-1.5 rounded-full border border-yellow-500/30">
-      <RefreshCw className="w-3 h-3 text-yellow-500 animate-spin" />
-      <span className="text-xs text-yellow-500">Переподключение...</span>
+    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-yellow-500/15 via-yellow-400/10 to-transparent border border-yellow-500/25 backdrop-blur-sm">
+      <RefreshCw className="w-3.5 h-3.5 text-yellow-400 animate-spin" />
+      <span className="text-xs text-yellow-400">Переподключение...</span>
     </div>
   ) : null;
 
