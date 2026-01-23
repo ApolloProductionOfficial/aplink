@@ -599,15 +599,17 @@ const MeetingRoom = () => {
 
   const goToCallsAfterSave = () => {
     setEndSaveDialogOpen(false);
-    // Redirect to apolloproduction.studio after saving
-    window.location.href = 'https://apolloproduction.studio';
+    // Open apolloproduction.studio in new tab, return to dashboard
+    window.open('https://apolloproduction.studio', '_blank');
+    navigate(user ? '/dashboard' : '/', { replace: true });
   };
 
   const exitWithoutSaving = () => {
     clearPendingBaseFromStorage();
     setEndSaveDialogOpen(false);
-    // Redirect to apolloproduction.studio
-    window.location.href = 'https://apolloproduction.studio';
+    // Open apolloproduction.studio in new tab, return to dashboard
+    window.open('https://apolloproduction.studio', '_blank');
+    navigate(user ? '/dashboard' : '/', { replace: true });
   };
 
   // LiveKit event handlers
@@ -640,8 +642,9 @@ const MeetingRoom = () => {
       runMeetingSave();
     } else if (!hasRedirectedRef.current) {
       hasRedirectedRef.current = true;
-      // Redirect to apolloproduction.studio after call ends
-      window.location.href = 'https://apolloproduction.studio';
+      // Open apolloproduction.studio in new tab, return to dashboard
+      window.open('https://apolloproduction.studio', '_blank');
+      navigate(user ? '/dashboard' : '/', { replace: true });
     }
   }, [playDisconnectedSound]);
 
@@ -680,8 +683,9 @@ const MeetingRoom = () => {
     hasRedirectedRef.current = true;
 
     if (!hasStartedRecordingRef.current) {
-      // Redirect to apolloproduction.studio
-      window.location.href = 'https://apolloproduction.studio';
+      // Open apolloproduction.studio in new tab, return to dashboard
+      window.open('https://apolloproduction.studio', '_blank');
+      navigate(user ? '/dashboard' : '/', { replace: true });
       return;
     }
 

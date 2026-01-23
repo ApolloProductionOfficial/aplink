@@ -231,7 +231,7 @@ const Index = () => {
       {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
       
       <motion.div 
-        className="min-h-screen bg-background text-foreground relative overflow-hidden"
+        className="min-h-screen bg-background text-foreground relative overflow-hidden custom-cursor-active"
         initial={{ opacity: 0 }}
         animate={{ opacity: showSplash ? 0 : 1 }}
         transition={{ duration: 0.5, delay: 0.2 }}

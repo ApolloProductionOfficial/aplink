@@ -14,6 +14,7 @@ import {
 } from "@livekit/components-react";
 import "@livekit/components-styles";
 import { Track, RoomEvent, Room, RemoteParticipant, VideoPresets, LocalParticipant } from "livekit-client";
+import { BackgroundBlur, VirtualBackground } from "@livekit/track-processors";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   Loader2, 
@@ -27,10 +28,13 @@ import {
   PhoneOff,
   ChevronUp,
   ChevronDown,
+  Minimize,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { InCallChat } from "@/components/InCallChat";
+import { VirtualBackgroundSelector } from "@/components/VirtualBackgroundSelector";
+import { EmojiReactions } from "@/components/EmojiReactions";
 
 interface LiveKitRoomProps {
   roomName: string;
@@ -123,8 +127,6 @@ export function LiveKitRoom({
 
   const handleDisconnected = useCallback(() => {
     console.log("[LiveKitRoom] Disconnected from room");
-    // Redirect to apolloproduction.studio
-    window.open('https://apolloproduction.studio', '_blank');
     onDisconnected?.();
   }, [onDisconnected]);
 
@@ -257,6 +259,8 @@ function LiveKitContent({
   const [showOnboarding, setShowOnboarding] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showChat, setShowChat] = useState(false);
+  const [currentBackground, setCurrentBackground] = useState<'none' | 'blur-light' | 'blur-strong' | 'image'>('none');
+  const [isProcessingBackground, setIsProcessingBackground] = useState(false);
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -362,6 +366,54 @@ function LiveKitContent({
     }
   }, [localParticipant, isScreenShareEnabled]);
 
+  // Virtual background handlers
+  const applyBlurBackground = useCallback(async (intensity: number) => {
+    try {
+      setIsProcessingBackground(true);
+      const track = localParticipant?.getTrackPublication(Track.Source.Camera)?.track;
+      if (track) {
+        const processor = BackgroundBlur(intensity);
+        await track.setProcessor(processor);
+        setCurrentBackground(intensity <= 5 ? 'blur-light' : 'blur-strong');
+      }
+    } catch (err) {
+      console.error('Failed to apply blur background:', err);
+    } finally {
+      setIsProcessingBackground(false);
+    }
+  }, [localParticipant]);
+
+  const applyImageBackground = useCallback(async (imageUrl: string) => {
+    try {
+      setIsProcessingBackground(true);
+      const track = localParticipant?.getTrackPublication(Track.Source.Camera)?.track;
+      if (track) {
+        const processor = VirtualBackground(imageUrl);
+        await track.setProcessor(processor);
+        setCurrentBackground('image');
+      }
+    } catch (err) {
+      console.error('Failed to apply image background:', err);
+    } finally {
+      setIsProcessingBackground(false);
+    }
+  }, [localParticipant]);
+
+  const removeBackground = useCallback(async () => {
+    try {
+      setIsProcessingBackground(true);
+      const track = localParticipant?.getTrackPublication(Track.Source.Camera)?.track;
+      if (track) {
+        await track.stopProcessor();
+        setCurrentBackground('none');
+      }
+    } catch (err) {
+      console.error('Failed to remove background:', err);
+    } finally {
+      setIsProcessingBackground(false);
+    }
+  }, [localParticipant]);
+
   // Fullscreen toggle
   const toggleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
@@ -457,58 +509,52 @@ function LiveKitContent({
         </>
       )}
 
-      {/* Top Header Panel - auto-hide */}
+      {/* Top Header Panel - auto-hide with smooth gradient */}
       {headerButtons && (
         <div 
           className={cn(
-            "absolute top-0 left-0 right-0 z-50",
-            "transition-all duration-300 ease-out",
+            "absolute top-4 left-1/2 -translate-x-1/2 z-50",
+            "transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
             showTopPanel 
-              ? "translate-y-0 opacity-100" 
-              : "-translate-y-full opacity-0 pointer-events-none"
+              ? "translate-y-0 opacity-100 scale-100" 
+              : "-translate-y-4 opacity-0 scale-95 pointer-events-none"
           )}
         >
-          <div className="glass-dark border-b border-border/50 p-3">
-            <div className="flex items-center justify-between">
-              {/* Logo / Minimize button */}
-              <button
-                onClick={onMinimize}
-                className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors group"
-                title="Свернуть звонок"
-              >
-                <div className="relative w-8 h-8 rounded-full overflow-hidden ring-2 ring-primary/50 shadow-[0_0_15px_hsl(var(--primary)/0.5)] group-hover:shadow-[0_0_25px_hsl(var(--primary)/0.7)] transition-shadow">
-                  <div className="absolute inset-0 bg-primary/30 animate-pulse" />
-                </div>
-                <div className="flex flex-col items-start">
-                  <span className="font-semibold text-sm">APLink</span>
-                  <span className="text-[10px] text-muted-foreground group-hover:text-primary transition-colors">
-                    Свернуть
-                  </span>
-                </div>
-              </button>
+          <div className="flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-gradient-to-b from-black/60 via-black/40 to-transparent backdrop-blur-xl border border-white/10 shadow-2xl">
+            {/* Minimize button */}
+            <button
+              onClick={onMinimize}
+              className="flex items-center justify-center w-9 h-9 rounded-xl bg-background/30 hover:bg-background/50 border border-white/10 transition-all hover:scale-105"
+              title="Свернуть звонок"
+            >
+              <Minimize className="w-4 h-4" />
+            </button>
 
-              {/* Room name + connection indicator */}
-              <div className="flex items-center gap-3">
-                {roomDisplayName && (
-                  <div className="flex items-center gap-2 bg-background/50 px-3 py-1.5 rounded-full border border-border/30">
-                    <span className="text-sm font-medium truncate max-w-[150px]">{roomDisplayName}</span>
-                  </div>
-                )}
-                {connectionIndicator}
+            {/* Room name */}
+            {roomDisplayName && (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-background/20 border border-white/10">
+                <span className="text-sm font-medium truncate max-w-[120px]">{roomDisplayName}</span>
               </div>
+            )}
 
-              {/* Header buttons from parent */}
-              <div className="flex items-center gap-2">
-                {headerButtons}
-              </div>
-            </div>
+            {/* Divider */}
+            <div className="w-px h-6 bg-white/20" />
+
+            {/* Header buttons from parent (REC, Translate, Link, IP) */}
+            {headerButtons}
+
+            {/* Divider */}
+            <div className="w-px h-6 bg-white/20" />
+
+            {/* Connection indicator */}
+            {connectionIndicator}
           </div>
         </div>
       )}
 
-      {/* Self-view (Picture-in-Picture style) - only when there are other participants */}
-      {hasRemoteParticipants && isCameraEnabled && localVideoTrack && (
-        <div className="absolute bottom-24 right-4 z-50 w-48 h-36 rounded-xl overflow-hidden border-2 border-primary/50 shadow-[0_0_20px_hsl(var(--primary)/0.3)] bg-black">
+      {/* Self-view (Picture-in-Picture style) - only when there are other participants and chat is closed */}
+      {hasRemoteParticipants && isCameraEnabled && localVideoTrack && !showChat && (
+        <div className="absolute bottom-28 right-4 z-40 w-48 h-36 rounded-xl overflow-hidden border-2 border-primary/50 shadow-[0_0_20px_hsl(var(--primary)/0.3)] bg-black">
           <VideoTrack 
             trackRef={{ 
               participant: localParticipant as LocalParticipant, 
@@ -548,110 +594,131 @@ function LiveKitContent({
         </GridLayout>
       </div>
 
-      {/* In-call Chat */}
-      <InCallChat
-        room={room}
-        participantName={participantName}
-        isOpen={showChat}
-        onToggle={() => setShowChat(!showChat)}
-      />
+      {/* In-call Chat - panel only, button is in bottom bar */}
+      {showChat && (
+        <InCallChat
+          room={room}
+          participantName={participantName}
+          isOpen={showChat}
+          onToggle={() => setShowChat(!showChat)}
+        />
+      )}
 
-      {/* Bottom Control Bar - auto-hide */}
+      {/* Bottom Control Bar - auto-hide with smooth gradient */}
       <div 
         className={cn(
-          "absolute bottom-0 left-0 right-0 z-50",
-          "transition-all duration-300 ease-out",
+          "absolute bottom-4 left-1/2 -translate-x-1/2 z-50",
+          "transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
           showBottomPanel 
-            ? "translate-y-0 opacity-100" 
-            : "translate-y-full opacity-0 pointer-events-none"
+            ? "translate-y-0 opacity-100 scale-100" 
+            : "translate-y-8 opacity-0 scale-95 pointer-events-none"
         )}
       >
-        <div className="glass-dark border-t border-border/50 p-3">
-          <div className="flex items-center justify-center gap-3">
-            {/* Camera toggle - custom button */}
-            <Button
-              onClick={toggleCamera}
-              variant={isCameraEnabled ? "outline" : "secondary"}
-              size="icon"
-              className={cn(
-                "w-12 h-12 rounded-xl border-border/50 transition-all",
-                isCameraEnabled 
-                  ? "bg-card hover:bg-card/80" 
-                  : "bg-destructive/20 border-destructive/50 hover:bg-destructive/30"
-              )}
-            >
-              {isCameraEnabled ? (
-                <Video className="w-5 h-5" />
-              ) : (
-                <VideoOff className="w-5 h-5 text-destructive" />
-              )}
-            </Button>
+        <div className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-gradient-to-t from-black/60 via-black/40 to-transparent backdrop-blur-xl border border-white/10 shadow-2xl">
+          {/* Camera toggle */}
+          <Button
+            onClick={toggleCamera}
+            variant={isCameraEnabled ? "outline" : "secondary"}
+            size="icon"
+            className={cn(
+              "w-12 h-12 rounded-xl border-white/10 transition-all hover:scale-105",
+              isCameraEnabled 
+                ? "bg-white/10 hover:bg-white/20" 
+                : "bg-destructive/30 border-destructive/50 hover:bg-destructive/40"
+            )}
+          >
+            {isCameraEnabled ? (
+              <Video className="w-5 h-5" />
+            ) : (
+              <VideoOff className="w-5 h-5 text-destructive" />
+            )}
+          </Button>
 
-            {/* Mic toggle - custom button */}
-            <Button
-              onClick={toggleMicrophone}
-              variant={isMicrophoneEnabled ? "outline" : "secondary"}
-              size="icon"
-              className={cn(
-                "w-12 h-12 rounded-xl border-border/50 transition-all",
-                isMicrophoneEnabled 
-                  ? "bg-card hover:bg-card/80" 
-                  : "bg-destructive/20 border-destructive/50 hover:bg-destructive/30"
-              )}
-            >
-              {isMicrophoneEnabled ? (
-                <Mic className="w-5 h-5" />
-              ) : (
-                <MicOff className="w-5 h-5 text-destructive" />
-              )}
-            </Button>
+          {/* Mic toggle */}
+          <Button
+            onClick={toggleMicrophone}
+            variant={isMicrophoneEnabled ? "outline" : "secondary"}
+            size="icon"
+            className={cn(
+              "w-12 h-12 rounded-xl border-white/10 transition-all hover:scale-105",
+              isMicrophoneEnabled 
+                ? "bg-white/10 hover:bg-white/20" 
+                : "bg-destructive/30 border-destructive/50 hover:bg-destructive/40"
+            )}
+          >
+            {isMicrophoneEnabled ? (
+              <Mic className="w-5 h-5" />
+            ) : (
+              <MicOff className="w-5 h-5 text-destructive" />
+            )}
+          </Button>
 
-            {/* Screen share toggle - custom button */}
-            <Button
-              onClick={toggleScreenShare}
-              variant={isScreenShareEnabled ? "default" : "outline"}
-              size="icon"
-              className={cn(
-                "w-12 h-12 rounded-xl border-border/50 transition-all",
-                isScreenShareEnabled 
-                  ? "bg-green-500/20 border-green-500/50 hover:bg-green-500/30" 
-                  : "bg-card hover:bg-card/80"
-              )}
-            >
-              <MonitorUp className={cn(
-                "w-5 h-5",
-                isScreenShareEnabled && "text-green-500"
-              )} />
-            </Button>
+          {/* Screen share toggle */}
+          <Button
+            onClick={toggleScreenShare}
+            variant={isScreenShareEnabled ? "default" : "outline"}
+            size="icon"
+            className={cn(
+              "w-12 h-12 rounded-xl border-white/10 transition-all hover:scale-105",
+              isScreenShareEnabled 
+                ? "bg-green-500/30 border-green-500/50 hover:bg-green-500/40" 
+                : "bg-white/10 hover:bg-white/20"
+            )}
+          >
+            <MonitorUp className={cn(
+              "w-5 h-5",
+              isScreenShareEnabled && "text-green-400"
+            )} />
+          </Button>
 
-            {/* Chat toggle */}
-            <InCallChat
-              room={room}
-              participantName={participantName}
-              isOpen={showChat}
-              onToggle={() => setShowChat(!showChat)}
-            />
+          {/* Divider */}
+          <div className="w-px h-8 bg-white/20 mx-1" />
 
-            {/* Fullscreen toggle */}
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={toggleFullscreen}
-              className="w-12 h-12 rounded-xl border-border/50 bg-card hover:bg-card/80"
-            >
-              {isFullscreen ? (
-                <Minimize2 className="w-5 h-5" />
-              ) : (
-                <Maximize2 className="w-5 h-5" />
-              )}
-            </Button>
+          {/* Virtual Background selector */}
+          <VirtualBackgroundSelector
+            onSelectBlur={applyBlurBackground}
+            onSelectImage={applyImageBackground}
+            onRemove={removeBackground}
+            currentBackground={currentBackground}
+            isProcessing={isProcessingBackground}
+          />
 
-            {/* Leave button */}
-            <DisconnectButton className="flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-destructive hover:bg-destructive/90 text-destructive-foreground transition-all">
-              <PhoneOff className="w-5 h-5" />
-              <span className="text-sm font-medium">Завершить</span>
-            </DisconnectButton>
-          </div>
+          {/* Emoji Reactions */}
+          <EmojiReactions
+            room={room}
+            participantName={participantName}
+          />
+
+          {/* Chat toggle - just the button */}
+          <InCallChat
+            room={room}
+            participantName={participantName}
+            isOpen={showChat}
+            onToggle={() => setShowChat(!showChat)}
+          />
+
+          {/* Divider */}
+          <div className="w-px h-8 bg-white/20 mx-1" />
+
+          {/* Fullscreen toggle */}
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={toggleFullscreen}
+            className="w-12 h-12 rounded-xl border-white/10 bg-white/10 hover:bg-white/20 transition-all hover:scale-105"
+          >
+            {isFullscreen ? (
+              <Minimize2 className="w-5 h-5" />
+            ) : (
+              <Maximize2 className="w-5 h-5" />
+            )}
+          </Button>
+
+          {/* Leave button */}
+          <DisconnectButton className="flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-destructive/80 hover:bg-destructive text-destructive-foreground transition-all hover:scale-105">
+            <PhoneOff className="w-5 h-5" />
+            <span className="text-sm font-medium">Завершить</span>
+          </DisconnectButton>
         </div>
       </div>
 
