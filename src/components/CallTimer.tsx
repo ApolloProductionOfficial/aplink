@@ -30,6 +30,24 @@ const TIMER_PRESETS = [
   { label: '30 мин', seconds: 1800 },
 ];
 
+// Parse time string like "5:30" or "5" to seconds
+const parseTimeInput = (input: string): number | null => {
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+  
+  // Format: "MM:SS" or just "MM"
+  if (trimmed.includes(':')) {
+    const [mins, secs] = trimmed.split(':').map(s => parseInt(s, 10));
+    if (isNaN(mins) || isNaN(secs) || mins < 0 || secs < 0 || secs >= 60) return null;
+    return mins * 60 + secs;
+  }
+  
+  // Just minutes
+  const mins = parseInt(trimmed, 10);
+  if (isNaN(mins) || mins <= 0 || mins > 120) return null;
+  return mins * 60;
+};
+
 export function CallTimer({ room, isHost = true }: CallTimerProps) {
   const [timerState, setTimerState] = useState<TimerState>({
     endTime: null,
@@ -39,7 +57,17 @@ export function CallTimer({ room, isHost = true }: CallTimerProps) {
   });
   const [remainingSeconds, setRemainingSeconds] = useState<number>(0);
   const [isOpen, setIsOpen] = useState(false);
+  const [customTime, setCustomTime] = useState('');
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Handle custom time input
+  const handleCustomTimeSubmit = useCallback(() => {
+    const seconds = parseTimeInput(customTime);
+    if (seconds && seconds > 0) {
+      startTimer(seconds);
+      setCustomTime('');
+    }
+  }, [customTime]);
 
   // Format seconds to MM:SS
   const formatTime = (seconds: number): string => {
@@ -270,6 +298,32 @@ export function CallTimer({ room, isHost = true }: CallTimerProps) {
                   {preset.label}
                 </Button>
               ))}
+            </div>
+            
+            {/* Custom time input */}
+            <div className="pt-2 border-t border-white/10 mt-2">
+              <span className="text-xs text-muted-foreground">Своё значение (мин или мин:сек)</span>
+              <div className="flex gap-2 mt-1">
+                <input
+                  type="text"
+                  value={customTime}
+                  onChange={(e) => setCustomTime(e.target.value)}
+                  placeholder="5:30"
+                  className="flex-1 h-9 px-3 text-sm bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:border-primary/50"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleCustomTimeSubmit();
+                  }}
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-9 px-3 bg-primary/20 border-primary/30 hover:bg-primary/30"
+                  onClick={handleCustomTimeSubmit}
+                  disabled={!parseTimeInput(customTime)}
+                >
+                  <Play className="w-3 h-3" />
+                </Button>
+              </div>
             </div>
           </div>
         </PopoverContent>

@@ -31,6 +31,7 @@ import {
   VolumeX,
   PictureInPicture2,
   Pencil,
+  Mic2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -41,6 +42,7 @@ import { CallTimer } from "@/components/CallTimer";
 import { useRaiseHand } from "@/hooks/useRaiseHand";
 import { useNoiseSuppression } from "@/hooks/useNoiseSuppression";
 import { useVoiceNotifications } from "@/hooks/useVoiceNotifications";
+import { useVoiceCommands } from "@/hooks/useVoiceCommands";
 import { useFaceFilters } from "@/hooks/useFaceFilters";
 import { CollaborativeWhiteboard } from "@/components/CollaborativeWhiteboard";
 import { toast } from "@/hooks/use-toast";
@@ -388,6 +390,16 @@ function LiveKitContent({
     }
   }, [localParticipant, isScreenShareEnabled]);
 
+  // Voice commands hook - must be after toggle functions are defined
+  const { isListening: isVoiceCommandsActive, toggleListening: toggleVoiceCommands, isSupported: voiceCommandsSupported } = useVoiceCommands({
+    onMuteToggle: toggleMicrophone,
+    onCameraToggle: toggleCamera,
+    onRaiseHand: toggleHand,
+    onScreenShare: toggleScreenShare,
+    onLeave: () => {},
+    enabled: true,
+  });
+
   // Virtual background handlers
   const applyBlurBackground = useCallback(async (intensity: number) => {
     try {
@@ -709,7 +721,7 @@ function LiveKitContent({
         })()}
       </div>
 
-      {/* Bottom Control Bar - soft ultra-rounded with glass effect */}
+      {/* Bottom Control Bar - with enhanced contrast like top panel */}
       <div 
         className={cn(
           "absolute bottom-4 left-1/2 -translate-x-1/2 z-50",
@@ -719,23 +731,23 @@ function LiveKitContent({
             : "translate-y-12 opacity-0 scale-90 pointer-events-none"
         )}
       >
-        <div className="flex items-center gap-2.5 px-5 py-3.5 rounded-[2.5rem] bg-transparent backdrop-blur-[2px] border border-white/[0.1] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)]">
+        <div className="flex items-center gap-2.5 px-5 py-3.5 rounded-[2.5rem] bg-black/50 backdrop-blur-xl border border-white/[0.15] shadow-[0_0_30px_rgba(0,0,0,0.5),inset_0_0_0_1px_rgba(255,255,255,0.08)]">
           {/* Camera toggle */}
           <Button
             onClick={toggleCamera}
             variant={isCameraEnabled ? "outline" : "secondary"}
             size="icon"
             className={cn(
-              "w-12 h-12 rounded-full border-white/[0.12] transition-all hover:scale-105 hover:shadow-lg [&_svg]:drop-shadow-[0_0_2px_rgba(255,255,255,0.5)] [&_svg]:stroke-[2.5]",
+              "w-12 h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg [&_svg]:stroke-[2.5]",
               isCameraEnabled 
-                ? "bg-white/15 hover:bg-white/25" 
-                : "bg-destructive/30 border-destructive/50 hover:bg-destructive/40"
+                ? "bg-white/20 hover:bg-white/30 border-white/20" 
+                : "bg-destructive/40 border-destructive/60 hover:bg-destructive/50"
             )}
           >
             {isCameraEnabled ? (
-              <Video className="w-5 h-5" />
+              <Video className="w-5 h-5 drop-shadow-[0_0_3px_rgba(255,255,255,0.6)]" />
             ) : (
-              <VideoOff className="w-5 h-5 text-destructive" />
+              <VideoOff className="w-5 h-5 text-destructive drop-shadow-[0_0_3px_rgba(255,255,255,0.4)]" />
             )}
           </Button>
 
@@ -745,16 +757,16 @@ function LiveKitContent({
             variant={isMicrophoneEnabled ? "outline" : "secondary"}
             size="icon"
             className={cn(
-              "w-12 h-12 rounded-full border-white/[0.12] transition-all hover:scale-105 hover:shadow-lg [&_svg]:drop-shadow-[0_0_2px_rgba(255,255,255,0.5)] [&_svg]:stroke-[2.5]",
+              "w-12 h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg [&_svg]:stroke-[2.5]",
               isMicrophoneEnabled 
-                ? "bg-white/15 hover:bg-white/25" 
-                : "bg-destructive/30 border-destructive/50 hover:bg-destructive/40"
+                ? "bg-white/20 hover:bg-white/30 border-white/20" 
+                : "bg-destructive/40 border-destructive/60 hover:bg-destructive/50"
             )}
           >
             {isMicrophoneEnabled ? (
-              <Mic className="w-5 h-5" />
+              <Mic className="w-5 h-5 drop-shadow-[0_0_3px_rgba(255,255,255,0.6)]" />
             ) : (
-              <MicOff className="w-5 h-5 text-destructive" />
+              <MicOff className="w-5 h-5 text-destructive drop-shadow-[0_0_3px_rgba(255,255,255,0.4)]" />
             )}
           </Button>
 
@@ -764,14 +776,14 @@ function LiveKitContent({
             variant={isScreenShareEnabled ? "default" : "outline"}
             size="icon"
             className={cn(
-              "w-12 h-12 rounded-full border-white/[0.12] transition-all hover:scale-105 hover:shadow-lg [&_svg]:drop-shadow-[0_0_2px_rgba(255,255,255,0.5)] [&_svg]:stroke-[2.5]",
+              "w-12 h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg [&_svg]:stroke-[2.5]",
               isScreenShareEnabled 
-                ? "bg-green-500/30 border-green-500/50 hover:bg-green-500/40" 
-                : "bg-white/15 hover:bg-white/25"
+                ? "bg-green-500/40 border-green-500/60 hover:bg-green-500/50" 
+                : "bg-white/20 hover:bg-white/30 border-white/20"
             )}
           >
             <MonitorUp className={cn(
-              "w-5 h-5",
+              "w-5 h-5 drop-shadow-[0_0_3px_rgba(255,255,255,0.6)]",
               isScreenShareEnabled && "text-green-400"
             )} />
           </Button>
@@ -799,10 +811,10 @@ function LiveKitContent({
             onClick={() => setShowWhiteboard(true)}
             variant="outline"
             size="icon"
-            className="w-12 h-12 rounded-full border-white/[0.12] bg-white/15 hover:bg-white/25 transition-all hover:scale-105 hover:shadow-lg [&_svg]:drop-shadow-[0_0_2px_rgba(255,255,255,0.5)] [&_svg]:stroke-[2.5]"
+            className="w-12 h-12 rounded-full bg-white/20 hover:bg-white/30 border-white/20 transition-all hover:scale-105 hover:shadow-lg [&_svg]:stroke-[2.5]"
             title="Доска для рисования"
           >
-            <Pencil className="w-5 h-5" />
+            <Pencil className="w-5 h-5 drop-shadow-[0_0_3px_rgba(255,255,255,0.6)]" />
           </Button>
 
           {/* Emoji Reactions */}
@@ -817,14 +829,14 @@ function LiveKitContent({
             variant="outline"
             size="icon"
             className={cn(
-              "w-12 h-12 rounded-full border-white/[0.12] transition-all hover:scale-105 hover:shadow-lg [&_svg]:drop-shadow-[0_0_2px_rgba(255,255,255,0.5)] [&_svg]:stroke-[2.5]",
+              "w-12 h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg [&_svg]:stroke-[2.5]",
               isHandRaised 
-                ? "bg-yellow-500/30 border-yellow-500/50 hover:bg-yellow-500/40 animate-pulse" 
-                : "bg-white/10 hover:bg-white/20"
+                ? "bg-yellow-500/40 border-yellow-500/60 hover:bg-yellow-500/50 animate-pulse" 
+                : "bg-white/20 hover:bg-white/30 border-white/20"
             )}
             title={isHandRaised ? "Опустить руку" : "Поднять руку"}
           >
-            <Hand className={cn("w-5 h-5", isHandRaised && "text-yellow-400")} />
+            <Hand className={cn("w-5 h-5 drop-shadow-[0_0_3px_rgba(255,255,255,0.6)]", isHandRaised && "text-yellow-400")} />
           </Button>
 
           {/* Noise Suppression toggle */}
@@ -833,19 +845,37 @@ function LiveKitContent({
             variant="outline"
             size="icon"
             className={cn(
-              "w-12 h-12 rounded-full border-white/[0.12] transition-all hover:scale-105 hover:shadow-lg [&_svg]:drop-shadow-[0_0_2px_rgba(255,255,255,0.5)] [&_svg]:stroke-[2.5]",
+              "w-12 h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg [&_svg]:stroke-[2.5]",
               isNoiseSuppressionEnabled 
-                ? "bg-primary/30 border-primary/50 hover:bg-primary/40" 
-                : "bg-white/10 hover:bg-white/20"
+                ? "bg-primary/40 border-primary/60 hover:bg-primary/50" 
+                : "bg-white/20 hover:bg-white/30 border-white/20"
             )}
             title={isNoiseSuppressionEnabled ? "Выключить шумоподавление" : "Включить шумоподавление"}
           >
             {isNoiseSuppressionEnabled ? (
-              <Volume2 className="w-5 h-5 text-primary" />
+              <Volume2 className="w-5 h-5 text-primary drop-shadow-[0_0_3px_rgba(255,255,255,0.6)]" />
             ) : (
-              <VolumeX className="w-5 h-5" />
+              <VolumeX className="w-5 h-5 drop-shadow-[0_0_3px_rgba(255,255,255,0.6)]" />
             )}
           </Button>
+
+          {/* Voice Commands toggle */}
+          {voiceCommandsSupported && (
+            <Button
+              onClick={toggleVoiceCommands}
+              variant="outline"
+              size="icon"
+              className={cn(
+                "w-12 h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg [&_svg]:stroke-[2.5]",
+                isVoiceCommandsActive 
+                  ? "bg-purple-500/40 border-purple-500/60 hover:bg-purple-500/50 animate-pulse" 
+                  : "bg-white/20 hover:bg-white/30 border-white/20"
+              )}
+              title={isVoiceCommandsActive ? "Выключить голосовые команды" : "Голосовые команды"}
+            >
+              <Mic2 className={cn("w-5 h-5 drop-shadow-[0_0_3px_rgba(255,255,255,0.6)]", isVoiceCommandsActive && "text-purple-400")} />
+            </Button>
+          )}
 
           {/* Chat toggle button - buttonOnly mode for bottom panel */}
           <InCallChat
@@ -860,9 +890,9 @@ function LiveKitContent({
           <div className="w-px h-8 bg-white/10 mx-0.5" />
 
           {/* Leave button */}
-          <DisconnectButton className="flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-destructive/80 hover:bg-destructive text-destructive-foreground transition-all hover:scale-105 hover:shadow-lg border border-destructive/50 [&_svg]:stroke-[2.5]">
-            <PhoneOff className="w-5 h-5" />
-            <span className="text-sm font-semibold">Выйти</span>
+          <DisconnectButton className="flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-destructive/90 hover:bg-destructive text-destructive-foreground transition-all hover:scale-105 hover:shadow-lg border border-destructive/60 shadow-[0_0_15px_rgba(220,50,50,0.3)] [&_svg]:stroke-[2.5]">
+            <PhoneOff className="w-5 h-5 drop-shadow-[0_0_3px_rgba(255,255,255,0.6)]" />
+            <span className="text-sm font-bold tracking-wide">Выйти</span>
           </DisconnectButton>
         </div>
       </div>

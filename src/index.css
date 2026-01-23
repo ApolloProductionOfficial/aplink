@@ -631,6 +631,37 @@ All colors MUST be HSL.
   transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease;
 }
 
+/* NEW participant teleportation effect */
+.livekit-room-container [data-lk-participant-tile].participant-teleport {
+  animation: participant-teleport-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes participant-teleport-in {
+  0% {
+    opacity: 0;
+    transform: scale(0) rotate(180deg);
+    filter: blur(20px) brightness(3) hue-rotate(180deg);
+    box-shadow: 0 0 60px 30px rgba(6, 182, 228, 0.8), inset 0 0 30px rgba(147, 51, 234, 0.5);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1.15) rotate(-15deg);
+    filter: blur(8px) brightness(2) hue-rotate(90deg);
+    box-shadow: 0 0 40px 20px rgba(6, 182, 228, 0.6), inset 0 0 20px rgba(147, 51, 234, 0.3);
+  }
+  60% {
+    transform: scale(0.95) rotate(5deg);
+    filter: blur(2px) brightness(1.3) hue-rotate(30deg);
+    box-shadow: 0 0 25px 10px rgba(6, 182, 228, 0.4);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg) translateY(0);
+    filter: blur(0) brightness(1) hue-rotate(0deg);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+  }
+}
+
 .livekit-room-container [data-lk-participant-tile]:hover {
   border-color: rgba(6, 182, 228, 0.3);
   box-shadow: 0 0 20px rgba(6, 182, 228, 0.15);
@@ -662,34 +693,58 @@ All colors MUST be HSL.
 .livekit-room-container .lk-grid-layout > *:nth-child(8) { animation-delay: 0.56s; }
 .livekit-room-container .lk-grid-layout > *:nth-child(9) { animation-delay: 0.64s; }
 
-/* Participant name - FULLY TRANSPARENT background, energy glow when speaking */
+/* Participant name - semi-transparent with smooth cosmic glow when speaking */
 .livekit-room-container [data-lk-participant-name],
 .livekit-room-container .lk-participant-name,
 .livekit-room-container .lk-participant-metadata,
 .livekit-room-container .lk-participant-metadata-item {
-  background: transparent !important;
-  background-color: transparent !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
+  background: rgba(0, 0, 0, 0.3) !important;
+  background-color: rgba(0, 0, 0, 0.3) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
   box-shadow: none !important;
-  padding: 0.25rem 0.5rem;
-  border-radius: 0;
-  border: none !important;
-  font-size: 0.95rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  font-size: 0.9rem;
   font-weight: 600;
-  color: hsl(0 0% 100%);
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.95), 0 4px 20px rgba(0, 0, 0, 0.8);
-  transition: all 0.3s ease;
+  color: rgba(255, 255, 255, 0.85);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
+  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
   letter-spacing: 0.02em;
 }
 
-/* SUBTLE speaking effect - slower, softer glow with smooth fade */
+/* SMOOTH speaking effect - soft glow that fades in/out gradually */
 .livekit-room-container [data-lk-speaking="true"] .lk-participant-name,
 .livekit-room-container [data-lk-speaking="true"] [data-lk-participant-name],
 .livekit-room-container [data-lk-speaking="true"] .lk-participant-metadata-item {
-  color: hsl(190 95% 85%) !important;
-  animation: name-energy-pulse 1.8s ease-in-out infinite !important;
-  transition: text-shadow 0.8s ease-out, color 0.8s ease-out !important;
+  color: hsl(190 95% 90%) !important;
+  background: rgba(6, 182, 228, 0.15) !important;
+  border-color: rgba(6, 182, 228, 0.3) !important;
+  text-shadow: 
+    0 0 10px rgba(6, 182, 228, 0.6),
+    0 0 20px rgba(6, 182, 228, 0.4),
+    0 0 30px rgba(6, 182, 228, 0.2),
+    0 2px 8px rgba(0, 0, 0, 0.9) !important;
+  animation: name-smooth-glow 2s ease-in-out infinite !important;
+  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+@keyframes name-smooth-glow {
+  0%, 100% {
+    text-shadow: 
+      0 0 8px rgba(6, 182, 228, 0.5),
+      0 0 16px rgba(6, 182, 228, 0.3),
+      0 0 24px rgba(6, 182, 228, 0.15),
+      0 2px 8px rgba(0, 0, 0, 0.9);
+  }
+  50% {
+    text-shadow: 
+      0 0 12px rgba(6, 182, 228, 0.7),
+      0 0 24px rgba(6, 182, 228, 0.5),
+      0 0 36px rgba(6, 182, 228, 0.25),
+      0 2px 8px rgba(0, 0, 0, 0.9);
+  }
 }
 
 /* Disable layout shifts when speaking - prevent video jumping */
