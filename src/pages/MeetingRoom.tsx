@@ -23,7 +23,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import ParticipantsIPPanel from "@/components/ParticipantsIPPanel";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { usePresence } from "@/hooks/usePresence";
@@ -86,7 +86,7 @@ const MeetingRoom = () => {
   const PENDING_MEETING_SAVE_KEY = "pending_meeting_save_v1";
   const pendingSaveBaseRef = useRef<PendingMeetingSaveBase | null>(null);
 
-  const { toast } = useToast();
+  // Removed useToast - using sonner directly
   const { user, isLoading: authLoading } = useAuth();
   const { sendNotification } = usePushNotifications();
   const { isRecording, startRecording, stopRecording, getAudioBlob, getRecoveredRecording, clearRecoveredRecording } = useAudioRecorder();
@@ -131,8 +131,7 @@ const MeetingRoom = () => {
           const audioUrl = `data:audio/mpeg;base64,${message.audioBase64}`;
           playTranslatedAudio(audioUrl);
           
-          toast({
-            title: `🌐 ${message.senderName}`,
+          toast.success(`🌐 ${message.senderName}`, {
             description: message.text?.substring(0, 100) || 'Перевод получен',
             duration: 3000,
           });
@@ -253,8 +252,7 @@ const MeetingRoom = () => {
   const saveRecoveredToProfile = async (audioBlob: Blob) => {
     if (!user) return;
     
-    toast({
-      title: '🎬 Сохранение записи...',
+    toast.loading('🎬 Сохранение записи...', {
       description: 'Транскрипция и сохранение в личный кабинет...',
       duration: 60000,
     });
@@ -274,8 +272,7 @@ const MeetingRoom = () => {
 
       if (error) throw error;
 
-      toast({
-        title: '✅ Запись сохранена!',
+      toast.success('✅ Запись сохранена!', {
         description: 'Конспект доступен в разделе "Созвоны" вашего личного кабинета.',
         duration: 5000,
       });
@@ -283,10 +280,8 @@ const MeetingRoom = () => {
       clearRecoveredRecording();
     } catch (e) {
       console.error('Failed to save recovered recording:', e);
-      toast({
-        title: 'Ошибка сохранения',
+      toast.error('Ошибка сохранения', {
         description: 'Не удалось сохранить запись. Попробуйте ещё раз.',
-        variant: 'destructive',
       });
     }
   };
@@ -295,33 +290,20 @@ const MeetingRoom = () => {
   useEffect(() => {
     const recovered = getRecoveredRecording();
     if (recovered && user) {
-      toast({
-        title: '📼 Найдена незавершённая запись',
+      toast.info('📼 Найдена незавершённая запись', {
         description: 'Запись предыдущего созвона была восстановлена после сбоя.',
-        action: (
-          <div className="flex gap-2 mt-2">
-            <Button 
-              size="sm" 
-              onClick={() => saveRecoveredToProfile(recovered)}
-            >
-              💾 Сохранить
-            </Button>
-            <Button 
-              size="sm" 
-              variant="outline"
-              onClick={() => {
-                clearRecoveredRecording();
-                toast({
-                  title: 'Запись удалена',
-                  description: 'Восстановленная запись была удалена.',
-                });
-              }}
-            >
-              🗑️ Удалить
-            </Button>
-          </div>
-        ),
         duration: 30000,
+        action: {
+          label: '💾 Сохранить',
+          onClick: () => saveRecoveredToProfile(recovered),
+        },
+        cancel: {
+          label: '🗑️ Удалить',
+          onClick: () => {
+            clearRecoveredRecording();
+            toast.success('Запись удалена');
+          },
+        },
       });
     }
   }, [user, getRecoveredRecording, clearRecoveredRecording]);
@@ -374,16 +356,13 @@ const MeetingRoom = () => {
     try {
       await navigator.clipboard.writeText(roomLink);
       setCopied(true);
-      toast({
-        title: t.meetingRoom.linkCopied,
+      toast.success(t.meetingRoom.linkCopied, {
         description: t.meetingRoom.linkCopiedDesc,
       });
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      toast({
-        title: t.meetingRoom.error,
+      toast.error(t.meetingRoom.error, {
         description: t.meetingRoom.copyLinkError,
-        variant: "destructive",
       });
     }
   };
@@ -423,24 +402,20 @@ const MeetingRoom = () => {
       }
       const audioBlob = await stopRecording();
       if (audioBlob && audioBlob.size > 0) {
-        toast({
-          title: t.meetingRoom.recordStopped,
+        toast.info(t.meetingRoom.recordStopped, {
           description: t.meetingRoom.transcribing,
         });
         try {
           const transcript = await transcribeAudio(audioBlob);
           if (transcript) {
             transcriptRef.current.push(`[Транскрипция созвона]: ${transcript}`);
-            toast({
-              title: t.meetingRoom.transcriptionReady,
+            toast.success(t.meetingRoom.transcriptionReady, {
               description: transcript.length > 100 ? transcript.substring(0, 100) + '...' : transcript,
             });
           }
         } catch (error) {
-          toast({
-            title: t.meetingRoom.transcriptionError,
+          toast.error(t.meetingRoom.transcriptionError, {
             description: t.meetingRoom.transcriptionErrorDesc,
-            variant: "destructive",
           });
         }
       }
@@ -453,8 +428,7 @@ const MeetingRoom = () => {
         recordingTimerRef.current = setInterval(() => {
           setRecordingDuration(prev => prev + 1);
         }, 1000);
-        toast({
-          title: t.meetingRoom.recordStarted,
+        toast.success(t.meetingRoom.recordStarted, {
           description: t.meetingRoom.recordStartedDesc,
         });
       } catch (error) {
@@ -463,10 +437,8 @@ const MeetingRoom = () => {
           clearInterval(recordingTimerRef.current);
           recordingTimerRef.current = null;
         }
-        toast({
-          title: t.meetingRoom.error,
+        toast.error(t.meetingRoom.error, {
           description: t.meetingRoom.recordError,
-          variant: "destructive",
         });
       }
     }
@@ -654,11 +626,10 @@ const MeetingRoom = () => {
     setIsLoading(false);
     setConnectionStatus('connected');
     playConnectedSound();
-    toast({
-      title: "Подключено",
+    toast.success("Подключено", {
       description: "Вы успешно подключились к комнате",
     });
-  }, [playConnectedSound, toast]);
+  }, [playConnectedSound]);
 
   const handleLiveKitDisconnected = useCallback(() => {
     if (userInitiatedEndRef.current || hasRedirectedRef.current) {
@@ -701,11 +672,10 @@ const MeetingRoom = () => {
       tag: 'participant-joined',
     });
     
-    toast({
-      title: `${name || identity} присоединился`,
+    toast.info(`${name || identity} присоединился`, {
       description: 'Новый участник в комнате',
     });
-  }, [sendNotification, roomDisplayName, toast]);
+  }, [sendNotification, roomDisplayName]);
 
   const handleParticipantLeft = useCallback((identity: string) => {
     console.log('Participant left:', identity);
@@ -713,12 +683,10 @@ const MeetingRoom = () => {
 
   const handleLiveKitError = useCallback((error: Error) => {
     console.error('LiveKit error:', error);
-    toast({
-      title: "Ошибка подключения",
+    toast.error("Ошибка подключения", {
       description: error.message || "Не удалось подключиться к комнате",
-      variant: "destructive",
     });
-  }, [toast]);
+  }, []);
 
   // Handle manual end call
   const handleEndCall = useCallback(async () => {
@@ -1097,15 +1065,7 @@ const MeetingRoom = () => {
         </div>
       )}
 
-      {/* Loading State */}
-      {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-background z-20">
-          <div className="text-center">
-            <div className="w-16 h-16 rounded-full border-4 border-primary/30 border-t-primary animate-spin mx-auto mb-4" />
-            <p className="text-muted-foreground">{t.meetingRoom.connectingToRoom || "Подключение к комнате..."}</p>
-          </div>
-        </div>
-      )}
+      {/* Loading is now handled by LiveKitRoom's cosmic loading screen */}
 
       {/* LiveKit Room Container - Full height */}
       <div className="flex-1 w-full z-10 relative" style={{ minHeight: 0 }}>

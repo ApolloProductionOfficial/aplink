@@ -10,8 +10,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { ToastAction } from '@/components/ui/toast';
-import { useToast } from '@/hooks/use-toast';
+// ToastAction removed - using sonner instead
+import { toast } from "sonner";
 import CustomCursor from '@/components/CustomCursor';
 import TwoFactorSetup from '@/components/TwoFactorSetup';
 import CallStatistics from '@/components/CallStatistics';
@@ -57,7 +57,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { user, isLoading, signOut, isAdmin } = useAuth();
-  const { toast } = useToast();
+  // Removed useToast - using sonner directly
 
   const PENDING_MEETING_SAVE_KEY = "pending_meeting_save_v1";
   type PendingMeetingSaveBase = {
@@ -134,42 +134,34 @@ const Dashboard = () => {
       return;
     }
 
-    toast({
-      title: "Найден несохранённый созвон",
+    toast.info("Найден несохранённый созвон", {
       description: "Нажмите «Сохранить», чтобы добавить его в «Мои созвоны».",
       duration: 15000,
-      action: (
-        <ToastAction
-          altText="Сохранить"
-          onClick={async () => {
-            try {
-              const response = await invokeBackendFunctionKeepalive<{ success: boolean; meeting?: { id: string } }>(
-                'summarize-meeting',
-                { ...base!, userId: user.id },
-              );
+      action: {
+        label: 'Сохранить',
+        onClick: async () => {
+          try {
+            const response = await invokeBackendFunctionKeepalive<{ success: boolean; meeting?: { id: string } }>(
+              'summarize-meeting',
+              { ...base!, userId: user.id },
+            );
 
-              if (!response?.success || !response?.meeting?.id) {
-                throw new Error('Сервер не подтвердил сохранение');
-              }
-
-              sessionStorage.removeItem(PENDING_MEETING_SAVE_KEY);
-              await fetchTranscripts();
-              toast({
-                title: '✅ Созвон сохранён',
-                description: 'Он появился в списке «Мои созвоны».',
-              });
-            } catch (e: any) {
-              toast({
-                title: 'Ошибка сохранения',
-                description: e?.message || 'Не удалось сохранить созвон',
-                variant: 'destructive',
-              });
+            if (!response?.success || !response?.meeting?.id) {
+              throw new Error('Сервер не подтвердил сохранение');
             }
-          }}
-        >
-          Сохранить
-        </ToastAction>
-      ),
+
+            sessionStorage.removeItem(PENDING_MEETING_SAVE_KEY);
+            await fetchTranscripts();
+            toast.success('✅ Созвон сохранён', {
+              description: 'Он появился в списке «Мои созвоны».',
+            });
+          } catch (e: any) {
+            toast.error('Ошибка сохранения', {
+              description: e?.message || 'Не удалось сохранить созвон',
+            });
+          }
+        },
+      },
     });
   }, [user]);
 
@@ -322,16 +314,13 @@ const Dashboard = () => {
         if (error) throw error;
         
         setHas2FA(false);
-        toast({
-          title: 'Успешно',
+        toast.success('Успешно', {
           description: '2FA отключена',
         });
       }
     } catch (err: any) {
-      toast({
-        title: 'Ошибка',
+      toast.error('Ошибка', {
         description: err.message || 'Не удалось отключить 2FA',
-        variant: 'destructive',
       });
     } finally {
       setDisabling2FA(false);
@@ -348,10 +337,8 @@ const Dashboard = () => {
     
     // Validate username format
     if (editedUsername && !/^[a-z0-9_]{3,20}$/.test(editedUsername)) {
-      toast({
-        title: 'Ошибка',
+      toast.error('Ошибка', {
         description: 'Username должен содержать 3-20 символов (a-z, 0-9, _)',
-        variant: 'destructive',
       });
       return;
     }
@@ -368,10 +355,8 @@ const Dashboard = () => {
       
       if (error) {
         if (error.code === '23505') {
-          toast({
-            title: 'Ошибка',
+          toast.error('Ошибка', {
             description: 'Этот @username уже занят',
-            variant: 'destructive',
           });
           return;
         }
@@ -380,16 +365,13 @@ const Dashboard = () => {
       
       setProfile(prev => prev ? { ...prev, display_name: editedName.trim(), username: editedUsername || null } : null);
       setIsEditingName(false);
-      toast({
-        title: 'Профиль сохранён',
+      toast.success('Профиль сохранён', {
         description: 'Ваши данные успешно обновлены',
       });
     } catch (error) {
       console.error('Error saving profile:', error);
-      toast({
-        title: 'Ошибка',
+      toast.error('Ошибка', {
         description: 'Не удалось сохранить профиль',
-        variant: 'destructive',
       });
     } finally {
       setSavingName(false);
@@ -411,19 +393,15 @@ const Dashboard = () => {
     if (!file || !user) return;
 
     if (!file.type.startsWith('image/')) {
-      toast({
-        title: 'Ошибка',
+      toast.error('Ошибка', {
         description: 'Пожалуйста, выберите изображение',
-        variant: 'destructive',
       });
       return;
     }
 
     if (file.size > 2 * 1024 * 1024) {
-      toast({
-        title: 'Ошибка',
+      toast.error('Ошибка', {
         description: 'Максимальный размер файла 2MB',
-        variant: 'destructive',
       });
       return;
     }
@@ -438,10 +416,8 @@ const Dashboard = () => {
       .upload(fileName, file, { upsert: true });
 
     if (uploadError) {
-      toast({
-        title: 'Ошибка',
+      toast.error('Ошибка', {
         description: 'Не удалось загрузить аватар',
-        variant: 'destructive',
       });
       setUploadingAvatar(false);
       return;
@@ -459,14 +435,12 @@ const Dashboard = () => {
       .eq('user_id', user.id);
 
     if (updateError) {
-      toast({
-        title: 'Ошибка',
+      toast.error('Ошибка', {
         description: 'Не удалось обновить профиль',
-        variant: 'destructive',
       });
     } else {
       setProfile(prev => prev ? { ...prev, avatar_url: newAvatarUrl } : null);
-      toast({ title: 'Аватар обновлён' });
+      toast.success('Аватар обновлён');
     }
 
     setUploadingAvatar(false);
@@ -556,10 +530,8 @@ const Dashboard = () => {
       
     } catch (error) {
       console.error('Error creating share link:', error);
-      toast({
-        title: 'Ошибка',
+      toast.error('Ошибка', {
         description: 'Не удалось создать ссылку',
-        variant: 'destructive',
       });
       setSharingMeetingId(null);
     }
@@ -579,18 +551,15 @@ const Dashboard = () => {
       if (error) throw error;
       
       setShareLinkActive(!shareLinkActive);
-      toast({
-        title: shareLinkActive ? 'Ссылка деактивирована' : 'Ссылка активирована',
+      toast.success(shareLinkActive ? 'Ссылка деактивирована' : 'Ссылка активирована', {
         description: shareLinkActive 
           ? 'Ссылка больше не работает' 
           : 'Ссылка снова доступна',
       });
     } catch (error) {
       console.error('Error toggling share link:', error);
-      toast({
-        title: 'Ошибка',
+      toast.error('Ошибка', {
         description: 'Не удалось изменить статус ссылки',
-        variant: 'destructive',
       });
     }
   };
@@ -620,16 +589,13 @@ const Dashboard = () => {
       setTranscripts(prev => prev.filter(t => t.id !== meetingId));
       setDeletingMeetingId(null);
       
-      toast({
-        title: 'Созвон удалён',
+      toast.success('Созвон удалён', {
         description: 'Запись созвона удалена',
       });
     } catch (error) {
       console.error('Error deleting meeting:', error);
-      toast({
-        title: 'Ошибка',
+      toast.error('Ошибка', {
         description: 'Не удалось удалить созвон',
-        variant: 'destructive',
       });
     }
   };
@@ -641,10 +607,8 @@ const Dashboard = () => {
       await generateMeetingDocx(transcript);
     } catch (error) {
       console.error('Error generating Word:', error);
-      toast({
-        title: 'Ошибка',
+      toast.error('Ошибка', {
         description: 'Не удалось создать Word документ',
-        variant: 'destructive',
       });
     } finally {
       setDownloadingPdf(null);
@@ -654,7 +618,7 @@ const Dashboard = () => {
   const copyShareLink = () => {
     if (shareLink) {
       navigator.clipboard.writeText(shareLink);
-      toast({ title: 'Ссылка скопирована' });
+      toast.success('Ссылка скопирована');
     }
   };
 

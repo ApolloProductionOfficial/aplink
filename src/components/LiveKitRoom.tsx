@@ -47,7 +47,7 @@ import { useVoiceNotifications } from "@/hooks/useVoiceNotifications";
 import { useVoiceCommands } from "@/hooks/useVoiceCommands";
 import { useFaceFilters } from "@/hooks/useFaceFilters";
 import { CollaborativeWhiteboard } from "@/components/CollaborativeWhiteboard";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 interface LiveKitRoomProps {
   roomName: string;
@@ -143,6 +143,25 @@ export function LiveKitRoom({
     onDisconnected?.();
   }, [onDisconnected]);
 
+  // Rotating loading phrases
+  const [phraseIndex, setPhraseIndex] = useState(0);
+  const loadingPhrases = [
+    "Инициализация портала связи...",
+    "Открываем врата в новое измерение...",
+    "Синхронизация квантовых частот...",
+    "Настраиваем межпространственную связь...",
+    "Готовьтесь к телепортации...",
+    "Калибровка голографического канала...",
+  ];
+
+  useEffect(() => {
+    if (!loading) return;
+    const interval = setInterval(() => {
+      setPhraseIndex((prev) => (prev + 1) % loadingPhrases.length);
+    }, 2500);
+    return () => clearInterval(interval);
+  }, [loading]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full bg-background overflow-hidden">
@@ -167,8 +186,8 @@ export function LiveKitRoom({
           </div>
           
           <div className="text-center space-y-2">
-            <p className="text-foreground text-xl font-medium bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text text-transparent animate-[pulse_3s_ease-in-out_infinite]">
-              Инициализация портала связи...
+            <p className="text-foreground text-xl font-medium bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text text-transparent animate-[pulse_3s_ease-in-out_infinite] min-w-[280px] transition-all duration-500">
+              {loadingPhrases[phraseIndex]}
             </p>
             <p className="text-muted-foreground text-sm">
               Готовьтесь к погружению ✨
@@ -553,7 +572,7 @@ function LiveKitContent({
           const shutterSound = new Audio('/audio/camera-shutter.mp3');
           shutterSound.volume = 0.35;
           shutterSound.play().catch(() => {});
-          toast({ title: `📸 ${message.participantName} сделал скриншот` });
+          toast.info(`📸 ${message.participantName} сделал скриншот`);
           setTimeout(() => setShowScreenshotFlash(false), 350);
         }
       } catch {
@@ -661,7 +680,7 @@ function LiveKitContent({
                     await new Promise(resolve => setTimeout(resolve, 300));
                     onMinimize?.();
                   } else if (!document.pictureInPictureEnabled) {
-                    toast({ title: "PiP не поддерживается", description: "Ваш браузер не поддерживает картинку в картинке", variant: "destructive" });
+                    toast.error("PiP не поддерживается", { description: "Ваш браузер не поддерживает картинку в картинке" });
                     onMinimize?.();
                   } else {
                     // Video not ready yet
@@ -669,7 +688,7 @@ function LiveKitContent({
                   }
                 } catch (err) {
                   console.error('PiP failed:', err);
-                  toast({ title: "PiP недоступен", description: "Попробуйте ещё раз", variant: "destructive" });
+                  toast.error("PiP недоступен", { description: "Попробуйте ещё раз" });
                   // Don't call onMinimize on error - stay in room
                 }
               }}
