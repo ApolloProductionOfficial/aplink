@@ -413,7 +413,9 @@ const MeetingRoom = () => {
     }
   }, [userName, roomSlug, navigate]);
 
-  const roomLink = `${window.location.origin}/room/${roomSlug}`;
+  // Use production URL for sharing, not preview URL
+  const productionUrl = 'https://aplink.lovable.app';
+  const roomLink = `${productionUrl}/room/${roomSlug}`;
 
   const copyLink = async () => {
     try {
