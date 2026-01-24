@@ -37,8 +37,8 @@ export const useRealtimeCaptions = ({
 
   // Process audio and get transcription
   const processAudioChunk = useCallback(async (audioBlob: Blob) => {
-    // Minimum 3KB for valid WebM with audio content (reduced for faster response)
-    if (!enabled || audioBlob.size < 3000) {
+    // Minimum 2KB for valid WebM - ultra-fast response
+    if (!enabled || audioBlob.size < 2000) {
       console.log('[Captions] Audio too small:', audioBlob.size, 'bytes, skipping');
       return;
     }
@@ -196,7 +196,7 @@ export const useRealtimeCaptions = ({
         }
         const rms = Math.sqrt(sum / dataArray.length) / 255;
 
-        const isSpeaking = rms > 0.03; // Lower threshold for faster voice detection
+        const isSpeaking = rms > 0.02; // Ultra-low threshold for instant voice detection
 
         if (isSpeaking && !vadActiveRef.current) {
           // Start recording
@@ -262,7 +262,7 @@ export const useRealtimeCaptions = ({
                 mediaRecorderRef.current.stop();
                 isRecordingRef.current = false;
               }
-            }, 800); // 0.8s silence before stopping (faster response)
+            }, 500); // 0.5s silence - ultra-fast response
           }
         } else if (isSpeaking && silenceTimeoutRef.current) {
           // Voice resumed - cancel silence timeout

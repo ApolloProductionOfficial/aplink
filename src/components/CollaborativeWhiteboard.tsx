@@ -384,9 +384,19 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
   }, []);
 
   const confirmClear = useCallback(() => {
-    clearCanvas();
-    broadcastClear();
-    setShowClearConfirm(false);
+    try {
+      // First close the dialog
+      setShowClearConfirm(false);
+      
+      // Then clear canvas with slight delay to prevent race condition
+      requestAnimationFrame(() => {
+        clearCanvas();
+        broadcastClear();
+      });
+    } catch (error) {
+      console.error('Error clearing canvas:', error);
+      setShowClearConfirm(false);
+    }
   }, [clearCanvas, broadcastClear]);
 
   if (!isOpen) return null;

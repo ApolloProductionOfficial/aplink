@@ -182,7 +182,7 @@ const CallQualityWidget = ({ room }: CallQualityWidgetProps) => {
         side="bottom" 
         align="end"
         sideOffset={12}
-        className="w-80 p-4 bg-black/60 backdrop-blur-2xl border border-white/[0.08] rounded-2xl shadow-2xl"
+        className="w-80 p-4 bg-white/[0.08] backdrop-blur-2xl border border-white/[0.12] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.1)]"
       >
         <div className="space-y-4">
           {/* Header */}
