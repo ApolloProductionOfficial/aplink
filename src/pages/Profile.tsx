@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Camera, Check, Loader2, User, MessageCircle, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Camera, Check, Loader2, User, MessageCircle, ExternalLink, Lock, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,11 +12,11 @@ import CustomCursor from '@/components/CustomCursor';
 import VoiceSettings from '@/components/VoiceSettings';
 import DoNotDisturbSettings from '@/components/DoNotDisturbSettings';
 import BotLanguageSettings from '@/components/BotLanguageSettings';
+import { AvatarCropDialog } from '@/components/AvatarCropDialog';
 
 const Profile = () => {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, updatePassword } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [displayName, setDisplayName] = useState('');
@@ -27,6 +27,17 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  
+  // Avatar crop state
+  const [cropDialogOpen, setCropDialogOpen] = useState(false);
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  
+  // Password change state
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -66,20 +77,12 @@ const Profile = () => {
     const cleanUsername = username.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
 
     if (cleanUsername && cleanUsername.length < 3) {
-      toast({
-        title: 'Ошибка',
-        description: 'Username должен быть минимум 3 символа',
-        variant: 'destructive',
-      });
+      toast.error('Username должен быть минимум 3 символа');
       return;
     }
 
     if (cleanUsername && cleanUsername.length > 20) {
-      toast({
-        title: 'Ошибка',
-        description: 'Username должен быть максимум 20 символов',
-        variant: 'destructive',
-      });
+      toast.error('Username должен быть максимум 20 символов');
       return;
     }
 
@@ -95,11 +98,7 @@ const Profile = () => {
         .maybeSingle();
 
       if (existing) {
-        toast({
-          title: 'Ошибка',
-          description: 'Этот username уже занят',
-          variant: 'destructive',
-        });
+        toast.error('Этот username уже занят');
         setSaving(false);
         return;
       }
@@ -114,65 +113,90 @@ const Profile = () => {
       .eq('user_id', user.id);
 
     if (error) {
-      toast({
-        title: 'Ошибка',
-        description: 'Не удалось сохранить профиль',
-        variant: 'destructive',
-      });
+      toast.error('Не удалось сохранить профиль');
     } else {
-      toast({
-        title: 'Сохранено',
-        description: 'Профиль успешно обновлён',
-      });
+      toast.success('Профиль успешно обновлён');
     }
 
     setSaving(false);
+  };
+
+  const handleChangePassword = async () => {
+    if (!newPassword || !confirmPassword) {
+      toast.error('Заполните оба поля пароля');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast.error('Пароль должен быть минимум 6 символов');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast.error('Пароли не совпадают');
+      return;
+    }
+
+    setChangingPassword(true);
+
+    const { error } = await updatePassword(newPassword);
+
+    if (error) {
+      toast.error(error.message || 'Не удалось сменить пароль');
+    } else {
+      toast.success('Пароль успешно изменён');
+      setNewPassword('');
+      setConfirmPassword('');
+    }
+
+    setChangingPassword(false);
   };
 
   const handleAvatarClick = () => {
     fileInputRef.current?.click();
   };
 
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      toast({
-        title: 'Ошибка',
-        description: 'Пожалуйста, выберите изображение',
-        variant: 'destructive',
-      });
+      toast.error('Пожалуйста, выберите изображение');
       return;
     }
 
-    // Validate file size (max 2MB)
-    if (file.size > 2 * 1024 * 1024) {
-      toast({
-        title: 'Ошибка',
-        description: 'Максимальный размер файла 2MB',
-        variant: 'destructive',
-      });
+    // Validate file size (max 5MB for crop)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Максимальный размер файла 5MB');
       return;
     }
+
+    // Open crop dialog
+    setSelectedImageFile(file);
+    setCropDialogOpen(true);
+    
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleCropSave = async (croppedBlob: Blob) => {
+    if (!user) return;
 
     setUploadingAvatar(true);
+    setCropDialogOpen(false);
 
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${user.id}/avatar.${fileExt}`;
+    const fileName = `${user.id}/avatar.jpg`;
 
     // Upload to storage
     const { error: uploadError } = await supabase.storage
       .from('avatars')
-      .upload(fileName, file, { upsert: true });
+      .upload(fileName, croppedBlob, { upsert: true, contentType: 'image/jpeg' });
 
     if (uploadError) {
-      toast({
-        title: 'Ошибка',
-        description: 'Не удалось загрузить аватар',
-        variant: 'destructive',
-      });
+      toast.error('Не удалось загрузить аватар');
       setUploadingAvatar(false);
       return;
     }
@@ -191,19 +215,14 @@ const Profile = () => {
       .eq('user_id', user.id);
 
     if (updateError) {
-      toast({
-        title: 'Ошибка',
-        description: 'Не удалось обновить профиль',
-        variant: 'destructive',
-      });
+      toast.error('Не удалось обновить профиль');
     } else {
       setAvatarUrl(newAvatarUrl);
-      toast({
-        title: 'Аватар обновлён',
-      });
+      toast.success('Аватар обновлён');
     }
 
     setUploadingAvatar(false);
+    setSelectedImageFile(null);
   };
 
   if (authLoading || loading) {
@@ -386,6 +405,75 @@ const Profile = () => {
               </>
             )}
           </Button>
+
+          {/* Change Password Section */}
+          <div className="pt-6 border-t border-border space-y-4">
+            <Label className="flex items-center gap-2 text-base font-medium">
+              <Lock className="w-4 h-4" />
+              Сменить пароль
+            </Label>
+            
+            <div className="space-y-2">
+              <Label htmlFor="newPassword">Новый пароль</Label>
+              <div className="relative">
+                <Input
+                  id="newPassword"
+                  type={showNewPassword ? 'text' : 'password'}
+                  placeholder="Минимум 6 символов"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="bg-background/50 pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Подтвердите пароль</Label>
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  placeholder="Повторите новый пароль"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="bg-background/50 pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            <Button
+              onClick={handleChangePassword}
+              disabled={changingPassword || !newPassword || !confirmPassword}
+              variant="outline"
+              className="w-full"
+            >
+              {changingPassword ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Смена пароля...
+                </>
+              ) : (
+                <>
+                  <Lock className="w-4 h-4 mr-2" />
+                  Сменить пароль
+                </>
+              )}
+            </Button>
+          </div>
         </div>
         
         {/* Bot Language Settings */}
@@ -403,6 +491,17 @@ const Profile = () => {
           <DoNotDisturbSettings />
         </div>
       </main>
+
+      {/* Avatar Crop Dialog */}
+      <AvatarCropDialog
+        open={cropDialogOpen}
+        imageFile={selectedImageFile}
+        onClose={() => {
+          setCropDialogOpen(false);
+          setSelectedImageFile(null);
+        }}
+        onSave={handleCropSave}
+      />
     </div>
   );
 };
