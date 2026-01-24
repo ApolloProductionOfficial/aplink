@@ -481,8 +481,29 @@ export function InCallChat({ room, participantName, isOpen, onToggle, buttonOnly
                           style={{ width: playingMessageId === msg.id ? '100%' : '0%' }}
                         />
                       </div>
-                      <span className="text-[10px] text-muted-foreground mt-0.5">
-                        🎤 {formatDuration(msg.audioDuration || 0)}
+                      <span className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
+                        {/* Custom neon microphone icon */}
+                        <svg viewBox="0 0 24 24" className="w-3 h-3">
+                          <defs>
+                            <linearGradient id="mic-neon" x1="0%" y1="0%" x2="100%" y2="100%">
+                              <stop offset="0%" stopColor="#06b6e4"/>
+                              <stop offset="100%" stopColor="#8b5cf6"/>
+                            </linearGradient>
+                            <filter id="mic-glow">
+                              <feGaussianBlur stdDeviation="0.5" result="coloredBlur"/>
+                              <feMerge>
+                                <feMergeNode in="coloredBlur"/>
+                                <feMergeNode in="SourceGraphic"/>
+                              </feMerge>
+                            </filter>
+                          </defs>
+                          <path 
+                            d="M12 1C10.34 1 9 2.34 9 4V12C9 13.66 10.34 15 12 15C13.66 15 15 13.66 15 12V4C15 2.34 13.66 1 12 1ZM17 12C17 14.76 14.76 17 12 17C9.24 17 7 14.76 7 12H5C5 15.53 7.61 18.43 11 18.92V22H13V18.92C16.39 18.43 19 15.53 19 12H17Z"
+                            fill="url(#mic-neon)"
+                            filter="url(#mic-glow)"
+                          />
+                        </svg>
+                        {formatDuration(msg.audioDuration || 0)}
                       </span>
                     </div>
                   </div>
@@ -542,7 +563,27 @@ export function InCallChat({ room, participantName, isOpen, onToggle, buttonOnly
             {isRecordingVoice ? (
               <Square className="w-4 h-4 text-destructive" />
             ) : (
-              <Mic className="w-4 h-4" />
+              /* Custom neon microphone icon */
+              <svg viewBox="0 0 24 24" className="w-4 h-4">
+                <defs>
+                  <linearGradient id="chat-mic-neon" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#06b6e4"/>
+                    <stop offset="100%" stopColor="#8b5cf6"/>
+                  </linearGradient>
+                  <filter id="chat-mic-glow">
+                    <feGaussianBlur stdDeviation="0.5" result="coloredBlur"/>
+                    <feMerge>
+                      <feMergeNode in="coloredBlur"/>
+                      <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                  </filter>
+                </defs>
+                <path 
+                  d="M12 1C10.34 1 9 2.34 9 4V12C9 13.66 10.34 15 12 15C13.66 15 15 13.66 15 12V4C15 2.34 13.66 1 12 1ZM17 12C17 14.76 14.76 17 12 17C9.24 17 7 14.76 7 12H5C5 15.53 7.61 18.43 11 18.92V22H13V18.92C16.39 18.43 19 15.53 19 12H17Z"
+                  fill="url(#chat-mic-neon)"
+                  filter="url(#chat-mic-glow)"
+                />
+              </svg>
             )}
           </Button>
           

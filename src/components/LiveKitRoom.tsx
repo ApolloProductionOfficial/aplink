@@ -33,6 +33,8 @@ import {
   Pencil,
   Mic2,
   Check,
+  LayoutGrid,
+  MonitorPlay,
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
@@ -46,6 +48,7 @@ import { useNoiseSuppression } from "@/hooks/useNoiseSuppression";
 import { useVoiceNotifications } from "@/hooks/useVoiceNotifications";
 import { useVoiceCommands } from "@/hooks/useVoiceCommands";
 import { CollaborativeWhiteboard } from "@/components/CollaborativeWhiteboard";
+import { DrawingOverlay } from "@/components/DrawingOverlay";
 import { toast } from "sonner";
 
 interface LiveKitRoomProps {
@@ -188,8 +191,38 @@ export function LiveKitRoom({
             <p className="text-foreground text-xl font-medium bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text text-transparent animate-[pulse_3s_ease-in-out_infinite] min-w-[280px] transition-all duration-500">
               {loadingPhrases[phraseIndex]}
             </p>
-            <p className="text-muted-foreground text-sm">
-              Готовьтесь к погружению ✨
+            <p className="text-muted-foreground text-sm flex items-center gap-2">
+              Готовьтесь к погружению
+              {/* Custom SVG star */}
+              <svg viewBox="0 0 24 24" className="w-5 h-5 animate-pulse">
+                <defs>
+                  <linearGradient id="star-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#ffd700"/>
+                    <stop offset="50%" stopColor="#fff"/>
+                    <stop offset="100%" stopColor="#ffd700"/>
+                  </linearGradient>
+                  <filter id="star-glow">
+                    <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
+                    <feMerge>
+                      <feMergeNode in="coloredBlur"/>
+                      <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                  </filter>
+                </defs>
+                <path 
+                  d="M12 2L14.5 9.5L22 10L16 15L18 22L12 18L6 22L8 15L2 10L9.5 9.5L12 2Z" 
+                  fill="url(#star-gradient)" 
+                  filter="url(#star-glow)"
+                  className="drop-shadow-[0_0_8px_rgba(255,215,0,0.8)]"
+                />
+              </svg>
+              <svg viewBox="0 0 24 24" className="w-4 h-4 animate-pulse" style={{ animationDelay: '0.3s' }}>
+                <path 
+                  d="M12 2L14.5 9.5L22 10L16 15L18 22L12 18L6 22L8 15L2 10L9.5 9.5L12 2Z" 
+                  fill="url(#star-gradient)" 
+                  filter="url(#star-glow)"
+                />
+              </svg>
             </p>
           </div>
         </div>
@@ -322,6 +355,7 @@ function LiveKitContent({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [showWhiteboard, setShowWhiteboard] = useState(false);
+  const [showDrawingOverlay, setShowDrawingOverlay] = useState(false);
   const [currentBackground, setCurrentBackground] = useState<'none' | 'blur-light' | 'blur-strong' | 'image'>('none');
   const [isProcessingBackground, setIsProcessingBackground] = useState(false);
   const [showScreenshotFlash, setShowScreenshotFlash] = useState(false);
@@ -841,65 +875,62 @@ function LiveKitContent({
               side="top" 
               align="center" 
               sideOffset={12}
-              className="p-3 bg-black/50 backdrop-blur-2xl border border-white/[0.1] rounded-2xl shadow-2xl"
+              className="p-3 bg-white/[0.08] backdrop-blur-2xl border border-white/[0.12] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.1)]"
             >
-              <div className="flex flex-col gap-2">
-                <span className="text-[10px] text-muted-foreground font-medium mb-1 text-center">Настройки микрофона</span>
-                <div className="flex items-center gap-2.5">
-                  {/* Circle 1: Toggle Mic */}
-                  <button
-                    onClick={toggleMicrophone}
-                    className={cn(
-                      "w-11 h-11 rounded-full flex items-center justify-center",
-                      "bg-white/10 backdrop-blur-sm border border-white/[0.12]",
-                      "hover:bg-white/20 transition-all hover:scale-110 hover:shadow-lg",
-                      "group relative",
-                      !isMicrophoneEnabled && "bg-destructive/30 border-destructive/50 shadow-[0_0_15px_rgba(220,50,50,0.2)]"
-                    )}
-                    title={isMicrophoneEnabled ? "Выключить микрофон" : "Включить микрофон"}
-                  >
-                    {isMicrophoneEnabled ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                    <span className="absolute -bottom-7 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-black/90 text-[9px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity border border-white/10">
-                      {isMicrophoneEnabled ? "Выкл." : "Вкл."}
-                    </span>
-                  </button>
-                  
-                  {/* Circle 2: Noise Suppression */}
-                  <button
-                    onClick={toggleNoiseSuppression}
-                    className={cn(
-                      "w-11 h-11 rounded-full flex items-center justify-center",
-                      "bg-white/10 backdrop-blur-sm border border-white/[0.12]",
-                      "hover:bg-white/20 transition-all hover:scale-110 hover:shadow-lg",
-                      "group relative",
-                      isNoiseSuppressionEnabled && "bg-primary/30 border-primary/50 shadow-[0_0_15px_hsl(var(--primary)/0.3)]"
-                    )}
-                    title={isNoiseSuppressionEnabled ? "Выкл. шумоподавление" : "Вкл. шумоподавление"}
-                  >
-                    {isNoiseSuppressionEnabled ? <VolumeX className="w-4 h-4 text-primary" /> : <Volume2 className="w-4 h-4" />}
-                    <span className="absolute -bottom-7 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-black/90 text-[9px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity border border-white/10">
-                      Шум
-                    </span>
-                  </button>
-                  
-                  {/* Circle 3: Voice Commands */}
-                  {voiceCommandsSupported && (
+              <div className="flex flex-col items-center gap-3">
+                {/* Main: Toggle Mic (centered on top) */}
+                <button
+                  onClick={toggleMicrophone}
+                  className={cn(
+                    "w-12 h-12 rounded-full flex items-center justify-center",
+                    "bg-white/10 backdrop-blur-sm border border-white/[0.12]",
+                    "hover:bg-white/20 transition-all hover:scale-110 hover:shadow-lg",
+                    !isMicrophoneEnabled && "bg-destructive/30 border-destructive/50 shadow-[0_0_15px_rgba(220,50,50,0.2)]"
+                  )}
+                  title={isMicrophoneEnabled ? "Выключить микрофон" : "Включить микрофон"}
+                >
+                  {isMicrophoneEnabled ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                </button>
+                <span className="text-[10px] text-muted-foreground -mt-1">
+                  {isMicrophoneEnabled ? "Выключить микрофон" : "Включить микрофон"}
+                </span>
+                
+                {/* Bottom row: Noise (left) + Voice (right) */}
+                <div className="flex items-center gap-4">
+                  {/* Noise Suppression */}
+                  <div className="flex flex-col items-center gap-1">
                     <button
-                      onClick={toggleVoiceCommands}
+                      onClick={toggleNoiseSuppression}
                       className={cn(
-                        "w-11 h-11 rounded-full flex items-center justify-center",
+                        "w-10 h-10 rounded-full flex items-center justify-center",
                         "bg-white/10 backdrop-blur-sm border border-white/[0.12]",
                         "hover:bg-white/20 transition-all hover:scale-110 hover:shadow-lg",
-                        "group relative",
-                        isVoiceCommandsActive && "bg-purple-500/30 border-purple-500/50 shadow-[0_0_15px_rgba(147,51,234,0.3)]"
+                        isNoiseSuppressionEnabled && "bg-primary/30 border-primary/50 shadow-[0_0_15px_hsl(var(--primary)/0.3)]"
                       )}
-                      title={isVoiceCommandsActive ? "Выкл. голосовые команды" : "Голосовые команды"}
+                      title={isNoiseSuppressionEnabled ? "Выкл. шумоподавление" : "Вкл. шумоподавление"}
                     >
-                      <Mic2 className={cn("w-4 h-4", isVoiceCommandsActive && "text-purple-400")} />
-                      <span className="absolute -bottom-7 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-black/90 text-[9px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity border border-white/10">
-                        Голос
-                      </span>
+                      {isNoiseSuppressionEnabled ? <VolumeX className="w-4 h-4 text-primary" /> : <Volume2 className="w-4 h-4" />}
                     </button>
+                    <span className="text-[9px] text-muted-foreground whitespace-nowrap">Шумоподавление</span>
+                  </div>
+                  
+                  {/* Voice Commands */}
+                  {voiceCommandsSupported && (
+                    <div className="flex flex-col items-center gap-1">
+                      <button
+                        onClick={toggleVoiceCommands}
+                        className={cn(
+                          "w-10 h-10 rounded-full flex items-center justify-center",
+                          "bg-white/10 backdrop-blur-sm border border-white/[0.12]",
+                          "hover:bg-white/20 transition-all hover:scale-110 hover:shadow-lg",
+                          isVoiceCommandsActive && "bg-purple-500/30 border-purple-500/50 shadow-[0_0_15px_rgba(147,51,234,0.3)]"
+                        )}
+                        title={isVoiceCommandsActive ? "Выкл. голосовые команды" : "Голосовые команды"}
+                      >
+                        <Mic2 className={cn("w-4 h-4", isVoiceCommandsActive && "text-purple-400")} />
+                      </button>
+                      <span className="text-[9px] text-muted-foreground whitespace-nowrap">Голос. команды</span>
+                    </div>
                   )}
                 </div>
               </div>
@@ -939,16 +970,71 @@ function LiveKitContent({
             }}
           />
 
-          {/* Whiteboard button */}
-          <Button
-            onClick={() => setShowWhiteboard(true)}
-            variant="outline"
-            size="icon"
-            className="w-12 h-12 rounded-full bg-white/15 hover:bg-white/25 border-white/20 transition-all hover:scale-105 hover:shadow-lg"
-            title="Доска для рисования"
-          >
-            <Pencil className="w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]" />
-          </Button>
+          {/* Drawing mode selector (Whiteboard / Screen Overlay) */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                className={cn(
+                  "w-12 h-12 rounded-full bg-white/15 hover:bg-white/25 border-white/20 transition-all hover:scale-105 hover:shadow-lg",
+                  (showWhiteboard || showDrawingOverlay) && "bg-primary/20 border-primary/50"
+                )}
+                title="Рисование"
+              >
+                <Pencil className="w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent 
+              side="top" 
+              align="center" 
+              sideOffset={12}
+              className="w-auto p-3 bg-white/[0.08] backdrop-blur-2xl border border-white/[0.12] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.1)]"
+            >
+              <div className="flex flex-col gap-2">
+                <span className="text-[10px] text-muted-foreground font-medium text-center mb-1">Режим рисования</span>
+                <div className="flex items-center gap-3">
+                  {/* Whiteboard option */}
+                  <button
+                    onClick={() => {
+                      setShowWhiteboard(true);
+                      setShowDrawingOverlay(false);
+                    }}
+                    className="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-white/10 transition-all group"
+                  >
+                    <div className={cn(
+                      "w-12 h-12 rounded-xl flex items-center justify-center border transition-all",
+                      showWhiteboard 
+                        ? "bg-primary/30 border-primary/50" 
+                        : "bg-white/10 border-white/10 group-hover:border-white/20"
+                    )}>
+                      <LayoutGrid className="w-5 h-5" />
+                    </div>
+                    <span className="text-[10px] text-muted-foreground">Доска</span>
+                  </button>
+                  
+                  {/* Screen overlay option */}
+                  <button
+                    onClick={() => {
+                      setShowDrawingOverlay(true);
+                      setShowWhiteboard(false);
+                    }}
+                    className="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-white/10 transition-all group"
+                  >
+                    <div className={cn(
+                      "w-12 h-12 rounded-xl flex items-center justify-center border transition-all",
+                      showDrawingOverlay 
+                        ? "bg-primary/30 border-primary/50" 
+                        : "bg-white/10 border-white/10 group-hover:border-white/20"
+                    )}>
+                      <MonitorPlay className="w-5 h-5" />
+                    </div>
+                    <span className="text-[10px] text-muted-foreground">На экране</span>
+                  </button>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
 
           {/* Emoji Reactions */}
           <EmojiReactions
@@ -1011,6 +1097,14 @@ function LiveKitContent({
         participantName={participantName}
         isOpen={showWhiteboard}
         onClose={() => setShowWhiteboard(false)}
+      />
+
+      {/* Drawing Overlay - for drawing on screen */}
+      <DrawingOverlay
+        room={room}
+        participantName={participantName}
+        isOpen={showDrawingOverlay}
+        onClose={() => setShowDrawingOverlay(false)}
       />
 
       <RoomAudioRenderer />
