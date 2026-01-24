@@ -37,7 +37,11 @@ export const useRealtimeCaptions = ({
 
   // Process audio and get transcription
   const processAudioChunk = useCallback(async (audioBlob: Blob) => {
-    if (!enabled || audioBlob.size < 1000) return;
+    // Minimum 5KB for valid WebM with audio content
+    if (!enabled || audioBlob.size < 5000) {
+      console.log('[Captions] Audio too small:', audioBlob.size, 'bytes, skipping');
+      return;
+    }
 
     try {
       setIsProcessing(true);
@@ -205,8 +209,14 @@ export const useRealtimeCaptions = ({
           }
 
           try {
+            // Use audio/webm without specific codecs for better compatibility
+            const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+              ? 'audio/webm;codecs=opus'
+              : 'audio/webm';
+              
             mediaRecorderRef.current = new MediaRecorder(stream, {
-              mimeType: 'audio/webm;codecs=opus'
+              mimeType,
+              audioBitsPerSecond: 128000, // Ensure good quality
             });
 
             mediaRecorderRef.current.ondataavailable = (e) => {
@@ -218,11 +228,18 @@ export const useRealtimeCaptions = ({
             mediaRecorderRef.current.onstop = () => {
               if (recordingChunksRef.current.length > 0) {
                 const blob = new Blob(recordingChunksRef.current, { type: 'audio/webm' });
-                processAudioChunk(blob);
+                // Only process if we have meaningful audio (at least 0.5s worth)
+                if (blob.size >= 5000) {
+                  processAudioChunk(blob);
+                } else {
+                  console.log('[Captions] Recording too short:', blob.size, 'bytes');
+                }
               }
             };
 
-            mediaRecorderRef.current.start(100);
+            // Start without timeslice - collect all data until stop()
+            // This creates a proper WebM container with headers
+            mediaRecorderRef.current.start();
             isRecordingRef.current = true;
           } catch (err) {
             console.error('[Captions] Failed to start recording:', err);
@@ -236,10 +253,16 @@ export const useRealtimeCaptions = ({
               silenceTimeoutRef.current = null;
 
               if (mediaRecorderRef.current && isRecordingRef.current) {
+                // Request data before stopping to ensure we get all recorded content
+                try {
+                  mediaRecorderRef.current.requestData();
+                } catch {
+                  // Ignore if not supported
+                }
                 mediaRecorderRef.current.stop();
                 isRecordingRef.current = false;
               }
-            }, 1500); // 1.5s silence before stopping
+            }, 2000); // 2s silence before stopping (gives more audio context)
           }
         } else if (isSpeaking && silenceTimeoutRef.current) {
           // Voice resumed - cancel silence timeout

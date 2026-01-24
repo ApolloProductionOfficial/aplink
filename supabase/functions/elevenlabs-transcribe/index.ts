@@ -50,6 +50,14 @@ serve(async (req) => {
 
     console.log("Received audio file:", audioFile.name, "size:", audioFile.size);
 
+    // Validate minimum file size (5KB minimum for valid audio)
+    if (audioFile.size < 5000) {
+      console.log("Audio file too small, returning empty result");
+      return new Response(JSON.stringify({ text: "", words: [] }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
     
     if (!ELEVENLABS_API_KEY) {
@@ -61,14 +69,19 @@ serve(async (req) => {
       throw new Error("ELEVENLABS_API_KEY is not configured");
     }
 
-    const apiFormData = new FormData();
-    apiFormData.append("file", audioFile);
-    apiFormData.append("model_id", "scribe_v1");
-    apiFormData.append("tag_audio_events", "false");
-    apiFormData.append("diarize", "true");
-    apiFormData.append("language_code", "rus");
+    // Read file content and create a proper File object
+    const arrayBuffer = await audioFile.arrayBuffer();
+    const audioBlob = new Blob([arrayBuffer], { type: "audio/webm" });
+    const properFile = new File([audioBlob], "audio.webm", { type: "audio/webm" });
 
-    console.log("Sending to ElevenLabs API...");
+    const apiFormData = new FormData();
+    apiFormData.append("file", properFile);
+    apiFormData.append("model_id", "scribe_v2"); // Updated to v2 for better quality
+    apiFormData.append("tag_audio_events", "false");
+    apiFormData.append("diarize", "false"); // Disable diarization for faster processing
+    // Don't set language_code - let it auto-detect for better accuracy
+
+    console.log("Sending to ElevenLabs API, file size:", properFile.size);
 
     const response = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
       method: "POST",
