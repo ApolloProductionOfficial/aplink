@@ -737,10 +737,10 @@ const MeetingRoom = () => {
     await runMeetingSave();
   }, [user]);
 
-  // Handle minimize - go to Dashboard and keep call alive via global minimized widget
+  // Handle minimize - go to home page and keep call alive via global minimized widget
   const handleMinimize = useCallback(() => {
     minimize();
-    navigate('/dashboard', { replace: true });
+    navigate('/', { replace: true });
   }, [minimize, navigate]);
 
   // Don't render if no username - redirecting

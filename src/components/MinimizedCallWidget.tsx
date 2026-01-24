@@ -103,6 +103,7 @@ export function MinimizedCallWidget({
 
   return (
     <div
+      data-minimized-widget
       className={cn(
         "fixed z-[9999] rounded-2xl overflow-hidden",
         "bg-card/95 backdrop-blur-xl border-2 border-primary/50",
@@ -115,11 +116,31 @@ export function MinimizedCallWidget({
         top: pos.y, 
         width: size.w, 
         height: size.h,
-        transition: 'width 0.3s, height 0.3s'
-      } : { width: size.w, height: size.h }}
+        transition: 'width 0.3s, height 0.3s',
+        cursor: 'auto',
+      } : { width: size.w, height: size.h, cursor: 'auto' }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
+      {/* Force cursor visibility override for this widget */}
+      <style>{`
+        [data-minimized-widget],
+        [data-minimized-widget] * {
+          cursor: auto !important;
+        }
+        [data-minimized-widget] .cursor-grab,
+        [data-minimized-widget] [data-draggable] {
+          cursor: grab !important;
+        }
+        [data-minimized-widget] .cursor-grab:active,
+        [data-minimized-widget] .active\\:cursor-grabbing:active,
+        [data-minimized-widget] [data-draggable]:active {
+          cursor: grabbing !important;
+        }
+        [data-minimized-widget] button {
+          cursor: pointer !important;
+        }
+      `}</style>
       {/* Main content */}
       <div className="relative w-full h-full flex flex-col">
         {/* Video preview (expanded mode only) */}

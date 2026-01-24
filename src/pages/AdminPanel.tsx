@@ -30,6 +30,7 @@ import WelcomeMessageEditor from '@/components/WelcomeMessageEditor';
 import UXAnomaliesPanel from '@/components/UXAnomaliesPanel';
 import LiveKitMonitor from '@/components/LiveKitMonitor';
 import ContactRequestsPanel from '@/components/ContactRequestsPanel';
+import { AvatarCropDialog } from '@/components/AvatarCropDialog';
 
 interface MeetingTranscript {
   id: string;
@@ -143,6 +144,8 @@ const AdminPanel = () => {
   const [registeredUsers, setRegisteredUsers] = useState<RegisteredUser[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarCropOpen, setAvatarCropOpen] = useState(false);
+  const [selectedAvatarFile, setSelectedAvatarFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Error logs state
@@ -641,45 +644,65 @@ const AdminPanel = () => {
       return;
     }
 
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error(admin.maxFileSize || 'Максимальный размер файла 2MB');
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error(admin.maxFileSize || 'Максимальный размер файла 5MB');
       return;
     }
 
+    // Open crop dialog instead of direct upload
+    setSelectedAvatarFile(file);
+    setAvatarCropOpen(true);
+    
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleCroppedAvatarSave = async (croppedBlob: Blob) => {
+    if (!user) return;
+    
+    setAvatarCropOpen(false);
     setUploadingAvatar(true);
 
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${user.id}/avatar.${fileExt}`;
+    try {
+      const fileName = `${user.id}/avatar.jpg`;
 
-    const { error: uploadError } = await supabase.storage
-      .from('avatars')
-      .upload(fileName, file, { upsert: true });
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, croppedBlob, { 
+          upsert: true,
+          contentType: 'image/jpeg'
+        });
 
-    if (uploadError) {
-      toast.error(admin.avatarUploadError || 'Не удалось загрузить аватар');
-      setUploadingAvatar(false);
-      return;
-    }
+      if (uploadError) {
+        throw uploadError;
+      }
 
-    const { data: urlData } = supabase.storage
-      .from('avatars')
-      .getPublicUrl(fileName);
+      const { data: urlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
 
-    const newAvatarUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+      const newAvatarUrl = `${urlData.publicUrl}?t=${Date.now()}`;
 
-    const { error: updateError } = await supabase
-      .from('profiles')
-      .update({ avatar_url: newAvatarUrl })
-      .eq('user_id', user.id);
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: newAvatarUrl })
+        .eq('user_id', user.id);
 
-    if (updateError) {
-      toast.error(admin.avatarUpdateError || 'Не удалось обновить профиль');
-    } else {
+      if (updateError) {
+        throw updateError;
+      }
+
       setProfile(prev => prev ? { ...prev, avatar_url: newAvatarUrl } : null);
       toast.success(admin.avatarUpdated || 'Аватар обновлён');
+    } catch (error: any) {
+      console.error('Avatar upload error:', error);
+      toast.error(admin.avatarUploadError || 'Не удалось загрузить аватар');
+    } finally {
+      setUploadingAvatar(false);
+      setSelectedAvatarFile(null);
     }
-
-    setUploadingAvatar(false);
   };
 
   const formatDate = (dateStr: string) => {
@@ -1791,6 +1814,17 @@ const AdminPanel = () => {
         isOpen={show2FASetup}
         onClose={() => setShow2FASetup(false)}
         onSuccess={() => setHas2FA(true)}
+      />
+
+      {/* Avatar Crop Dialog */}
+      <AvatarCropDialog
+        open={avatarCropOpen}
+        imageFile={selectedAvatarFile}
+        onClose={() => {
+          setAvatarCropOpen(false);
+          setSelectedAvatarFile(null);
+        }}
+        onSave={handleCroppedAvatarSave}
       />
     </div>
   );
