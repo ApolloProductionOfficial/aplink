@@ -10,6 +10,8 @@ interface ActiveCallState {
   participantIdentity?: string;
   roomDisplayName: string;
   liveKitRoom: Room | null;
+  headerButtons: ReactNode | null;
+  connectionIndicator: ReactNode | null;
 }
 
 interface ActiveCallContextType extends ActiveCallState {
@@ -24,6 +26,8 @@ interface ActiveCallContextType extends ActiveCallState {
   minimize: () => void;
   maximize: () => void;
   setLiveKitRoom: (room: Room | null) => void;
+  setHeaderButtons: (node: ReactNode | null) => void;
+  setConnectionIndicator: (node: ReactNode | null) => void;
 }
 
 const defaultState: ActiveCallState = {
@@ -35,6 +39,8 @@ const defaultState: ActiveCallState = {
   participantIdentity: undefined,
   roomDisplayName: '',
   liveKitRoom: null,
+  headerButtons: null,
+  connectionIndicator: null,
 };
 
 const ActiveCallContext = createContext<ActiveCallContextType | null>(null);
@@ -50,7 +56,7 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
     participantIdentity?: string;
     roomDisplayName: string;
   }) => {
-    setState({
+    setState(prev => ({
       isActive: true,
       isMinimized: false,
       roomName: params.roomName,
@@ -59,7 +65,9 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       participantIdentity: params.participantIdentity,
       roomDisplayName: params.roomDisplayName,
       liveKitRoom: roomRef.current,
-    });
+      headerButtons: prev.headerButtons,
+      connectionIndicator: prev.connectionIndicator,
+    }));
   }, []);
 
   const endCall = useCallback(() => {
@@ -80,6 +88,14 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
     setState(prev => ({ ...prev, liveKitRoom: room }));
   }, []);
 
+  const setHeaderButtons = useCallback((node: ReactNode | null) => {
+    setState(prev => ({ ...prev, headerButtons: node }));
+  }, []);
+
+  const setConnectionIndicator = useCallback((node: ReactNode | null) => {
+    setState(prev => ({ ...prev, connectionIndicator: node }));
+  }, []);
+
   return (
     <ActiveCallContext.Provider
       value={{
@@ -89,6 +105,8 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
         minimize,
         maximize,
         setLiveKitRoom,
+        setHeaderButtons,
+        setConnectionIndicator,
       }}
     >
       {children}

@@ -1,7 +1,7 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { createPortal } from 'react-dom';
-import { Room, RoomEvent } from 'livekit-client';
+import { Room } from 'livekit-client';
 import { toast } from 'sonner';
 import { useActiveCall } from '@/contexts/ActiveCallContext';
 import { LiveKitRoom } from '@/components/LiveKitRoom';
@@ -28,7 +28,6 @@ export function GlobalActiveCall() {
     participantIdentity,
     roomDisplayName,
     endCall,
-    minimize,
     maximize,
     setLiveKitRoom,
   } = useActiveCall();
@@ -72,6 +71,7 @@ export function GlobalActiveCall() {
     navigate('/dashboard', { replace: true });
   }, [endCall, navigate]);
 
+
   // Handle maximize - navigate back to room
   const handleMaximize = useCallback(() => {
     maximize();
@@ -98,40 +98,39 @@ export function GlobalActiveCall() {
     return null;
   }
 
-  // When minimized, show only the widget and hidden room
-  if (isMinimized) {
-    return (
-      <>
-        {/* Hidden but active LiveKit room - maintains connection */}
-        <div 
-          className="fixed opacity-0 pointer-events-none" 
-          style={{ width: 1, height: 1, overflow: 'hidden' }}
-          aria-hidden="true"
-        >
-          <LiveKitRoom
-            roomName={roomSlug}
-            participantName={participantName}
-            participantIdentity={participantIdentity}
-            onConnected={handleConnected}
-            onDisconnected={handleDisconnected}
-            onError={handleError}
-            onRoomReady={handleRoomReady}
-          />
-        </div>
-
-        {/* Floating minimized widget - rendered via portal to body */}
-        {createPortal(
-          <MinimizedCallWidget
-            roomName={roomDisplayName}
-            onMaximize={handleMaximize}
-            onEndCall={handleEndCall}
-          />,
-          document.body
-        )}
-      </>
-    );
+  // When not minimized, the MeetingRoom page renders the full call UI.
+  if (!isMinimized) {
+    return null;
   }
 
-  // When not minimized but active, the MeetingRoom page handles the full UI
-  return null;
+  return (
+    <>
+      {/* Hidden but active LiveKit room - maintains connection while user navigates */}
+      <div
+        className="fixed opacity-0 pointer-events-none"
+        style={{ width: 1, height: 1, overflow: 'hidden' }}
+        aria-hidden="true"
+      >
+        <LiveKitRoom
+          roomName={roomSlug}
+          participantName={participantName}
+          participantIdentity={participantIdentity}
+          onConnected={handleConnected}
+          onDisconnected={handleDisconnected}
+          onError={handleError}
+          onRoomReady={handleRoomReady}
+        />
+      </div>
+
+      {/* Floating minimized widget - rendered via portal to body */}
+      {createPortal(
+        <MinimizedCallWidget
+          roomName={roomDisplayName}
+          onMaximize={handleMaximize}
+          onEndCall={handleEndCall}
+        />,
+        document.body
+      )}
+    </>
+  );
 }
