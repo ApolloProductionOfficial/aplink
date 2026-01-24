@@ -1,10 +1,11 @@
 import React from "react";
-import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { SafeTooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import { ActiveCallProvider } from "@/contexts/ActiveCallContext";
+import { GlobalActiveCall } from "@/components/GlobalActiveCall";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import AnalyticsRouteTracker from "@/components/AnalyticsRouteTracker";
 import Index from "./pages/Index";
@@ -26,22 +27,24 @@ function App() {
       <LanguageProvider>
         <ErrorBoundary>
           <SafeTooltipProvider delayDuration={300}>
-            <Toaster />
             <Sonner />
             <BrowserRouter>
-              <AnalyticsRouteTracker />
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/admin" element={<AdminPanel />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/room/:roomId" element={<MeetingRoom />} />
-                <Route path="/history" element={<MeetingHistory />} />
-                <Route path="/shared/:token" element={<SharedMeeting />} />
-                <Route path="/__refresh" element={<Refresh />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+              <ActiveCallProvider>
+                <AnalyticsRouteTracker />
+                <GlobalActiveCall />
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/admin" element={<AdminPanel />} />
+                  <Route path="/profile" element={<Profile />} />
+                  <Route path="/room/:roomId" element={<MeetingRoom />} />
+                  <Route path="/history" element={<MeetingHistory />} />
+                  <Route path="/shared/:token" element={<SharedMeeting />} />
+                  <Route path="/__refresh" element={<Refresh />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </ActiveCallProvider>
             </BrowserRouter>
           </SafeTooltipProvider>
         </ErrorBoundary>

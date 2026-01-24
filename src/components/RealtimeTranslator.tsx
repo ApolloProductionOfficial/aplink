@@ -1108,6 +1108,13 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
                         <span>{LANGUAGES.find(l => l.code === detectedPartnerLanguage)?.flag}</span>
                         <span className="truncate">{LANGUAGES.find(l => l.code === detectedPartnerLanguage)?.name}</span>
                         <Badge variant="outline" className="text-[9px] h-4 ml-auto">{t.translator.detected || 'Авто'}</Badge>
+                        <button
+                          onClick={() => setDetectedPartnerLanguage(null)}
+                          className="ml-1 p-0.5 hover:bg-muted/60 rounded transition-colors"
+                          title="Сбросить"
+                        >
+                          <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                        </button>
                       </>
                     ) : (
                       <span className="text-muted-foreground italic">{t.translator.waitingForPartner || 'Ожидаю...'}</span>
