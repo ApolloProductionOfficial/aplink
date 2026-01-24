@@ -17,16 +17,18 @@ const Toaster = ({ ...props }: ToasterProps) => {
       toastOptions={{
         classNames: {
           toast:
-            "group toast group-[.toaster]:bg-black/60 group-[.toaster]:backdrop-blur-xl group-[.toaster]:text-foreground group-[.toaster]:border-white/10 group-[.toaster]:shadow-lg select-none",
+            "group toast group-[.toaster]:bg-white/[0.08] group-[.toaster]:backdrop-blur-2xl group-[.toaster]:text-foreground group-[.toaster]:border-white/[0.1] group-[.toaster]:shadow-[0_8px_32px_rgba(0,0,0,0.3)] group-[.toaster]:rounded-xl select-none",
           description: "group-[.toast]:text-muted-foreground",
-          actionButton: "group-[.toast]:bg-primary/80 group-[.toast]:text-primary-foreground",
-          cancelButton: "group-[.toast]:bg-muted/60 group-[.toast]:text-muted-foreground",
-          closeButton: "group-[.toast]:bg-black/40 group-[.toast]:text-foreground group-[.toast]:border-white/10",
+          actionButton: "group-[.toast]:bg-primary/20 group-[.toast]:text-primary-foreground group-[.toast]:backdrop-blur-xl group-[.toast]:border-primary/30",
+          cancelButton: "group-[.toast]:bg-white/[0.05] group-[.toast]:text-muted-foreground group-[.toast]:backdrop-blur-xl group-[.toast]:border-white/[0.1]",
+          closeButton: "group-[.toast]:bg-white/[0.05] group-[.toast]:text-foreground group-[.toast]:border-white/[0.1] group-[.toast]:hover:bg-white/[0.1]",
         },
         style: {
-          background: 'rgba(0, 0, 0, 0.6)',
-          backdropFilter: 'blur(20px)',
+          background: 'rgba(255, 255, 255, 0.08)',
+          backdropFilter: 'blur(40px)',
+          WebkitBackdropFilter: 'blur(40px)',
           border: '1px solid rgba(255, 255, 255, 0.1)',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
         },
       }}
       {...props}

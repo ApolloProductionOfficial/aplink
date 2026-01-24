@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, Users, Calendar, User, Camera, Loader2, Check, Globe, Shield, Trash2, Download, Share2, Search, X, Link2, Copy, Link2Off, AlertTriangle, BarChart3 } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { ArrowLeft, FileText, Users, Calendar, User, Camera, Loader2, Check, Globe, Shield, Trash2, Download, Share2, Search, X, Link2, Copy, Link2Off, AlertTriangle, BarChart3, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -55,6 +55,7 @@ interface ParticipantWithIP {
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user, isLoading, signOut, isAdmin } = useAuth();
   const { toast } = useToast();
 
@@ -82,6 +83,9 @@ const Dashboard = () => {
   const [has2FA, setHas2FA] = useState(false);
   const [disabling2FA, setDisabling2FA] = useState(false);
   
+  // Background saving indicator
+  const [showSavingIndicator, setShowSavingIndicator] = useState(false);
+  
   // Search and filter state
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
@@ -90,6 +94,23 @@ const Dashboard = () => {
   const [shareLinkActive, setShareLinkActive] = useState(true);
   const [deletingMeetingId, setDeletingMeetingId] = useState<string | null>(null);
   const [downloadingPdf, setDownloadingPdf] = useState<string | null>(null);
+
+  // Check for saving=true query param
+  useEffect(() => {
+    if (searchParams.get('saving') === 'true') {
+      setShowSavingIndicator(true);
+      // Remove query param
+      searchParams.delete('saving');
+      setSearchParams(searchParams, { replace: true });
+      
+      // Auto-hide after 10 seconds
+      const timer = setTimeout(() => {
+        setShowSavingIndicator(false);
+      }, 10000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams, setSearchParams]);
 
   // Redirect if not logged in
   useEffect(() => {
@@ -654,6 +675,27 @@ const Dashboard = () => {
     <div className="min-h-screen bg-background">
       <CustomCursor />
       
+      {/* Background saving indicator */}
+      {showSavingIndicator && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] animate-fade-in">
+          <div className="flex items-center gap-3 bg-primary/20 backdrop-blur-2xl border border-primary/30 rounded-full px-5 py-3 shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
+            <div className="relative">
+              <Loader2 className="w-5 h-5 text-primary animate-spin" />
+              <div className="absolute inset-0 w-5 h-5 rounded-full bg-primary/30 animate-ping" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-sm font-medium text-foreground">Ваша запись сохраняется...</span>
+              <span className="text-xs text-muted-foreground">Скоро она появится в списке ✨</span>
+            </div>
+            <button 
+              onClick={() => setShowSavingIndicator(false)}
+              className="ml-2 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-xl border-b border-border/50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">

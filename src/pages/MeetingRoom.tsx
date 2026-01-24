@@ -518,6 +518,30 @@ const MeetingRoom = () => {
     } catch { /* ignore */ }
   };
 
+  // For authenticated users - save in background without dialog
+  const runMeetingSaveBackground = async () => {
+    if (!hasStartedRecordingRef.current || !user) return;
+
+    const base = await buildMeetingSaveBasePayload();
+    if (!base) return;
+
+    try {
+      const response = await invokeBackendFunctionKeepalive<{ success: boolean; meeting?: { id: string } }>(
+        "summarize-meeting",
+        { ...base, userId: user.id },
+      );
+
+      if (response?.success && response?.meeting?.id) {
+        console.log("Meeting saved in background with ID:", response.meeting.id);
+        clearPendingBaseFromStorage();
+      } else {
+        console.error("Background save failed - server did not confirm");
+      }
+    } catch (e: any) {
+      console.error("Background meeting save error:", e);
+    }
+  };
+
   const runMeetingSave = async () => {
     if (!hasStartedRecordingRef.current) {
       setEndSaveNeedsLogin(false);
@@ -649,16 +673,24 @@ const MeetingRoom = () => {
     // Handle end call flow
     if (!hasRedirectedRef.current && hasStartedRecordingRef.current) {
       hasRedirectedRef.current = true;
-      setEndSaveDialogOpen(true);
-      setEndSaveStatus("saving");
-      runMeetingSave();
+      
+      // For authenticated users - auto-save in background
+      if (user) {
+        navigate('/dashboard?saving=true', { replace: true });
+        runMeetingSaveBackground();
+      } else {
+        // For guests - show dialog
+        setEndSaveDialogOpen(true);
+        setEndSaveStatus("saving");
+        runMeetingSave();
+      }
     } else if (!hasRedirectedRef.current) {
       hasRedirectedRef.current = true;
       // Open apolloproduction.studio in new tab, return to dashboard
       window.open('https://apolloproduction.studio', '_blank');
       navigate(user ? '/dashboard' : '/', { replace: true });
     }
-  }, [playDisconnectedSound]);
+  }, [playDisconnectedSound, user]);
 
   const handleParticipantJoined = useCallback((identity: string, name: string) => {
     console.log('Participant joined:', identity, name);
@@ -701,24 +733,34 @@ const MeetingRoom = () => {
       return;
     }
 
+    // For authenticated users - auto-save in background without dialog
+    if (user) {
+      // Navigate immediately to dashboard with saving indicator
+      navigate('/dashboard?saving=true', { replace: true });
+      // Run save in background
+      runMeetingSaveBackground();
+      return;
+    }
+
+    // For guests - show dialog
     setEndSaveDialogOpen(true);
     setEndSaveStatus("saving");
     setEndSaveError(null);
 
     await runMeetingSave();
-  }, []);
+  }, [user]);
 
-  // Handle minimize - navigate to home page (Index)
+  // Handle minimize - stay on page but show minimized widget
   const handleMinimize = useCallback(() => {
     setIsMinimized(true);
-    navigate('/');
-  }, [navigate]);
+    // Don't navigate away - just show the widget overlay
+  }, []);
 
   // Handle maximize (return from minimized)
   const handleMaximize = useCallback(() => {
     setIsMinimized(false);
-    navigate(`/room/${roomId}?name=${encodeURIComponent(safeUserName)}`);
-  }, [navigate, roomId, safeUserName]);
+    // No navigation needed - we stayed on the same page
+  }, []);
 
   // Don't render if no username - redirecting
   if (!userName) {
@@ -878,10 +920,10 @@ const MeetingRoom = () => {
     </>
   );
 
-  // If minimized, show the floating widget
+  // If minimized, show the floating widget alongside hidden room
   if (isMinimized) {
     return (
-      <>
+      <div className="h-screen w-screen bg-background">
         {/* Minimized widget */}
         <MinimizedCallWidget
           roomName={roomDisplayName}
@@ -889,8 +931,8 @@ const MeetingRoom = () => {
           onEndCall={handleEndCall}
         />
 
-        {/* Hidden LiveKit room - maintains connection */}
-        <div className="fixed inset-0 pointer-events-none opacity-0" aria-hidden="true">
+        {/* Hidden but active LiveKit room - maintains connection */}
+        <div className="absolute inset-0 opacity-0 pointer-events-none" aria-hidden="true">
           <LiveKitRoom
             roomName={roomSlug}
             participantName={safeUserName}
@@ -926,7 +968,7 @@ const MeetingRoom = () => {
           onStay={handleStayInCall}
           onLeave={handleLeaveCall}
         />
-      </>
+      </div>
     );
   }
 
