@@ -8,6 +8,7 @@ import { LiveKitRoom } from '@/components/LiveKitRoom';
 import { MinimizedCallWidget } from '@/components/MinimizedCallWidget';
 import { useAuth } from '@/hooks/useAuth';
 import { useConnectionSounds } from '@/hooks/useConnectionSounds';
+import { cn } from '@/lib/utils';
 
 /**
  * Global component that renders the active call.
@@ -77,12 +78,7 @@ export function GlobalActiveCall() {
     eventHandlers.onDisconnected?.();
     
     endCall();
-    
-    // Navigate to home page if not already there
-    if (location.pathname !== '/') {
-      navigate('/', { replace: true });
-    }
-  }, [playDisconnectedSound, endCall, navigate, location.pathname, eventHandlers]);
+  }, [playDisconnectedSound, endCall, eventHandlers]);
 
   // Handle participant joined
   const handleParticipantJoined = useCallback((identity: string, name: string) => {
@@ -138,6 +134,17 @@ export function GlobalActiveCall() {
     };
   }, []);
 
+  // Keep the room mounted at all times to prevent reconnects on minimize/maximize.
+  // If user is not on /room/* while maximized, redirect to room (connection remains alive).
+  // NOTE: Must be declared before any conditional returns to keep hook order stable.
+  useEffect(() => {
+    if (!isActive) return;
+    const onRoomRoute = location.pathname.startsWith('/room/');
+    if (!isMinimized && !onRoomRoute) {
+      navigate(`/room/${roomSlug}?name=${encodeURIComponent(participantName)}`, { replace: true });
+    }
+  }, [isActive, isMinimized, location.pathname, navigate, participantName, roomSlug]);
+
   // Don't render anything if no active call
   if (!isActive) {
     return null;
@@ -145,51 +152,23 @@ export function GlobalActiveCall() {
 
   // Check if we're on the meeting room route
   const isOnMeetingRoomRoute = location.pathname.startsWith('/room/');
+  const shouldShowFullscreen = isOnMeetingRoomRoute && !isMinimized;
 
-  // When minimized: show floating widget + hidden LiveKitRoom
-  if (isMinimized) {
-    return (
-      <>
-        {/* Hidden but active LiveKit room - maintains connection while user navigates */}
-        <div
-          className="fixed opacity-0 pointer-events-none"
-          style={{ width: 1, height: 1, overflow: 'hidden' }}
-          aria-hidden="true"
-        >
-          <LiveKitRoom
-            roomName={roomSlug}
-            participantName={participantName}
-            participantIdentity={participantIdentity}
-            onConnected={handleConnected}
-            onDisconnected={handleDisconnected}
-            onParticipantJoined={handleParticipantJoined}
-            onParticipantLeft={handleParticipantLeft}
-            onError={handleError}
-            onRoomReady={handleRoomReady}
-          />
-        </div>
-
-        {/* Floating minimized widget - rendered via portal to body */}
-        {createPortal(
-          <>
-            {/* Hide right panels when minimized */}
-            <style>{`[data-news-widget] { display: none !important; }`}</style>
-            <MinimizedCallWidget
-              roomName={roomDisplayName}
-              onMaximize={handleMaximize}
-              onEndCall={handleEndCall}
-            />
-          </>,
-          document.body
+  return (
+    <>
+      {/* Single always-mounted LiveKitRoom instance */}
+      <div
+        className={cn(
+          "fixed bg-background transition-opacity",
+          shouldShowFullscreen ? "inset-0 z-50 opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         )}
-      </>
-    );
-  }
-
-  // When NOT minimized and on room route: render fullscreen LiveKitRoom
-  if (isOnMeetingRoomRoute) {
-    return (
-      <div className="fixed inset-0 z-50 bg-background">
+        style={
+          shouldShowFullscreen
+            ? undefined
+            : { width: 1, height: 1, overflow: 'hidden' }
+        }
+        aria-hidden={!shouldShowFullscreen}
+      >
         <LiveKitRoom
           roomName={roomSlug}
           participantName={participantName}
@@ -206,11 +185,21 @@ export function GlobalActiveCall() {
           connectionIndicator={connectionIndicator}
         />
       </div>
-    );
-  }
 
-  // If NOT on meeting room route but call is active and not minimized,
-  // redirect to room
-  navigate(`/room/${roomSlug}?name=${encodeURIComponent(participantName)}`, { replace: true });
-  return null;
+      {/* Floating minimized widget */}
+      {isMinimized &&
+        createPortal(
+          <>
+            {/* Hide right panels when minimized */}
+            <style>{`[data-news-widget] { display: none !important; }`}</style>
+            <MinimizedCallWidget
+              roomName={roomDisplayName}
+              onMaximize={handleMaximize}
+              onEndCall={handleEndCall}
+            />
+          </>,
+          document.body
+        )}
+    </>
+  );
 }

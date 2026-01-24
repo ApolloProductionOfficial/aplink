@@ -157,11 +157,8 @@ button[aria-label*="unfocus" i],
 .livekit-room-container button[aria-label*="Unfocus"],
 .livekit-room-container .lk-focus-toggle,
 /* Hide fullscreen/expand button in top right corner of participant tiles */
-.livekit-room-container .lk-participant-tile button,
-.livekit-room-container .lk-participant-tile .lk-button,
-.livekit-room-container [data-lk-button="toggle-layout"],
-.lk-participant-tile button[aria-label],
-.lk-participant-tile .lk-focus-toggle-button,
+.livekit-room-container .lk-focus-toggle-button,
+.livekit-room-container .lk-participant-tile .lk-focus-toggle-button,
 .lk-focus-toggle-button {
   display: none !important;
   visibility: hidden !important;
