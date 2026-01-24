@@ -669,31 +669,17 @@ function LiveKitContent({
           )}
         >
           <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-[2.5rem] bg-transparent backdrop-blur-[2px] border border-white/[0.1] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)]">
-            {/* Picture-in-Picture button */}
+            {/* Minimize button - just minimize without PiP */}
             <button
-              onClick={async () => {
-                try {
-                  const videoEl = document.querySelector('.lk-participant-tile video') as HTMLVideoElement;
-                  if (videoEl && document.pictureInPictureEnabled && videoEl.readyState >= 2) {
-                    await videoEl.requestPictureInPicture();
-                    // Small delay for stability before navigating away
-                    await new Promise(resolve => setTimeout(resolve, 300));
-                    onMinimize?.();
-                  } else if (!document.pictureInPictureEnabled) {
-                    toast.error("PiP не поддерживается", { description: "Ваш браузер не поддерживает картинку в картинке" });
-                    onMinimize?.();
-                  } else {
-                    // Video not ready yet
-                    onMinimize?.();
-                  }
-                } catch (err) {
-                  console.error('PiP failed:', err);
-                  toast.error("PiP недоступен", { description: "Попробуйте ещё раз" });
-                  // Don't call onMinimize on error - stay in room
+              onClick={() => {
+                // Exit any existing PiP first
+                if (document.pictureInPictureElement) {
+                  document.exitPictureInPicture().catch(() => {});
                 }
+                onMinimize?.();
               }}
               className="flex items-center justify-center w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 border border-white/[0.08] transition-all hover:scale-105 hover:shadow-lg [&_svg]:stroke-[2.5]"
-              title="Картинка в картинке"
+              title="Свернуть звонок"
             >
               <PictureInPicture2 className="w-4 h-4" />
             </button>

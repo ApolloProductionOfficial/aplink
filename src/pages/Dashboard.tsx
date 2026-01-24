@@ -10,7 +10,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-// ToastAction removed - using sonner instead
 import { toast } from "sonner";
 import CustomCursor from '@/components/CustomCursor';
 import TwoFactorSetup from '@/components/TwoFactorSetup';
@@ -19,6 +18,7 @@ import MissedCallsHistory from '@/components/MissedCallsHistory';
 import apolloLogo from '@/assets/apollo-logo.mp4';
 import { generateMeetingDocx } from '@/utils/generateMeetingDocx';
 import { invokeBackendFunctionKeepalive } from '@/utils/invokeBackendFunctionKeepalive';
+import { AvatarCropDialog } from '@/components/AvatarCropDialog';
 
 interface MeetingTranscript {
   id: string;
@@ -82,6 +82,10 @@ const Dashboard = () => {
   const [show2FASetup, setShow2FASetup] = useState(false);
   const [has2FA, setHas2FA] = useState(false);
   const [disabling2FA, setDisabling2FA] = useState(false);
+  
+  // Avatar crop state
+  const [cropDialogOpen, setCropDialogOpen] = useState(false);
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   
   // Background saving indicator
   const [showSavingIndicator, setShowSavingIndicator] = useState(false);
@@ -388,37 +392,44 @@ const Dashboard = () => {
     fileInputRef.current?.click();
   };
 
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
     if (!file.type.startsWith('image/')) {
-      toast.error('Ошибка', {
-        description: 'Пожалуйста, выберите изображение',
-      });
+      toast.error('Пожалуйста, выберите изображение');
       return;
     }
 
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error('Ошибка', {
-        description: 'Максимальный размер файла 2MB',
-      });
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Максимальный размер файла 5MB');
       return;
     }
+
+    // Open crop dialog
+    setSelectedImageFile(file);
+    setCropDialogOpen(true);
+    
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleCropSave = async (croppedBlob: Blob) => {
+    if (!user) return;
 
     setUploadingAvatar(true);
+    setCropDialogOpen(false);
 
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${user.id}/avatar.${fileExt}`;
+    const fileName = `${user.id}/avatar.jpg`;
 
     const { error: uploadError } = await supabase.storage
       .from('avatars')
-      .upload(fileName, file, { upsert: true });
+      .upload(fileName, croppedBlob, { upsert: true, contentType: 'image/jpeg' });
 
     if (uploadError) {
-      toast.error('Ошибка', {
-        description: 'Не удалось загрузить аватар',
-      });
+      toast.error('Не удалось загрузить аватар');
       setUploadingAvatar(false);
       return;
     }
@@ -435,15 +446,14 @@ const Dashboard = () => {
       .eq('user_id', user.id);
 
     if (updateError) {
-      toast.error('Ошибка', {
-        description: 'Не удалось обновить профиль',
-      });
+      toast.error('Не удалось обновить профиль');
     } else {
       setProfile(prev => prev ? { ...prev, avatar_url: newAvatarUrl } : null);
       toast.success('Аватар обновлён');
     }
 
     setUploadingAvatar(false);
+    setSelectedImageFile(null);
   };
 
   const formatDate = (dateStr: string) => {
@@ -1307,6 +1317,17 @@ const Dashboard = () => {
         isOpen={show2FASetup}
         onClose={() => setShow2FASetup(false)}
         onSuccess={() => setHas2FA(true)}
+      />
+      
+      {/* Avatar Crop Dialog */}
+      <AvatarCropDialog
+        open={cropDialogOpen}
+        imageFile={selectedImageFile}
+        onClose={() => {
+          setCropDialogOpen(false);
+          setSelectedImageFile(null);
+        }}
+        onSave={handleCropSave}
       />
     </div>
   );

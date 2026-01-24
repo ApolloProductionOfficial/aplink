@@ -72,8 +72,12 @@ export function GlobalActiveCall() {
   }, [endCall, navigate]);
 
 
-  // Handle maximize - navigate back to room
+  // Handle maximize - exit PiP if active, navigate back to room
   const handleMaximize = useCallback(() => {
+    // Exit any existing PiP
+    if (document.pictureInPictureElement) {
+      document.exitPictureInPicture().catch(() => {});
+    }
     maximize();
     navigate(`/room/${roomSlug}?name=${encodeURIComponent(participantName)}`);
   }, [maximize, navigate, roomSlug, participantName]);
