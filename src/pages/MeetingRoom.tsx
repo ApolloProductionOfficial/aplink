@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
-import { Room, RoomEvent, DataPacket_Kind } from "livekit-client";
+import { Room, RoomEvent } from "livekit-client";
 import {
   Copy,
   Check,
@@ -37,20 +37,25 @@ import { useLiveKitTranslationBroadcast } from "@/hooks/useLiveKitTranslationBro
 import { MeetingEndSaveDialog, type MeetingSaveStatus } from "@/components/MeetingEndSaveDialog";
 import { invokeBackendFunctionKeepalive } from "@/utils/invokeBackendFunctionKeepalive";
 import LeaveCallDialog from "@/components/LeaveCallDialog";
-import { LiveKitRoom } from "@/components/LiveKitRoom";
 import CallQualityWidget from "@/components/CallQualityWidget";
 import { cn } from "@/lib/utils";
 import { useActiveCall } from "@/contexts/ActiveCallContext";
 
+/**
+ * MeetingRoom is now a UI wrapper that:
+ * 1. Registers the call with ActiveCallContext
+ * 2. Provides headerButtons and connectionIndicator via context
+ * 3. Renders overlays (translator, captions, IP panel, dialogs)
+ * 
+ * The actual LiveKitRoom is rendered by GlobalActiveCall
+ */
 const MeetingRoom = () => {
   const { roomId } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const userName = searchParams.get("name");
   const [copied, setCopied] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [showRegistrationHint, setShowRegistrationHint] = useState(false);
-  const [participantIP, setParticipantIP] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showIPPanel, setShowIPPanel] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'reconnecting'>('connecting');
@@ -83,7 +88,6 @@ const MeetingRoom = () => {
   const PENDING_MEETING_SAVE_KEY = "pending_meeting_save_v1";
   const pendingSaveBaseRef = useRef<PendingMeetingSaveBase | null>(null);
 
-  // Removed useToast - using sonner directly
   const { user, isLoading: authLoading } = useAuth();
   const { sendNotification } = usePushNotifications();
   const { isRecording, startRecording, stopRecording, getAudioBlob, getRecoveredRecording, clearRecoveredRecording } = useAudioRecorder();
@@ -102,9 +106,16 @@ const MeetingRoom = () => {
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const { t } = useTranslation();
   
-  // LiveKit room reference for translator integration
-  const [liveKitRoom, setLiveKitRoom] = useState<Room | null>(null);
-  const { startCall, minimize } = useActiveCall();
+  // Get room from context
+  const { 
+    startCall, 
+    minimize, 
+    liveKitRoom, 
+    setHeaderButtons, 
+    setConnectionIndicator,
+    setEventHandlers,
+  } = useActiveCall();
+  
   const { 
     isBroadcasting, 
     startBroadcast, 
@@ -144,7 +155,7 @@ const MeetingRoom = () => {
     return () => {
       liveKitRoom.off(RoomEvent.DataReceived, handleDataReceived);
     };
-  }, [liveKitRoom, playTranslatedAudio, toast]);
+  }, [liveKitRoom, playTranslatedAudio]);
   
   // Start/stop broadcast when translator is toggled
   useEffect(() => {
@@ -154,12 +165,6 @@ const MeetingRoom = () => {
       stopBroadcast();
     }
   }, [showTranslator, liveKitRoom, isBroadcasting, startBroadcast, stopBroadcast]);
-  
-  // Callback when LiveKit room is ready
-  const handleRoomReady = useCallback((room: Room) => {
-    console.log('[MeetingRoom] LiveKit room ready');
-    setLiveKitRoom(room);
-  }, []);
 
   // Prevent crashes on invalid / missing URL param
   if (!roomId) return null;
@@ -168,9 +173,8 @@ const MeetingRoom = () => {
   const roomSlug = roomId ?? '';
   const safeUserName = userName ?? user?.email?.split('@')[0] ?? 'Guest';
 
-  // Register active call in global context so minimization can persist across navigation
+  // Register active call in global context
   useEffect(() => {
-    // Add current user to participants
     participantsRef.current.add(safeUserName);
     
     startCall({
@@ -182,15 +186,69 @@ const MeetingRoom = () => {
     });
   }, [startCall, roomDisplayName, roomSlug, safeUserName, user?.id]);
 
+  // Register event handlers with context
+  useEffect(() => {
+    setEventHandlers({
+      onConnected: () => {
+        console.log('[MeetingRoom] onConnected via context');
+        setConnectionStatus('connected');
+      },
+      onDisconnected: () => {
+        console.log('[MeetingRoom] onDisconnected via context');
+        setConnectionStatus('disconnected');
+        handleDisconnectedLogic();
+      },
+      onParticipantJoined: (identity: string, name: string) => {
+        participantsRef.current.add(name || identity);
+        sendNotification(`${name || identity} присоединился`, {
+          body: `К комнате "${roomDisplayName}"`,
+          tag: 'participant-joined',
+        });
+        toast.info(`${name || identity} присоединился`, {
+          description: 'Новый участник в комнате',
+        });
+      },
+      onParticipantLeft: (identity: string) => {
+        console.log('Participant left:', identity);
+      },
+      onError: (error: Error) => {
+        console.error('[MeetingRoom] Error via context:', error);
+      },
+    });
+  }, [setEventHandlers, roomDisplayName, sendNotification]);
+
   // Track presence in this room
   usePresence(roomDisplayName);
+
+  // Handle disconnected logic
+  const handleDisconnectedLogic = useCallback(() => {
+    if (userInitiatedEndRef.current || hasRedirectedRef.current) {
+      return;
+    }
+
+    if (!hasRedirectedRef.current && hasStartedRecordingRef.current) {
+      hasRedirectedRef.current = true;
+      
+      if (user) {
+        navigate('/dashboard?saving=true', { replace: true });
+        runMeetingSaveBackground();
+      } else {
+        setEndSaveDialogOpen(true);
+        setEndSaveStatus("saving");
+        runMeetingSave();
+      }
+    } else if (!hasRedirectedRef.current) {
+      hasRedirectedRef.current = true;
+      window.open('https://apolloproduction.studio', '_blank');
+      navigate(user ? '/dashboard' : '/', { replace: true });
+    }
+  }, [user, navigate]);
 
   // Block navigation when in a call + warn about recording
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       const isInActiveCall = connectionStatus === 'connected' && !userInitiatedEndRef.current && !hasRedirectedRef.current;
       
-      // Warn if recording is active
       if (isRecordingRef.current && !hasRedirectedRef.current) {
         e.preventDefault();
         e.returnValue = 'У вас есть активная запись. Если вы уйдёте, запись будет сохранена автоматически.';
@@ -234,9 +292,9 @@ const MeetingRoom = () => {
     navigate(-1);
   };
 
-  // Check if user is admin and fetch IP
+  // Check if user is admin
   useEffect(() => {
-    const checkAdminAndFetchIP = async () => {
+    const checkAdmin = async () => {
       if (user) {
         const { data: roleData } = await supabase
           .from('user_roles')
@@ -246,18 +304,11 @@ const MeetingRoom = () => {
         
         if (roleData?.role === 'admin') {
           setIsAdmin(true);
-          try {
-            const response = await fetch('https://api.ipify.org?format=json');
-            const data = await response.json();
-            setParticipantIP(data.ip);
-          } catch (error) {
-            console.error('Failed to fetch IP:', error);
-          }
         }
       }
     };
     
-    checkAdminAndFetchIP();
+    checkAdmin();
   }, [user]);
 
   // Save recovered recording to personal cabinet
@@ -464,7 +515,6 @@ const MeetingRoom = () => {
 
   // Build meeting save payload
   const buildMeetingSaveBasePayload = async (): Promise<PendingMeetingSaveBase | null> => {
-    // Always build payload if we have participants
     if (!hasStartedRecordingRef.current && participantsRef.current.size === 0) return null;
 
     if (isRecordingRef.current) {
@@ -473,7 +523,6 @@ const MeetingRoom = () => {
 
     const transcriptText = transcriptRef.current.join("\n") || "[Транскрипция отсутствует]";
     
-    // Ensure current user is in participants
     const participants = Array.from(participantsRef.current);
     if (!participants.includes(safeUserName)) {
       participants.push(safeUserName);
@@ -626,7 +675,6 @@ const MeetingRoom = () => {
 
   const goToCallsAfterSave = () => {
     setEndSaveDialogOpen(false);
-    // Open apolloproduction.studio in new tab, return to dashboard
     window.open('https://apolloproduction.studio', '_blank');
     navigate(user ? '/dashboard' : '/', { replace: true });
   };
@@ -634,110 +682,11 @@ const MeetingRoom = () => {
   const exitWithoutSaving = () => {
     clearPendingBaseFromStorage();
     setEndSaveDialogOpen(false);
-    // Open apolloproduction.studio in new tab, return to dashboard
     window.open('https://apolloproduction.studio', '_blank');
     navigate(user ? '/dashboard' : '/', { replace: true });
   };
 
-  // LiveKit event handlers
-  const handleLiveKitConnected = useCallback(() => {
-    console.log('LiveKit connected');
-    setIsLoading(false);
-    setConnectionStatus('connected');
-    playConnectedSound();
-    toast.success("Подключено", {
-      description: "Вы успешно подключились к комнате",
-    });
-  }, [playConnectedSound]);
-
-  const handleLiveKitDisconnected = useCallback(() => {
-    if (userInitiatedEndRef.current || hasRedirectedRef.current) {
-      console.log('User initiated leave - no reconnection needed');
-      return;
-    }
-
-    console.log('LiveKit disconnected');
-    setConnectionStatus('disconnected');
-    playDisconnectedSound();
-    
-    // Handle end call flow
-    if (!hasRedirectedRef.current && hasStartedRecordingRef.current) {
-      hasRedirectedRef.current = true;
-      
-      // For authenticated users - auto-save in background
-      if (user) {
-        navigate('/dashboard?saving=true', { replace: true });
-        runMeetingSaveBackground();
-      } else {
-        // For guests - show dialog
-        setEndSaveDialogOpen(true);
-        setEndSaveStatus("saving");
-        runMeetingSave();
-      }
-    } else if (!hasRedirectedRef.current) {
-      hasRedirectedRef.current = true;
-      // Open apolloproduction.studio in new tab, return to dashboard
-      window.open('https://apolloproduction.studio', '_blank');
-      navigate(user ? '/dashboard' : '/', { replace: true });
-    }
-  }, [playDisconnectedSound, user]);
-
-  const handleParticipantJoined = useCallback((identity: string, name: string) => {
-    console.log('Participant joined:', identity, name);
-    participantsRef.current.add(name || identity);
-    
-    sendNotification(`${name || identity} присоединился`, {
-      body: `К комнате "${roomDisplayName}"`,
-      tag: 'participant-joined',
-    });
-    
-    toast.info(`${name || identity} присоединился`, {
-      description: 'Новый участник в комнате',
-    });
-  }, [sendNotification, roomDisplayName]);
-
-  const handleParticipantLeft = useCallback((identity: string) => {
-    console.log('Participant left:', identity);
-  }, []);
-
-  const handleLiveKitError = useCallback((error: Error) => {
-    console.error('LiveKit error:', error);
-    toast.error("Ошибка подключения", {
-      description: error.message || "Не удалось подключиться к комнате",
-    });
-  }, []);
-
-  // Handle manual end call
-  const handleEndCall = useCallback(async () => {
-    if (hasRedirectedRef.current) return;
-    userInitiatedEndRef.current = true;
-    hasRedirectedRef.current = true;
-
-    if (!hasStartedRecordingRef.current) {
-      // Open apolloproduction.studio in new tab, return to dashboard
-      window.open('https://apolloproduction.studio', '_blank');
-      navigate(user ? '/dashboard' : '/', { replace: true });
-      return;
-    }
-
-    // For authenticated users - auto-save in background without dialog
-    if (user) {
-      // Navigate immediately to dashboard with saving indicator
-      navigate('/dashboard?saving=true', { replace: true });
-      // Run save in background
-      runMeetingSaveBackground();
-      return;
-    }
-
-    // For guests - show dialog
-    setEndSaveDialogOpen(true);
-    setEndSaveStatus("saving");
-    setEndSaveError(null);
-
-    await runMeetingSave();
-  }, [user]);
-
-  // Handle minimize - go to home page and keep call alive via global minimized widget
+  // Handle minimize - go to home page
   const handleMinimize = useCallback(() => {
     minimize();
     navigate('/', { replace: true });
@@ -748,7 +697,7 @@ const MeetingRoom = () => {
     return null;
   }
 
-  // Get connection quality icon and color
+  // Get connection quality icon
   const getQualityIndicator = () => {
     if (connectionQuality >= 80) {
       return { icon: SignalHigh, color: 'text-green-500', label: 'Отличное' };
@@ -761,10 +710,7 @@ const MeetingRoom = () => {
     }
   };
 
-  const qualityIndicator = getQualityIndicator();
-  const QualityIcon = qualityIndicator.icon;
-
-  // Header buttons for LiveKitRoom - matching soft rounded style
+  // Header buttons - passed to GlobalActiveCall via context
   const headerButtons = (
     <>
       {/* Recording button */}
@@ -901,7 +847,7 @@ const MeetingRoom = () => {
     </>
   );
 
-  // Connection indicator element - simplified to just a pulsing dot that changes color
+  // Connection indicator element
   const connectionIndicator = connectionStatus === 'connected' ? (
     <div className="flex items-center gap-1.5">
       <span 
@@ -927,8 +873,14 @@ const MeetingRoom = () => {
     </div>
   ) : null;
 
+  // Update context with header buttons and connection indicator
+  useEffect(() => {
+    setHeaderButtons(headerButtons);
+    setConnectionIndicator(connectionIndicator);
+  }, [isRecording, recordingDuration, isTranscribing, showCaptions, showTranslator, copied, showIPPanel, isAdmin, connectionStatus, connectionQuality, liveKitRoom]);
+
   return (
-    <div className="h-screen w-screen bg-background flex flex-col overflow-hidden relative cursor-default">
+    <>
       {/* Recording Indicator - Fixed top-left */}
       {isRecording && (
         <div className="fixed top-4 left-4 z-[100] flex items-center gap-2 bg-destructive/90 backdrop-blur-sm text-destructive-foreground px-3 py-1.5 rounded-full shadow-lg animate-fade-in">
@@ -997,7 +949,7 @@ const MeetingRoom = () => {
 
       {/* Registration hint for non-authenticated users */}
       {showRegistrationHint && !user && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 glass rounded-xl px-4 py-3 border border-primary/30 animate-slide-up max-w-sm">
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] glass rounded-xl px-4 py-3 border border-primary/30 animate-slide-up max-w-sm">
           <div className="flex items-start gap-3">
             <Sparkles className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
             <div>
@@ -1025,29 +977,7 @@ const MeetingRoom = () => {
           </div>
         </div>
       )}
-
-      {/* Loading is now handled by LiveKitRoom's cosmic loading screen */}
-
-      {/* LiveKit Room Container - Full height */}
-      <div className="flex-1 w-full z-10 relative" style={{ minHeight: 0 }}>
-        {/* Only render LiveKitRoom if we don't already have an active room from GlobalActiveCall */}
-        <LiveKitRoom
-          roomName={roomSlug}
-          participantName={safeUserName}
-          participantIdentity={user?.id}
-          onConnected={handleLiveKitConnected}
-          onDisconnected={handleLiveKitDisconnected}
-          onParticipantJoined={handleParticipantJoined}
-          onParticipantLeft={handleParticipantLeft}
-          onError={handleLiveKitError}
-          onRoomReady={handleRoomReady}
-          headerButtons={headerButtons}
-          roomDisplayName={roomDisplayName}
-          onMinimize={handleMinimize}
-          connectionIndicator={connectionIndicator}
-        />
-      </div>
-    </div>
+    </>
   );
 };
 

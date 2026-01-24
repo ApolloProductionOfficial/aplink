@@ -14,8 +14,10 @@ import { useConnectionSounds } from '@/hooks/useConnectionSounds';
  * This component ALWAYS renders the LiveKitRoom when a call is active,
  * ensuring the connection persists across navigation.
  * 
- * When minimized: shows floating widget + hidden LiveKitRoom
- * When maximized: hidden (MeetingRoom shows UI using room from context)
+ * Architecture:
+ * - When isActive && !isMinimized && on room route: LiveKitRoom renders fullscreen
+ * - When isActive && isMinimized: LiveKitRoom hidden, MinimizedCallWidget shown
+ * - MeetingRoom only provides UI elements (headerButtons, connectionIndicator) via context
  */
 export function GlobalActiveCall() {
   const navigate = useNavigate();
@@ -30,8 +32,12 @@ export function GlobalActiveCall() {
     participantName,
     participantIdentity,
     roomDisplayName,
+    headerButtons,
+    connectionIndicator,
     liveKitRoom,
+    eventHandlers,
     endCall,
+    minimize,
     maximize,
     setLiveKitRoom,
   } = useActiveCall();
@@ -45,7 +51,7 @@ export function GlobalActiveCall() {
     setLiveKitRoom(room);
   }, [setLiveKitRoom]);
 
-  // Handle connected
+  // Handle connected - notify MeetingRoom via context handlers
   const handleConnected = useCallback(() => {
     console.log('[GlobalActiveCall] Connected');
     setIsConnected(true);
@@ -56,7 +62,9 @@ export function GlobalActiveCall() {
         description: 'Вы успешно подключились к комнате',
       });
     }
-  }, [playConnectedSound]);
+    // Call MeetingRoom's onConnected handler
+    eventHandlers.onConnected?.();
+  }, [playConnectedSound, eventHandlers]);
 
   // Handle disconnected
   const handleDisconnected = useCallback(() => {
@@ -64,13 +72,29 @@ export function GlobalActiveCall() {
     hasConnectedRef.current = false;
     setIsConnected(false);
     playDisconnectedSound();
+    
+    // Call MeetingRoom's onDisconnected handler first
+    eventHandlers.onDisconnected?.();
+    
     endCall();
     
     // Navigate to home page if not already there
     if (location.pathname !== '/') {
       navigate('/', { replace: true });
     }
-  }, [playDisconnectedSound, endCall, navigate, location.pathname]);
+  }, [playDisconnectedSound, endCall, navigate, location.pathname, eventHandlers]);
+
+  // Handle participant joined
+  const handleParticipantJoined = useCallback((identity: string, name: string) => {
+    console.log('[GlobalActiveCall] Participant joined:', identity, name);
+    eventHandlers.onParticipantJoined?.(identity, name);
+  }, [eventHandlers]);
+
+  // Handle participant left
+  const handleParticipantLeft = useCallback((identity: string) => {
+    console.log('[GlobalActiveCall] Participant left:', identity);
+    eventHandlers.onParticipantLeft?.(identity);
+  }, [eventHandlers]);
 
   // Handle end call button
   const handleEndCall = useCallback(() => {
@@ -92,13 +116,20 @@ export function GlobalActiveCall() {
     navigate(`/room/${roomSlug}?name=${encodeURIComponent(participantName)}`);
   }, [maximize, navigate, roomSlug, participantName]);
 
+  // Handle minimize - go to home and show widget
+  const handleMinimize = useCallback(() => {
+    minimize();
+    navigate('/', { replace: true });
+  }, [minimize, navigate]);
+
   // Handle error
   const handleError = useCallback((error: Error) => {
     console.error('[GlobalActiveCall] Error:', error);
     toast.error('Ошибка подключения', {
       description: error.message || 'Не удалось подключиться к комнате',
     });
-  }, []);
+    eventHandlers.onError?.(error);
+  }, [eventHandlers]);
 
   // Reset on unmount
   useEffect(() => {
@@ -112,7 +143,10 @@ export function GlobalActiveCall() {
     return null;
   }
 
-  // When minimized, show the floating widget and keep LiveKitRoom mounted but hidden
+  // Check if we're on the meeting room route
+  const isOnMeetingRoomRoute = location.pathname.startsWith('/room/');
+
+  // When minimized: show floating widget + hidden LiveKitRoom
   if (isMinimized) {
     return (
       <>
@@ -128,6 +162,8 @@ export function GlobalActiveCall() {
             participantIdentity={participantIdentity}
             onConnected={handleConnected}
             onDisconnected={handleDisconnected}
+            onParticipantJoined={handleParticipantJoined}
+            onParticipantLeft={handleParticipantLeft}
             onError={handleError}
             onRoomReady={handleRoomReady}
           />
@@ -150,21 +186,31 @@ export function GlobalActiveCall() {
     );
   }
 
-  // When NOT minimized but active, we need to keep the connection alive
-  // but MeetingRoom will handle the UI. We render a hidden LiveKitRoom
-  // only if we don't already have a connected room.
-  // 
-  // However, if MeetingRoom is mounted, it will also try to render LiveKitRoom.
-  // To prevent duplicate connections, we check if we're on the meeting room route.
-  const isOnMeetingRoomRoute = location.pathname.startsWith('/room/');
-  
-  // If we're on the meeting room route, let MeetingRoom handle the LiveKitRoom
+  // When NOT minimized and on room route: render fullscreen LiveKitRoom
   if (isOnMeetingRoomRoute) {
-    return null;
+    return (
+      <div className="fixed inset-0 z-50 bg-background">
+        <LiveKitRoom
+          roomName={roomSlug}
+          participantName={participantName}
+          participantIdentity={participantIdentity}
+          onConnected={handleConnected}
+          onDisconnected={handleDisconnected}
+          onParticipantJoined={handleParticipantJoined}
+          onParticipantLeft={handleParticipantLeft}
+          onError={handleError}
+          onRoomReady={handleRoomReady}
+          headerButtons={headerButtons}
+          roomDisplayName={roomDisplayName}
+          onMinimize={handleMinimize}
+          connectionIndicator={connectionIndicator}
+        />
+      </div>
+    );
   }
 
-  // If we're NOT on meeting room route but call is active and not minimized,
-  // this is an edge case (shouldn't normally happen). Redirect to room.
+  // If NOT on meeting room route but call is active and not minimized,
+  // redirect to room
   navigate(`/room/${roomSlug}?name=${encodeURIComponent(participantName)}`, { replace: true });
   return null;
 }

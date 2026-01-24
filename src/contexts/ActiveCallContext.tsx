@@ -1,6 +1,14 @@
 import React, { createContext, useContext, useState, useCallback, useRef, ReactNode } from 'react';
 import { Room } from 'livekit-client';
 
+interface CallEventHandlers {
+  onConnected?: () => void;
+  onDisconnected?: () => void;
+  onParticipantJoined?: (identity: string, name: string) => void;
+  onParticipantLeft?: (identity: string) => void;
+  onError?: (error: Error) => void;
+}
+
 interface ActiveCallState {
   isActive: boolean;
   isMinimized: boolean;
@@ -12,6 +20,7 @@ interface ActiveCallState {
   liveKitRoom: Room | null;
   headerButtons: ReactNode | null;
   connectionIndicator: ReactNode | null;
+  eventHandlers: CallEventHandlers;
 }
 
 interface ActiveCallContextType extends ActiveCallState {
@@ -28,6 +37,7 @@ interface ActiveCallContextType extends ActiveCallState {
   setLiveKitRoom: (room: Room | null) => void;
   setHeaderButtons: (node: ReactNode | null) => void;
   setConnectionIndicator: (node: ReactNode | null) => void;
+  setEventHandlers: (handlers: CallEventHandlers) => void;
 }
 
 const defaultState: ActiveCallState = {
@@ -41,6 +51,7 @@ const defaultState: ActiveCallState = {
   liveKitRoom: null,
   headerButtons: null,
   connectionIndicator: null,
+  eventHandlers: {},
 };
 
 const ActiveCallContext = createContext<ActiveCallContextType | null>(null);
@@ -48,6 +59,7 @@ const ActiveCallContext = createContext<ActiveCallContextType | null>(null);
 export function ActiveCallProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<ActiveCallState>(defaultState);
   const roomRef = useRef<Room | null>(null);
+  const handlersRef = useRef<CallEventHandlers>({});
 
   const startCall = useCallback((params: {
     roomName: string;
@@ -67,11 +79,13 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       liveKitRoom: roomRef.current,
       headerButtons: prev.headerButtons,
       connectionIndicator: prev.connectionIndicator,
+      eventHandlers: handlersRef.current,
     }));
   }, []);
 
   const endCall = useCallback(() => {
     roomRef.current = null;
+    handlersRef.current = {};
     setState(defaultState);
   }, []);
 
@@ -96,6 +110,11 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
     setState(prev => ({ ...prev, connectionIndicator: node }));
   }, []);
 
+  const setEventHandlers = useCallback((handlers: CallEventHandlers) => {
+    handlersRef.current = handlers;
+    setState(prev => ({ ...prev, eventHandlers: handlers }));
+  }, []);
+
   return (
     <ActiveCallContext.Provider
       value={{
@@ -107,6 +126,7 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
         setLiveKitRoom,
         setHeaderButtons,
         setConnectionIndicator,
+        setEventHandlers,
       }}
     >
       {children}
