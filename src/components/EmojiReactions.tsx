@@ -222,42 +222,99 @@ const CUSTOM_REACTIONS: CustomReaction[] = [
     ),
     glowColor: 'rgba(245, 158, 11, 0.6)'
   },
+  // Text-based brand emojis
   {
-    id: 'onlyfans',
-    label: 'OF',
+    id: 'oscar',
+    label: 'OSCAR',
     svg: (
-      <svg viewBox="0 0 48 48" className="w-full h-full">
+      <svg viewBox="0 0 80 48" className="w-full h-full">
         <defs>
-          <linearGradient id="of-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#00bfff"/>
-            <stop offset="100%" stopColor="#00d4ff"/>
+          <linearGradient id="oscar-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#ffd700"/>
+            <stop offset="50%" stopColor="#ffec8b"/>
+            <stop offset="100%" stopColor="#ffd700"/>
           </linearGradient>
         </defs>
-        <circle cx="24" cy="24" r="20" stroke="url(#of-grad)" strokeWidth="3" fill="none"/>
-        <circle cx="24" cy="24" r="16" stroke="url(#of-grad)" strokeWidth="1" fill="none" opacity="0.3"/>
-        <path d="M14 24 L20 30 L34 16" stroke="url(#of-grad)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+        <text 
+          x="40" 
+          y="32" 
+          textAnchor="middle" 
+          fill="url(#oscar-grad)" 
+          fontSize="18" 
+          fontWeight="900" 
+          fontFamily="Arial Black, sans-serif"
+          style={{ textShadow: '0 0 10px #ffd700, 0 0 20px #ffd700, 0 0 30px #ffd700' }}
+        >
+          OSCAR
+        </text>
       </svg>
     ),
-    glowColor: 'rgba(0, 191, 255, 0.6)'
+    glowColor: 'rgba(255, 215, 0, 0.8)'
   },
   {
     id: 'apollo',
-    label: 'Apollo',
+    label: 'APOLLO',
     svg: (
-      <svg viewBox="0 0 48 48" className="w-full h-full">
+      <svg viewBox="0 0 120 48" className="w-full h-full">
         <defs>
-          <linearGradient id="apollo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#ffd700"/>
-            <stop offset="100%" stopColor="#ffaa00"/>
+          <linearGradient id="apollo-text-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#c084fc"/>
+            <stop offset="50%" stopColor="#e879f9"/>
+            <stop offset="100%" stopColor="#c084fc"/>
           </linearGradient>
         </defs>
-        <path d="M14 42 L24 6 L34 42" stroke="url(#apollo-grad)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-        <path d="M18 30 L30 30" stroke="url(#apollo-grad)" strokeWidth="3" strokeLinecap="round"/>
-        <circle cx="24" cy="6" r="4" fill="url(#apollo-grad)"/>
-        <circle cx="24" cy="6" r="2" fill="#fff5cc"/>
+        <text 
+          x="60" 
+          y="22" 
+          textAnchor="middle" 
+          fill="url(#apollo-text-grad)" 
+          fontSize="12" 
+          fontWeight="900" 
+          fontFamily="Arial Black, sans-serif"
+        >
+          APOLLO
+        </text>
+        <text 
+          x="60" 
+          y="38" 
+          textAnchor="middle" 
+          fill="url(#apollo-text-grad)" 
+          fontSize="10" 
+          fontWeight="700" 
+          fontFamily="Arial, sans-serif"
+        >
+          PRODUCTION
+        </text>
       </svg>
     ),
-    glowColor: 'rgba(255, 215, 0, 0.6)'
+    glowColor: 'rgba(192, 132, 252, 0.8)'
+  },
+  {
+    id: 'onlyfans_text',
+    label: 'ONLYFANS',
+    svg: (
+      <svg viewBox="0 0 100 48" className="w-full h-full">
+        <defs>
+          <linearGradient id="of-text-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#00bfff"/>
+            <stop offset="50%" stopColor="#00e5ff"/>
+            <stop offset="100%" stopColor="#00bfff"/>
+          </linearGradient>
+        </defs>
+        <text 
+          x="50" 
+          y="32" 
+          textAnchor="middle" 
+          fill="url(#of-text-grad)" 
+          fontSize="14" 
+          fontWeight="900" 
+          fontFamily="Arial Black, sans-serif"
+        >
+          ONLYFANS
+        </text>
+      </svg>
+    ),
+    glowColor: 'rgba(0, 191, 255, 0.8)'
   },
 ];
 
@@ -372,6 +429,9 @@ export function EmojiReactions({ room, participantName }: EmojiReactionsProps) {
         const config = getReactionConfig(reaction.reactionId);
         if (!config) return null;
         
+        // Determine if it's a text-based emoji (wider)
+        const isTextEmoji = ['oscar', 'apollo', 'onlyfans_text'].includes(reaction.reactionId);
+        
         return (
           <div
             key={reaction.id}
@@ -383,7 +443,10 @@ export function EmojiReactions({ room, participantName }: EmojiReactionsProps) {
           >
             <div className="flex flex-col items-center">
               <div 
-                className="w-24 h-24"
+                className={cn(
+                  "h-20",
+                  isTextEmoji ? "w-40" : "w-24"
+                )}
                 style={{ 
                   filter: `drop-shadow(0 0 20px ${config.glowColor}) drop-shadow(0 0 40px ${config.glowColor})`,
                 }}
@@ -423,23 +486,27 @@ export function EmojiReactions({ room, participantName }: EmojiReactionsProps) {
           align="center"
           sideOffset={12}
         >
-          <div className="grid grid-cols-6 gap-2">
-            {CUSTOM_REACTIONS.map((reaction) => (
-              <button
-                key={reaction.id}
-                onClick={() => sendReaction(reaction.id)}
-                className={cn(
-                  "w-12 h-12 p-1.5 rounded-xl transition-all",
-                  "hover:bg-white/20 hover:scale-125 active:scale-95"
-                )}
-                title={reaction.label}
-                style={{
-                  filter: `drop-shadow(0 0 4px ${reaction.glowColor})`,
-                }}
-              >
-                {reaction.svg}
-              </button>
-            ))}
+          <div className="grid grid-cols-5 gap-2">
+            {CUSTOM_REACTIONS.map((reaction) => {
+              const isTextEmoji = ['oscar', 'apollo', 'onlyfans_text'].includes(reaction.id);
+              return (
+                <button
+                  key={reaction.id}
+                  onClick={() => sendReaction(reaction.id)}
+                  className={cn(
+                    "p-1.5 rounded-xl transition-all",
+                    "hover:bg-white/20 hover:scale-110 active:scale-95",
+                    isTextEmoji ? "col-span-2 w-24 h-12" : "w-12 h-12"
+                  )}
+                  title={reaction.label}
+                  style={{
+                    filter: `drop-shadow(0 0 4px ${reaction.glowColor})`,
+                  }}
+                >
+                  {reaction.svg}
+                </button>
+              );
+            })}
           </div>
         </PopoverContent>
       </Popover>

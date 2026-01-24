@@ -45,7 +45,6 @@ import { useRaiseHand } from "@/hooks/useRaiseHand";
 import { useNoiseSuppression } from "@/hooks/useNoiseSuppression";
 import { useVoiceNotifications } from "@/hooks/useVoiceNotifications";
 import { useVoiceCommands } from "@/hooks/useVoiceCommands";
-import { useFaceFilters } from "@/hooks/useFaceFilters";
 import { CollaborativeWhiteboard } from "@/components/CollaborativeWhiteboard";
 import { toast } from "sonner";
 
@@ -315,9 +314,6 @@ function LiveKitContent({
   
   // Voice notifications hook
   const { announceHandRaised, announceParticipantJoined, announceParticipantLeft } = useVoiceNotifications();
-  
-  // Face filters hook
-  const { activeFilter, setActiveFilter: setFaceFilter } = useFaceFilters();
   
   // Auto-hide panels state
   const [showTopPanel, setShowTopPanel] = useState(true);
@@ -727,23 +723,7 @@ function LiveKitContent({
         </div>
       )}
 
-      {/* Screen share self-view (when sharing) */}
-      {isScreenShareEnabled && localScreenTrack && (
-        <div className="absolute top-24 right-4 z-50 w-64 h-40 rounded-xl overflow-hidden border-2 border-green-500/50 shadow-[0_0_20px_hsl(142,76%,36%,0.3)] bg-black">
-          <VideoTrack 
-            trackRef={{ 
-              participant: localParticipant as LocalParticipant, 
-              source: Track.Source.ScreenShare,
-              publication: localParticipant?.getTrackPublication(Track.Source.ScreenShare)!
-            }} 
-            className="w-full h-full object-contain"
-          />
-          <div className="absolute bottom-1 left-2 text-xs text-white/90 px-1.5 py-0.5 rounded flex items-center gap-1">
-            <MonitorUp className="w-3 h-3" />
-            Ваш экран
-          </div>
-        </div>
-      )}
+      {/* Screen share self-view removed - unnecessary small preview window */}
 
       {/* Main video grid - with screen share priority layout */}
       <div className="flex-1 relative overflow-hidden">
@@ -861,64 +841,67 @@ function LiveKitContent({
               side="top" 
               align="center" 
               sideOffset={12}
-              className="p-0 bg-transparent border-none shadow-none"
+              className="p-3 bg-black/50 backdrop-blur-2xl border border-white/[0.1] rounded-2xl shadow-2xl"
             >
-              <div className="flex items-center gap-2">
-                {/* Circle 1: Toggle Mic */}
-                <button
-                  onClick={toggleMicrophone}
-                  className={cn(
-                    "w-10 h-10 rounded-full flex items-center justify-center",
-                    "bg-white/15 backdrop-blur-sm border border-white/[0.1]",
-                    "hover:bg-white/25 transition-all hover:scale-110",
-                    "group relative",
-                    !isMicrophoneEnabled && "bg-destructive/30 border-destructive/40"
-                  )}
-                  title={isMicrophoneEnabled ? "Выключить микрофон" : "Включить микрофон"}
-                >
-                  {isMicrophoneEnabled ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                  <span className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 rounded bg-black/80 text-[10px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity border border-white/10">
-                    {isMicrophoneEnabled ? "Выкл. микрофон" : "Вкл. микрофон"}
-                  </span>
-                </button>
-                
-                {/* Circle 2: Noise Suppression */}
-                <button
-                  onClick={toggleNoiseSuppression}
-                  className={cn(
-                    "w-10 h-10 rounded-full flex items-center justify-center",
-                    "bg-white/15 backdrop-blur-sm border border-white/[0.1]",
-                    "hover:bg-white/25 transition-all hover:scale-110",
-                    "group relative",
-                    isNoiseSuppressionEnabled && "bg-primary/30 border-primary/40"
-                  )}
-                  title={isNoiseSuppressionEnabled ? "Выкл. шумоподавление" : "Вкл. шумоподавление"}
-                >
-                  {isNoiseSuppressionEnabled ? <VolumeX className="w-4 h-4 text-primary" /> : <Volume2 className="w-4 h-4" />}
-                  <span className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 rounded bg-black/80 text-[10px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity border border-white/10">
-                    {isNoiseSuppressionEnabled ? "Выкл. шумодав." : "Шумоподавление"}
-                  </span>
-                </button>
-                
-                {/* Circle 3: Voice Commands */}
-                {voiceCommandsSupported && (
+              <div className="flex flex-col gap-2">
+                <span className="text-[10px] text-muted-foreground font-medium mb-1 text-center">Настройки микрофона</span>
+                <div className="flex items-center gap-2.5">
+                  {/* Circle 1: Toggle Mic */}
                   <button
-                    onClick={toggleVoiceCommands}
+                    onClick={toggleMicrophone}
                     className={cn(
-                      "w-10 h-10 rounded-full flex items-center justify-center",
-                      "bg-white/15 backdrop-blur-sm border border-white/[0.1]",
-                      "hover:bg-white/25 transition-all hover:scale-110",
+                      "w-11 h-11 rounded-full flex items-center justify-center",
+                      "bg-white/10 backdrop-blur-sm border border-white/[0.12]",
+                      "hover:bg-white/20 transition-all hover:scale-110 hover:shadow-lg",
                       "group relative",
-                      isVoiceCommandsActive && "bg-purple-500/30 border-purple-500/40"
+                      !isMicrophoneEnabled && "bg-destructive/30 border-destructive/50 shadow-[0_0_15px_rgba(220,50,50,0.2)]"
                     )}
-                    title={isVoiceCommandsActive ? "Выкл. голосовые команды" : "Голосовые команды"}
+                    title={isMicrophoneEnabled ? "Выключить микрофон" : "Включить микрофон"}
                   >
-                    <Mic2 className={cn("w-4 h-4", isVoiceCommandsActive && "text-purple-400")} />
-                    <span className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 rounded bg-black/80 text-[10px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity border border-white/10">
-                      {isVoiceCommandsActive ? "Выкл. команды" : "Голос. команды"}
+                    {isMicrophoneEnabled ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                    <span className="absolute -bottom-7 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-black/90 text-[9px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity border border-white/10">
+                      {isMicrophoneEnabled ? "Выкл." : "Вкл."}
                     </span>
                   </button>
-                )}
+                  
+                  {/* Circle 2: Noise Suppression */}
+                  <button
+                    onClick={toggleNoiseSuppression}
+                    className={cn(
+                      "w-11 h-11 rounded-full flex items-center justify-center",
+                      "bg-white/10 backdrop-blur-sm border border-white/[0.12]",
+                      "hover:bg-white/20 transition-all hover:scale-110 hover:shadow-lg",
+                      "group relative",
+                      isNoiseSuppressionEnabled && "bg-primary/30 border-primary/50 shadow-[0_0_15px_hsl(var(--primary)/0.3)]"
+                    )}
+                    title={isNoiseSuppressionEnabled ? "Выкл. шумоподавление" : "Вкл. шумоподавление"}
+                  >
+                    {isNoiseSuppressionEnabled ? <VolumeX className="w-4 h-4 text-primary" /> : <Volume2 className="w-4 h-4" />}
+                    <span className="absolute -bottom-7 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-black/90 text-[9px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity border border-white/10">
+                      Шум
+                    </span>
+                  </button>
+                  
+                  {/* Circle 3: Voice Commands */}
+                  {voiceCommandsSupported && (
+                    <button
+                      onClick={toggleVoiceCommands}
+                      className={cn(
+                        "w-11 h-11 rounded-full flex items-center justify-center",
+                        "bg-white/10 backdrop-blur-sm border border-white/[0.12]",
+                        "hover:bg-white/20 transition-all hover:scale-110 hover:shadow-lg",
+                        "group relative",
+                        isVoiceCommandsActive && "bg-purple-500/30 border-purple-500/50 shadow-[0_0_15px_rgba(147,51,234,0.3)]"
+                      )}
+                      title={isVoiceCommandsActive ? "Выкл. голосовые команды" : "Голосовые команды"}
+                    >
+                      <Mic2 className={cn("w-4 h-4", isVoiceCommandsActive && "text-purple-400")} />
+                      <span className="absolute -bottom-7 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-black/90 text-[9px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity border border-white/10">
+                        Голос
+                      </span>
+                    </button>
+                  )}
+                </div>
               </div>
             </PopoverContent>
           </Popover>
@@ -944,7 +927,7 @@ function LiveKitContent({
           {/* Divider */}
           <div className="w-px h-8 bg-white/10 mx-0.5" />
 
-          {/* Virtual Background + Face Filters combined selector */}
+          {/* Virtual Background selector (face filters removed) */}
           <VirtualBackgroundSelector
             onSelectBlur={applyBlurBackground}
             onSelectImage={applyImageBackground}
@@ -953,10 +936,7 @@ function LiveKitContent({
             isProcessing={isProcessingBackground}
             onResetAllEffects={() => {
               if (isNoiseSuppressionEnabled) toggleNoiseSuppression();
-              setFaceFilter('none');
             }}
-            activeFaceFilter={activeFilter}
-            onSelectFaceFilter={setFaceFilter}
           />
 
           {/* Whiteboard button */}
