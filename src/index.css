@@ -700,8 +700,23 @@ All colors MUST be HSL.
 .livekit-room-container .lk-participant-metadata-item,
 .livekit-room-container .lk-participant-tile svg.lk-icon,
 .livekit-room-container .lk-participant-tile [data-lk-muted],
-.livekit-room-container .lk-focus-layout-wrapper svg.lk-icon {
+.livekit-room-container .lk-focus-layout-wrapper svg.lk-icon,
+/* Скрыть tooltip с именем при наведении */
+.livekit-room-container .lk-participant-tile-tooltip,
+.livekit-room-container [role="tooltip"],
+.livekit-room-container .lk-tooltip,
+.lk-participant-tile [title],
+.lk-participant-tile::before,
+.lk-participant-tile::after {
   display: none !important;
+}
+
+/* Убрать title атрибут с плиток (предотвратить нативный tooltip) */
+.livekit-room-container .lk-participant-tile {
+  pointer-events: auto;
+}
+.livekit-room-container .lk-participant-tile[title] {
+  title: none;
 }
 
 /* ПЛАВНОЕ СИНЕЕ свечение при говорении - как индикатор сверху */
