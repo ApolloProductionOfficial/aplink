@@ -40,6 +40,7 @@ export function MinimizedCallWidget({
       )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onClick={onMaximize}
     >
       {/* Main content */}
       <div className="relative w-72 h-20">
