@@ -66,7 +66,7 @@ const FeaturedServices = () => {
               <button
                 key={service.path}
                 onClick={() => handleServiceClick(service.path)}
-                className="group relative overflow-hidden rounded-2xl border border-border/50 p-4 md:p-6 text-left transition-all duration-300 hover:scale-105 hover:border-primary/60 hover:shadow-2xl hover:shadow-primary/20 bg-card/50 backdrop-blur-sm"
+                className="group relative overflow-hidden rounded-2xl glass border border-border/50 p-4 md:p-6 text-left transition-all duration-300 hover:scale-105 hover:border-primary/60 hover:shadow-2xl hover:shadow-primary/20"
               >
                 {/* Animated background */}
                 <div className={`absolute inset-0 bg-gradient-to-br ${service.color} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
@@ -110,7 +110,7 @@ const FeaturedServices = () => {
               playClickSound();
               navigate("/services");
             }}
-            className="group relative inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-primary/20 to-cyan-500/20 hover:from-primary/30 hover:to-cyan-500/30 border border-primary/50 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-primary/20"
+            className="group relative inline-flex items-center gap-2 px-8 py-4 glass border border-primary/50 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-primary/20 hover:border-primary"
           >
             <span className="text-lg font-semibold text-primary">
               {t.services.allServices}

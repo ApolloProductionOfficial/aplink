@@ -103,7 +103,7 @@ const StatCard = ({
 
   return (
     <div
-      className="relative bg-gradient-to-br from-card/90 via-card/70 to-card/90 backdrop-blur-xl rounded-2xl p-8 border-2 border-primary/30 hover:border-primary/60 hover:shadow-2xl hover:shadow-primary/40 transition-all duration-500 group hover:scale-110 overflow-hidden"
+      className="relative glass rounded-2xl p-8 border border-primary/30 hover:border-primary/60 hover:shadow-2xl hover:shadow-primary/40 transition-all duration-500 group hover:scale-105 overflow-hidden"
       style={{ 
         animationDelay: `${delay}s`,
         opacity: isVisible ? 1 : 0,

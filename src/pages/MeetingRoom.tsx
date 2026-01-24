@@ -1030,6 +1030,7 @@ const MeetingRoom = () => {
 
       {/* LiveKit Room Container - Full height */}
       <div className="flex-1 w-full z-10 relative" style={{ minHeight: 0 }}>
+        {/* Only render LiveKitRoom if we don't already have an active room from GlobalActiveCall */}
         <LiveKitRoom
           roomName={roomSlug}
           participantName={safeUserName}
