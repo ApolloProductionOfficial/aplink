@@ -38,9 +38,9 @@ import { MeetingEndSaveDialog, type MeetingSaveStatus } from "@/components/Meeti
 import { invokeBackendFunctionKeepalive } from "@/utils/invokeBackendFunctionKeepalive";
 import LeaveCallDialog from "@/components/LeaveCallDialog";
 import { LiveKitRoom } from "@/components/LiveKitRoom";
-import { MinimizedCallWidget } from "@/components/MinimizedCallWidget";
 import CallQualityWidget from "@/components/CallQualityWidget";
 import { cn } from "@/lib/utils";
+import { useActiveCall } from "@/contexts/ActiveCallContext";
 
 const MeetingRoom = () => {
   const { roomId } = useParams();
@@ -55,9 +55,6 @@ const MeetingRoom = () => {
   const [showIPPanel, setShowIPPanel] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'reconnecting'>('connecting');
   const connectionStatusRef = useRef(connectionStatus);
-  
-  // Minimized call state
-  const [isMinimized, setIsMinimized] = useState(false);
   
   useEffect(() => {
     connectionStatusRef.current = connectionStatus;
@@ -107,6 +104,7 @@ const MeetingRoom = () => {
   
   // LiveKit room reference for translator integration
   const [liveKitRoom, setLiveKitRoom] = useState<Room | null>(null);
+  const { startCall, minimize } = useActiveCall();
   const { 
     isBroadcasting, 
     startBroadcast, 
@@ -169,6 +167,17 @@ const MeetingRoom = () => {
   const roomDisplayName = decodeURIComponent(roomId ?? '').replace(/-/g, ' ') || 'Meeting';
   const roomSlug = roomId ?? '';
   const safeUserName = userName ?? user?.email?.split('@')[0] ?? 'Guest';
+
+  // Register active call in global context so minimization can persist across navigation
+  useEffect(() => {
+    startCall({
+      roomName: roomDisplayName,
+      roomSlug,
+      participantName: safeUserName,
+      participantIdentity: user?.id,
+      roomDisplayName,
+    });
+  }, [startCall, roomDisplayName, roomSlug, safeUserName, user?.id]);
 
   // Track presence in this room
   usePresence(roomDisplayName);
@@ -718,17 +727,11 @@ const MeetingRoom = () => {
     await runMeetingSave();
   }, [user]);
 
-  // Handle minimize - stay on page but show minimized widget
+  // Handle minimize - go to Dashboard and keep call alive via global minimized widget
   const handleMinimize = useCallback(() => {
-    setIsMinimized(true);
-    // Don't navigate away - just show the widget overlay
-  }, []);
-
-  // Handle maximize (return from minimized)
-  const handleMaximize = useCallback(() => {
-    setIsMinimized(false);
-    // No navigation needed - we stayed on the same page
-  }, []);
+    minimize();
+    navigate('/dashboard', { replace: true });
+  }, [minimize, navigate]);
 
   // Don't render if no username - redirecting
   if (!userName) {
@@ -887,58 +890,6 @@ const MeetingRoom = () => {
       )}
     </>
   );
-
-  // If minimized, show the floating widget alongside hidden room
-  if (isMinimized) {
-    return (
-      <div className="h-screen w-screen bg-background">
-        {/* Minimized widget */}
-        <MinimizedCallWidget
-          roomName={roomDisplayName}
-          onMaximize={handleMaximize}
-          onEndCall={handleEndCall}
-        />
-
-        {/* Hidden but active LiveKit room - maintains connection */}
-        <div className="absolute inset-0 opacity-0 pointer-events-none" aria-hidden="true">
-          <LiveKitRoom
-            roomName={roomSlug}
-            participantName={safeUserName}
-            participantIdentity={user?.id}
-            onConnected={handleLiveKitConnected}
-            onDisconnected={handleLiveKitDisconnected}
-            onParticipantJoined={handleParticipantJoined}
-            onParticipantLeft={handleParticipantLeft}
-            onError={handleLiveKitError}
-            onRoomReady={handleRoomReady}
-          />
-        </div>
-
-        {/* Dialogs */}
-        <MeetingEndSaveDialog
-          open={endSaveDialogOpen}
-          status={endSaveStatus}
-          errorMessage={endSaveError}
-          onRetry={retryEndSave}
-          onGoToCalls={goToCallsAfterSave}
-          onExitWithoutSaving={exitWithoutSaving}
-          onLoginToSave={
-            endSaveNeedsLogin
-              ? () => {
-                  navigate(`/auth?redirect=${encodeURIComponent("/dashboard")}`);
-                }
-              : undefined
-          }
-        />
-
-        <LeaveCallDialog
-          open={showLeaveConfirm}
-          onStay={handleStayInCall}
-          onLeave={handleLeaveCall}
-        />
-      </div>
-    );
-  }
 
   // Connection indicator element - simplified to just a pulsing dot that changes color
   const connectionIndicator = connectionStatus === 'connected' ? (

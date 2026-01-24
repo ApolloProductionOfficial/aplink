@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Video, Maximize2, PhoneOff, Mic, MicOff, Volume2 } from "lucide-react";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { Video, Maximize2, PhoneOff, Mic, MicOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -19,51 +19,84 @@ export function MinimizedCallWidget({
   onToggleMute,
 }: MinimizedCallWidgetProps) {
   const [isHovered, setIsHovered] = useState(false);
-  const [audioLevel, setAudioLevel] = useState(0);
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+  const draggingRef = useRef(false);
+  const startRef = useRef<{ x: number; y: number; px: number; py: number } | null>(null);
 
-  // Simulate audio activity
+  const size = useMemo(() => ({ w: 288, h: 88 }), []);
+
+  // Initial position (bottom-right) once on client
   useEffect(() => {
-    const interval = setInterval(() => {
-      setAudioLevel(Math.random() * 100);
-    }, 200);
-    return () => clearInterval(interval);
-  }, []);
+    if (pos) return;
+    const margin = 24;
+    const x = Math.max(margin, window.innerWidth - size.w - margin);
+    const y = Math.max(margin, window.innerHeight - size.h - margin);
+    setPos({ x, y });
+  }, [pos, size.w, size.h]);
+
+  useEffect(() => {
+    const onResize = () => {
+      setPos((prev) => {
+        if (!prev) return prev;
+        const margin = 12;
+        return {
+          x: Math.min(Math.max(margin, prev.x), window.innerWidth - size.w - margin),
+          y: Math.min(Math.max(margin, prev.y), window.innerHeight - size.h - margin),
+        };
+      });
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [size.w, size.h]);
 
   return (
     <div
       className={cn(
-        "fixed bottom-6 right-6 z-[200] rounded-2xl overflow-hidden",
+        "fixed z-[200] rounded-2xl overflow-hidden",
         "bg-card/95 backdrop-blur-xl border-2 border-primary/50",
         "shadow-[0_0_30px_hsl(var(--primary)/0.3)]",
-        "transition-all duration-300 ease-out cursor-pointer",
+        "transition-shadow duration-300 ease-out",
         isHovered ? "scale-105 shadow-[0_0_40px_hsl(var(--primary)/0.5)]" : ""
       )}
+      style={pos ? { left: pos.x, top: pos.y, width: size.w, height: size.h } : { width: size.w, height: size.h }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      onClick={onMaximize}
     >
       {/* Main content */}
-      <div className="relative w-72 h-20">
+      <div className="relative w-full h-full">
         {/* Animated background gradient */}
         <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-transparent to-primary/20 animate-shimmer" />
         
         {/* Content */}
         <div className="relative flex items-center gap-3 p-3 h-full">
           {/* Video icon with pulsing effect */}
-          <div className="relative">
-            <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">
-              <Video className="w-6 h-6 text-primary" />
-            </div>
-            {/* Audio activity indicator */}
-            <div 
-              className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-green-500 flex items-center justify-center"
-              style={{
-                boxShadow: `0 0 ${audioLevel / 10}px ${audioLevel / 20}px hsl(142, 76%, 36%, ${audioLevel / 100})`
-              }}
-            >
-              <Volume2 className="w-2.5 h-2.5 text-white" />
-            </div>
-          </div>
+          <button
+            type="button"
+            className="relative w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center cursor-grab active:cursor-grabbing"
+            aria-label="Переместить окно звонка"
+            onPointerDown={(e) => {
+              if (!pos) return;
+              draggingRef.current = true;
+              startRef.current = { x: pos.x, y: pos.y, px: e.clientX, py: e.clientY };
+              (e.currentTarget as HTMLButtonElement).setPointerCapture(e.pointerId);
+              e.preventDefault();
+            }}
+            onPointerMove={(e) => {
+              if (!draggingRef.current || !startRef.current) return;
+              const dx = e.clientX - startRef.current.px;
+              const dy = e.clientY - startRef.current.py;
+              const margin = 12;
+              const nextX = Math.min(Math.max(margin, startRef.current.x + dx), window.innerWidth - size.w - margin);
+              const nextY = Math.min(Math.max(margin, startRef.current.y + dy), window.innerHeight - size.h - margin);
+              setPos({ x: nextX, y: nextY });
+            }}
+            onPointerUp={() => {
+              draggingRef.current = false;
+              startRef.current = null;
+            }}
+          >
+            <Video className="w-6 h-6 text-primary" />
+          </button>
 
           {/* Room info */}
           <div className="flex-1 min-w-0">
@@ -108,6 +141,7 @@ export function MinimizedCallWidget({
                 e.stopPropagation();
                 onMaximize();
               }}
+              aria-label="Вернуться в комнату"
             >
               <Maximize2 className="w-4 h-4 text-primary" />
             </Button>
@@ -121,18 +155,11 @@ export function MinimizedCallWidget({
                 e.stopPropagation();
                 onEndCall();
               }}
+              aria-label="Сбросить вызов"
             >
               <PhoneOff className="w-4 h-4 text-destructive" />
             </Button>
           </div>
-        </div>
-
-        {/* Click hint */}
-        <div className={cn(
-          "absolute inset-0 flex items-center justify-center bg-black/50 transition-opacity duration-200",
-          isHovered ? "opacity-100" : "opacity-0 pointer-events-none"
-        )}>
-          <span className="text-sm font-medium text-white">Нажмите для возврата</span>
         </div>
       </div>
 
