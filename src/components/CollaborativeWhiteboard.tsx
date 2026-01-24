@@ -1,11 +1,23 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Room, RoomEvent } from 'livekit-client';
-import { Pencil, Eraser, Trash2, X, Circle, Download, FileText } from 'lucide-react';
+import { Pencil, Eraser, Trash2, X, Circle, Download, FileText, Minus, MoveRight, Square, AlertTriangle } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
 import jsPDF from 'jspdf';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+type Tool = 'pen' | 'eraser' | 'line' | 'arrow' | 'rectangle';
 
 interface Stroke {
   from: { x: number; y: number };
@@ -13,6 +25,14 @@ interface Stroke {
   color: string;
   size: number;
   tool: 'pen' | 'eraser';
+}
+
+interface Shape {
+  type: 'line' | 'arrow' | 'rectangle';
+  start: { x: number; y: number };
+  end: { x: number; y: number };
+  color: string;
+  size: number;
 }
 
 interface WhiteboardProps {
@@ -34,14 +54,26 @@ const COLORS = [
   '#06b6e4', // Primary cyan
 ];
 
+const TOOLS: { id: Tool; icon: React.ComponentType<any>; label: string }[] = [
+  { id: 'pen', icon: Pencil, label: 'Карандаш' },
+  { id: 'eraser', icon: Eraser, label: 'Ластик' },
+  { id: 'line', icon: Minus, label: 'Линия' },
+  { id: 'arrow', icon: MoveRight, label: 'Стрелка' },
+  { id: 'rectangle', icon: Square, label: 'Прямоугольник' },
+];
+
 export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose }: WhiteboardProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [color, setColor] = useState('#ffffff');
   const [brushSize, setBrushSize] = useState(3);
-  const [tool, setTool] = useState<'pen' | 'eraser'>('pen');
+  const [tool, setTool] = useState<Tool>('pen');
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
+  const shapeStartRef = useRef<{ x: number; y: number } | null>(null);
   const contextRef = useRef<CanvasRenderingContext2D | null>(null);
+  // Store canvas state for shape preview
+  const savedImageDataRef = useRef<ImageData | null>(null);
 
   // Initialize canvas
   useEffect(() => {
@@ -73,6 +105,62 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
     ctx.globalCompositeOperation = 'source-over';
   }, []);
 
+  // Draw a shape on canvas
+  const drawShape = useCallback((shape: Shape, preview: boolean = false) => {
+    const ctx = contextRef.current;
+    const canvas = canvasRef.current;
+    if (!ctx || !canvas) return;
+
+    if (preview && savedImageDataRef.current) {
+      ctx.putImageData(savedImageDataRef.current, 0, 0);
+    }
+
+    ctx.strokeStyle = shape.color;
+    ctx.lineWidth = shape.size;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    ctx.beginPath();
+    
+    switch (shape.type) {
+      case 'line':
+        ctx.moveTo(shape.start.x, shape.start.y);
+        ctx.lineTo(shape.end.x, shape.end.y);
+        ctx.stroke();
+        break;
+        
+      case 'arrow':
+        // Draw line
+        ctx.moveTo(shape.start.x, shape.start.y);
+        ctx.lineTo(shape.end.x, shape.end.y);
+        ctx.stroke();
+        
+        // Draw arrowhead
+        const angle = Math.atan2(shape.end.y - shape.start.y, shape.end.x - shape.start.x);
+        const headLen = 15 + shape.size * 2;
+        
+        ctx.beginPath();
+        ctx.moveTo(shape.end.x, shape.end.y);
+        ctx.lineTo(
+          shape.end.x - headLen * Math.cos(angle - Math.PI / 6),
+          shape.end.y - headLen * Math.sin(angle - Math.PI / 6)
+        );
+        ctx.moveTo(shape.end.x, shape.end.y);
+        ctx.lineTo(
+          shape.end.x - headLen * Math.cos(angle + Math.PI / 6),
+          shape.end.y - headLen * Math.sin(angle + Math.PI / 6)
+        );
+        ctx.stroke();
+        break;
+        
+      case 'rectangle':
+        const width = shape.end.x - shape.start.x;
+        const height = shape.end.y - shape.start.y;
+        ctx.strokeRect(shape.start.x, shape.start.y, width, height);
+        break;
+    }
+  }, []);
+
   // Clear canvas
   const clearCanvas = useCallback(() => {
     const canvas = canvasRef.current;
@@ -87,6 +175,20 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
     const data = JSON.stringify({ 
       type: 'WHITEBOARD_STROKE', 
       stroke,
+      sender: participantName 
+    });
+    room.localParticipant.publishData(
+      new TextEncoder().encode(data), 
+      { reliable: true }
+    );
+  }, [room, participantName]);
+
+  // Broadcast shape to other participants
+  const broadcastShape = useCallback((shape: Shape) => {
+    if (!room) return;
+    const data = JSON.stringify({ 
+      type: 'WHITEBOARD_SHAPE', 
+      shape,
       sender: participantName 
     });
     room.localParticipant.publishData(
@@ -127,7 +229,7 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
     tempCtx.drawImage(canvas, 0, 0);
     
     const link = document.createElement('a');
-    link.download = `whiteboard-${Date.now()}.png`;
+    link.download = `aplink-whiteboard-${Date.now()}.png`;
     link.href = tempCanvas.toDataURL('image/png');
     link.click();
   }, []);
@@ -156,7 +258,7 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
     // Add some padding
     const padding = 10;
     pdf.addImage(imgData, 'PNG', padding, padding, pdfWidth - padding * 2, pdfHeight - padding * 2);
-    pdf.save(`whiteboard-${Date.now()}.pdf`);
+    pdf.save(`aplink-whiteboard-${Date.now()}.pdf`);
   }, []);
 
   // Listen for incoming data
@@ -168,6 +270,8 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
         const message = JSON.parse(new TextDecoder().decode(payload));
         if (message.type === 'WHITEBOARD_STROKE' && message.sender !== participantName) {
           drawStroke(message.stroke);
+        } else if (message.type === 'WHITEBOARD_SHAPE' && message.sender !== participantName) {
+          drawShape(message.shape);
         } else if (message.type === 'WHITEBOARD_CLEAR') {
           clearCanvas();
         }
@@ -178,7 +282,7 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
 
     room.on(RoomEvent.DataReceived, handleData);
     return () => { room.off(RoomEvent.DataReceived, handleData); };
-  }, [room, isOpen, drawStroke, clearCanvas, participantName]);
+  }, [room, isOpen, drawStroke, drawShape, clearCanvas, participantName]);
 
   // Get position relative to canvas
   const getPosition = useCallback((e: React.MouseEvent<HTMLCanvasElement>): { x: number; y: number } => {
@@ -198,171 +302,254 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
   // Mouse handlers
   const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     setIsDrawing(true);
-    lastPointRef.current = getPosition(e);
-  }, [getPosition]);
+    const pos = getPosition(e);
+    
+    if (tool === 'pen' || tool === 'eraser') {
+      lastPointRef.current = pos;
+    } else {
+      // Shape tools: save current canvas state for preview
+      shapeStartRef.current = pos;
+      const canvas = canvasRef.current;
+      const ctx = contextRef.current;
+      if (canvas && ctx) {
+        savedImageDataRef.current = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      }
+    }
+  }, [getPosition, tool]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDrawing || !lastPointRef.current) return;
+    if (!isDrawing) return;
 
     const currentPoint = getPosition(e);
-    const stroke: Stroke = {
-      from: lastPointRef.current,
-      to: currentPoint,
-      color,
-      size: brushSize,
-      tool,
-    };
 
-    drawStroke(stroke);
-    broadcastStroke(stroke);
-    lastPointRef.current = currentPoint;
-  }, [isDrawing, color, brushSize, tool, getPosition, drawStroke, broadcastStroke]);
+    if (tool === 'pen' || tool === 'eraser') {
+      if (!lastPointRef.current) return;
+      
+      const stroke: Stroke = {
+        from: lastPointRef.current,
+        to: currentPoint,
+        color,
+        size: brushSize,
+        tool: tool as 'pen' | 'eraser',
+      };
 
-  const handleMouseUp = useCallback(() => {
+      drawStroke(stroke);
+      broadcastStroke(stroke);
+      lastPointRef.current = currentPoint;
+    } else if (shapeStartRef.current) {
+      // Preview shape
+      const shape: Shape = {
+        type: tool as 'line' | 'arrow' | 'rectangle',
+        start: shapeStartRef.current,
+        end: currentPoint,
+        color,
+        size: brushSize,
+      };
+      drawShape(shape, true);
+    }
+  }, [isDrawing, color, brushSize, tool, getPosition, drawStroke, drawShape, broadcastStroke]);
+
+  const handleMouseUp = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDrawing) return;
+    
+    if ((tool === 'line' || tool === 'arrow' || tool === 'rectangle') && shapeStartRef.current) {
+      const currentPoint = getPosition(e);
+      const shape: Shape = {
+        type: tool,
+        start: shapeStartRef.current,
+        end: currentPoint,
+        color,
+        size: brushSize,
+      };
+      
+      // Restore and draw final shape
+      if (savedImageDataRef.current) {
+        const ctx = contextRef.current;
+        if (ctx) {
+          ctx.putImageData(savedImageDataRef.current, 0, 0);
+        }
+      }
+      drawShape(shape);
+      broadcastShape(shape);
+    }
+    
     setIsDrawing(false);
     lastPointRef.current = null;
-  }, []);
+    shapeStartRef.current = null;
+    savedImageDataRef.current = null;
+  }, [isDrawing, tool, color, brushSize, getPosition, drawShape, broadcastShape]);
 
   const handleClear = useCallback(() => {
+    setShowClearConfirm(true);
+  }, []);
+
+  const confirmClear = useCallback(() => {
     clearCanvas();
     broadcastClear();
+    setShowClearConfirm(false);
   }, [clearCanvas, broadcastClear]);
 
   if (!isOpen) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[99990] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 md:p-8">
-      <div className="bg-black/70 rounded-3xl border border-white/10 p-4 w-full max-w-5xl flex flex-col gap-4">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Pencil className="w-5 h-5 text-primary" />
-            <h3 className="text-lg font-medium">Доска для рисования</h3>
-          </div>
-          
-          {/* Tools */}
-          <div className="flex items-center gap-2">
-            {/* Color picker */}
-            <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-white/5 border border-white/10">
-              {COLORS.map((c) => (
-                <button
-                  key={c}
-                  onClick={() => setColor(c)}
-                  className={cn(
-                    "w-6 h-6 rounded-full transition-all hover:scale-110",
-                    color === c && "ring-2 ring-white ring-offset-2 ring-offset-black"
-                  )}
-                  style={{ backgroundColor: c }}
+    <>
+      <div className="fixed inset-0 z-[99990] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 md:p-8">
+        <div className="bg-black/70 rounded-3xl border border-white/10 p-4 w-full max-w-5xl flex flex-col gap-4">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Pencil className="w-5 h-5 text-primary" />
+              <h3 className="text-lg font-medium">Доска для рисования</h3>
+            </div>
+            
+            {/* Tools */}
+            <div className="flex items-center gap-2">
+              {/* Color picker */}
+              <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-white/5 border border-white/10">
+                {COLORS.map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => setColor(c)}
+                    className={cn(
+                      "w-6 h-6 rounded-full transition-all hover:scale-110",
+                      color === c && "ring-2 ring-white ring-offset-2 ring-offset-black"
+                    )}
+                    style={{ backgroundColor: c }}
+                  />
+                ))}
+              </div>
+
+              {/* Brush size */}
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
+                <Circle className="w-3 h-3" />
+                <Slider
+                  value={[brushSize]}
+                  onValueChange={([v]) => setBrushSize(v)}
+                  min={1}
+                  max={20}
+                  step={1}
+                  className="w-20"
                 />
-              ))}
+                <Circle className="w-5 h-5" />
+              </div>
+
+              {/* Tool buttons */}
+              {TOOLS.map((t) => {
+                const Icon = t.icon;
+                return (
+                  <Button
+                    key={t.id}
+                    variant={tool === t.id ? 'default' : 'outline'}
+                    size="icon"
+                    onClick={() => setTool(t.id)}
+                    className="w-10 h-10 rounded-full"
+                    title={t.label}
+                  >
+                    <Icon className="w-4 h-4" />
+                  </Button>
+                );
+              })}
+
+              {/* Clear button */}
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleClear}
+                className="w-10 h-10 rounded-full hover:bg-red-500/20 hover:border-red-500/50"
+                title="Очистить всё"
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+
+              {/* Divider */}
+              <div className="w-px h-6 bg-white/20" />
+
+              {/* Export PNG */}
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={exportAsImage}
+                className="w-10 h-10 rounded-full hover:bg-green-500/20 hover:border-green-500/50"
+                title="Скачать PNG"
+              >
+                <Download className="w-4 h-4 text-green-400" />
+              </Button>
+
+              {/* Export PDF */}
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={exportAsPDF}
+                className="w-10 h-10 rounded-full hover:bg-blue-500/20 hover:border-blue-500/50"
+                title="Скачать PDF"
+              >
+                <FileText className="w-4 h-4 text-blue-400" />
+              </Button>
+
+              {/* Divider */}
+              <div className="w-px h-6 bg-white/20" />
+
+              {/* Close button */}
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={onClose}
+                className="w-10 h-10 rounded-full"
+              >
+                <X className="w-5 h-5" />
+              </Button>
             </div>
-
-            {/* Brush size */}
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
-              <Circle className="w-3 h-3" />
-              <Slider
-                value={[brushSize]}
-                onValueChange={([v]) => setBrushSize(v)}
-                min={1}
-                max={20}
-                step={1}
-                className="w-20"
-              />
-              <Circle className="w-5 h-5" />
-            </div>
-
-            {/* Pen tool */}
-            <Button
-              variant={tool === 'pen' ? 'default' : 'outline'}
-              size="icon"
-              onClick={() => setTool('pen')}
-              className="w-10 h-10 rounded-full"
-            >
-              <Pencil className="w-4 h-4" />
-            </Button>
-
-            {/* Eraser tool */}
-            <Button
-              variant={tool === 'eraser' ? 'default' : 'outline'}
-              size="icon"
-              onClick={() => setTool('eraser')}
-              className="w-10 h-10 rounded-full"
-            >
-              <Eraser className="w-4 h-4" />
-            </Button>
-
-            {/* Clear button */}
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={handleClear}
-              className="w-10 h-10 rounded-full hover:bg-red-500/20 hover:border-red-500/50"
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
-
-            {/* Divider */}
-            <div className="w-px h-6 bg-white/20" />
-
-            {/* Export PNG */}
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={exportAsImage}
-              className="w-10 h-10 rounded-full hover:bg-green-500/20 hover:border-green-500/50"
-              title="Скачать PNG"
-            >
-              <Download className="w-4 h-4 text-green-400" />
-            </Button>
-
-            {/* Export PDF */}
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={exportAsPDF}
-              className="w-10 h-10 rounded-full hover:bg-blue-500/20 hover:border-blue-500/50"
-              title="Скачать PDF"
-            >
-              <FileText className="w-4 h-4 text-blue-400" />
-            </Button>
-
-            {/* Divider */}
-            <div className="w-px h-6 bg-white/20" />
-
-            {/* Close button */}
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={onClose}
-              className="w-10 h-10 rounded-full"
-            >
-              <X className="w-5 h-5" />
-            </Button>
           </div>
+
+          {/* Canvas */}
+          <canvas 
+            ref={canvasRef} 
+            width={1280} 
+            height={720}
+            className="w-full rounded-2xl border border-white/10 cursor-crosshair"
+            style={{ 
+              aspectRatio: '16/9', 
+              background: 'rgba(26, 26, 26, 0.8)',
+            }}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+          />
+
+          {/* Instructions */}
+          <p className="text-xs text-muted-foreground text-center">
+            Рисуйте вместе с другими участниками • Изменения видны всем в реальном времени
+          </p>
         </div>
-
-        {/* Canvas */}
-        <canvas 
-          ref={canvasRef} 
-          width={1280} 
-          height={720}
-          className="w-full rounded-2xl border border-white/10 cursor-crosshair"
-          style={{ 
-            aspectRatio: '16/9', 
-            background: 'rgba(26, 26, 26, 0.8)',
-          }}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-        />
-
-        {/* Instructions */}
-        <p className="text-xs text-muted-foreground text-center">
-          Рисуйте вместе с другими участниками • Изменения видны всем в реальном времени
-        </p>
       </div>
-    </div>,
+
+      {/* Clear confirmation dialog */}
+      <AlertDialog open={showClearConfirm} onOpenChange={setShowClearConfirm}>
+        <AlertDialogContent className="bg-black/90 backdrop-blur-2xl border-white/10">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-yellow-500" />
+              Очистить доску?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Все рисунки будут удалены для всех участников. Это действие нельзя отменить.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-white/10 border-white/10 hover:bg-white/20">
+              Отмена
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmClear}
+              className="bg-red-500/80 hover:bg-red-500 border-red-500/50"
+            >
+              Очистить
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>,
     document.body
   );
 }

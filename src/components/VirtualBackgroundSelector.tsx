@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react";
-import { Palette, Loader2, Sparkles, Building2, Trees, Rocket, Umbrella, Crown, Upload, Image, RefreshCw, X, Wand2 } from "lucide-react";
+import { Loader2, Sparkles, Building2, Trees, Rocket, Umbrella, Crown, Upload, Image, RefreshCw, X, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -17,9 +17,6 @@ interface VirtualBackgroundSelectorProps {
   currentBackground: 'none' | 'blur-light' | 'blur-strong' | 'image';
   isProcessing: boolean;
   onResetAllEffects?: () => void;
-  // Face filter integration
-  activeFaceFilter?: string;
-  onSelectFaceFilter?: (filterId: string) => void;
 }
 
 const BLUR_OPTIONS = [
@@ -59,40 +56,6 @@ const AI_THEMES = [
   },
 ];
 
-// Face filters with visual previews
-const FACE_FILTERS = [
-  { 
-    id: 'beauty', 
-    label: 'Красота',
-    gradient: 'from-pink-400 to-rose-500',
-    cssFilter: 'blur(0.3px) brightness(1.08) contrast(0.95)',
-  },
-  { 
-    id: 'glow', 
-    label: 'Сияние',
-    gradient: 'from-yellow-300 to-orange-400',
-    cssFilter: 'brightness(1.15) contrast(0.9)',
-  },
-  { 
-    id: 'vintage', 
-    label: 'Винтаж',
-    gradient: 'from-amber-600 to-yellow-700',
-    cssFilter: 'sepia(0.3) contrast(1.1)',
-  },
-  { 
-    id: 'cool', 
-    label: 'Холод',
-    gradient: 'from-blue-400 to-cyan-500',
-    cssFilter: 'saturate(1.1) hue-rotate(-10deg)',
-  },
-  { 
-    id: 'warm', 
-    label: 'Тепло',
-    gradient: 'from-orange-400 to-red-500',
-    cssFilter: 'saturate(1.15) hue-rotate(10deg)',
-  },
-];
-
 // Static Apollo Production background
 const APOLLO_BACKGROUND = {
   id: 'apollo',
@@ -108,8 +71,6 @@ export function VirtualBackgroundSelector({
   currentBackground,
   isProcessing,
   onResetAllEffects,
-  activeFaceFilter = 'none',
-  onSelectFaceFilter,
 }: VirtualBackgroundSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -243,16 +204,11 @@ export function VirtualBackgroundSelector({
     onRemove();
     setSelectedId(null);
     
-    // Reset face filter
-    if (onSelectFaceFilter) {
-      onSelectFaceFilter('none');
-    }
-    
     // Reset other effects
     if (onResetAllEffects) {
       onResetAllEffects();
     }
-  }, [onRemove, onSelectFaceFilter, onResetAllEffects]);
+  }, [onRemove, onResetAllEffects]);
 
   const handleCustomUpload = () => {
     fileInputRef.current?.click();
@@ -268,18 +224,8 @@ export function VirtualBackgroundSelector({
     }
   };
 
-  const handleFaceFilterSelect = (filterId: string) => {
-    if (onSelectFaceFilter) {
-      if (activeFaceFilter === filterId) {
-        onSelectFaceFilter('none');
-      } else {
-        onSelectFaceFilter(filterId);
-      }
-    }
-  };
-
   const isSelected = (id: string) => selectedId === id;
-  const hasAnyEffect = selectedId !== null || activeFaceFilter !== 'none';
+  const hasAnyEffect = selectedId !== null;
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -313,7 +259,7 @@ export function VirtualBackgroundSelector({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-primary" />
-              <span className="font-semibold text-sm">Эффекты и фон</span>
+              <span className="font-semibold text-sm">Виртуальный фон</span>
             </div>
             
             {/* Reset button - shows when any effect is active */}
@@ -327,38 +273,6 @@ export function VirtualBackgroundSelector({
               </button>
             )}
           </div>
-
-          {/* Face Filters section */}
-          {onSelectFaceFilter && (
-            <div className="space-y-2">
-              <span className="text-xs text-muted-foreground font-medium">Фильтры лица</span>
-              <div className="grid grid-cols-5 gap-2">
-                {FACE_FILTERS.map((filter) => (
-                  <button
-                    key={filter.id}
-                    onClick={() => handleFaceFilterSelect(filter.id)}
-                    disabled={isProcessing || isGenerating}
-                    className={cn(
-                      "flex flex-col items-center gap-1 p-2 rounded-xl transition-all",
-                      "border hover:border-pink-500/50 hover:scale-105",
-                      activeFaceFilter === filter.id
-                        ? "bg-pink-500/30 border-pink-500/60 shadow-lg shadow-pink-500/20"
-                        : "bg-white/5 border-white/10 hover:bg-white/10"
-                    )}
-                  >
-                    <div 
-                      className={cn(
-                        "w-8 h-8 rounded-full bg-gradient-to-br",
-                        filter.gradient
-                      )}
-                      style={{ filter: filter.cssFilter }}
-                    />
-                    <span className="text-[8px] text-muted-foreground truncate w-full text-center">{filter.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Blur options */}
           <div className="space-y-2">

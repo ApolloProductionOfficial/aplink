@@ -2,32 +2,49 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Glassmorphism utilities */
+/* ============================================
+   SONNER TOAST SLIDE ANIMATIONS
+   ============================================ */
+[data-sonner-toaster][data-y-position="top"] [data-sonner-toast] {
+  animation: toast-slide-in-from-right 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-removed="true"] {
+  animation: toast-slide-out-to-right 0.25s cubic-bezier(0.55, 0, 0.55, 0.2) forwards !important;
+}
+
+@keyframes toast-slide-in-from-right {
+  from {
+    transform: translateX(calc(100% + 16px));
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes toast-slide-out-to-right {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(calc(100% + 16px));
+    opacity: 0;
+  }
+}
+
 .glass {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  @apply bg-white/10 backdrop-blur-xl border border-white/20;
 }
 
 .glass-dark {
-  background: rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+  @apply bg-black/40 backdrop-blur-xl border border-white/10;
 }
 
-/* Custom cursor - only apply to pages with CustomCursor component */
 .custom-cursor-active * {
-  cursor: none !important;
-}
-
-@media (max-width: 768px) {
-  .custom-cursor-active * {
-    cursor: auto !important;
-  }
+  cursor: auto !important;
 }
 
 /* Emoji float animation for reactions - FULLSCREEN via Portal */

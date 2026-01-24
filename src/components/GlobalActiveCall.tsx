@@ -135,14 +135,23 @@ export function GlobalActiveCall() {
   }, []);
 
   // Keep the room mounted at all times to prevent reconnects on minimize/maximize.
-  // If user is not on /room/* while maximized, redirect to room (connection remains alive).
-  // NOTE: Must be declared before any conditional returns to keep hook order stable.
+  // Only redirect when transitioning FROM minimized to maximized (user clicked maximize).
+  // Don't redirect on every render to prevent loops.
+  const wasMinimizedRef = useRef(isMinimized);
+  
   useEffect(() => {
     if (!isActive) return;
     const onRoomRoute = location.pathname.startsWith('/room/');
-    if (!isMinimized && !onRoomRoute) {
+    
+    // Only navigate if:
+    // 1. We're NOT minimized
+    // 2. We're NOT on room route
+    // 3. We just transitioned from minimized to maximized (wasMinimizedRef was true)
+    if (!isMinimized && !onRoomRoute && wasMinimizedRef.current) {
       navigate(`/room/${roomSlug}?name=${encodeURIComponent(participantName)}`, { replace: true });
     }
+    
+    wasMinimizedRef.current = isMinimized;
   }, [isActive, isMinimized, location.pathname, navigate, participantName, roomSlug]);
 
   // Don't render anything if no active call

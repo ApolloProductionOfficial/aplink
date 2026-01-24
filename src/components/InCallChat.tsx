@@ -1,14 +1,12 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Room, RoomEvent } from "livekit-client";
-import { MessageCircle, Send, X, GripHorizontal, Smile, Mic, Loader2 } from "lucide-react";
+import { MessageCircle, Send, X, GripHorizontal, Smile, Mic, Square, Play, Pause, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { useConnectionSounds } from "@/hooks/useConnectionSounds";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
 
 const CHAT_EMOJIS = ['😀', '😂', '❤️', '🔥', '👍', '💰', '🍑', '🍆', '💎', '💋', '🥵', '💸', '👑', '🎬', '🚀'];
 
@@ -16,9 +14,12 @@ interface ChatMessage {
   id: string;
   senderName: string;
   senderIdentity: string;
-  text: string;
+  text?: string;
   timestamp: Date;
   isLocal: boolean;
+  type: 'text' | 'voice';
+  audioData?: string; // base64 audio
+  audioDuration?: number;
 }
 
 interface InCallChatProps {
@@ -40,9 +41,13 @@ export function InCallChat({ room, participantName, isOpen, onToggle, buttonOnly
 
   // Voice recording state
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
-  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const recordingStartRef = useRef<number>(0);
+  const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Dragging state
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -76,11 +81,30 @@ export function InCallChat({ room, participantName, isOpen, onToggle, buttonOnly
             text: message.text,
             timestamp: new Date(message.timestamp),
             isLocal: false,
+            type: 'text',
           };
 
           setMessages(prev => [...prev, newMessage]);
           
           // Play sound and increment unread if chat is closed
+          if (!isOpen) {
+            setUnreadCount(prev => prev + 1);
+            playMessageSound();
+          }
+        } else if (message.type === 'voice_message') {
+          const newMessage: ChatMessage = {
+            id: `${Date.now()}-${Math.random()}`,
+            senderName: message.senderName,
+            senderIdentity: message.senderIdentity,
+            timestamp: new Date(message.timestamp),
+            isLocal: false,
+            type: 'voice',
+            audioData: message.audioData,
+            audioDuration: message.duration,
+          };
+
+          setMessages(prev => [...prev, newMessage]);
+          
           if (!isOpen) {
             setUnreadCount(prev => prev + 1);
             playMessageSound();
@@ -152,7 +176,7 @@ export function InCallChat({ room, participantName, isOpen, onToggle, buttonOnly
     };
   }, [isDragging]);
 
-  // Send message
+  // Send text message
   const sendMessage = useCallback(async () => {
     if (!room || !inputValue.trim()) return;
 
@@ -178,6 +202,7 @@ export function InCallChat({ room, participantName, isOpen, onToggle, buttonOnly
         text: inputValue.trim(),
         timestamp: new Date(),
         isLocal: true,
+        type: 'text',
       };
 
       setMessages(prev => [...prev, localMessage]);
@@ -187,70 +212,61 @@ export function InCallChat({ room, participantName, isOpen, onToggle, buttonOnly
     }
   }, [room, inputValue, participantName]);
 
-  // Voice message recording
-  const startVoiceRecording = useCallback(async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
-      audioChunksRef.current = [];
-      
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          audioChunksRef.current.push(e.data);
-        }
-      };
-      
-      recorder.start(100);
-      mediaRecorderRef.current = recorder;
-      setIsRecordingVoice(true);
-    } catch (err) {
-      console.error('Failed to start voice recording:', err);
-      toast({ title: "Не удалось начать запись", variant: "destructive" });
-    }
-  }, []);
-
-  const stopVoiceRecording = useCallback(async () => {
-    if (!mediaRecorderRef.current) return;
-    
-    return new Promise<void>((resolve) => {
-      const recorder = mediaRecorderRef.current!;
-      
-      recorder.onstop = async () => {
-        setIsRecordingVoice(false);
+  // Voice message recording - click to start/stop
+  const toggleVoiceRecording = useCallback(async () => {
+    if (isRecordingVoice) {
+      // Stop recording
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+        mediaRecorderRef.current.stop();
+      }
+      if (recordingIntervalRef.current) {
+        clearInterval(recordingIntervalRef.current);
+        recordingIntervalRef.current = null;
+      }
+      setIsRecordingVoice(false);
+    } else {
+      // Start recording
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+          ? 'audio/webm;codecs=opus'
+          : 'audio/webm';
+        const recorder = new MediaRecorder(stream, { mimeType });
+        audioChunksRef.current = [];
+        recordingStartRef.current = Date.now();
         
-        // Stop all tracks
-        recorder.stream.getTracks().forEach(track => track.stop());
+        recorder.ondataavailable = (e) => {
+          if (e.data.size > 0) {
+            audioChunksRef.current.push(e.data);
+          }
+        };
         
-        if (audioChunksRef.current.length === 0) {
-          resolve();
-          return;
-        }
-        
-        setIsTranscribing(true);
-        
-        try {
+        recorder.onstop = async () => {
+          setIsRecordingVoice(false);
+          stream.getTracks().forEach(track => track.stop());
+          
+          if (recordingIntervalRef.current) {
+            clearInterval(recordingIntervalRef.current);
+            recordingIntervalRef.current = null;
+          }
+          
+          if (audioChunksRef.current.length === 0) return;
+          
           const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+          const duration = Math.round((Date.now() - recordingStartRef.current) / 1000);
           
-          // Convert to FormData for edge function
-          const formData = new FormData();
-          formData.append('audio', audioBlob, 'voice.webm');
-          
-          const { data, error } = await supabase.functions.invoke('elevenlabs-transcribe', {
-            body: formData,
-          });
-          
-          if (error) throw error;
-          
-          if (data?.text && data.text.trim()) {
-            // Send as voice message with emoji prefix
-            const voiceText = `🎤 ${data.text.trim()}`;
+          // Convert to base64
+          const reader = new FileReader();
+          reader.onloadend = async () => {
+            const base64Audio = reader.result as string;
             
             if (room) {
               const messageData = {
-                type: 'chat_message',
+                type: 'voice_message',
                 senderName: participantName,
                 senderIdentity: room.localParticipant.identity,
-                text: voiceText,
+                audioData: base64Audio,
+                duration,
                 timestamp: new Date().toISOString(),
               };
               
@@ -261,27 +277,59 @@ export function InCallChat({ room, participantName, isOpen, onToggle, buttonOnly
                 id: `${Date.now()}-voice`,
                 senderName: participantName,
                 senderIdentity: room.localParticipant.identity,
-                text: voiceText,
                 timestamp: new Date(),
                 isLocal: true,
+                type: 'voice',
+                audioData: base64Audio,
+                audioDuration: duration,
               }]);
             }
-          } else {
-            toast({ title: "Не удалось распознать речь", description: "Попробуйте говорить громче", variant: "destructive" });
-          }
-        } catch (err) {
-          console.error('Failed to transcribe voice:', err);
-          toast({ title: "Ошибка транскрипции", variant: "destructive" });
-        } finally {
-          setIsTranscribing(false);
-        }
+          };
+          reader.readAsDataURL(audioBlob);
+        };
         
-        resolve();
-      };
+        recorder.start(100);
+        mediaRecorderRef.current = recorder;
+        setIsRecordingVoice(true);
+        setRecordingDuration(0);
+        
+        // Update duration display
+        recordingIntervalRef.current = setInterval(() => {
+          setRecordingDuration(Math.round((Date.now() - recordingStartRef.current) / 1000));
+        }, 1000);
+        
+      } catch (err) {
+        console.error('Failed to start voice recording:', err);
+      }
+    }
+  }, [isRecordingVoice, room, participantName]);
+
+  // Play/pause voice message
+  const togglePlayVoice = useCallback((messageId: string, audioData: string) => {
+    if (playingMessageId === messageId) {
+      // Pause current
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+      setPlayingMessageId(null);
+    } else {
+      // Stop any playing audio
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
       
-      recorder.stop();
-    });
-  }, [room, participantName]);
+      // Play new
+      const audio = new Audio(audioData);
+      audio.onended = () => {
+        setPlayingMessageId(null);
+        audioRef.current = null;
+      };
+      audio.play();
+      audioRef.current = audio;
+      setPlayingMessageId(messageId);
+    }
+  }, [playingMessageId]);
 
   // Handle key press
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -294,6 +342,13 @@ export function InCallChat({ room, participantName, isOpen, onToggle, buttonOnly
   // Format timestamp
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  // Format duration
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   // Button component (used in both modes)
@@ -385,16 +440,53 @@ export function InCallChat({ room, participantName, isOpen, onToggle, buttonOnly
                   </span>
                   <span>{formatTime(msg.timestamp)}</span>
                 </div>
-                <div
-                  className={cn(
-                    "max-w-[85%] px-3 py-2 rounded-2xl text-sm",
-                    msg.isLocal
-                      ? "bg-primary/40 text-white rounded-br-md border border-primary/20"
-                      : "bg-white/10 rounded-bl-md"
-                  )}
-                >
-                  {msg.text}
-                </div>
+                
+                {msg.type === 'text' ? (
+                  <div
+                    className={cn(
+                      "max-w-[85%] px-3 py-2 rounded-2xl text-sm",
+                      msg.isLocal
+                        ? "bg-primary/40 text-white rounded-br-md border border-primary/20"
+                        : "bg-white/10 rounded-bl-md"
+                    )}
+                  >
+                    {msg.text}
+                  </div>
+                ) : (
+                  <div
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-2 rounded-2xl",
+                      msg.isLocal
+                        ? "bg-primary/40 rounded-br-md border border-primary/20"
+                        : "bg-white/10 rounded-bl-md"
+                    )}
+                  >
+                    <button 
+                      onClick={() => msg.audioData && togglePlayVoice(msg.id, msg.audioData)}
+                      className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-all"
+                    >
+                      {playingMessageId === msg.id ? (
+                        <Pause className="w-4 h-4" />
+                      ) : (
+                        <Play className="w-4 h-4 ml-0.5" />
+                      )}
+                    </button>
+                    <div className="flex flex-col">
+                      <div className="w-20 h-1 bg-white/20 rounded-full overflow-hidden">
+                        <div 
+                          className={cn(
+                            "h-full bg-white/60 rounded-full transition-all",
+                            playingMessageId === msg.id && "animate-pulse"
+                          )}
+                          style={{ width: playingMessageId === msg.id ? '100%' : '0%' }}
+                        />
+                      </div>
+                      <span className="text-[10px] text-muted-foreground mt-0.5">
+                        🎤 {formatDuration(msg.audioDuration || 0)}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -411,7 +503,7 @@ export function InCallChat({ room, participantName, isOpen, onToggle, buttonOnly
             onKeyPress={handleKeyPress}
             placeholder="Сообщение..."
             className="flex-1 h-10 bg-white/10 border-white/[0.08] rounded-full px-4 text-sm focus:border-primary/50"
-            disabled={isRecordingVoice || isTranscribing}
+            disabled={isRecordingVoice}
           />
           <Popover>
             <PopoverTrigger asChild>
@@ -434,7 +526,7 @@ export function InCallChat({ room, participantName, isOpen, onToggle, buttonOnly
             </PopoverContent>
           </Popover>
           
-          {/* Voice message button - hold to record */}
+          {/* Voice message button - click to toggle */}
           <Button
             variant="ghost"
             size="icon"
@@ -442,21 +534,15 @@ export function InCallChat({ room, participantName, isOpen, onToggle, buttonOnly
               "h-10 w-10 rounded-full shrink-0 transition-all",
               isRecordingVoice 
                 ? "bg-destructive/40 hover:bg-destructive/50 animate-pulse" 
-                : "hover:bg-white/10",
-              isTranscribing && "opacity-50 pointer-events-none"
+                : "hover:bg-white/10"
             )}
-            onMouseDown={startVoiceRecording}
-            onMouseUp={stopVoiceRecording}
-            onMouseLeave={() => isRecordingVoice && stopVoiceRecording()}
-            onTouchStart={startVoiceRecording}
-            onTouchEnd={stopVoiceRecording}
-            disabled={isTranscribing}
-            title="Удерживайте для записи голосового сообщения"
+            onClick={toggleVoiceRecording}
+            title={isRecordingVoice ? "Остановить запись" : "Записать голосовое"}
           >
-            {isTranscribing ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+            {isRecordingVoice ? (
+              <Square className="w-4 h-4 text-destructive" />
             ) : (
-              <Mic className={cn("w-4 h-4", isRecordingVoice && "text-destructive")} />
+              <Mic className="w-4 h-4" />
             )}
           </Button>
           
@@ -464,7 +550,7 @@ export function InCallChat({ room, participantName, isOpen, onToggle, buttonOnly
             onClick={sendMessage}
             size="icon"
             className="h-10 w-10 rounded-full shrink-0"
-            disabled={!inputValue.trim() || isRecordingVoice || isTranscribing}
+            disabled={!inputValue.trim() || isRecordingVoice}
           >
             <Send className="w-4 h-4" />
           </Button>
@@ -472,9 +558,10 @@ export function InCallChat({ room, participantName, isOpen, onToggle, buttonOnly
         
         {/* Recording indicator */}
         {isRecordingVoice && (
-          <div className="mt-2 text-xs text-destructive flex items-center gap-1.5 justify-center animate-pulse">
+          <div className="mt-2 text-xs text-destructive flex items-center gap-1.5 justify-center">
             <span className="w-2 h-2 rounded-full bg-destructive animate-pulse" />
-            Запись... отпустите для отправки
+            Запись... {formatDuration(recordingDuration)}
+            <span className="text-muted-foreground ml-1">нажмите ещё раз для отправки</span>
           </div>
         )}
       </div>
