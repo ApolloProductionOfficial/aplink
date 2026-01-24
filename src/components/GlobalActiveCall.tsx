@@ -59,16 +59,16 @@ export function GlobalActiveCall() {
     playDisconnectedSound();
     endCall();
     
-    // Navigate to dashboard if not already there
-    if (!location.pathname.startsWith('/dashboard')) {
-      navigate('/dashboard', { replace: true });
+    // Navigate to home page if not already there
+    if (location.pathname !== '/') {
+      navigate('/', { replace: true });
     }
   }, [playDisconnectedSound, endCall, navigate, location.pathname]);
 
   // Handle end call button
   const handleEndCall = useCallback(() => {
     endCall();
-    navigate('/dashboard', { replace: true });
+    navigate('/', { replace: true });
   }, [endCall, navigate]);
 
 
@@ -128,11 +128,15 @@ export function GlobalActiveCall() {
 
       {/* Floating minimized widget - rendered via portal to body */}
       {createPortal(
-        <MinimizedCallWidget
-          roomName={roomDisplayName}
-          onMaximize={handleMaximize}
-          onEndCall={handleEndCall}
-        />,
+        <>
+          {/* Hide right panels when minimized */}
+          <style>{`[data-news-widget] { display: none !important; }`}</style>
+          <MinimizedCallWidget
+            roomName={roomDisplayName}
+            onMaximize={handleMaximize}
+            onEndCall={handleEndCall}
+          />
+        </>,
         document.body
       )}
     </>
