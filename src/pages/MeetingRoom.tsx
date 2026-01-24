@@ -170,6 +170,9 @@ const MeetingRoom = () => {
 
   // Register active call in global context so minimization can persist across navigation
   useEffect(() => {
+    // Add current user to participants
+    participantsRef.current.add(safeUserName);
+    
     startCall({
       roomName: roomDisplayName,
       roomSlug,
@@ -461,19 +464,26 @@ const MeetingRoom = () => {
 
   // Build meeting save payload
   const buildMeetingSaveBasePayload = async (): Promise<PendingMeetingSaveBase | null> => {
-    if (!hasStartedRecordingRef.current) return null;
+    // Always build payload if we have participants
+    if (!hasStartedRecordingRef.current && participantsRef.current.size === 0) return null;
 
     if (isRecordingRef.current) {
       await stopRecording();
     }
 
     const transcriptText = transcriptRef.current.join("\n") || "[Транскрипция отсутствует]";
+    
+    // Ensure current user is in participants
+    const participants = Array.from(participantsRef.current);
+    if (!participants.includes(safeUserName)) {
+      participants.push(safeUserName);
+    }
 
     return {
       roomId: roomSlug,
       roomName: roomDisplayName,
       transcript: transcriptText,
-      participants: Array.from(participantsRef.current),
+      participants,
     };
   };
 
