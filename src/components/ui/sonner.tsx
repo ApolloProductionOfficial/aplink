@@ -12,12 +12,12 @@ const Toaster = ({ ...props }: ToasterProps) => {
       className="toaster group"
       duration={2000}
       closeButton={true}
-      position="top-center"
-      swipeDirections={["top"]}
+      position="top-right"
+      swipeDirections={["right", "top"]}
       toastOptions={{
         classNames: {
           toast:
-            "group toast group-[.toaster]:bg-white/[0.08] group-[.toaster]:backdrop-blur-2xl group-[.toaster]:text-foreground group-[.toaster]:border-white/[0.1] group-[.toaster]:shadow-[0_8px_32px_rgba(0,0,0,0.3)] group-[.toaster]:rounded-xl select-none",
+            "group toast group-[.toaster]:bg-white/[0.08] group-[.toaster]:backdrop-blur-2xl group-[.toaster]:text-foreground group-[.toaster]:border-white/[0.1] group-[.toaster]:shadow-[0_8px_32px_rgba(0,0,0,0.3)] group-[.toaster]:rounded-xl select-none cursor-pointer",
           description: "group-[.toast]:text-muted-foreground",
           actionButton: "group-[.toast]:bg-primary/20 group-[.toast]:text-primary-foreground group-[.toast]:backdrop-blur-xl group-[.toast]:border-primary/30",
           cancelButton: "group-[.toast]:bg-white/[0.05] group-[.toast]:text-muted-foreground group-[.toast]:backdrop-blur-xl group-[.toast]:border-white/[0.1]",

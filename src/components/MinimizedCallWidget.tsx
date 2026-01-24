@@ -1,7 +1,9 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { Video, Maximize2, PhoneOff, Mic, MicOff } from "lucide-react";
+import { Video, Maximize2, PhoneOff, Mic, MicOff, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useActiveCall } from "@/contexts/ActiveCallContext";
+import { Track } from "livekit-client";
 
 interface MinimizedCallWidgetProps {
   roomName: string;
@@ -20,10 +22,35 @@ export function MinimizedCallWidget({
 }: MinimizedCallWidgetProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+  const [isExpanded, setIsExpanded] = useState(true);
   const draggingRef = useRef(false);
   const startRef = useRef<{ x: number; y: number; px: number; py: number } | null>(null);
+  const { liveKitRoom } = useActiveCall();
+  const videoRef = useRef<HTMLVideoElement>(null);
 
-  const size = useMemo(() => ({ w: 288, h: 88 }), []);
+  const size = useMemo(() => ({ 
+    w: isExpanded ? 320 : 200, 
+    h: isExpanded ? 200 : 56 
+  }), [isExpanded]);
+
+  // Get local video track and attach to video element
+  useEffect(() => {
+    if (!liveKitRoom || !videoRef.current || !isExpanded) return;
+
+    const localParticipant = liveKitRoom.localParticipant;
+    const cameraPub = localParticipant.getTrackPublication(Track.Source.Camera);
+    const track = cameraPub?.track;
+
+    if (track) {
+      track.attach(videoRef.current);
+    }
+
+    return () => {
+      if (track && videoRef.current) {
+        track.detach(videoRef.current);
+      }
+    };
+  }, [liveKitRoom, isExpanded]);
 
   // Initial position (bottom-right) once on client
   useEffect(() => {
@@ -34,6 +61,7 @@ export function MinimizedCallWidget({
     setPos({ x, y });
   }, [pos, size.w, size.h]);
 
+  // Adjust position on resize or size change
   useEffect(() => {
     const onResize = () => {
       setPos((prev) => {
@@ -46,72 +74,126 @@ export function MinimizedCallWidget({
       });
     };
     window.addEventListener('resize', onResize);
+    onResize(); // Also run on size change
     return () => window.removeEventListener('resize', onResize);
   }, [size.w, size.h]);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (!pos) return;
+    draggingRef.current = true;
+    startRef.current = { x: pos.x, y: pos.y, px: e.clientX, py: e.clientY };
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    e.preventDefault();
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!draggingRef.current || !startRef.current) return;
+    const dx = e.clientX - startRef.current.px;
+    const dy = e.clientY - startRef.current.py;
+    const margin = 12;
+    const nextX = Math.min(Math.max(margin, startRef.current.x + dx), window.innerWidth - size.w - margin);
+    const nextY = Math.min(Math.max(margin, startRef.current.y + dy), window.innerHeight - size.h - margin);
+    setPos({ x: nextX, y: nextY });
+  };
+
+  const handlePointerUp = () => {
+    draggingRef.current = false;
+    startRef.current = null;
+  };
 
   return (
     <div
       className={cn(
-        "fixed z-[200] rounded-2xl overflow-hidden",
+        "fixed z-[9999] rounded-2xl overflow-hidden",
         "bg-card/95 backdrop-blur-xl border-2 border-primary/50",
         "shadow-[0_0_30px_hsl(var(--primary)/0.3)]",
-        "transition-shadow duration-300 ease-out",
-        isHovered ? "scale-105 shadow-[0_0_40px_hsl(var(--primary)/0.5)]" : ""
+        "transition-all duration-300 ease-out",
+        isHovered ? "shadow-[0_0_40px_hsl(var(--primary)/0.5)]" : ""
       )}
-      style={pos ? { left: pos.x, top: pos.y, width: size.w, height: size.h } : { width: size.w, height: size.h }}
+      style={pos ? { 
+        left: pos.x, 
+        top: pos.y, 
+        width: size.w, 
+        height: size.h,
+        transition: 'width 0.3s, height 0.3s'
+      } : { width: size.w, height: size.h }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Main content */}
-      <div className="relative w-full h-full">
-        {/* Animated background gradient */}
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-transparent to-primary/20 animate-shimmer" />
-        
-        {/* Content */}
-        <div className="relative flex items-center gap-3 p-3 h-full">
-          {/* Video icon with pulsing effect */}
-          <button
-            type="button"
-            className="relative w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center cursor-grab active:cursor-grabbing"
-            aria-label="Переместить окно звонка"
-            onPointerDown={(e) => {
-              if (!pos) return;
-              draggingRef.current = true;
-              startRef.current = { x: pos.x, y: pos.y, px: e.clientX, py: e.clientY };
-              (e.currentTarget as HTMLButtonElement).setPointerCapture(e.pointerId);
-              e.preventDefault();
-            }}
-            onPointerMove={(e) => {
-              if (!draggingRef.current || !startRef.current) return;
-              const dx = e.clientX - startRef.current.px;
-              const dy = e.clientY - startRef.current.py;
-              const margin = 12;
-              const nextX = Math.min(Math.max(margin, startRef.current.x + dx), window.innerWidth - size.w - margin);
-              const nextY = Math.min(Math.max(margin, startRef.current.y + dy), window.innerHeight - size.h - margin);
-              setPos({ x: nextX, y: nextY });
-            }}
-            onPointerUp={() => {
-              draggingRef.current = false;
-              startRef.current = null;
-            }}
-          >
-            <Video className="w-6 h-6 text-primary" />
-          </button>
-
-          {/* Room info */}
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate text-foreground">
-              🔊 Звонок активен
-            </p>
-            <p className="text-xs text-muted-foreground truncate">
-              {roomName}
-            </p>
+      <div className="relative w-full h-full flex flex-col">
+        {/* Video preview (expanded mode only) */}
+        {isExpanded && (
+          <div className="flex-1 relative bg-black/50 min-h-0">
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className="w-full h-full object-cover"
+            />
+            {/* Overlay gradient */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+            
+            {/* Top bar - draggable */}
+            <div
+              className="absolute top-0 left-0 right-0 flex items-center justify-between p-2 cursor-grab active:cursor-grabbing"
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+            >
+              <span className="text-xs font-medium text-white/80 bg-black/40 px-2 py-1 rounded-full truncate max-w-[60%]">
+                {roomName}
+              </span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsExpanded(false);
+                }}
+                className="w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+                title="Свернуть"
+              >
+                <Minimize2 className="w-3 h-3" />
+              </button>
+            </div>
           </div>
+        )}
 
-          {/* Controls */}
+        {/* Controls bar */}
+        <div 
+          className={cn(
+            "flex items-center gap-2 p-2 bg-card/80",
+            !isExpanded && "cursor-grab active:cursor-grabbing"
+          )}
+          onPointerDown={!isExpanded ? handlePointerDown : undefined}
+          onPointerMove={!isExpanded ? handlePointerMove : undefined}
+          onPointerUp={!isExpanded ? handlePointerUp : undefined}
+        >
+          {/* Collapsed mode: show expand button */}
+          {!isExpanded && (
+            <>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsExpanded(true);
+                }}
+                className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center"
+                title="Развернуть"
+              >
+                <Video className="w-4 h-4 text-primary" />
+              </button>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium truncate text-foreground">
+                  🔊 {roomName}
+                </p>
+              </div>
+            </>
+          )}
+
+          {/* Control buttons */}
           <div className={cn(
-            "flex items-center gap-1.5 transition-opacity duration-200",
-            isHovered ? "opacity-100" : "opacity-60"
+            "flex items-center gap-1.5",
+            isExpanded && "flex-1 justify-center"
           )}>
             {/* Mute toggle */}
             {onToggleMute && (
@@ -161,10 +243,10 @@ export function MinimizedCallWidget({
             </Button>
           </div>
         </div>
-      </div>
 
-      {/* Bottom accent */}
-      <div className="h-1 bg-gradient-to-r from-primary via-primary/50 to-primary animate-pulse" />
+        {/* Bottom accent */}
+        <div className="h-1 bg-gradient-to-r from-primary via-primary/50 to-primary animate-pulse" />
+      </div>
     </div>
   );
 }
