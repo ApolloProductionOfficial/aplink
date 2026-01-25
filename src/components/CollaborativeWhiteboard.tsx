@@ -69,6 +69,7 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
   const [brushSize, setBrushSize] = useState(3);
   const [tool, setTool] = useState<Tool>('pen');
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [isClearing, setIsClearing] = useState(false); // UI blocking during clear
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
   const shapeStartRef = useRef<{ x: number; y: number } | null>(null);
   const contextRef = useRef<CanvasRenderingContext2D | null>(null);
@@ -76,6 +77,8 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
   const savedImageDataRef = useRef<ImageData | null>(null);
   // Track processed clear IDs to prevent loops
   const processedClearsRef = useRef<Set<string>>(new Set());
+  // Debounce ref to prevent multiple clears
+  const clearDebounceRef = useRef<boolean>(false);
 
   // Initialize canvas
   useEffect(() => {
@@ -276,27 +279,46 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
           drawStroke(message.stroke);
         } else if (message.type === 'WHITEBOARD_SHAPE' && message.sender !== participantName) {
           drawShape(message.shape);
-        } else if (message.type === 'WHITEBOARD_CLEAR' && message.sender !== participantName) {
+        } else if (message.type === 'WHITEBOARD_CLEAR') {
           const clearId = message.clearId;
+          const sender = message.sender;
           
-          // Skip if already processed this clearId
-          if (clearId && processedClearsRef.current.has(clearId)) return;
-          if (clearId) {
-            processedClearsRef.current.add(clearId);
-            // Keep only last 20 IDs
-            if (processedClearsRef.current.size > 20) {
-              const arr = Array.from(processedClearsRef.current);
-              processedClearsRef.current = new Set(arr.slice(-20));
-            }
+          // Multiple checks to prevent infinite loop
+          if (!clearId) {
+            console.warn('[Whiteboard] Clear without clearId, ignoring');
+            return;
           }
           
-          const canvas = canvasRef.current;
-          const ctx = contextRef.current;
-          if (canvas && ctx) {
-            requestAnimationFrame(() => {
+          // Check if already processed FIRST
+          if (processedClearsRef.current.has(clearId)) {
+            console.log('[Whiteboard] Already processed clear:', clearId);
+            return;
+          }
+          
+          // Check if it's our own message
+          if (sender === participantName) {
+            console.log('[Whiteboard] Ignoring own clear message');
+            return;
+          }
+          
+          // Add clearId to processed IMMEDIATELY
+          processedClearsRef.current.add(clearId);
+          
+          // Limit Set size
+          if (processedClearsRef.current.size > 50) {
+            const arr = Array.from(processedClearsRef.current);
+            processedClearsRef.current = new Set(arr.slice(-30));
+          }
+          
+          // Clear canvas with setTimeout to avoid blocking
+          setTimeout(() => {
+            const canvas = canvasRef.current;
+            const ctx = contextRef.current;
+            if (canvas && ctx) {
               ctx.clearRect(0, 0, canvas.width, canvas.height);
-            });
-          }
+              console.log('[Whiteboard] Canvas cleared by remote:', sender);
+            }
+          }, 0);
         }
       } catch {
         // Ignore non-JSON data
@@ -407,34 +429,55 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
   }, []);
 
   const confirmClear = useCallback(() => {
-    // First close the dialog synchronously
+    // Close dialog immediately
     setShowClearConfirm(false);
     
-    // Generate unique clearId to prevent loops
-    const clearId = `clear-${Date.now()}-${participantName}`;
+    // Prevent multiple clears
+    if (isClearing || clearDebounceRef.current) {
+      console.log('[Whiteboard] Clear already in progress, skipping');
+      return;
+    }
     
-    // Use requestAnimationFrame for smoother clearing
-    requestAnimationFrame(() => {
+    // Block UI
+    setIsClearing(true);
+    clearDebounceRef.current = true;
+    
+    // Generate unique clearId
+    const clearId = `clear-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+    
+    // Add to processed BEFORE any other operation
+    processedClearsRef.current.add(clearId);
+    
+    // Clear canvas locally with setTimeout
+    setTimeout(() => {
       try {
         const canvas = canvasRef.current;
         const ctx = contextRef.current;
-        if (!canvas || !ctx) return;
-        
-        // Clear locally first
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        // Mark this clear as processed locally
-        processedClearsRef.current.add(clearId);
-        
-        // Broadcast to others with a slight delay
-        setTimeout(() => {
-          broadcastClear(clearId);
-        }, 50);
+        if (canvas && ctx) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          console.log('[Whiteboard] Local clear complete');
+        }
       } catch (error) {
-        console.error('Error clearing canvas:', error);
+        console.error('[Whiteboard] Error clearing canvas:', error);
       }
-    });
-  }, [broadcastClear, participantName]);
+    }, 0);
+    
+    // Broadcast after a short delay
+    setTimeout(() => {
+      try {
+        broadcastClear(clearId);
+        console.log('[Whiteboard] Broadcast clear:', clearId);
+      } catch (error) {
+        console.error('[Whiteboard] Error broadcasting clear:', error);
+      }
+    }, 100);
+    
+    // Unlock UI after 500ms
+    setTimeout(() => {
+      setIsClearing(false);
+      clearDebounceRef.current = false;
+    }, 500);
+  }, [broadcastClear, isClearing]);
 
   if (!isOpen) return null;
 
@@ -502,10 +545,15 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
                 variant="outline"
                 size="icon"
                 onClick={handleClear}
-                className="w-10 h-10 rounded-full hover:bg-red-500/20 hover:border-red-500/50"
+                disabled={isClearing}
+                className="w-10 h-10 rounded-full hover:bg-red-500/20 hover:border-red-500/50 disabled:opacity-50"
                 title="Очистить всё"
               >
-                <Trash2 className="w-4 h-4" />
+                {isClearing ? (
+                  <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Trash2 className="w-4 h-4" />
+                )}
               </Button>
 
               {/* Divider */}

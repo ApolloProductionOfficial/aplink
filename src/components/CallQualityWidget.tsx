@@ -302,8 +302,29 @@ const CallQualityWidget = ({ room }: CallQualityWidgetProps) => {
             </div>
           )}
 
-          <div className="text-[10px] text-muted-foreground pt-2 border-t border-white/[0.04]">
-            💡 Latency {'<'}50ms = отлично, Packet Loss {'<'}1% = хорошо
+          <div className="text-[10px] text-muted-foreground pt-2 border-t border-white/[0.04] flex items-center gap-2">
+            {/* Custom SVG lightbulb icon instead of emoji */}
+            <svg viewBox="0 0 24 24" className="w-4 h-4 flex-shrink-0">
+              <defs>
+                <linearGradient id="bulb-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#fbbf24"/>
+                  <stop offset="100%" stopColor="#f59e0b"/>
+                </linearGradient>
+                <filter id="bulb-glow">
+                  <feGaussianBlur stdDeviation="0.5" result="coloredBlur"/>
+                  <feMerge>
+                    <feMergeNode in="coloredBlur"/>
+                    <feMergeNode in="SourceGraphic"/>
+                  </feMerge>
+                </filter>
+              </defs>
+              <path d="M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7z" 
+                fill="url(#bulb-gradient)" filter="url(#bulb-glow)" opacity="0.9"/>
+              <path d="M9 21h6M10 17v2a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2v-2" 
+                stroke="url(#bulb-gradient)" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
+              <path d="M12 6v4M10 8h4" stroke="white" strokeWidth="1" strokeLinecap="round" opacity="0.7"/>
+            </svg>
+            <span>Latency {'<'}50ms = отлично, Packet Loss {'<'}1% = хорошо</span>
           </div>
         </div>
       </PopoverContent>

@@ -18,18 +18,24 @@ const Toaster = ({ ...props }: ToasterProps) => {
       toastOptions={{
         classNames: {
           toast:
-            "group toast group-[.toaster]:bg-white/[0.08] group-[.toaster]:backdrop-blur-2xl group-[.toaster]:text-foreground group-[.toaster]:border-white/[0.1] group-[.toaster]:shadow-[0_8px_32px_rgba(0,0,0,0.3)] group-[.toaster]:rounded-xl select-none cursor-pointer",
-          description: "group-[.toast]:text-muted-foreground",
+            "group toast group-[.toaster]:bg-black/60 group-[.toaster]:backdrop-blur-2xl group-[.toaster]:text-white group-[.toaster]:border-white/[0.1] group-[.toaster]:shadow-[0_8px_32px_rgba(0,0,0,0.6)] group-[.toaster]:rounded-xl select-none cursor-pointer",
+          description: "group-[.toast]:text-white/70",
           actionButton: "group-[.toast]:bg-primary/20 group-[.toast]:text-primary-foreground group-[.toast]:backdrop-blur-xl group-[.toast]:border-primary/30",
-          cancelButton: "group-[.toast]:bg-white/[0.05] group-[.toast]:text-muted-foreground group-[.toast]:backdrop-blur-xl group-[.toast]:border-white/[0.1]",
-          closeButton: "group-[.toast]:bg-white/[0.05] group-[.toast]:text-foreground group-[.toast]:border-white/[0.1] group-[.toast]:hover:bg-white/[0.1]",
+          cancelButton: "group-[.toast]:bg-white/10 group-[.toast]:text-white group-[.toast]:backdrop-blur-xl group-[.toast]:border-white/[0.1]",
+          closeButton: "group-[.toast]:bg-white/10 group-[.toast]:text-white group-[.toast]:border-white/[0.1] group-[.toast]:hover:bg-white/[0.15]",
+          title: "group-[.toast]:text-white group-[.toast]:font-medium",
+          success: "group-[.toaster]:!bg-emerald-500/20 group-[.toaster]:!border-emerald-500/30",
+          error: "group-[.toaster]:!bg-red-500/20 group-[.toaster]:!border-red-500/30",
+          info: "group-[.toaster]:!bg-cyan-500/20 group-[.toaster]:!border-cyan-500/30",
+          warning: "group-[.toaster]:!bg-yellow-500/20 group-[.toaster]:!border-yellow-500/30",
         },
         style: {
-          background: 'rgba(255, 255, 255, 0.08)',
+          background: 'rgba(0, 0, 0, 0.6)',
           backdropFilter: 'blur(40px)',
           WebkitBackdropFilter: 'blur(40px)',
           border: '1px solid rgba(255, 255, 255, 0.1)',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
+          color: '#ffffff',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
         },
       }}
       {...props}
