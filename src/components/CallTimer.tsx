@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Room, RoomEvent } from 'livekit-client';
 import { Timer, Play, Pause, RotateCcw, X, GripHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { supabase } from '@/integrations/supabase/client';
+
 interface CallTimerProps {
   room: Room | null;
   isHost?: boolean;
@@ -21,6 +21,11 @@ interface TimerState {
   pausedAt: number | null;
 }
 
+interface Position {
+  x: number;
+  y: number;
+}
+
 const TIMER_PRESETS = [
   { label: '1 мин', seconds: 60 },
   { label: '3 мин', seconds: 180 },
@@ -29,6 +34,8 @@ const TIMER_PRESETS = [
   { label: '15 мин', seconds: 900 },
   { label: '30 мин', seconds: 1800 },
 ];
+
+const EDGE_THRESHOLD = 50; // pixels from edge to show highlight
 
 // Parse time string like "5:30" or "5" to seconds
 const parseTimeInput = (input: string): number | null => {
@@ -58,68 +65,96 @@ export function CallTimer({ room, isHost = true }: CallTimerProps) {
   const [remainingSeconds, setRemainingSeconds] = useState<number>(0);
   const [isOpen, setIsOpen] = useState(false);
   const [customTime, setCustomTime] = useState('');
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const hasPlayedVoiceRef = useRef(false);
 
-  // Draggable state
-  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+  // Dragging state
+  const [position, setPosition] = useState<Position | null>(null);
   const draggingRef = useRef(false);
-  const startRef = useRef<{ x: number; y: number; px: number; py: number } | null>(null);
+  const dragOffsetRef = useRef<Position>({ x: 0, y: 0 });
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // Initialize position
+  // Initialize position from storage or default
   useEffect(() => {
-    if (pos !== null) return;
-    // Try to restore from storage
+    if (position !== null) return;
+    
     try {
-      const saved = sessionStorage.getItem('timer-panel-pos');
+      const saved = sessionStorage.getItem('call-timer-position');
       if (saved) {
-        setPos(JSON.parse(saved));
+        setPosition(JSON.parse(saved));
         return;
       }
     } catch {}
-    // Default to center-top
-    setPos({ x: Math.max(0, (window.innerWidth - 280) / 2), y: 96 });
-  }, [pos]);
+    
+    // Default: center-top
+    setPosition({ 
+      x: Math.max(0, (window.innerWidth - 300) / 2), 
+      y: 100 
+    });
+  }, [position]);
 
-  // Persist position
+  // Save position to storage
   useEffect(() => {
-    if (pos) {
-      try { sessionStorage.setItem('timer-panel-pos', JSON.stringify(pos)); } catch {}
+    if (position) {
+      try {
+        sessionStorage.setItem('call-timer-position', JSON.stringify(position));
+      } catch {}
     }
-  }, [pos]);
+  }, [position]);
+
+  // Calculate edge proximity for visual feedback
+  const edgeProximity = useMemo(() => {
+    if (!position || !panelRef.current) return { left: false, right: false, top: false, bottom: false };
+    
+    const rect = panelRef.current.getBoundingClientRect();
+    return {
+      left: position.x < EDGE_THRESHOLD,
+      right: position.x + rect.width > window.innerWidth - EDGE_THRESHOLD,
+      top: position.y < EDGE_THRESHOLD,
+      bottom: position.y + rect.height > window.innerHeight - EDGE_THRESHOLD,
+    };
+  }, [position]);
 
   const handlePointerDown = (e: React.PointerEvent) => {
     if (!panelRef.current) return;
+    
     draggingRef.current = true;
     const rect = panelRef.current.getBoundingClientRect();
-    // Use actual screen position, not state position
-    startRef.current = { 
-      x: rect.left, 
-      y: rect.top, 
-      px: e.clientX, 
-      py: e.clientY 
+    
+    // Store offset from click position to panel top-left
+    dragOffsetRef.current = {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
     };
+    
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     e.preventDefault();
+    e.stopPropagation();
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
-    if (!draggingRef.current || !startRef.current || !panelRef.current) return;
-    const rect = panelRef.current.getBoundingClientRect();
-    const dx = e.clientX - startRef.current.px;
-    const dy = e.clientY - startRef.current.py;
-    const nextX = Math.min(Math.max(0, startRef.current.x + dx), window.innerWidth - rect.width);
-    const nextY = Math.min(Math.max(0, startRef.current.y + dy), window.innerHeight - rect.height);
+    if (!draggingRef.current || !panelRef.current) return;
     
-    setPos({ x: nextX, y: nextY });
+    const rect = panelRef.current.getBoundingClientRect();
+    
+    // Calculate new position
+    let newX = e.clientX - dragOffsetRef.current.x;
+    let newY = e.clientY - dragOffsetRef.current.y;
+    
+    // Constrain to screen bounds
+    newX = Math.max(0, Math.min(newX, window.innerWidth - rect.width));
+    newY = Math.max(0, Math.min(newY, window.innerHeight - rect.height));
+    
+    setPosition({ x: newX, y: newY });
+    e.preventDefault();
+    e.stopPropagation();
   };
 
-  const handlePointerUp = () => {
+  const handlePointerUp = (e: React.PointerEvent) => {
     draggingRef.current = false;
-    startRef.current = null;
+    e.preventDefault();
+    e.stopPropagation();
   };
-
+  
   // Play voice notification when timer ends
   const playVoiceNotification = useCallback(async () => {
     if (hasPlayedVoiceRef.current) return;
@@ -153,6 +188,7 @@ export function CallTimer({ room, isHost = true }: CallTimerProps) {
       console.log('[CallTimer] Voice notification failed:', err);
     }
   }, []);
+
   // Handle custom time input
   const handleCustomTimeSubmit = useCallback(() => {
     const seconds = parseTimeInput(customTime);
@@ -276,13 +312,6 @@ export function CallTimer({ room, isHost = true }: CallTimerProps) {
       setRemainingSeconds(remaining);
 
       if (remaining === 0) {
-        // Play sound when timer ends
-        try {
-          audioRef.current = new Audio('/audio/timer-end.mp3');
-          audioRef.current.volume = 0.5;
-          audioRef.current.play().catch(() => {});
-        } catch {}
-        
         // Play voice notification
         playVoiceNotification();
         
@@ -317,20 +346,37 @@ export function CallTimer({ room, isHost = true }: CallTimerProps) {
   return (
     <>
       {/* Floating timer display when active - DRAGGABLE */}
-      {isActive && pos && (
+      {isActive && position && (
         <div 
           ref={panelRef}
           className={cn(
-            "fixed z-[99980]",
-            "rounded-2xl backdrop-blur-xl",
-            "border border-white/20 shadow-2xl",
-            "transition-colors duration-300",
+            "fixed z-[99980] rounded-2xl backdrop-blur-2xl border shadow-2xl",
+            "transition-all duration-300",
             isLow 
-              ? "bg-red-500/30 border-red-500/50 animate-pulse" 
-              : "bg-black/40"
+              ? "bg-red-500/30 border-red-500/50 shadow-red-500/50 animate-pulse" 
+              : "bg-black/60 border-white/[0.08]",
+            draggingRef.current && "shadow-primary/30 scale-105"
           )}
-          style={{ left: pos.x, top: pos.y }}
+          style={{ left: position.x, top: position.y }}
         >
+          {/* Edge proximity indicators */}
+          {draggingRef.current && (
+            <>
+              {edgeProximity.left && (
+                <div className="fixed left-0 top-0 h-full w-1 bg-gradient-to-r from-primary/50 to-transparent pointer-events-none" />
+              )}
+              {edgeProximity.right && (
+                <div className="fixed right-0 top-0 h-full w-1 bg-gradient-to-l from-primary/50 to-transparent pointer-events-none" />
+              )}
+              {edgeProximity.top && (
+                <div className="fixed top-0 left-0 w-full h-1 bg-gradient-to-b from-primary/50 to-transparent pointer-events-none" />
+              )}
+              {edgeProximity.bottom && (
+                <div className="fixed bottom-0 left-0 w-full h-1 bg-gradient-to-t from-primary/50 to-transparent pointer-events-none" />
+              )}
+            </>
+          )}
+          
           {/* Drag handle */}
           <div
             className="flex items-center justify-center py-1 cursor-grab active:cursor-grabbing border-b border-white/10"
@@ -396,7 +442,7 @@ export function CallTimer({ room, isHost = true }: CallTimerProps) {
           </Button>
         </PopoverTrigger>
         <PopoverContent 
-          className="w-64 p-4 bg-black/40 backdrop-blur-2xl border-white/[0.08] rounded-2xl"
+          className="w-64 p-4 bg-black/60 backdrop-blur-2xl border-white/[0.08] rounded-2xl"
           side="top"
           align="center"
         >
