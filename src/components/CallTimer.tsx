@@ -77,19 +77,35 @@ export function CallTimer({ room, isHost = true }: CallTimerProps) {
   useEffect(() => {
     if (position !== null) return;
     
+    let initialPos: Position = { 
+      x: Math.max(0, (window.innerWidth - 300) / 2), 
+      y: 100 
+    };
+    
     try {
       const saved = sessionStorage.getItem('call-timer-position');
       if (saved) {
-        setPosition(JSON.parse(saved));
-        return;
+        const parsed = JSON.parse(saved);
+        // Validate position is within screen bounds
+        const panelWidth = 280;
+        const panelHeight = 100;
+        if (
+          parsed.x >= 0 && 
+          parsed.x <= window.innerWidth - panelWidth &&
+          parsed.y >= 0 && 
+          parsed.y <= window.innerHeight - panelHeight
+        ) {
+          initialPos = parsed;
+        } else {
+          // Clear invalid position from storage
+          sessionStorage.removeItem('call-timer-position');
+        }
       }
-    } catch {}
+    } catch {
+      sessionStorage.removeItem('call-timer-position');
+    }
     
-    // Default: center-top
-    setPosition({ 
-      x: Math.max(0, (window.innerWidth - 300) / 2), 
-      y: 100 
-    });
+    setPosition(initialPos);
   }, [position]);
 
   // Save position to storage
