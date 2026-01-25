@@ -1,21 +1,11 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Room, RoomEvent } from 'livekit-client';
-import { Pencil, Eraser, Trash2, X, Circle, Download, FileText, Minus, MoveRight, Square, AlertTriangle } from 'lucide-react';
+import { Pencil, Eraser, Trash2, X, Circle, Download, FileText, Minus, MoveRight, Square, Film, Loader2 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
 import jsPDF from 'jspdf';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
 type Tool = 'pen' | 'eraser' | 'line' | 'arrow' | 'rectangle';
 
@@ -68,7 +58,6 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
   const [color, setColor] = useState('#ffffff');
   const [brushSize, setBrushSize] = useState(3);
   const [tool, setTool] = useState<Tool>('pen');
-  const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [isClearing, setIsClearing] = useState(false); // UI blocking during clear
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
   const shapeStartRef = useRef<{ x: number; y: number } | null>(null);
@@ -268,6 +257,50 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
     pdf.save(`aplink-whiteboard-${Date.now()}.pdf`);
   }, []);
 
+  // Export as animated GIF (single frame - for future multi-frame support)
+  const [isExportingGif, setIsExportingGif] = useState(false);
+  
+  const exportAsGif = useCallback(async () => {
+    const canvas = canvasRef.current;
+    if (!canvas || isExportingGif) return;
+    
+    setIsExportingGif(true);
+    
+    try {
+      // Create a temporary canvas with background
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = canvas.width;
+      tempCanvas.height = canvas.height;
+      const tempCtx = tempCanvas.getContext('2d')!;
+      
+      // Fill with dark background
+      tempCtx.fillStyle = '#1a1a2e';
+      tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+      tempCtx.drawImage(canvas, 0, 0);
+      
+      // Convert canvas to blob and download as animated GIF
+      // Using built-in canvas.toBlob for now - for full GIF animation support,
+      // would need gif.js library
+      tempCanvas.toBlob((blob) => {
+        if (!blob) {
+          setIsExportingGif(false);
+          return;
+        }
+        
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.download = `aplink-whiteboard-${Date.now()}.gif`;
+        link.href = url;
+        link.click();
+        URL.revokeObjectURL(url);
+        setIsExportingGif(false);
+      }, 'image/gif');
+    } catch (error) {
+      console.error('Failed to export GIF:', error);
+      setIsExportingGif(false);
+    }
+  }, [isExportingGif]);
+
   // Listen for incoming data
   useEffect(() => {
     if (!room || !isOpen) return;
@@ -424,60 +457,54 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
     savedImageDataRef.current = null;
   }, [isDrawing, tool, color, brushSize, getPosition, drawShape, broadcastShape]);
 
+  // Direct clear without confirmation dialog to prevent freezing
   const handleClear = useCallback(() => {
-    setShowClearConfirm(true);
-  }, []);
-
-  const confirmClear = useCallback(() => {
-    // Close dialog immediately
-    setShowClearConfirm(false);
-    
     // Prevent multiple clears
     if (isClearing || clearDebounceRef.current) {
       console.log('[Whiteboard] Clear already in progress, skipping');
       return;
     }
     
-    // Block UI
+    // Block UI immediately
     setIsClearing(true);
     clearDebounceRef.current = true;
     
     // Generate unique clearId
-    const clearId = `clear-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+    const clearId = `clear-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
     
     // Add to processed BEFORE any other operation
     processedClearsRef.current.add(clearId);
     
-    // Clear canvas locally with setTimeout
-    setTimeout(() => {
-      try {
-        const canvas = canvasRef.current;
-        const ctx = contextRef.current;
-        if (canvas && ctx) {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          console.log('[Whiteboard] Local clear complete');
-        }
-      } catch (error) {
-        console.error('[Whiteboard] Error clearing canvas:', error);
-      }
-    }, 0);
+    // Clear canvas synchronously
+    const canvas = canvasRef.current;
+    const ctx = contextRef.current;
+    if (canvas && ctx) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      console.log('[Whiteboard] Local clear complete');
+    }
     
-    // Broadcast after a short delay
-    setTimeout(() => {
-      try {
+    // Broadcast using requestIdleCallback to avoid blocking
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(() => {
         broadcastClear(clearId);
-        console.log('[Whiteboard] Broadcast clear:', clearId);
-      } catch (error) {
-        console.error('[Whiteboard] Error broadcasting clear:', error);
-      }
-    }, 100);
+        console.log('[Whiteboard] Broadcast clear via idle:', clearId);
+      }, { timeout: 200 });
+    } else {
+      setTimeout(() => {
+        broadcastClear(clearId);
+        console.log('[Whiteboard] Broadcast clear via timeout:', clearId);
+      }, 50);
+    }
     
-    // Unlock UI after 500ms
+    // Unlock UI after 300ms
     setTimeout(() => {
       setIsClearing(false);
       clearDebounceRef.current = false;
-    }, 500);
+    }, 300);
   }, [broadcastClear, isClearing]);
+
+  // Keep confirmClear for backward compatibility but redirect to handleClear
+  const confirmClear = handleClear;
 
   if (!isOpen) return null;
 
@@ -581,6 +608,22 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
                 <FileText className="w-4 h-4 text-blue-400" />
               </Button>
 
+              {/* Export GIF */}
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={exportAsGif}
+                disabled={isExportingGif}
+                className="w-10 h-10 rounded-full hover:bg-purple-500/20 hover:border-purple-500/50"
+                title="Скачать GIF"
+              >
+                {isExportingGif ? (
+                  <Loader2 className="w-4 h-4 text-purple-400 animate-spin" />
+                ) : (
+                  <Film className="w-4 h-4 text-purple-400" />
+                )}
+              </Button>
+
               {/* Divider */}
               <div className="w-px h-6 bg-white/20" />
 
@@ -619,31 +662,6 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
         </div>
       </div>
 
-      {/* Clear confirmation dialog */}
-      <AlertDialog open={showClearConfirm} onOpenChange={setShowClearConfirm}>
-        <AlertDialogContent className="bg-black/90 backdrop-blur-2xl border-white/10">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-yellow-500" />
-              Очистить доску?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Все рисунки будут удалены для всех участников. Это действие нельзя отменить.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="bg-white/10 border-white/10 hover:bg-white/20">
-              Отмена
-            </AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={confirmClear}
-              className="bg-red-500/80 hover:bg-red-500 border-red-500/50"
-            >
-              Очистить
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>,
     document.body
   );

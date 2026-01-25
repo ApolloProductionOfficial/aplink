@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, FileText, Users, Calendar, User, Camera, Loader2, Check, Globe, Shield, Trash2, Download, Share2, Search, X, Link2, Copy, Link2Off, AlertTriangle, BarChart3, Sparkles } from 'lucide-react';
+import { ArrowLeft, FileText, Users, Calendar, User, Camera, Loader2, Check, Globe, Shield, Trash2, Download, Share2, Search, X, Link2, Copy, Link2Off, AlertTriangle, BarChart3, Sparkles, Save } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,22 @@ import apolloLogo from '@/assets/apollo-logo.mp4';
 import { generateMeetingDocx } from '@/utils/generateMeetingDocx';
 import { invokeBackendFunctionKeepalive } from '@/utils/invokeBackendFunctionKeepalive';
 import { AvatarCropDialog } from '@/components/AvatarCropDialog';
+
+// Saving indicator component for header
+const SavingIndicator = () => (
+  <div className="fixed top-4 right-4 z-50 flex items-center gap-3 px-4 py-2.5 bg-black/40 backdrop-blur-2xl border border-white/10 rounded-full shadow-lg animate-fade-in">
+    <svg viewBox="0 0 24 24" className="w-5 h-5 animate-spin flex-shrink-0">
+      <defs>
+        <linearGradient id="saving-spin-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#06b6e4"/>
+          <stop offset="100%" stopColor="#8b5cf6"/>
+        </linearGradient>
+      </defs>
+      <circle cx="12" cy="12" r="10" stroke="url(#saving-spin-gradient)" strokeWidth="2" fill="none" strokeDasharray="50 30"/>
+    </svg>
+    <span className="text-sm font-medium text-white">Сохраняем запись...</span>
+  </div>
+);
 
 interface MeetingTranscript {
   id: string;
@@ -723,6 +739,10 @@ const Dashboard = () => {
           </div>
         </div>
       )}
+      
+      {/* Saving indicator in header area */}
+      {showSavingIndicator && <SavingIndicator />}
+      
       {/* Header */}
       <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-xl border-b border-border/50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
