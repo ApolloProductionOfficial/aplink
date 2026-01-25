@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { Video, Maximize2, PhoneOff, Mic, MicOff, Minimize2 } from "lucide-react";
+import { Video, Maximize2, PhoneOff, Mic, MicOff, Minimize2, Wifi } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useActiveCall } from "@/contexts/ActiveCallContext";
-import { Track } from "livekit-client";
+import { Track, ConnectionQuality } from "livekit-client";
 
 interface MinimizedCallWidgetProps {
   roomName: string;
@@ -26,12 +26,37 @@ export function MinimizedCallWidget({
   const draggingRef = useRef(false);
   const startRef = useRef<{ x: number; y: number; px: number; py: number } | null>(null);
   const { liveKitRoom } = useActiveCall();
+  const [connectionQuality, setConnectionQuality] = useState<ConnectionQuality>(ConnectionQuality.Unknown);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const size = useMemo(() => ({ 
     w: isExpanded ? 320 : 200, 
     h: isExpanded ? 200 : 56 
   }), [isExpanded]);
+
+  // Track connection quality
+  useEffect(() => {
+    if (!liveKitRoom) return;
+
+    const updateQuality = () => {
+      setConnectionQuality(liveKitRoom.localParticipant.connectionQuality);
+    };
+
+    // Initial quality
+    updateQuality();
+
+    // Listen for quality changes
+    const handleQualityChanged = () => updateQuality();
+    liveKitRoom.localParticipant.on('connectionQualityChanged', handleQualityChanged);
+
+    // Also poll every 2 seconds as backup
+    const interval = setInterval(updateQuality, 2000);
+
+    return () => {
+      liveKitRoom.localParticipant.off('connectionQualityChanged', handleQualityChanged);
+      clearInterval(interval);
+    };
+  }, [liveKitRoom]);
 
   // Get local video track and attach to video element
   useEffect(() => {
@@ -51,6 +76,22 @@ export function MinimizedCallWidget({
       }
     };
   }, [liveKitRoom, isExpanded]);
+
+  // Get quality color and label
+  const getQualityInfo = () => {
+    switch (connectionQuality) {
+      case ConnectionQuality.Excellent:
+        return { color: 'bg-green-500', label: 'Отлично', glow: 'shadow-[0_0_8px_rgba(34,197,94,0.8)]' };
+      case ConnectionQuality.Good:
+        return { color: 'bg-yellow-500', label: 'Хорошо', glow: 'shadow-[0_0_8px_rgba(234,179,8,0.8)]' };
+      case ConnectionQuality.Poor:
+        return { color: 'bg-red-500', label: 'Слабо', glow: 'shadow-[0_0_8px_rgba(239,68,68,0.8)]' };
+      default:
+        return { color: 'bg-gray-500', label: '...', glow: '' };
+    }
+  };
+
+  const qualityInfo = getQualityInfo();
 
   // Request Picture-in-Picture for remote participants when minimized
   useEffect(() => {
@@ -199,9 +240,18 @@ export function MinimizedCallWidget({
               onPointerMove={handlePointerMove}
               onPointerUp={handlePointerUp}
             >
-              <span className="text-xs font-medium text-white/80 bg-black/40 px-2 py-1 rounded-full truncate max-w-[60%]">
-                {roomName}
-              </span>
+              <div className="flex items-center gap-1.5 text-xs font-medium text-white/80 bg-black/40 px-2 py-1 rounded-full truncate max-w-[70%]">
+                {/* Connection quality indicator */}
+                <span 
+                  className={cn(
+                    "w-2 h-2 rounded-full animate-pulse",
+                    qualityInfo.color,
+                    qualityInfo.glow
+                  )}
+                  title={qualityInfo.label}
+                />
+                <span className="truncate">{roomName}</span>
+              </div>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -239,9 +289,18 @@ export function MinimizedCallWidget({
               >
                 <Video className="w-4 h-4 text-primary" />
               </button>
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 flex items-center gap-1.5">
+                {/* Connection quality indicator */}
+                <span 
+                  className={cn(
+                    "w-2 h-2 rounded-full animate-pulse flex-shrink-0",
+                    qualityInfo.color,
+                    qualityInfo.glow
+                  )}
+                  title={qualityInfo.label}
+                />
                 <p className="text-xs font-medium truncate text-foreground">
-                  🔊 {roomName}
+                  {roomName}
                 </p>
               </div>
             </>
