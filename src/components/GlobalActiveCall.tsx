@@ -45,6 +45,12 @@ export function GlobalActiveCall() {
 
   const hasConnectedRef = useRef(false);
   const [isConnected, setIsConnected] = useState(false);
+  
+  // Auto-reconnect state
+  const [reconnectAttempt, setReconnectAttempt] = useState(0);
+  const [isReconnecting, setIsReconnecting] = useState(false);
+  const MAX_RECONNECT_ATTEMPTS = 5;
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Handle room ready
   const handleRoomReady = useCallback((room: Room) => {
@@ -56,6 +62,9 @@ export function GlobalActiveCall() {
   const handleConnected = useCallback(() => {
     console.log('[GlobalActiveCall] Connected');
     setIsConnected(true);
+    setReconnectAttempt(0); // Reset reconnect counter on successful connection
+    setIsReconnecting(false);
+    
     if (!hasConnectedRef.current) {
       hasConnectedRef.current = true;
       playConnectedSound();
@@ -119,19 +128,84 @@ export function GlobalActiveCall() {
     navigate('/', { replace: true });
   }, [minimize, navigate]);
 
-  // Handle error
+  // Handle error with auto-reconnect for ConnectionError
   const handleError = useCallback((error: Error) => {
     console.error('[GlobalActiveCall] Error:', error);
-    toast.error('Ошибка подключения', {
-      description: error.message || 'Не удалось подключиться к комнате',
-    });
+    
+    // Check if this is a ConnectionError and we haven't exceeded max attempts
+    const isConnectionError = error.name === 'ConnectionError' || 
+      error.message?.toLowerCase().includes('connection') ||
+      error.message?.toLowerCase().includes('cancelled');
+    
+    if (isConnectionError && reconnectAttempt < MAX_RECONNECT_ATTEMPTS) {
+      setIsReconnecting(true);
+      const delay = Math.min(1000 * Math.pow(2, reconnectAttempt), 30000); // Exponential backoff: 1s, 2s, 4s, 8s, 16s
+      
+      toast.info(
+        <div className="flex items-center gap-3">
+          <svg viewBox="0 0 24 24" className="w-5 h-5 animate-spin flex-shrink-0">
+            <defs>
+              <linearGradient id="reconnect-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#06b6e4"/>
+                <stop offset="100%" stopColor="#8b5cf6"/>
+              </linearGradient>
+            </defs>
+            <path d="M21 12a9 9 0 11-6.219-8.56" stroke="url(#reconnect-gradient)" strokeWidth="2" fill="none" strokeLinecap="round"/>
+          </svg>
+          <div>
+            <div className="font-medium">Переподключение...</div>
+            <div className="text-xs text-muted-foreground">Попытка {reconnectAttempt + 1} из {MAX_RECONNECT_ATTEMPTS}</div>
+          </div>
+        </div>,
+        { duration: delay + 2000 }
+      );
+      
+      // Schedule reconnect attempt
+      reconnectTimeoutRef.current = setTimeout(() => {
+        console.log(`[GlobalActiveCall] Reconnect attempt ${reconnectAttempt + 1}`);
+        setReconnectAttempt(prev => prev + 1);
+        setIsReconnecting(false);
+        // The LiveKitRoom component will auto-reconnect when it detects disconnection
+      }, delay);
+    } else if (reconnectAttempt >= MAX_RECONNECT_ATTEMPTS) {
+      // Max attempts exceeded
+      setIsReconnecting(false);
+      toast.error(
+        <div className="flex items-center gap-3">
+          <svg viewBox="0 0 24 24" className="w-5 h-5 flex-shrink-0">
+            <defs>
+              <linearGradient id="error-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#ef4444"/>
+                <stop offset="100%" stopColor="#f97316"/>
+              </linearGradient>
+            </defs>
+            <circle cx="12" cy="12" r="10" stroke="url(#error-gradient)" strokeWidth="2" fill="none"/>
+            <path d="M15 9l-6 6M9 9l6 6" stroke="url(#error-gradient)" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
+          <div>
+            <div className="font-medium">Не удалось подключиться</div>
+            <div className="text-xs text-muted-foreground">Попробуйте перезагрузить страницу</div>
+          </div>
+        </div>,
+        { duration: 10000 }
+      );
+    } else {
+      // Other error types
+      toast.error('Ошибка подключения', {
+        description: error.message || 'Не удалось подключиться к комнате',
+      });
+    }
+    
     eventHandlers.onError?.(error);
-  }, [eventHandlers]);
+  }, [eventHandlers, reconnectAttempt]);
 
   // Reset on unmount
   useEffect(() => {
     return () => {
       hasConnectedRef.current = false;
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
     };
   }, []);
 

@@ -310,15 +310,15 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
             processedClearsRef.current = new Set(arr.slice(-30));
           }
           
-          // Clear canvas with setTimeout to avoid blocking
-          setTimeout(() => {
+          // Clear canvas using queueMicrotask to avoid blocking React render cycle
+          queueMicrotask(() => {
             const canvas = canvasRef.current;
             const ctx = contextRef.current;
             if (canvas && ctx) {
               ctx.clearRect(0, 0, canvas.width, canvas.height);
               console.log('[Whiteboard] Canvas cleared by remote:', sender);
             }
-          }, 0);
+          });
         }
       } catch {
         // Ignore non-JSON data

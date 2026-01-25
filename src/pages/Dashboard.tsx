@@ -123,7 +123,28 @@ const Dashboard = () => {
     }
   }, [user, isLoading, navigate]);
 
-  // If a meeting couldn't be saved (guest ended call), offer to save it now after login
+  // Custom save icon component for toasts
+  const SaveIcon = () => (
+    <svg viewBox="0 0 24 24" className="w-6 h-6 animate-pulse flex-shrink-0">
+      <defs>
+        <linearGradient id="save-gradient-dash" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#06b6e4"/>
+          <stop offset="100%" stopColor="#8b5cf6"/>
+        </linearGradient>
+        <filter id="save-glow-dash">
+          <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
+          <feMerge>
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+      <circle cx="12" cy="12" r="10" stroke="url(#save-gradient-dash)" strokeWidth="2" fill="none" filter="url(#save-glow-dash)"/>
+      <path d="M8 12l3 3 5-5" stroke="url(#save-gradient-dash)" strokeWidth="2.5" fill="none" strokeLinecap="round" filter="url(#save-glow-dash)"/>
+    </svg>
+  );
+
+  // If a meeting couldn't be saved (guest ended call), auto-save it silently after login
   useEffect(() => {
     if (!user) return;
 
@@ -138,35 +159,67 @@ const Dashboard = () => {
       return;
     }
 
-    toast.info("Найден несохранённый созвон", {
-      description: "Нажмите «Сохранить», чтобы добавить его в «Мои созвоны».",
-      duration: 15000,
-      action: {
-        label: 'Сохранить',
-        onClick: async () => {
-          try {
-            const response = await invokeBackendFunctionKeepalive<{ success: boolean; meeting?: { id: string } }>(
-              'summarize-meeting',
-              { ...base!, userId: user.id },
-            );
+    // Auto-save silently without dialog
+    const autoSavePendingMeeting = async () => {
+      toast.info(
+        <div className="flex items-center gap-3">
+          <SaveIcon />
+          <div>
+            <div className="font-medium">Восстанавливаем запись...</div>
+            <div className="text-xs text-muted-foreground">Пожалуйста, подождите</div>
+          </div>
+        </div>,
+        { duration: 10000 }
+      );
 
-            if (!response?.success || !response?.meeting?.id) {
-              throw new Error('Сервер не подтвердил сохранение');
-            }
+      try {
+        const response = await invokeBackendFunctionKeepalive<{ success: boolean; meeting?: { id: string } }>(
+          'summarize-meeting',
+          { ...base!, userId: user.id },
+        );
 
-            sessionStorage.removeItem(PENDING_MEETING_SAVE_KEY);
-            await fetchTranscripts();
-            toast.success('✅ Созвон сохранён', {
-              description: 'Он появился в списке «Мои созвоны».',
-            });
-          } catch (e: any) {
-            toast.error('Ошибка сохранения', {
-              description: e?.message || 'Не удалось сохранить созвон',
-            });
-          }
-        },
-      },
-    });
+        if (!response?.success || !response?.meeting?.id) {
+          throw new Error('Сервер не подтвердил сохранение');
+        }
+
+        sessionStorage.removeItem(PENDING_MEETING_SAVE_KEY);
+        await fetchTranscripts();
+        
+        toast.success(
+          <div className="flex items-center gap-3">
+            <svg viewBox="0 0 24 24" className="w-6 h-6 flex-shrink-0">
+              <defs>
+                <linearGradient id="success-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#10b981"/>
+                  <stop offset="100%" stopColor="#06b6e4"/>
+                </linearGradient>
+                <filter id="success-glow">
+                  <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
+                  <feMerge>
+                    <feMergeNode in="coloredBlur"/>
+                    <feMergeNode in="SourceGraphic"/>
+                  </feMerge>
+                </filter>
+              </defs>
+              <circle cx="12" cy="12" r="10" stroke="url(#success-gradient)" strokeWidth="2" fill="none" filter="url(#success-glow)"/>
+              <path d="M8 12l3 3 5-5" stroke="url(#success-gradient)" strokeWidth="2.5" fill="none" strokeLinecap="round" filter="url(#success-glow)"/>
+            </svg>
+            <div>
+              <div className="font-medium">Запись восстановлена</div>
+              <div className="text-xs text-muted-foreground">Доступна в «Мои созвоны»</div>
+            </div>
+          </div>,
+          { duration: 5000 }
+        );
+      } catch (e: any) {
+        console.error('Auto-save pending meeting failed:', e);
+        toast.error('Ошибка восстановления записи', {
+          description: e?.message || 'Не удалось сохранить созвон',
+        });
+      }
+    };
+
+    autoSavePendingMeeting();
   }, [user]);
 
   const fetchTranscripts = async () => {
