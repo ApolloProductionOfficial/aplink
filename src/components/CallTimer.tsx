@@ -367,14 +367,14 @@ export function CallTimer({ room, isHost = true }: CallTimerProps) {
             transform: `translate(${positionRef.current.x}px, ${positionRef.current.y}px)`,
             width: PANEL_WIDTH 
           }}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
         >
           {/* Drag handle */}
           <div
             className="flex items-center justify-center py-2 cursor-grab active:cursor-grabbing border-b border-white/10"
             onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
-            onPointerCancel={handlePointerUp}
           >
             <GripHorizontal className="w-4 h-4 text-white/30" />
           </div>
