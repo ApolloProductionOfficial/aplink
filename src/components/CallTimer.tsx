@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Room, RoomEvent } from 'livekit-client';
 import { Timer, Play, Pause, X, GripHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -353,7 +354,7 @@ export function CallTimer({ room, isHost = true }: CallTimerProps) {
   return (
     <>
       {/* Floating timer panel - DRAGGABLE */}
-      {isActive && (
+      {isActive && createPortal(
         <div 
           ref={panelRef}
           className={cn(
@@ -413,7 +414,8 @@ export function CallTimer({ room, isHost = true }: CallTimerProps) {
               </div>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Timer control button (in toolbar) */}
