@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Room, RoomEvent } from 'livekit-client';
-import { Pencil, Eraser, Trash2, X, Circle, Minus, MoveRight, Square, Undo2 } from 'lucide-react';
+import { Pencil, Eraser, Trash2, X, Circle, Minus, MoveRight, Square, Undo2, Download, Crosshair, Video, Pause, Play, Square as StopIcon } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
 
-type Tool = 'pen' | 'eraser' | 'line' | 'arrow' | 'rectangle';
+type Tool = 'pen' | 'eraser' | 'line' | 'arrow' | 'rectangle' | 'laser';
 
 interface Stroke {
   from: { x: number; y: number };
@@ -49,6 +49,7 @@ const TOOLS: { id: Tool; icon: React.ComponentType<any>; label: string }[] = [
   { id: 'line', icon: Minus, label: 'Линия' },
   { id: 'arrow', icon: MoveRight, label: 'Стрелка' },
   { id: 'rectangle', icon: Square, label: 'Прямоугольник' },
+  { id: 'laser', icon: Crosshair, label: 'Указка' },
 ];
 
 export function DrawingOverlay({ room, participantName, isOpen, onClose }: DrawingOverlayProps) {
@@ -63,6 +64,16 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
   const contextRef = useRef<CanvasRenderingContext2D | null>(null);
   const savedImageDataRef = useRef<ImageData | null>(null);
   const historyRef = useRef<ImageData[]>([]);
+  
+  // Laser pointer refs
+  const laserPointsRef = useRef<Array<{ x: number; y: number; timestamp: number }>>([]);
+  const laserAnimationRef = useRef<number | null>(null);
+  
+  // Recording state
+  const [isRecording, setIsRecording] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
 
   // Initialize canvas
   useEffect(() => {
@@ -203,6 +214,131 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
     }
   }, []);
 
+  // Export drawing as PNG
+  const exportAsImage = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const link = document.createElement('a');
+    link.download = `aplink-screen-drawing-${Date.now()}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }, []);
+
+  // Laser pointer drawing with fade effect
+  const drawLaserPoints = useCallback(() => {
+    const ctx = contextRef.current;
+    const canvas = canvasRef.current;
+    if (!ctx || !canvas) return;
+    
+    const now = Date.now();
+    const LASER_LIFETIME = 2000;
+    
+    // Filter old points
+    laserPointsRef.current = laserPointsRef.current.filter(
+      p => now - p.timestamp < LASER_LIFETIME
+    );
+    
+    // Draw each point with fade
+    laserPointsRef.current.forEach((point) => {
+      const age = now - point.timestamp;
+      const alpha = 1 - (age / LASER_LIFETIME);
+      
+      // Outer glow
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, 20, 0, Math.PI * 2);
+      const gradient = ctx.createRadialGradient(point.x, point.y, 0, point.x, point.y, 20);
+      gradient.addColorStop(0, `rgba(255, 50, 50, ${alpha * 0.6})`);
+      gradient.addColorStop(1, `rgba(255, 50, 50, 0)`);
+      ctx.fillStyle = gradient;
+      ctx.fill();
+      
+      // Inner bright dot
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, 6, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255, 100, 100, ${alpha})`;
+      ctx.fill();
+      
+      // Core
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, 3, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+      ctx.fill();
+    });
+  }, []);
+
+  // Broadcast laser point
+  const broadcastLaserPoint = useCallback((point: { x: number; y: number; timestamp: number }) => {
+    if (!room) return;
+    const data = JSON.stringify({ 
+      type: 'DRAWING_OVERLAY_LASER', 
+      point,
+      sender: participantName 
+    });
+    room.localParticipant.publishData(
+      new TextEncoder().encode(data), 
+      { reliable: false }
+    );
+  }, [room, participantName]);
+
+  // Start recording
+  const startRecording = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    try {
+      const stream = canvas.captureStream(30);
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'video/webm;codecs=vp9'
+      });
+      
+      recordedChunksRef.current = [];
+      
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          recordedChunksRef.current.push(e.data);
+        }
+      };
+      
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.download = `aplink-presentation-${Date.now()}.webm`;
+        link.href = url;
+        link.click();
+        URL.revokeObjectURL(url);
+      };
+      
+      mediaRecorder.start(100);
+      mediaRecorderRef.current = mediaRecorder;
+      setIsRecording(true);
+    } catch (error) {
+      console.error('Failed to start recording:', error);
+    }
+  }, []);
+
+  // Toggle pause recording
+  const togglePauseRecording = useCallback(() => {
+    if (!mediaRecorderRef.current) return;
+    
+    if (isPaused) {
+      mediaRecorderRef.current.resume();
+    } else {
+      mediaRecorderRef.current.pause();
+    }
+    setIsPaused(!isPaused);
+  }, [isPaused]);
+
+  // Stop recording
+  const stopRecording = useCallback(() => {
+    if (!mediaRecorderRef.current) return;
+    
+    mediaRecorderRef.current.stop();
+    setIsRecording(false);
+    setIsPaused(false);
+  }, []);
+
   // Save to history
   const saveToHistory = useCallback(() => {
     const ctx = contextRef.current;
@@ -274,6 +410,8 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
           if (canvas && ctx) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
           }
+        } else if (message.type === 'DRAWING_OVERLAY_LASER' && message.sender !== participantName) {
+          laserPointsRef.current.push(message.point);
         }
       } catch {
         // Ignore non-JSON data
@@ -283,6 +421,48 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
     room.on(RoomEvent.DataReceived, handleData);
     return () => { room.off(RoomEvent.DataReceived, handleData); };
   }, [room, isOpen, drawStroke, drawShape, participantName]);
+
+  // Laser animation loop
+  useEffect(() => {
+    if (!isOpen) return;
+    
+    const canvas = canvasRef.current;
+    const ctx = contextRef.current;
+    if (!canvas || !ctx) return;
+    
+    let baseImageData: ImageData | null = null;
+    
+    const animate = () => {
+      // Only run animation if there are laser points
+      if (laserPointsRef.current.length > 0) {
+        // Save current state if we haven't yet
+        if (!baseImageData) {
+          baseImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        }
+        
+        // Restore base and draw laser
+        ctx.putImageData(baseImageData, 0, 0);
+        drawLaserPoints();
+        
+        // Clear base if no more points
+        if (laserPointsRef.current.length === 0) {
+          baseImageData = null;
+        }
+      } else {
+        baseImageData = null;
+      }
+      
+      laserAnimationRef.current = requestAnimationFrame(animate);
+    };
+    
+    animate();
+    
+    return () => {
+      if (laserAnimationRef.current) {
+        cancelAnimationFrame(laserAnimationRef.current);
+      }
+    };
+  }, [isOpen, drawLaserPoints]);
 
   // Get position relative to canvas
   const getPosition = useCallback((e: React.MouseEvent<HTMLCanvasElement>): { x: number; y: number } => {
@@ -318,6 +498,13 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
 
     const currentPoint = getPosition(e);
 
+    if (tool === 'laser') {
+      const point = { x: currentPoint.x, y: currentPoint.y, timestamp: Date.now() };
+      laserPointsRef.current.push(point);
+      broadcastLaserPoint(point);
+      return;
+    }
+
     if (tool === 'pen' || tool === 'eraser') {
       if (!lastPointRef.current) return;
       
@@ -342,10 +529,16 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
       };
       drawShape(shape, true);
     }
-  }, [isDrawing, color, brushSize, tool, getPosition, drawStroke, drawShape, broadcastStroke]);
+  }, [isDrawing, color, brushSize, tool, getPosition, drawStroke, drawShape, broadcastStroke, broadcastLaserPoint]);
 
   const handleMouseUp = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!isDrawing) return;
+    
+    // Laser doesn't need history save
+    if (tool === 'laser') {
+      setIsDrawing(false);
+      return;
+    }
     
     if ((tool === 'line' || tool === 'arrow' || tool === 'rectangle') && shapeStartRef.current) {
       const currentPoint = getPosition(e);
@@ -481,6 +674,59 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
           >
             <Trash2 className="w-4 h-4" />
           </Button>
+
+          <div className="w-px h-5 bg-white/20" />
+
+          {/* Export */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={exportAsImage}
+            className="w-8 h-8 rounded-full"
+            title="Сохранить рисунок"
+          >
+            <Download className="w-4 h-4" />
+          </Button>
+
+          <div className="w-px h-5 bg-white/20" />
+
+          {/* Recording controls */}
+          {!isRecording ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={startRecording}
+              className="w-8 h-8 rounded-full"
+              title="Начать запись презентации"
+            >
+              <Video className="w-4 h-4" />
+            </Button>
+          ) : (
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={togglePauseRecording}
+                className="w-8 h-8 rounded-full"
+                title={isPaused ? "Продолжить" : "Пауза"}
+              >
+                {isPaused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={stopRecording}
+                className="w-8 h-8 rounded-full hover:bg-red-500/20"
+                title="Остановить и сохранить"
+              >
+                <StopIcon className="w-4 h-4 text-red-400" />
+              </Button>
+              <div className="flex items-center gap-1 px-2 py-0.5 bg-red-500/20 rounded-full">
+                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                <span className="text-xs text-red-400">REC</span>
+              </div>
+            </>
+          )}
 
           <div className="w-px h-5 bg-white/20" />
 
