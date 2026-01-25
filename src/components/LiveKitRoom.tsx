@@ -193,17 +193,18 @@ export function LiveKitRoom({
             </p>
             <p className="text-muted-foreground text-sm flex items-center gap-2">
               Готовьтесь к погружению
-              {/* Custom SVG star */}
-              <svg viewBox="0 0 24 24" className="w-5 h-5 animate-pulse">
+              {/* Single neon star */}
+              <svg viewBox="0 0 24 24" className="w-6 h-6 animate-pulse animate-[spin_8s_linear_infinite]">
                 <defs>
                   <linearGradient id="star-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#ffd700"/>
+                    <stop offset="0%" stopColor="#06b6e4"/>
                     <stop offset="50%" stopColor="#fff"/>
-                    <stop offset="100%" stopColor="#ffd700"/>
+                    <stop offset="100%" stopColor="#06b6e4"/>
                   </linearGradient>
                   <filter id="star-glow">
-                    <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
+                    <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
                     <feMerge>
+                      <feMergeNode in="coloredBlur"/>
                       <feMergeNode in="coloredBlur"/>
                       <feMergeNode in="SourceGraphic"/>
                     </feMerge>
@@ -213,14 +214,7 @@ export function LiveKitRoom({
                   d="M12 2L14.5 9.5L22 10L16 15L18 22L12 18L6 22L8 15L2 10L9.5 9.5L12 2Z" 
                   fill="url(#star-gradient)" 
                   filter="url(#star-glow)"
-                  className="drop-shadow-[0_0_8px_rgba(255,215,0,0.8)]"
-                />
-              </svg>
-              <svg viewBox="0 0 24 24" className="w-4 h-4 animate-pulse" style={{ animationDelay: '0.3s' }}>
-                <path 
-                  d="M12 2L14.5 9.5L22 10L16 15L18 22L12 18L6 22L8 15L2 10L9.5 9.5L12 2Z" 
-                  fill="url(#star-gradient)" 
-                  filter="url(#star-glow)"
+                  className="drop-shadow-[0_0_12px_rgba(6,182,228,0.9)]"
                 />
               </svg>
             </p>
@@ -937,23 +931,63 @@ function LiveKitContent({
             </PopoverContent>
           </Popover>
 
-          {/* Screen share toggle */}
-          <Button
-            onClick={toggleScreenShare}
-            variant={isScreenShareEnabled ? "default" : "outline"}
-            size="icon"
-            className={cn(
-              "w-12 h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg border-white/20",
-              isScreenShareEnabled 
-                ? "bg-green-500/40 border-green-500/60 hover:bg-green-500/50" 
-                : "bg-white/15 hover:bg-white/25"
-            )}
-          >
-            <MonitorUp className={cn(
-              "w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]",
-              isScreenShareEnabled && "text-green-400"
-            )} />
-          </Button>
+          {/* Screen share toggle with menu */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant={isScreenShareEnabled ? "default" : "outline"}
+                size="icon"
+                className={cn(
+                  "w-12 h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg border-white/20",
+                  isScreenShareEnabled 
+                    ? "bg-green-500/40 border-green-500/60 hover:bg-green-500/50" 
+                    : "bg-white/15 hover:bg-white/25"
+                )}
+              >
+                <MonitorUp className={cn(
+                  "w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]",
+                  isScreenShareEnabled && "text-green-400"
+                )} />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent 
+              side="top" 
+              align="center" 
+              sideOffset={12}
+              className="w-auto p-3 bg-black/40 backdrop-blur-2xl border border-white/[0.08] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4),0_0_1px_rgba(255,255,255,0.1)]"
+            >
+              <div className="flex flex-col gap-2">
+                <span className="text-[10px] text-muted-foreground font-medium text-center mb-1">Демонстрация</span>
+                <div className="flex items-center gap-3">
+                  {/* Share screen */}
+                  <button
+                    onClick={toggleScreenShare}
+                    className={cn(
+                      "flex flex-col items-center gap-1.5 p-3 rounded-xl transition-all",
+                      isScreenShareEnabled 
+                        ? "bg-green-500/20 border border-green-500/30" 
+                        : "bg-white/5 hover:bg-white/10"
+                    )}
+                  >
+                    <MonitorUp className={cn("w-5 h-5", isScreenShareEnabled ? "text-green-400" : "text-primary")} />
+                    <span className="text-xs whitespace-nowrap">{isScreenShareEnabled ? "Остановить" : "Экран"}</span>
+                  </button>
+                  
+                  {/* Record screen + drawings - handled by DrawingOverlay */}
+                  <button
+                    onClick={() => {
+                      setShowDrawingOverlay(true);
+                      // Drawing overlay has its own screen recording functionality
+                    }}
+                    className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all"
+                  >
+                    <Video className="w-5 h-5 text-red-400" />
+                    <span className="text-xs whitespace-nowrap">Запись</span>
+                  </button>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
 
           {/* Divider */}
           <div className="w-px h-8 bg-white/10 mx-0.5" />

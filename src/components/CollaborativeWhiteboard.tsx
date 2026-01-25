@@ -74,6 +74,8 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
   const contextRef = useRef<CanvasRenderingContext2D | null>(null);
   // Store canvas state for shape preview
   const savedImageDataRef = useRef<ImageData | null>(null);
+  // Track processed clear IDs to prevent loops
+  const processedClearsRef = useRef<Set<string>>(new Set());
 
   // Initialize canvas
   useEffect(() => {
@@ -198,11 +200,13 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
   }, [room, participantName]);
 
   // Broadcast clear to other participants
-  const broadcastClear = useCallback(() => {
+  const broadcastClear = useCallback((clearId: string) => {
     if (!room) return;
     const data = JSON.stringify({ 
       type: 'WHITEBOARD_CLEAR', 
-      sender: participantName 
+      clearId,
+      sender: participantName,
+      timestamp: Date.now()
     });
     room.localParticipant.publishData(
       new TextEncoder().encode(data), 
@@ -273,11 +277,25 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
         } else if (message.type === 'WHITEBOARD_SHAPE' && message.sender !== participantName) {
           drawShape(message.shape);
         } else if (message.type === 'WHITEBOARD_CLEAR' && message.sender !== participantName) {
-          // Only clear if message is from another participant
+          const clearId = message.clearId;
+          
+          // Skip if already processed this clearId
+          if (clearId && processedClearsRef.current.has(clearId)) return;
+          if (clearId) {
+            processedClearsRef.current.add(clearId);
+            // Keep only last 20 IDs
+            if (processedClearsRef.current.size > 20) {
+              const arr = Array.from(processedClearsRef.current);
+              processedClearsRef.current = new Set(arr.slice(-20));
+            }
+          }
+          
           const canvas = canvasRef.current;
           const ctx = contextRef.current;
           if (canvas && ctx) {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            requestAnimationFrame(() => {
+              ctx.clearRect(0, 0, canvas.width, canvas.height);
+            });
           }
         }
       } catch {
@@ -392,8 +410,11 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
     // First close the dialog synchronously
     setShowClearConfirm(false);
     
-    // Use setTimeout to prevent blocking the main thread
-    setTimeout(() => {
+    // Generate unique clearId to prevent loops
+    const clearId = `clear-${Date.now()}-${participantName}`;
+    
+    // Use requestAnimationFrame for smoother clearing
+    requestAnimationFrame(() => {
       try {
         const canvas = canvasRef.current;
         const ctx = contextRef.current;
@@ -402,15 +423,18 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
         // Clear locally first
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
+        // Mark this clear as processed locally
+        processedClearsRef.current.add(clearId);
+        
         // Broadcast to others with a slight delay
         setTimeout(() => {
-          broadcastClear();
+          broadcastClear(clearId);
         }, 50);
       } catch (error) {
         console.error('Error clearing canvas:', error);
       }
-    }, 100);
-  }, [broadcastClear]);
+    });
+  }, [broadcastClear, participantName]);
 
   if (!isOpen) return null;
 
