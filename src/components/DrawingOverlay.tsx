@@ -254,81 +254,54 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   }, []);
 
-  // Clear laser points when color changes to prevent old color trails
+  // Clear laser points AND cached image when color changes to prevent old color trails
+  const baseImageDataRef = useRef<ImageData | null>(null);
+  
   useEffect(() => {
     laserPointsRef.current = [];
+    // CRITICAL: Clear cached baseImageData so old laser trails don't persist
+    baseImageDataRef.current = null;
   }, [color]);
 
-  // Laser pointer drawing - constant glow, smaller size, OnlyFans SVG logo
+  // Laser pointer drawing - small glowing dot (no logo)
   const drawLaserPoints = useCallback(() => {
     const ctx = contextRef.current;
     const canvas = canvasRef.current;
     if (!ctx || !canvas) return;
     
-    // Keep only the most recent point - no fading, constant glow
     if (laserPointsRef.current.length === 0) return;
     
-    // Always use the last point - constant visibility
+    // Always use the last point
     const lastPoint = laserPointsRef.current[laserPointsRef.current.length - 1];
     // Only keep last point to prevent memory buildup
     laserPointsRef.current = [lastPoint];
     
     ctx.save();
     
-    // Smaller radius (16px for compact logo)
-    const radius = 16;
+    // SMALL radius (8px)
+    const radius = 8;
     
     // Create radial gradient for glow effect
     const gradient = ctx.createRadialGradient(
       lastPoint.x, lastPoint.y, 0, 
-      lastPoint.x, lastPoint.y, radius + 4
+      lastPoint.x, lastPoint.y, radius + 3
     );
-    gradient.addColorStop(0, hexToRgba(color, 0.9));
-    gradient.addColorStop(0.4, hexToRgba(color, 0.5));
-    gradient.addColorStop(0.7, hexToRgba(color, 0.2));
+    gradient.addColorStop(0, hexToRgba(color, 0.95));
+    gradient.addColorStop(0.5, hexToRgba(color, 0.5));
     gradient.addColorStop(1, hexToRgba(color, 0));
     
     ctx.fillStyle = gradient;
     ctx.beginPath();
-    ctx.arc(lastPoint.x, lastPoint.y, radius + 4, 0, Math.PI * 2);
+    ctx.arc(lastPoint.x, lastPoint.y, radius + 3, 0, Math.PI * 2);
     ctx.fill();
     
-    // Draw OnlyFans-style lock logo (simplified)
-    const logoSize = 10;
-    const cx = lastPoint.x;
-    const cy = lastPoint.y;
-    
-    // Lock body (rounded rectangle)
+    // Small white center dot
     ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+    ctx.shadowColor = hexToRgba(color, 0.9);
+    ctx.shadowBlur = 6;
     ctx.beginPath();
-    ctx.roundRect(cx - logoSize/2, cy - logoSize/4, logoSize, logoSize * 0.7, 2);
+    ctx.arc(lastPoint.x, lastPoint.y, 4, 0, Math.PI * 2);
     ctx.fill();
-    
-    // Lock shackle (arc on top)
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(cx, cy - logoSize/4, logoSize/3, Math.PI, 0, false);
-    ctx.stroke();
-    
-    // Heart keyhole (in lock body)
-    ctx.fillStyle = hexToRgba(color, 0.95);
-    ctx.beginPath();
-    // Small heart shape
-    const hx = cx;
-    const hy = cy + logoSize * 0.1;
-    const hs = 2.5;
-    ctx.moveTo(hx, hy + hs);
-    ctx.bezierCurveTo(hx - hs * 1.5, hy, hx - hs, hy - hs, hx, hy - hs * 0.3);
-    ctx.bezierCurveTo(hx + hs, hy - hs, hx + hs * 1.5, hy, hx, hy + hs);
-    ctx.fill();
-    
-    // Outer glow ring
-    ctx.beginPath();
-    ctx.arc(lastPoint.x, lastPoint.y, radius, 0, Math.PI * 2);
-    ctx.strokeStyle = hexToRgba(color, 0.6);
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
     
     ctx.restore();
   }, [color, hexToRgba]);
@@ -621,7 +594,7 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
     return () => { room.off(RoomEvent.DataReceived, handleData); };
   }, [room, isOpen, drawStroke, drawShape, participantName]);
 
-  // Laser animation loop
+  // Laser animation loop - uses ref to persist baseImageData across color changes
   useEffect(() => {
     if (!isOpen) return;
     
@@ -629,26 +602,24 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
     const ctx = contextRef.current;
     if (!canvas || !ctx) return;
     
-    let baseImageData: ImageData | null = null;
-    
     const animate = () => {
       // Only run animation if there are laser points
       if (laserPointsRef.current.length > 0) {
-        // Save current state if we haven't yet
-        if (!baseImageData) {
-          baseImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        // Save current state if we haven't yet (use ref so it's cleared on color change)
+        if (!baseImageDataRef.current) {
+          baseImageDataRef.current = ctx.getImageData(0, 0, canvas.width, canvas.height);
         }
         
         // Restore base and draw laser
-        ctx.putImageData(baseImageData, 0, 0);
+        ctx.putImageData(baseImageDataRef.current, 0, 0);
         drawLaserPoints();
         
         // Clear base if no more points
         if (laserPointsRef.current.length === 0) {
-          baseImageData = null;
+          baseImageDataRef.current = null;
         }
       } else {
-        baseImageData = null;
+        baseImageDataRef.current = null;
       }
       
       laserAnimationRef.current = requestAnimationFrame(animate);
