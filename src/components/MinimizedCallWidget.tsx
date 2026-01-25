@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useActiveCall } from "@/contexts/ActiveCallContext";
 import { Track, ConnectionQuality } from "livekit-client";
+import "@/styles/call-animations.css";
 
 interface MinimizedCallWidgetProps {
   roomName: string;
@@ -185,7 +186,8 @@ export function MinimizedCallWidget({
         "fixed z-[9999] rounded-2xl overflow-hidden",
         "bg-card/95 backdrop-blur-xl border-2 border-primary/50",
         "shadow-[0_0_30px_hsl(var(--primary)/0.3)]",
-        "transition-all duration-300 ease-out",
+        // Smooth entry animation
+        "animate-widget-enter",
         isHovered ? "shadow-[0_0_40px_hsl(var(--primary)/0.5)]" : ""
       )}
       style={pos ? { 
@@ -193,7 +195,7 @@ export function MinimizedCallWidget({
         top: pos.y, 
         width: size.w, 
         height: size.h,
-        transition: 'width 0.3s, height 0.3s',
+        transition: 'width 0.3s ease-out, height 0.3s ease-out, box-shadow 0.3s ease-out',
         cursor: 'auto',
       } : { width: size.w, height: size.h, cursor: 'auto' }}
       onMouseEnter={() => setIsHovered(true)}

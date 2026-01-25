@@ -70,6 +70,8 @@ interface LiveKitRoomProps {
   onMinimize?: () => void;
   /** Connection quality indicator element */
   connectionIndicator?: React.ReactNode;
+  /** True when entering from minimized state - disables translate animations */
+  isMaximizing?: boolean;
 }
 
 export function LiveKitRoom({
@@ -86,6 +88,7 @@ export function LiveKitRoom({
   roomDisplayName,
   onMinimize,
   connectionIndicator,
+  isMaximizing = false,
 }: LiveKitRoomProps) {
   const [token, setToken] = useState<string | null>(null);
   const [serverUrl, setServerUrl] = useState<string | null>(null);
@@ -325,6 +328,7 @@ export function LiveKitRoom({
           onMinimize={onMinimize}
           participantName={participantName}
           connectionIndicator={connectionIndicator}
+          isMaximizing={isMaximizing}
         />
       </LayoutContextProvider>
     </LKRoom>
@@ -340,6 +344,7 @@ interface LiveKitContentProps {
   onMinimize?: () => void;
   participantName: string;
   connectionIndicator?: React.ReactNode;
+  isMaximizing?: boolean;
 }
 
 function LiveKitContent({ 
@@ -351,6 +356,7 @@ function LiveKitContent({
   onMinimize,
   participantName,
   connectionIndicator,
+  isMaximizing = false,
 }: LiveKitContentProps) {
   const room = useRoomContext();
   const participants = useParticipants();
@@ -869,7 +875,9 @@ function LiveKitContent({
             "transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
             showTopPanel 
               ? "translate-y-0 opacity-100 scale-100" 
-              : "-translate-y-8 opacity-0 scale-90 pointer-events-none"
+              : isMaximizing 
+                ? "opacity-0 scale-95" // No translate-y when maximizing to prevent "fly out"
+                : "-translate-y-8 opacity-0 scale-90 pointer-events-none"
           )}
         >
           <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-[2.5rem] bg-transparent backdrop-blur-[2px] border border-white/[0.1] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)]">
@@ -1002,7 +1010,9 @@ function LiveKitContent({
           "transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
           showBottomPanel 
             ? "translate-y-0 opacity-100 scale-100" 
-            : "translate-y-12 opacity-0 scale-90 pointer-events-none"
+            : isMaximizing
+              ? "opacity-0 scale-95" // No translate-y when maximizing to prevent "fly out"
+              : "translate-y-12 opacity-0 scale-90 pointer-events-none"
         )}
       >
         <div className="flex items-center gap-2.5 px-5 py-3.5 rounded-[2.5rem] bg-transparent backdrop-blur-[2px] border border-white/[0.1] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)]">

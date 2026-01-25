@@ -1,0 +1,73 @@
+/* Smooth minimize/maximize animations for call UI */
+
+/* Entry animation when maximizing from minimized widget */
+@keyframes expand-from-widget {
+  0% {
+    opacity: 0;
+    transform: scale(0.9) translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Overlay animation when minimizing */
+@keyframes shrink-overlay {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Widget entry animation */
+@keyframes widget-enter {
+  0% {
+    opacity: 0;
+    transform: scale(0.8) translateY(-20px);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.02) translateY(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Panel entry without translate-y jump (used when maximizing) */
+@keyframes panel-fade-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-expand-from-widget {
+  animation: expand-from-widget 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-shrink-overlay {
+  animation: shrink-overlay 0.5s ease-out forwards;
+}
+
+.animate-widget-enter {
+  animation: widget-enter 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-panel-fade-in {
+  animation: panel-fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Override panel animations when entering from maximize */
+.livekit-maximizing .panel-animate {
+  animation: panel-fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+  transform: none !important;
+}

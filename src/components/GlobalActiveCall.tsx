@@ -9,6 +9,7 @@ import { MinimizedCallWidget } from '@/components/MinimizedCallWidget';
 import { useAuth } from '@/hooks/useAuth';
 import { useConnectionSounds } from '@/hooks/useConnectionSounds';
 import { cn } from '@/lib/utils';
+import '@/styles/call-animations.css';
 
 /**
  * Global component that renders the active call.
@@ -308,18 +309,52 @@ export function GlobalActiveCall() {
   const isOnMeetingRoomRoute = location.pathname.startsWith('/room/');
   const shouldShowFullscreen = isOnMeetingRoomRoute && !isMinimized;
 
+  // Track animation states for smooth transitions
+  const [isAnimatingOut, setIsAnimatingOut] = useState(false);
+  const [isAnimatingIn, setIsAnimatingIn] = useState(false);
+  const prevMinimizedRef = useRef(isMinimized);
+  
+  // Handle animation states on minimize/maximize transitions
+  useEffect(() => {
+    if (prevMinimizedRef.current !== isMinimized) {
+      if (isMinimized) {
+        // Transitioning TO minimized - play exit animation
+        setIsAnimatingOut(true);
+        const timer = setTimeout(() => setIsAnimatingOut(false), 500);
+        return () => clearTimeout(timer);
+      } else {
+        // Transitioning FROM minimized - play entry animation
+        setIsAnimatingIn(true);
+        const timer = setTimeout(() => setIsAnimatingIn(false), 500);
+        return () => clearTimeout(timer);
+      }
+    }
+    prevMinimizedRef.current = isMinimized;
+  }, [isMinimized]);
+
   return (
     <>
       {/* Single always-mounted LiveKitRoom instance */}
       <div
         className={cn(
-          "fixed bg-background transition-opacity",
-          shouldShowFullscreen ? "inset-0 z-50 opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+          "fixed bg-background",
+          // Smooth animation for opacity, transform and scale
+          "transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
+          shouldShowFullscreen 
+            ? "inset-0 z-50 opacity-100 pointer-events-auto scale-100" 
+            : "opacity-0 pointer-events-none scale-95",
+          // Entry animation when maximizing
+          isAnimatingIn && "animate-expand-from-widget"
         )}
         style={
           shouldShowFullscreen
-            ? undefined
-            : { width: 1, height: 1, overflow: 'hidden' }
+            ? { transformOrigin: 'bottom right' }
+            : { 
+                width: 1, 
+                height: 1, 
+                overflow: 'hidden',
+                transformOrigin: 'bottom right'
+              }
         }
         aria-hidden={!shouldShowFullscreen}
       >
@@ -338,8 +373,21 @@ export function GlobalActiveCall() {
           roomDisplayName={roomDisplayName}
           onMinimize={handleMinimize}
           connectionIndicator={connectionIndicator}
+          isMaximizing={isAnimatingIn}
         />
       </div>
+
+      {/* Minimize animation overlay */}
+      {isAnimatingOut &&
+        createPortal(
+          <div 
+            className="fixed inset-0 z-[9998] pointer-events-none animate-shrink-overlay"
+            style={{
+              background: 'radial-gradient(ellipse at bottom right, hsl(var(--primary) / 0.3) 0%, transparent 60%)',
+            }}
+          />,
+          document.body
+        )}
 
       {/* Floating minimized widget */}
       {isMinimized &&
