@@ -102,7 +102,7 @@ export function CallTimer({ room, isHost = true }: CallTimerProps) {
     const rect = panelRef.current.getBoundingClientRect();
     const dx = e.clientX - startRef.current.px;
     const dy = e.clientY - startRef.current.py;
-    const margin = 12;
+    const margin = 4; // Reduced margin for smoother edge dragging
     const nextX = Math.min(Math.max(margin, startRef.current.x + dx), window.innerWidth - rect.width - margin);
     const nextY = Math.min(Math.max(margin, startRef.current.y + dy), window.innerHeight - rect.height - margin);
     setPos({ x: nextX, y: nextY });
