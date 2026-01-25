@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Room, RoomEvent } from 'livekit-client';
-import { Pencil, Eraser, Trash2, X, Circle, Minus, MoveRight, Square, Undo2, Download, Crosshair, Video, Pause, Play, Square as StopIcon } from 'lucide-react';
+import { Pencil, Eraser, Trash2, X, Circle, Minus, MoveRight, Square, Undo2, Download, Crosshair, Video, Pause, Play, Square as StopIcon, MonitorUp } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -72,9 +72,15 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
   // Recording state
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [isScreenRecording, setIsScreenRecording] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
-
+  const screenRecorderRef = useRef<MediaRecorder | null>(null);
+  const screenChunksRef = useRef<Blob[]>([]);
+  const displayStreamRef = useRef<MediaStream | null>(null);
+  const combinedCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const videoElementRef = useRef<HTMLVideoElement | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
   // Initialize canvas
   useEffect(() => {
     if (!canvasRef.current || !isOpen) return;
@@ -126,16 +132,27 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
     const ctx = contextRef.current;
     if (!ctx) return;
 
-    ctx.strokeStyle = stroke.tool === 'eraser' ? 'rgba(0,0,0,0)' : stroke.color;
-    ctx.lineWidth = stroke.tool === 'eraser' ? stroke.size * 3 : stroke.size;
-    ctx.globalCompositeOperation = stroke.tool === 'eraser' ? 'destination-out' : 'source-over';
-
+    ctx.save();
+    
+    if (stroke.tool === 'eraser') {
+      // Eraser uses destination-out with opaque color
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.strokeStyle = 'rgba(0,0,0,1)'; // Must be opaque for destination-out
+      ctx.lineWidth = stroke.size * 3;
+    } else {
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.strokeStyle = stroke.color;
+      ctx.lineWidth = stroke.size;
+    }
+    
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
     ctx.beginPath();
     ctx.moveTo(stroke.from.x, stroke.from.y);
     ctx.lineTo(stroke.to.x, stroke.to.y);
     ctx.stroke();
     
-    ctx.globalCompositeOperation = 'source-over';
+    ctx.restore();
   }, []);
 
   // Draw a shape on canvas
@@ -225,7 +242,15 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
     link.click();
   }, []);
 
-  // Laser pointer drawing with fade effect
+  // Convert HEX to RGBA helper
+  const hexToRgba = useCallback((hex: string, alpha: number): string => {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }, []);
+
+  // Laser pointer drawing with smooth cosmic trail effect using current color
   const drawLaserPoints = useCallback(() => {
     const ctx = contextRef.current;
     const canvas = canvasRef.current;
@@ -239,33 +264,64 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
       p => now - p.timestamp < LASER_LIFETIME
     );
     
-    // Draw each point with fade
-    laserPointsRef.current.forEach((point) => {
-      const age = now - point.timestamp;
+    // Need at least 1 point to draw cursor glow
+    if (laserPointsRef.current.length === 0) return;
+    
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    
+    // Draw smooth trail between consecutive points
+    for (let i = 1; i < laserPointsRef.current.length; i++) {
+      const prev = laserPointsRef.current[i - 1];
+      const curr = laserPointsRef.current[i];
+      const age = now - curr.timestamp;
       const alpha = 1 - (age / LASER_LIFETIME);
       
       // Outer glow
       ctx.beginPath();
-      ctx.arc(point.x, point.y, 20, 0, Math.PI * 2);
-      const gradient = ctx.createRadialGradient(point.x, point.y, 0, point.x, point.y, 20);
-      gradient.addColorStop(0, `rgba(255, 50, 50, ${alpha * 0.6})`);
-      gradient.addColorStop(1, `rgba(255, 50, 50, 0)`);
-      ctx.fillStyle = gradient;
-      ctx.fill();
+      ctx.moveTo(prev.x, prev.y);
+      ctx.lineTo(curr.x, curr.y);
+      ctx.strokeStyle = hexToRgba(color, alpha * 0.3);
+      ctx.lineWidth = 20;
+      ctx.stroke();
       
-      // Inner bright dot
+      // Middle glow
       ctx.beginPath();
-      ctx.arc(point.x, point.y, 6, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(255, 100, 100, ${alpha})`;
-      ctx.fill();
+      ctx.moveTo(prev.x, prev.y);
+      ctx.lineTo(curr.x, curr.y);
+      ctx.strokeStyle = hexToRgba(color, alpha * 0.6);
+      ctx.lineWidth = 10;
+      ctx.stroke();
       
-      // Core
+      // Core line
       ctx.beginPath();
-      ctx.arc(point.x, point.y, 3, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
-      ctx.fill();
-    });
-  }, []);
+      ctx.moveTo(prev.x, prev.y);
+      ctx.lineTo(curr.x, curr.y);
+      ctx.strokeStyle = hexToRgba(color, alpha);
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
+    
+    // Always draw glowing cursor at the last point (visible even when stationary)
+    const lastPoint = laserPointsRef.current[laserPointsRef.current.length - 1];
+    const gradient = ctx.createRadialGradient(lastPoint.x, lastPoint.y, 0, lastPoint.x, lastPoint.y, 25);
+    gradient.addColorStop(0, hexToRgba(color, 0.8));
+    gradient.addColorStop(0.5, hexToRgba(color, 0.4));
+    gradient.addColorStop(1, hexToRgba(color, 0));
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(lastPoint.x, lastPoint.y, 25, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // White core
+    ctx.beginPath();
+    ctx.arc(lastPoint.x, lastPoint.y, 4, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255, 255, 255, 1)';
+    ctx.fill();
+    
+    ctx.restore();
+  }, [color, hexToRgba]);
 
   // Broadcast laser point
   const broadcastLaserPoint = useCallback((point: { x: number; y: number; timestamp: number }) => {
@@ -281,7 +337,7 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
     );
   }, [room, participantName]);
 
-  // Start recording
+  // Start canvas-only recording (existing)
   const startRecording = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -316,6 +372,119 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
     } catch (error) {
       console.error('Failed to start recording:', error);
     }
+  }, []);
+
+  // Start full screen + drawing overlay recording
+  const startScreenRecording = useCallback(async () => {
+    try {
+      // Request screen capture - use type assertion for cursor option
+      const displayStream = await navigator.mediaDevices.getDisplayMedia({
+        video: { 
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+        } as MediaTrackConstraints,
+        audio: true 
+      });
+      
+      displayStreamRef.current = displayStream;
+      
+      // Create video element to capture screen
+      const video = document.createElement('video');
+      video.srcObject = displayStream;
+      video.muted = true;
+      await video.play();
+      videoElementRef.current = video;
+      
+      // Create combined canvas
+      const combinedCanvas = document.createElement('canvas');
+      combinedCanvas.width = video.videoWidth || 1920;
+      combinedCanvas.height = video.videoHeight || 1080;
+      combinedCanvasRef.current = combinedCanvas;
+      const ctx = combinedCanvas.getContext('2d')!;
+      
+      // Animation loop to combine screen + drawing canvas
+      const drawFrame = () => {
+        if (!videoElementRef.current || !combinedCanvasRef.current) return;
+        
+        ctx.drawImage(videoElementRef.current, 0, 0, combinedCanvas.width, combinedCanvas.height);
+        
+        // Overlay the drawing canvas
+        if (canvasRef.current) {
+          ctx.drawImage(canvasRef.current, 0, 0, combinedCanvas.width, combinedCanvas.height);
+        }
+        
+        if (isScreenRecording) {
+          animationFrameRef.current = requestAnimationFrame(drawFrame);
+        }
+      };
+      
+      drawFrame();
+      setIsScreenRecording(true);
+      
+      // Start recording combined stream
+      const combinedStream = combinedCanvas.captureStream(30);
+      
+      // Add audio from display stream if available
+      displayStream.getAudioTracks().forEach(track => combinedStream.addTrack(track));
+      
+      const recorder = new MediaRecorder(combinedStream, {
+        mimeType: 'video/webm;codecs=vp9'
+      });
+      
+      screenChunksRef.current = [];
+      
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          screenChunksRef.current.push(e.data);
+        }
+      };
+      
+      recorder.onstop = () => {
+        const blob = new Blob(screenChunksRef.current, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.download = `aplink-screen-recording-${Date.now()}.webm`;
+        link.href = url;
+        link.click();
+        URL.revokeObjectURL(url);
+        
+        // Cleanup
+        if (displayStreamRef.current) {
+          displayStreamRef.current.getTracks().forEach(track => track.stop());
+          displayStreamRef.current = null;
+        }
+        if (videoElementRef.current) {
+          videoElementRef.current.srcObject = null;
+          videoElementRef.current = null;
+        }
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current);
+          animationFrameRef.current = null;
+        }
+        combinedCanvasRef.current = null;
+      };
+      
+      recorder.start(100);
+      screenRecorderRef.current = recorder;
+      
+      // Handle when user stops sharing
+      displayStream.getVideoTracks()[0].onended = () => {
+        stopScreenRecording();
+      };
+      
+    } catch (error) {
+      console.error('Failed to start screen recording:', error);
+      setIsScreenRecording(false);
+    }
+  }, [isScreenRecording]);
+
+  // Stop screen recording
+  const stopScreenRecording = useCallback(() => {
+    if (screenRecorderRef.current) {
+      screenRecorderRef.current.stop();
+      screenRecorderRef.current = null;
+    }
+    setIsScreenRecording(false);
   }, []);
 
   // Toggle pause recording
@@ -494,16 +663,17 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
   }, [getPosition, tool]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDrawing) return;
-
     const currentPoint = getPosition(e);
 
+    // Laser tracks cursor movement even without mouse down (always visible)
     if (tool === 'laser') {
       const point = { x: currentPoint.x, y: currentPoint.y, timestamp: Date.now() };
       laserPointsRef.current.push(point);
       broadcastLaserPoint(point);
       return;
     }
+
+    if (!isDrawing) return;
 
     if (tool === 'pen' || tool === 'eraser') {
       if (!lastPointRef.current) return;
@@ -598,9 +768,15 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
         onMouseLeave={handleMouseUp}
       />
 
-      {/* Floating controls - toggleable */}
-      {showControls && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.08] backdrop-blur-2xl border border-white/[0.12] shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
+      {/* Floating controls - positioned below main header panel, toggleable with slide animation */}
+      <div 
+        className={cn(
+          "absolute left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 rounded-full bg-black/40 backdrop-blur-2xl border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.4),0_0_1px_rgba(255,255,255,0.1)] transition-all duration-300",
+          showControls 
+            ? "top-20 opacity-100" 
+            : "-top-20 opacity-0 pointer-events-none"
+        )}
+      >
           {/* Color picker */}
           <div className="flex items-center gap-1">
             {COLORS.map((c) => (
@@ -690,18 +866,29 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
 
           <div className="w-px h-5 bg-white/20" />
 
-          {/* Recording controls */}
-          {!isRecording ? (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={startRecording}
-              className="w-8 h-8 rounded-full"
-              title="Начать запись презентации"
-            >
-              <Video className="w-4 h-4" />
-            </Button>
-          ) : (
+          {/* Recording controls - canvas only */}
+          {!isRecording && !isScreenRecording ? (
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={startRecording}
+                className="w-8 h-8 rounded-full"
+                title="Запись рисунков (canvas)"
+              >
+                <Video className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={startScreenRecording}
+                className="w-8 h-8 rounded-full"
+                title="Запись экрана + рисунки"
+              >
+                <MonitorUp className="w-4 h-4" />
+              </Button>
+            </>
+          ) : isRecording ? (
             <>
               <Button
                 variant="ghost"
@@ -726,7 +913,23 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
                 <span className="text-xs text-red-400">REC</span>
               </div>
             </>
-          )}
+          ) : isScreenRecording ? (
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={stopScreenRecording}
+                className="w-8 h-8 rounded-full hover:bg-red-500/20"
+                title="Остановить запись экрана"
+              >
+                <StopIcon className="w-4 h-4 text-red-400" />
+              </Button>
+              <div className="flex items-center gap-1 px-2 py-0.5 bg-green-500/20 rounded-full">
+                <MonitorUp className="w-3 h-3 text-green-400 animate-pulse" />
+                <span className="text-xs text-green-400">ЭКРАН</span>
+              </div>
+            </>
+          ) : null}
 
           <div className="w-px h-5 bg-white/20" />
 
@@ -741,7 +944,6 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
             <X className="w-4 h-4" />
           </Button>
         </div>
-      )}
 
       {/* Toggle controls button */}
       <button

@@ -272,8 +272,13 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
           drawStroke(message.stroke);
         } else if (message.type === 'WHITEBOARD_SHAPE' && message.sender !== participantName) {
           drawShape(message.shape);
-        } else if (message.type === 'WHITEBOARD_CLEAR') {
-          clearCanvas();
+        } else if (message.type === 'WHITEBOARD_CLEAR' && message.sender !== participantName) {
+          // Only clear if message is from another participant
+          const canvas = canvasRef.current;
+          const ctx = contextRef.current;
+          if (canvas && ctx) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+          }
         }
       } catch {
         // Ignore non-JSON data
@@ -282,7 +287,7 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
 
     room.on(RoomEvent.DataReceived, handleData);
     return () => { room.off(RoomEvent.DataReceived, handleData); };
-  }, [room, isOpen, drawStroke, drawShape, clearCanvas, participantName]);
+  }, [room, isOpen, drawStroke, drawShape, participantName]);
 
   // Get position relative to canvas
   const getPosition = useCallback((e: React.MouseEvent<HTMLCanvasElement>): { x: number; y: number } => {
@@ -384,20 +389,28 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
   }, []);
 
   const confirmClear = useCallback(() => {
-    try {
-      // First close the dialog
-      setShowClearConfirm(false);
-      
-      // Then clear canvas with slight delay to prevent race condition
-      requestAnimationFrame(() => {
-        clearCanvas();
-        broadcastClear();
-      });
-    } catch (error) {
-      console.error('Error clearing canvas:', error);
-      setShowClearConfirm(false);
-    }
-  }, [clearCanvas, broadcastClear]);
+    // First close the dialog synchronously
+    setShowClearConfirm(false);
+    
+    // Use setTimeout to prevent blocking the main thread
+    setTimeout(() => {
+      try {
+        const canvas = canvasRef.current;
+        const ctx = contextRef.current;
+        if (!canvas || !ctx) return;
+        
+        // Clear locally first
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Broadcast to others with a slight delay
+        setTimeout(() => {
+          broadcastClear();
+        }, 50);
+      } catch (error) {
+        console.error('Error clearing canvas:', error);
+      }
+    }, 100);
+  }, [broadcastClear]);
 
   if (!isOpen) return null;
 
