@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Room, RoomEvent } from 'livekit-client';
-import { Timer, Play, Pause, RotateCcw, X } from 'lucide-react';
+import { Timer, Play, Pause, RotateCcw, X, GripHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Popover,
@@ -8,7 +8,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-
+import { supabase } from '@/integrations/supabase/client';
 interface CallTimerProps {
   room: Room | null;
   isHost?: boolean;
@@ -59,7 +59,93 @@ export function CallTimer({ room, isHost = true }: CallTimerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [customTime, setCustomTime] = useState('');
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const hasPlayedVoiceRef = useRef(false);
 
+  // Draggable state
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+  const draggingRef = useRef(false);
+  const startRef = useRef<{ x: number; y: number; px: number; py: number } | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  // Initialize position
+  useEffect(() => {
+    if (pos !== null) return;
+    // Try to restore from storage
+    try {
+      const saved = sessionStorage.getItem('timer-panel-pos');
+      if (saved) {
+        setPos(JSON.parse(saved));
+        return;
+      }
+    } catch {}
+    // Default to center-top
+    setPos({ x: Math.max(0, (window.innerWidth - 280) / 2), y: 96 });
+  }, [pos]);
+
+  // Persist position
+  useEffect(() => {
+    if (pos) {
+      try { sessionStorage.setItem('timer-panel-pos', JSON.stringify(pos)); } catch {}
+    }
+  }, [pos]);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (!pos) return;
+    draggingRef.current = true;
+    startRef.current = { x: pos.x, y: pos.y, px: e.clientX, py: e.clientY };
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    e.preventDefault();
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!draggingRef.current || !startRef.current || !panelRef.current) return;
+    const rect = panelRef.current.getBoundingClientRect();
+    const dx = e.clientX - startRef.current.px;
+    const dy = e.clientY - startRef.current.py;
+    const margin = 12;
+    const nextX = Math.min(Math.max(margin, startRef.current.x + dx), window.innerWidth - rect.width - margin);
+    const nextY = Math.min(Math.max(margin, startRef.current.y + dy), window.innerHeight - rect.height - margin);
+    setPos({ x: nextX, y: nextY });
+  };
+
+  const handlePointerUp = () => {
+    draggingRef.current = false;
+    startRef.current = null;
+  };
+
+  // Play voice notification when timer ends
+  const playVoiceNotification = useCallback(async () => {
+    if (hasPlayedVoiceRef.current) return;
+    hasPlayedVoiceRef.current = true;
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({
+            text: 'Время вышло!',
+            voiceId: 'JBFqnCBsd6RMkjVDRZzb', // George voice
+          }),
+        }
+      );
+
+      if (response.ok) {
+        const audioBlob = await response.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);
+        audio.volume = 0.7;
+        await audio.play();
+      }
+    } catch (err) {
+      console.log('[CallTimer] Voice notification failed:', err);
+    }
+  }, []);
   // Handle custom time input
   const handleCustomTimeSubmit = useCallback(() => {
     const seconds = parseTimeInput(customTime);
@@ -167,6 +253,13 @@ export function CallTimer({ room, isHost = true }: CallTimerProps) {
     return () => { room.off(RoomEvent.DataReceived, handleData); };
   }, [room]);
 
+  // Reset voice played flag when timer starts
+  useEffect(() => {
+    if (timerState.endTime && !timerState.isPaused) {
+      hasPlayedVoiceRef.current = false;
+    }
+  }, [timerState.endTime, timerState.isPaused]);
+
   // Countdown interval
   useEffect(() => {
     if (!timerState.endTime || timerState.isPaused) return;
@@ -183,35 +276,50 @@ export function CallTimer({ room, isHost = true }: CallTimerProps) {
           audioRef.current.play().catch(() => {});
         } catch {}
         
+        // Play voice notification
+        playVoiceNotification();
+        
         // Auto-reset after sound
         setTimeout(() => {
           resetTimer();
-        }, 2000);
+        }, 3000);
       }
     }, 100);
 
     return () => clearInterval(interval);
-  }, [timerState.endTime, timerState.isPaused, resetTimer]);
+  }, [timerState.endTime, timerState.isPaused, resetTimer, playVoiceNotification]);
 
   const isActive = timerState.endTime !== null || timerState.isPaused;
   const isLow = remainingSeconds > 0 && remainingSeconds <= 10;
 
   return (
     <>
-      {/* Floating timer display when active */}
-      {isActive && (
+      {/* Floating timer display when active - DRAGGABLE */}
+      {isActive && pos && (
         <div 
+          ref={panelRef}
           className={cn(
-            "fixed top-24 left-1/2 -translate-x-1/2 z-[99980]",
-            "px-6 py-3 rounded-2xl backdrop-blur-xl",
+            "fixed z-[99980]",
+            "rounded-2xl backdrop-blur-xl",
             "border border-white/20 shadow-2xl",
-            "transition-all duration-300",
+            "transition-colors duration-300",
             isLow 
               ? "bg-red-500/30 border-red-500/50 animate-pulse" 
               : "bg-black/40"
           )}
+          style={{ left: pos.x, top: pos.y }}
         >
-          <div className="flex items-center gap-4">
+          {/* Drag handle */}
+          <div
+            className="flex items-center justify-center py-1 cursor-grab active:cursor-grabbing border-b border-white/10"
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+          >
+            <GripHorizontal className="w-4 h-4 text-white/30" />
+          </div>
+          
+          <div className="flex items-center gap-4 px-6 py-3">
             <Timer className={cn("w-6 h-6", isLow ? "text-red-400" : "text-primary")} />
             <span className={cn(
               "text-3xl font-mono font-bold tabular-nums",
