@@ -95,6 +95,7 @@ export function LiveKitRoom({
   // Prevent re-fetching token on component updates
   const hasInitializedRef = useRef(false);
   const currentRoomRef = useRef<string | null>(null);
+  const isFetchingRef = useRef(false);
   
   // Stable token ref to prevent re-renders from triggering reconnection
   const tokenRef = useRef<string | null>(null);
@@ -103,13 +104,16 @@ export function LiveKitRoom({
   const memoizedToken = useMemo(() => tokenRef.current, [tokenRef.current]);
 
   useEffect(() => {
-    // Skip if already initialized for this room AND we have a token
-    if (hasInitializedRef.current && currentRoomRef.current === roomName && tokenRef.current) {
-      console.log("[LiveKitRoom] Already have token for room, skipping re-fetch");
+    // Skip if already initialized OR currently fetching
+    if ((hasInitializedRef.current && currentRoomRef.current === roomName && tokenRef.current) || isFetchingRef.current) {
+      if (!isFetchingRef.current) {
+        console.log("[LiveKitRoom] Already have token for room, skipping re-fetch");
+      }
       return;
     }
 
     const getToken = async () => {
+      isFetchingRef.current = true;
       try {
         setLoading(true);
         setError(null);
@@ -149,6 +153,7 @@ export function LiveKitRoom({
         onError?.(err instanceof Error ? err : new Error(errorMessage));
       } finally {
         setLoading(false);
+        isFetchingRef.current = false;
       }
     };
 
