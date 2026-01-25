@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Room, RoomEvent } from 'livekit-client';
-import { Timer, Play, Pause, RotateCcw, X, GripHorizontal } from 'lucide-react';
+import { Timer, Play, Pause, X, GripHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Popover,
@@ -21,11 +21,6 @@ interface TimerState {
   pausedAt: number | null;
 }
 
-interface Position {
-  x: number;
-  y: number;
-}
-
 const TIMER_PRESETS = [
   { label: '1 мин', seconds: 60 },
   { label: '3 мин', seconds: 180 },
@@ -35,27 +30,64 @@ const TIMER_PRESETS = [
   { label: '30 мин', seconds: 1800 },
 ];
 
-const EDGE_THRESHOLD = 50; // pixels from edge to show highlight
+const PANEL_WIDTH = 280;
+const PANEL_HEIGHT = 120;
+const STORAGE_KEY = 'call-timer-position';
 
 // Parse time string like "5:30" or "5" to seconds
 const parseTimeInput = (input: string): number | null => {
   const trimmed = input.trim();
   if (!trimmed) return null;
   
-  // Format: "MM:SS" or just "MM"
   if (trimmed.includes(':')) {
     const [mins, secs] = trimmed.split(':').map(s => parseInt(s, 10));
     if (isNaN(mins) || isNaN(secs) || mins < 0 || secs < 0 || secs >= 60) return null;
     return mins * 60 + secs;
   }
   
-  // Just minutes
   const mins = parseInt(trimmed, 10);
   if (isNaN(mins) || mins <= 0 || mins > 120) return null;
   return mins * 60;
 };
 
+// Format seconds to MM:SS
+const formatTime = (seconds: number): string => {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+};
+
+// Get valid initial position
+const getInitialPosition = (): { x: number; y: number } => {
+  const defaultPos = {
+    x: Math.max(0, (window.innerWidth - PANEL_WIDTH) / 2),
+    y: 100
+  };
+  
+  try {
+    const saved = sessionStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (
+        typeof parsed.x === 'number' &&
+        typeof parsed.y === 'number' &&
+        parsed.x >= 0 &&
+        parsed.x <= window.innerWidth - PANEL_WIDTH &&
+        parsed.y >= 0 &&
+        parsed.y <= window.innerHeight - PANEL_HEIGHT
+      ) {
+        return parsed;
+      }
+    }
+  } catch {
+    sessionStorage.removeItem(STORAGE_KEY);
+  }
+  
+  return defaultPos;
+};
+
 export function CallTimer({ room, isHost = true }: CallTimerProps) {
+  // Timer state
   const [timerState, setTimerState] = useState<TimerState>({
     endTime: null,
     duration: 0,
@@ -66,123 +98,93 @@ export function CallTimer({ room, isHost = true }: CallTimerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [customTime, setCustomTime] = useState('');
   const hasPlayedVoiceRef = useRef(false);
-
-  // Dragging state
-  const [position, setPosition] = useState<Position | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const dragOffsetRef = useRef<Position>({ x: 0, y: 0 });
+  
+  // Drag state - using refs for performance
   const panelRef = useRef<HTMLDivElement>(null);
-
-  // Initialize position from storage or default
+  const positionRef = useRef(getInitialPosition());
+  const isDraggingRef = useRef(false);
+  const dragStartRef = useRef({ offsetX: 0, offsetY: 0 });
+  
+  // Force re-render trigger for initial position
+  const [, forceUpdate] = useState(0);
+  
+  // Apply initial position on mount
   useEffect(() => {
-    if (position !== null) return;
-    
-    let initialPos: Position = { 
-      x: Math.max(0, (window.innerWidth - 300) / 2), 
-      y: 100 
-    };
-    
-    try {
-      const saved = sessionStorage.getItem('call-timer-position');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        // Validate position is within screen bounds
-        const panelWidth = 280;
-        const panelHeight = 100;
-        if (
-          parsed.x >= 0 && 
-          parsed.x <= window.innerWidth - panelWidth &&
-          parsed.y >= 0 && 
-          parsed.y <= window.innerHeight - panelHeight
-        ) {
-          initialPos = parsed;
-        } else {
-          // Clear invalid position from storage
-          sessionStorage.removeItem('call-timer-position');
+    if (panelRef.current) {
+      const pos = positionRef.current;
+      panelRef.current.style.transform = `translate(${pos.x}px, ${pos.y}px)`;
+    }
+  }, []);
+  
+  // Handle window resize - keep panel in bounds
+  useEffect(() => {
+    const handleResize = () => {
+      const pos = positionRef.current;
+      const newX = Math.max(0, Math.min(pos.x, window.innerWidth - PANEL_WIDTH));
+      const newY = Math.max(0, Math.min(pos.y, window.innerHeight - PANEL_HEIGHT));
+      
+      if (newX !== pos.x || newY !== pos.y) {
+        positionRef.current = { x: newX, y: newY };
+        if (panelRef.current) {
+          panelRef.current.style.transform = `translate(${newX}px, ${newY}px)`;
         }
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ x: newX, y: newY }));
       }
-    } catch {
-      sessionStorage.removeItem('call-timer-position');
-    }
-    
-    setPosition(initialPos);
-  }, [position]);
-
-  // Save position to storage
-  useEffect(() => {
-    if (position) {
-      try {
-        sessionStorage.setItem('call-timer-position', JSON.stringify(position));
-      } catch {}
-    }
-  }, [position]);
-
-  // Calculate edge proximity for visual feedback
-  const edgeProximity = useMemo(() => {
-    if (!position || !panelRef.current) return { left: false, right: false, top: false, bottom: false };
-    
-    const rect = panelRef.current.getBoundingClientRect();
-    return {
-      left: position.x < EDGE_THRESHOLD,
-      right: position.x + rect.width > window.innerWidth - EDGE_THRESHOLD,
-      top: position.y < EDGE_THRESHOLD,
-      bottom: position.y + rect.height > window.innerHeight - EDGE_THRESHOLD,
     };
-  }, [position]);
-
-  // Global move handler
-  const handleMove = useCallback((e: PointerEvent) => {
-    if (!panelRef.current) return;
     
-    const rect = panelRef.current.getBoundingClientRect();
-    
-    let newX = e.clientX - dragOffsetRef.current.x;
-    let newY = e.clientY - dragOffsetRef.current.y;
-    
-    // Constrain to screen bounds
-    newX = Math.max(0, Math.min(newX, window.innerWidth - rect.width));
-    newY = Math.max(0, Math.min(newY, window.innerHeight - rect.height));
-    
-    setPosition({ x: newX, y: newY });
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Global up handler
-  const handleUp = useCallback(() => {
-    setIsDragging(false);
-    document.removeEventListener('pointermove', handleMove);
-    document.removeEventListener('pointerup', handleUp);
-  }, [handleMove]);
-
-  // Start dragging
-  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+  // --- DRAG HANDLERS ---
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!panelRef.current) return;
     
+    // Calculate offset from pointer to panel top-left corner
     const rect = panelRef.current.getBoundingClientRect();
-    
-    dragOffsetRef.current = {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
+    dragStartRef.current = {
+      offsetX: e.clientX - rect.left,
+      offsetY: e.clientY - rect.top
     };
     
-    setIsDragging(true);
-    
-    // Attach global listeners
-    document.addEventListener('pointermove', handleMove);
-    document.addEventListener('pointerup', handleUp);
+    isDraggingRef.current = true;
+    panelRef.current.setPointerCapture(e.pointerId);
+    panelRef.current.style.cursor = 'grabbing';
     
     e.preventDefault();
     e.stopPropagation();
-  }, [handleMove, handleUp]);
+  };
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      document.removeEventListener('pointermove', handleMove);
-      document.removeEventListener('pointerup', handleUp);
-    };
-  }, [handleMove, handleUp]);
-  
-  // Play voice notification when timer ends
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDraggingRef.current || !panelRef.current) return;
+    
+    // Calculate new position
+    let newX = e.clientX - dragStartRef.current.offsetX;
+    let newY = e.clientY - dragStartRef.current.offsetY;
+    
+    // Clamp to viewport bounds
+    newX = Math.max(0, Math.min(newX, window.innerWidth - PANEL_WIDTH));
+    newY = Math.max(0, Math.min(newY, window.innerHeight - PANEL_HEIGHT));
+    
+    // Update position ref
+    positionRef.current = { x: newX, y: newY };
+    
+    // Update DOM directly for smooth movement
+    panelRef.current.style.transform = `translate(${newX}px, ${newY}px)`;
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDraggingRef.current || !panelRef.current) return;
+    
+    isDraggingRef.current = false;
+    panelRef.current.releasePointerCapture(e.pointerId);
+    panelRef.current.style.cursor = '';
+    
+    // Save position to storage
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(positionRef.current));
+  };
+
+  // --- VOICE NOTIFICATION ---
   const playVoiceNotification = useCallback(async () => {
     if (hasPlayedVoiceRef.current) return;
     hasPlayedVoiceRef.current = true;
@@ -199,7 +201,7 @@ export function CallTimer({ room, isHost = true }: CallTimerProps) {
           },
           body: JSON.stringify({
             text: 'Время вышло!',
-            voiceId: 'JBFqnCBsd6RMkjVDRZzb', // George voice
+            voiceId: 'JBFqnCBsd6RMkjVDRZzb',
           }),
         }
       );
@@ -216,81 +218,12 @@ export function CallTimer({ room, isHost = true }: CallTimerProps) {
     }
   }, []);
 
-  // Handle custom time input
-  const handleCustomTimeSubmit = useCallback(() => {
-    const seconds = parseTimeInput(customTime);
-    if (seconds && seconds > 0) {
-      startTimer(seconds);
-      setCustomTime('');
-    }
-  }, [customTime]);
-
-  // Format seconds to MM:SS
-  const formatTime = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  // Broadcast timer state to all participants
+  // --- LIVEKIT SYNC ---
   const broadcastTimerState = useCallback((state: TimerState & { type: string }) => {
     if (!room) return;
     const data = JSON.stringify(state);
     room.localParticipant.publishData(new TextEncoder().encode(data), { reliable: true });
   }, [room]);
-
-  // Start timer
-  const startTimer = useCallback((seconds: number) => {
-    const endTime = Date.now() + seconds * 1000;
-    const newState: TimerState = {
-      endTime,
-      duration: seconds,
-      isPaused: false,
-      pausedAt: null,
-    };
-    setTimerState(newState);
-    setRemainingSeconds(seconds);
-    broadcastTimerState({ type: 'TIMER_START', ...newState });
-    setIsOpen(false);
-  }, [broadcastTimerState]);
-
-  // Pause/resume timer
-  const togglePause = useCallback(() => {
-    if (timerState.isPaused) {
-      // Resume
-      const newEndTime = Date.now() + remainingSeconds * 1000;
-      const newState: TimerState = {
-        ...timerState,
-        endTime: newEndTime,
-        isPaused: false,
-        pausedAt: null,
-      };
-      setTimerState(newState);
-      broadcastTimerState({ type: 'TIMER_RESUME', ...newState });
-    } else {
-      // Pause
-      const newState: TimerState = {
-        ...timerState,
-        isPaused: true,
-        pausedAt: remainingSeconds,
-      };
-      setTimerState(newState);
-      broadcastTimerState({ type: 'TIMER_PAUSE', ...newState });
-    }
-  }, [timerState, remainingSeconds, broadcastTimerState]);
-
-  // Reset timer
-  const resetTimer = useCallback(() => {
-    const newState: TimerState = {
-      endTime: null,
-      duration: 0,
-      isPaused: false,
-      pausedAt: null,
-    };
-    setTimerState(newState);
-    setRemainingSeconds(0);
-    broadcastTimerState({ type: 'TIMER_RESET', ...newState });
-  }, [broadcastTimerState]);
 
   // Listen for timer events from other participants
   useEffect(() => {
@@ -323,14 +256,65 @@ export function CallTimer({ room, isHost = true }: CallTimerProps) {
     return () => { room.off(RoomEvent.DataReceived, handleData); };
   }, [room]);
 
-  // Reset voice played flag when timer starts
-  useEffect(() => {
-    if (timerState.endTime && !timerState.isPaused) {
-      hasPlayedVoiceRef.current = false;
-    }
-  }, [timerState.endTime, timerState.isPaused]);
+  // --- TIMER CONTROLS ---
+  const startTimer = useCallback((seconds: number) => {
+    const endTime = Date.now() + seconds * 1000;
+    const newState: TimerState = {
+      endTime,
+      duration: seconds,
+      isPaused: false,
+      pausedAt: null,
+    };
+    setTimerState(newState);
+    setRemainingSeconds(seconds);
+    hasPlayedVoiceRef.current = false;
+    broadcastTimerState({ type: 'TIMER_START', ...newState });
+    setIsOpen(false);
+  }, [broadcastTimerState]);
 
-  // Countdown interval
+  const togglePause = useCallback(() => {
+    if (timerState.isPaused) {
+      const newEndTime = Date.now() + remainingSeconds * 1000;
+      const newState: TimerState = {
+        ...timerState,
+        endTime: newEndTime,
+        isPaused: false,
+        pausedAt: null,
+      };
+      setTimerState(newState);
+      broadcastTimerState({ type: 'TIMER_RESUME', ...newState });
+    } else {
+      const newState: TimerState = {
+        ...timerState,
+        isPaused: true,
+        pausedAt: remainingSeconds,
+      };
+      setTimerState(newState);
+      broadcastTimerState({ type: 'TIMER_PAUSE', ...newState });
+    }
+  }, [timerState, remainingSeconds, broadcastTimerState]);
+
+  const resetTimer = useCallback(() => {
+    const newState: TimerState = {
+      endTime: null,
+      duration: 0,
+      isPaused: false,
+      pausedAt: null,
+    };
+    setTimerState(newState);
+    setRemainingSeconds(0);
+    broadcastTimerState({ type: 'TIMER_RESET', ...newState });
+  }, [broadcastTimerState]);
+
+  const handleCustomTimeSubmit = useCallback(() => {
+    const seconds = parseTimeInput(customTime);
+    if (seconds && seconds > 0) {
+      startTimer(seconds);
+      setCustomTime('');
+    }
+  }, [customTime, startTimer]);
+
+  // --- COUNTDOWN ---
   useEffect(() => {
     if (!timerState.endTime || timerState.isPaused) return;
 
@@ -339,26 +323,22 @@ export function CallTimer({ room, isHost = true }: CallTimerProps) {
       setRemainingSeconds(remaining);
 
       if (remaining === 0) {
-        // Play voice notification
         playVoiceNotification();
         
-        // Auto-hide with animation after sound
+        // Auto-hide after voice plays
         setTimeout(() => {
-          // Fade out animation
           if (panelRef.current) {
             panelRef.current.style.transition = 'opacity 0.5s ease-out, transform 0.5s ease-out';
             panelRef.current.style.opacity = '0';
-            panelRef.current.style.transform = 'scale(0.9)';
           }
           
-          // Reset timer after animation completes
           setTimeout(() => {
             if (panelRef.current) {
               panelRef.current.style.transition = '';
               panelRef.current.style.opacity = '';
-              panelRef.current.style.transform = '';
             }
             resetTimer();
+            forceUpdate(n => n + 1);
           }, 500);
         }, 2500);
       }
@@ -372,48 +352,35 @@ export function CallTimer({ room, isHost = true }: CallTimerProps) {
 
   return (
     <>
-      {/* Floating timer display when active - DRAGGABLE */}
-      {isActive && position && (
+      {/* Floating timer panel - DRAGGABLE */}
+      {isActive && (
         <div 
           ref={panelRef}
           className={cn(
-            "fixed z-[99980] rounded-2xl backdrop-blur-2xl border shadow-2xl",
-            "transition-all duration-300",
+            "fixed top-0 left-0 z-[99980] rounded-2xl backdrop-blur-2xl border shadow-2xl select-none touch-none",
             isLow 
               ? "bg-red-500/30 border-red-500/50 shadow-red-500/50 animate-pulse" 
-              : "bg-black/60 border-white/[0.08]",
-            isDragging && "shadow-primary/30 scale-105"
+              : "bg-black/60 border-white/[0.08]"
           )}
-          style={{ left: position.x, top: position.y }}
+          style={{ 
+            transform: `translate(${positionRef.current.x}px, ${positionRef.current.y}px)`,
+            width: PANEL_WIDTH 
+          }}
         >
-          {/* Edge proximity indicators */}
-          {isDragging && (
-            <>
-              {edgeProximity.left && (
-                <div className="fixed left-0 top-0 h-full w-1 bg-gradient-to-r from-primary/50 to-transparent pointer-events-none" />
-              )}
-              {edgeProximity.right && (
-                <div className="fixed right-0 top-0 h-full w-1 bg-gradient-to-l from-primary/50 to-transparent pointer-events-none" />
-              )}
-              {edgeProximity.top && (
-                <div className="fixed top-0 left-0 w-full h-1 bg-gradient-to-b from-primary/50 to-transparent pointer-events-none" />
-              )}
-              {edgeProximity.bottom && (
-                <div className="fixed bottom-0 left-0 w-full h-1 bg-gradient-to-t from-primary/50 to-transparent pointer-events-none" />
-              )}
-            </>
-          )}
-          
           {/* Drag handle */}
           <div
-            className="flex items-center justify-center py-1 cursor-grab active:cursor-grabbing border-b border-white/10"
+            className="flex items-center justify-center py-2 cursor-grab active:cursor-grabbing border-b border-white/10"
             onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
           >
             <GripHorizontal className="w-4 h-4 text-white/30" />
           </div>
           
+          {/* Timer content */}
           <div className="flex items-center gap-4 px-6 py-3">
-            <Timer className={cn("w-6 h-6", isLow ? "text-red-400" : "text-primary")} />
+            <Timer className={cn("w-6 h-6 shrink-0", isLow ? "text-red-400" : "text-primary")} />
             <span className={cn(
               "text-3xl font-mono font-bold tabular-nums",
               isLow ? "text-red-400" : "text-white"
@@ -422,7 +389,7 @@ export function CallTimer({ room, isHost = true }: CallTimerProps) {
             </span>
             
             {isHost && (
-              <div className="flex items-center gap-1 ml-2">
+              <div className="flex items-center gap-1 ml-auto">
                 <Button
                   variant="ghost"
                   size="icon"
@@ -449,7 +416,7 @@ export function CallTimer({ room, isHost = true }: CallTimerProps) {
         </div>
       )}
 
-      {/* Timer control button */}
+      {/* Timer control button (in toolbar) */}
       <Popover open={isOpen} onOpenChange={setIsOpen}>
         <PopoverTrigger asChild>
           <Button
@@ -481,7 +448,6 @@ export function CallTimer({ room, isHost = true }: CallTimerProps) {
                   className="h-7 text-xs text-red-400 hover:text-red-300"
                   onClick={resetTimer}
                 >
-                  <RotateCcw className="w-3 h-3 mr-1" />
                   Сброс
                 </Button>
               )}
@@ -502,7 +468,7 @@ export function CallTimer({ room, isHost = true }: CallTimerProps) {
             </div>
             
             {/* Custom time input */}
-            <div className="pt-2 border-t border-white/10 mt-2">
+            <div className="pt-2 border-t border-white/10">
               <span className="text-xs text-muted-foreground">Своё значение (мин или мин:сек)</span>
               <div className="flex gap-2 mt-1">
                 <input
