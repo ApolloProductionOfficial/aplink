@@ -46,11 +46,24 @@ export function GlobalActiveCall() {
   const hasConnectedRef = useRef(false);
   const [isConnected, setIsConnected] = useState(false);
   
+  // Stable key for LiveKitRoom - prevents unmounting during navigation
+  const roomKeyRef = useRef<string | null>(null);
+  
   // Auto-reconnect state
   const [reconnectAttempt, setReconnectAttempt] = useState(0);
   const [isReconnecting, setIsReconnecting] = useState(false);
   const MAX_RECONNECT_ATTEMPTS = 5;
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Generate stable key when call starts
+  useEffect(() => {
+    if (isActive && !roomKeyRef.current) {
+      roomKeyRef.current = `room-${roomSlug}-${Date.now()}`;
+      console.log('[GlobalActiveCall] Generated stable room key:', roomKeyRef.current);
+    } else if (!isActive) {
+      roomKeyRef.current = null;
+    }
+  }, [isActive, roomSlug]);
 
   // Handle room ready
   const handleRoomReady = useCallback((room: Room) => {
@@ -253,6 +266,7 @@ export function GlobalActiveCall() {
       didNavigateRef.current = false;
       return;
     }
+    // Read pathname inside effect body, not as dependency
     const onRoomRoute = location.pathname.startsWith('/room/');
     
     // Only navigate if:
@@ -260,10 +274,13 @@ export function GlobalActiveCall() {
     // 2. We're NOT on room route
     // 3. We just transitioned from minimized to maximized (wasMinimizedRef was true)
     // 4. We haven't already navigated in this maximize action
+    // 5. We're currently on home page (to be safe)
     if (!isMinimized && !onRoomRoute && wasMinimizedRef.current && !didNavigateRef.current) {
-      didNavigateRef.current = true;
-      // Use replace: true to prevent history entries from piling up
-      navigate(`/room/${roomSlug}?name=${encodeURIComponent(participantName)}`, { replace: true });
+      if (location.pathname === '/') {
+        didNavigateRef.current = true;
+        console.log('[GlobalActiveCall] Navigating to room after maximize');
+        navigate(`/room/${roomSlug}?name=${encodeURIComponent(participantName)}`, { replace: true });
+      }
     }
     
     // Reset didNavigate when we're back on room route
@@ -272,7 +289,7 @@ export function GlobalActiveCall() {
     }
     
     wasMinimizedRef.current = isMinimized;
-  }, [isActive, isMinimized, location.pathname, navigate, participantName, roomSlug]);
+  }, [isActive, isMinimized, navigate, participantName, roomSlug]); // Removed location.pathname from deps!
 
   // Don't render anything if no active call
   if (!isActive) {
@@ -299,6 +316,7 @@ export function GlobalActiveCall() {
         aria-hidden={!shouldShowFullscreen}
       >
         <LiveKitRoom
+          key={roomKeyRef.current || 'no-room'}
           roomName={roomSlug}
           participantName={participantName}
           participantIdentity={participantIdentity}

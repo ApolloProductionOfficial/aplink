@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import {
   LiveKitRoom as LKRoom,
   RoomAudioRenderer,
@@ -95,10 +95,16 @@ export function LiveKitRoom({
   // Prevent re-fetching token on component updates
   const hasInitializedRef = useRef(false);
   const currentRoomRef = useRef<string | null>(null);
+  
+  // Stable token ref to prevent re-renders from triggering reconnection
+  const tokenRef = useRef<string | null>(null);
+  
+  // Memoize token to prevent LKRoom from seeing "new" token on re-renders
+  const memoizedToken = useMemo(() => tokenRef.current, [tokenRef.current]);
 
   useEffect(() => {
-    // Skip if already initialized for this room
-    if (hasInitializedRef.current && currentRoomRef.current === roomName && token) {
+    // Skip if already initialized for this room AND we have a token
+    if (hasInitializedRef.current && currentRoomRef.current === roomName && tokenRef.current) {
       console.log("[LiveKitRoom] Already have token for room, skipping re-fetch");
       return;
     }
@@ -132,6 +138,8 @@ export function LiveKitRoom({
         console.log("[LiveKitRoom] Token received, connecting to:", data.url);
         hasInitializedRef.current = true;
         currentRoomRef.current = roomName;
+        // Store in ref BEFORE setState for memoization to work
+        tokenRef.current = data.token;
         setToken(data.token);
         setServerUrl(data.url);
       } catch (err) {
@@ -250,14 +258,14 @@ export function LiveKitRoom({
     );
   }
 
-  if (!token || !serverUrl) {
+  if (!memoizedToken || !serverUrl) {
     return null;
   }
 
   return (
     <LKRoom
       serverUrl={serverUrl}
-      token={token}
+      token={memoizedToken}
       connect={true}
       audio={true}
       video={true}
