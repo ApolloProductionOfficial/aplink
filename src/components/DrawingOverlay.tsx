@@ -81,6 +81,10 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
   const combinedCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const videoElementRef = useRef<HTMLVideoElement | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  
+  // Auto-hide panel timer
+  const hideTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastActivityRef = useRef<number>(Date.now());
   // Initialize canvas
   useEffect(() => {
     if (!canvasRef.current || !isOpen) return;
@@ -754,6 +758,41 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose, undo]);
 
+  // Auto-hide panel after 3 seconds of inactivity
+  const resetHideTimer = useCallback(() => {
+    lastActivityRef.current = Date.now();
+    setShowControls(true);
+    
+    if (hideTimerRef.current) {
+      clearTimeout(hideTimerRef.current);
+    }
+    
+    hideTimerRef.current = setTimeout(() => {
+      setShowControls(false);
+    }, 3000);
+  }, []);
+
+  // Start hide timer when overlay opens
+  useEffect(() => {
+    if (isOpen) {
+      resetHideTimer();
+    }
+    return () => {
+      if (hideTimerRef.current) {
+        clearTimeout(hideTimerRef.current);
+      }
+    };
+  }, [isOpen, resetHideTimer]);
+
+  // Handle mouse move for auto-show/hide
+  const handleMouseMoveWithPanel = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    // Check if mouse is near top of screen (within 100px)
+    if (e.clientY < 100) {
+      resetHideTimer();
+    }
+    handleMouseMove(e);
+  }, [handleMouseMove, resetHideTimer]);
+
   if (!isOpen) return null;
 
   return createPortal(
@@ -763,7 +802,7 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
         ref={canvasRef}
         className="absolute inset-0 cursor-crosshair"
         onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
+        onMouseMove={handleMouseMoveWithPanel}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
       />
@@ -864,75 +903,6 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
             <Download className="w-4 h-4" />
           </Button>
 
-          <div className="w-px h-5 bg-white/20" />
-
-          {/* Recording controls - canvas only */}
-          {!isRecording && !isScreenRecording ? (
-            <>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={startRecording}
-                className="w-8 h-8 rounded-full"
-                title="Запись рисунков (canvas)"
-              >
-                <Video className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={startScreenRecording}
-                className="w-8 h-8 rounded-full"
-                title="Запись экрана + рисунки"
-              >
-                <MonitorUp className="w-4 h-4" />
-              </Button>
-            </>
-          ) : isRecording ? (
-            <>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={togglePauseRecording}
-                className="w-8 h-8 rounded-full"
-                title={isPaused ? "Продолжить" : "Пауза"}
-              >
-                {isPaused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={stopRecording}
-                className="w-8 h-8 rounded-full hover:bg-red-500/20"
-                title="Остановить и сохранить"
-              >
-                <StopIcon className="w-4 h-4 text-red-400" />
-              </Button>
-              <div className="flex items-center gap-1 px-2 py-0.5 bg-red-500/20 rounded-full">
-                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                <span className="text-xs text-red-400">REC</span>
-              </div>
-            </>
-          ) : isScreenRecording ? (
-            <>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={stopScreenRecording}
-                className="w-8 h-8 rounded-full hover:bg-red-500/20"
-                title="Остановить запись экрана"
-              >
-                <StopIcon className="w-4 h-4 text-red-400" />
-              </Button>
-              <div className="flex items-center gap-1 px-2 py-0.5 bg-green-500/20 rounded-full">
-                <MonitorUp className="w-3 h-3 text-green-400 animate-pulse" />
-                <span className="text-xs text-green-400">ЭКРАН</span>
-              </div>
-            </>
-          ) : null}
-
-          <div className="w-px h-5 bg-white/20" />
-
           {/* Close */}
           <Button
             variant="ghost"
@@ -945,17 +915,15 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
           </Button>
         </div>
 
-      {/* Toggle controls button */}
-      <button
-        onClick={() => setShowControls(!showControls)}
-        className="absolute bottom-20 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-full bg-white/[0.08] backdrop-blur-xl border border-white/[0.12] text-xs text-muted-foreground hover:bg-white/[0.15] transition-all"
-      >
-        {showControls ? 'Скрыть панель' : 'Показать панель'}
-      </button>
-
-      {/* Instructions hint */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs text-muted-foreground/60">
-        ESC - выйти • Ctrl+Z - отменить • Рисунки видны всем участникам
+      {/* Instructions hint - brighter */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-black/60 backdrop-blur-xl border border-white/20 rounded-full">
+        <span className="text-xs font-medium text-white/90 drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]">
+          <kbd className="px-1.5 py-0.5 bg-white/20 rounded text-white">ESC</kbd> - выйти 
+          <span className="mx-2 text-white/50">•</span>
+          <kbd className="px-1.5 py-0.5 bg-white/20 rounded text-white">Ctrl+Z</kbd> - отменить
+          <span className="mx-2 text-white/50">•</span>
+          <span className="text-primary">Рисунки видны всем</span>
+        </span>
       </div>
     </div>,
     document.body

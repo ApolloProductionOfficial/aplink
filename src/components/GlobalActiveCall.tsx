@@ -102,19 +102,20 @@ export function GlobalActiveCall() {
     navigate('/', { replace: true });
   }, [endCall, navigate, liveKitRoom]);
 
-  // Handle maximize - navigate back to room WITHOUT re-triggering connection
+  // Handle maximize - just set state, useEffect handles navigation
   const handleMaximize = useCallback(() => {
     // Exit any existing PiP
     if (document.pictureInPictureElement) {
       document.exitPictureInPicture().catch(() => {});
     }
-    // Just maximize - navigation happens via useEffect when wasMinimizedRef changes
+    // Just maximize - useEffect will handle navigation when wasMinimizedRef changes
     maximize();
   }, [maximize]);
 
   // Handle minimize - go to home and show widget
   const handleMinimize = useCallback(() => {
     minimize();
+    // Use replace to avoid creating back navigation entries
     navigate('/', { replace: true });
   }, [minimize, navigate]);
 
@@ -138,17 +139,29 @@ export function GlobalActiveCall() {
   // Only redirect when transitioning FROM minimized to maximized (user clicked maximize).
   // Don't redirect on every render to prevent loops.
   const wasMinimizedRef = useRef(isMinimized);
+  const didNavigateRef = useRef(false);
   
   useEffect(() => {
-    if (!isActive) return;
+    if (!isActive) {
+      didNavigateRef.current = false;
+      return;
+    }
     const onRoomRoute = location.pathname.startsWith('/room/');
     
     // Only navigate if:
     // 1. We're NOT minimized
     // 2. We're NOT on room route
     // 3. We just transitioned from minimized to maximized (wasMinimizedRef was true)
-    if (!isMinimized && !onRoomRoute && wasMinimizedRef.current) {
+    // 4. We haven't already navigated in this maximize action
+    if (!isMinimized && !onRoomRoute && wasMinimizedRef.current && !didNavigateRef.current) {
+      didNavigateRef.current = true;
+      // Use replace: true to prevent history entries from piling up
       navigate(`/room/${roomSlug}?name=${encodeURIComponent(participantName)}`, { replace: true });
+    }
+    
+    // Reset didNavigate when we're back on room route
+    if (onRoomRoute) {
+      didNavigateRef.current = false;
     }
     
     wasMinimizedRef.current = isMinimized;

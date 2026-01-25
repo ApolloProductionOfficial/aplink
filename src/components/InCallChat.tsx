@@ -322,9 +322,31 @@ export function InCallChat({ room, participantName, isOpen, onToggle, buttonOnly
   const sendVoiceMessage = useCallback(async () => {
     if (!recordedBlob || !room) return;
     
+    // Check blob size first - LiveKit limit is ~64KB
+    const sizeKB = recordedBlob.size / 1024;
+    console.log(`Voice message size: ${sizeKB.toFixed(2)} KB`);
+    
+    if (sizeKB > 45) {
+      // Too large for direct send, show error
+      const { toast } = await import('sonner');
+      toast.error('Голосовое слишком длинное', {
+        description: `Максимум ~8 секунд. Попробуйте короче.`
+      });
+      return;
+    }
+    
     const reader = new FileReader();
     reader.onloadend = async () => {
       const base64Audio = reader.result as string;
+      
+      // Double-check base64 size
+      if (base64Audio.length > 60000) {
+        const { toast } = await import('sonner');
+        toast.error('Сообщение слишком большое', {
+          description: 'Попробуйте записать короче'
+        });
+        return;
+      }
       
       const messageData = {
         type: 'voice_message',
@@ -335,22 +357,30 @@ export function InCallChat({ room, participantName, isOpen, onToggle, buttonOnly
         timestamp: new Date().toISOString(),
       };
       
-      const encoder = new TextEncoder();
-      await room.localParticipant.publishData(encoder.encode(JSON.stringify(messageData)), { reliable: true });
-      
-      setMessages(prev => [...prev, {
-        id: `${Date.now()}-voice`,
-        senderName: participantName,
-        senderIdentity: room.localParticipant.identity,
-        timestamp: new Date(),
-        isLocal: true,
-        type: 'voice',
-        audioData: base64Audio,
-        audioDuration: recordedDuration,
-      }]);
-      
-      // Clear preview after sending
-      discardRecording();
+      try {
+        const encoder = new TextEncoder();
+        await room.localParticipant.publishData(encoder.encode(JSON.stringify(messageData)), { reliable: true });
+        
+        setMessages(prev => [...prev, {
+          id: `${Date.now()}-voice`,
+          senderName: participantName,
+          senderIdentity: room.localParticipant.identity,
+          timestamp: new Date(),
+          isLocal: true,
+          type: 'voice',
+          audioData: base64Audio,
+          audioDuration: recordedDuration,
+        }]);
+        
+        // Clear preview after sending
+        discardRecording();
+      } catch (err) {
+        console.error('Failed to send voice message:', err);
+        const { toast } = await import('sonner');
+        toast.error('Не удалось отправить', {
+          description: 'Попробуйте записать короче'
+        });
+      }
     };
     reader.readAsDataURL(recordedBlob);
   }, [recordedBlob, recordedDuration, room, participantName, discardRecording]);
