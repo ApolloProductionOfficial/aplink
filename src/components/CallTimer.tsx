@@ -102,9 +102,21 @@ export function CallTimer({ room, isHost = true }: CallTimerProps) {
     const rect = panelRef.current.getBoundingClientRect();
     const dx = e.clientX - startRef.current.px;
     const dy = e.clientY - startRef.current.py;
-    const margin = 0; // No margin - allow full edge dragging
+    const margin = 0;
     const nextX = Math.min(Math.max(margin, startRef.current.x + dx), window.innerWidth - rect.width - margin);
     const nextY = Math.min(Math.max(margin, startRef.current.y + dy), window.innerHeight - rect.height - margin);
+    
+    console.log('[CallTimer Drag]', {
+      pointerX: e.clientX,
+      startPx: startRef.current.px,
+      dx,
+      startX: startRef.current.x,
+      nextX,
+      windowWidth: window.innerWidth,
+      rectWidth: rect.width,
+      maxRight: window.innerWidth - rect.width - margin
+    });
+    
     setPos({ x: nextX, y: nextY });
   };
 
