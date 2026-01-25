@@ -102,7 +102,7 @@ export function CallTimer({ room, isHost = true }: CallTimerProps) {
     const rect = panelRef.current.getBoundingClientRect();
     const dx = e.clientX - startRef.current.px;
     const dy = e.clientY - startRef.current.py;
-    const margin = 4; // Reduced margin for smoother edge dragging
+    const margin = 0; // No margin - allow full edge dragging
     const nextX = Math.min(Math.max(margin, startRef.current.x + dx), window.innerWidth - rect.width - margin);
     const nextY = Math.min(Math.max(margin, startRef.current.y + dy), window.innerHeight - rect.height - margin);
     setPos({ x: nextX, y: nextY });
@@ -279,10 +279,25 @@ export function CallTimer({ room, isHost = true }: CallTimerProps) {
         // Play voice notification
         playVoiceNotification();
         
-        // Auto-reset after sound
+        // Auto-hide with animation after sound
         setTimeout(() => {
-          resetTimer();
-        }, 3000);
+          // Fade out animation
+          if (panelRef.current) {
+            panelRef.current.style.transition = 'opacity 0.5s ease-out, transform 0.5s ease-out';
+            panelRef.current.style.opacity = '0';
+            panelRef.current.style.transform = 'scale(0.9)';
+          }
+          
+          // Reset timer after animation completes
+          setTimeout(() => {
+            if (panelRef.current) {
+              panelRef.current.style.transition = '';
+              panelRef.current.style.opacity = '';
+              panelRef.current.style.transform = '';
+            }
+            resetTimer();
+          }, 500);
+        }, 2500);
       }
     }, 100);
 
