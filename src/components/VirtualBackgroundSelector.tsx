@@ -249,7 +249,7 @@ export function VirtualBackgroundSelector({
         </Button>
       </PopoverTrigger>
       <PopoverContent 
-        className="w-[340px] p-4 glass-dark border-white/10 rounded-[1.5rem]" 
+        className="w-[340px] p-4 bg-black/40 backdrop-blur-2xl border border-white/[0.08] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4),0_0_1px_rgba(255,255,255,0.1)]" 
         side="top"
         align="center"
         sideOffset={12}

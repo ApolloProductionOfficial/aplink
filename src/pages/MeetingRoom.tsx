@@ -286,10 +286,23 @@ const MeetingRoom = () => {
     setShowLeaveConfirm(false);
   };
 
-  const handleLeaveCall = () => {
+  const handleLeaveCall = async () => {
     setShowLeaveConfirm(false);
     userInitiatedEndRef.current = true;
-    navigate(-1);
+    
+    // If recording was started and user is authenticated - auto-save in background
+    if (hasStartedRecordingRef.current && user) {
+      navigate('/dashboard?saving=true', { replace: true });
+      await runMeetingSaveBackground();
+    } else if (hasStartedRecordingRef.current && !user) {
+      // Guest with recording - show save dialog  
+      setEndSaveDialogOpen(true);
+      setEndSaveStatus("saving");
+      await runMeetingSave();
+    } else {
+      // No recording - just exit
+      navigate(user ? '/dashboard' : '/', { replace: true });
+    }
   };
 
   // Check if user is admin

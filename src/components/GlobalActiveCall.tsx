@@ -102,15 +102,15 @@ export function GlobalActiveCall() {
     navigate('/', { replace: true });
   }, [endCall, navigate, liveKitRoom]);
 
-  // Handle maximize - navigate back to room
+  // Handle maximize - navigate back to room WITHOUT re-triggering connection
   const handleMaximize = useCallback(() => {
     // Exit any existing PiP
     if (document.pictureInPictureElement) {
       document.exitPictureInPicture().catch(() => {});
     }
+    // Just maximize - navigation happens via useEffect when wasMinimizedRef changes
     maximize();
-    navigate(`/room/${roomSlug}?name=${encodeURIComponent(participantName)}`);
-  }, [maximize, navigate, roomSlug, participantName]);
+  }, [maximize]);
 
   // Handle minimize - go to home and show widget
   const handleMinimize = useCallback(() => {

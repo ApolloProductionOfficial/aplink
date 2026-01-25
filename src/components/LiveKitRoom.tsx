@@ -875,7 +875,7 @@ function LiveKitContent({
               side="top" 
               align="center" 
               sideOffset={12}
-              className="p-3 bg-white/[0.08] backdrop-blur-2xl border border-white/[0.12] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.1)]"
+              className="p-3 bg-black/40 backdrop-blur-2xl border border-white/[0.08] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4),0_0_1px_rgba(255,255,255,0.1)]"
             >
               <div className="flex flex-col items-center gap-3">
                 {/* Main: Toggle Mic (centered on top) */}
@@ -989,7 +989,7 @@ function LiveKitContent({
               side="top" 
               align="center" 
               sideOffset={12}
-              className="w-auto p-3 bg-white/[0.08] backdrop-blur-2xl border border-white/[0.12] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.1)]"
+              className="w-auto p-3 bg-black/40 backdrop-blur-2xl border border-white/[0.08] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4),0_0_1px_rgba(255,255,255,0.1)]"
             >
               <div className="flex flex-col gap-2">
                 <span className="text-[10px] text-muted-foreground font-medium text-center mb-1">Режим рисования</span>
