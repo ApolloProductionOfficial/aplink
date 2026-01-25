@@ -44,6 +44,11 @@ export function GlobalActiveCall() {
     setLiveKitRoom,
   } = useActiveCall();
 
+  // =========================================
+  // ALL HOOKS MUST BE DECLARED HERE - BEFORE ANY CONDITIONAL RETURNS!
+  // React Rule: Hooks must be called in the same order on every render.
+  // =========================================
+
   const hasConnectedRef = useRef(false);
   const [isConnected, setIsConnected] = useState(false);
   
@@ -56,6 +61,16 @@ export function GlobalActiveCall() {
   const MAX_RECONNECT_ATTEMPTS = 5;
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
+  // Track animation states for smooth transitions
+  // IMPORTANT: These hooks MUST be declared BEFORE any early returns!
+  const [isAnimatingOut, setIsAnimatingOut] = useState(false);
+  const [isAnimatingIn, setIsAnimatingIn] = useState(false);
+  const prevMinimizedRef = useRef(isMinimized);
+  
+  // Navigation tracking refs
+  const wasMinimizedRef = useRef(isMinimized);
+  const didNavigateRef = useRef(false);
+
   // Generate stable key when call starts
   useEffect(() => {
     if (isActive && !roomKeyRef.current) {
@@ -65,6 +80,57 @@ export function GlobalActiveCall() {
       roomKeyRef.current = null;
     }
   }, [isActive, roomSlug]);
+
+  // Handle animation states on minimize/maximize transitions
+  useEffect(() => {
+    if (prevMinimizedRef.current !== isMinimized) {
+      if (isMinimized) {
+        // Transitioning TO minimized - play exit animation
+        setIsAnimatingOut(true);
+        const timer = setTimeout(() => setIsAnimatingOut(false), 500);
+        return () => clearTimeout(timer);
+      } else {
+        // Transitioning FROM minimized - play entry animation
+        setIsAnimatingIn(true);
+        const timer = setTimeout(() => setIsAnimatingIn(false), 500);
+        return () => clearTimeout(timer);
+      }
+    }
+    prevMinimizedRef.current = isMinimized;
+  }, [isMinimized]);
+
+  // Keep the room mounted at all times to prevent reconnects on minimize/maximize.
+  useEffect(() => {
+    if (!isActive) {
+      didNavigateRef.current = false;
+      return;
+    }
+    const onRoomRoute = location.pathname.startsWith('/room/');
+    
+    if (!isMinimized && !onRoomRoute && wasMinimizedRef.current && !didNavigateRef.current) {
+      if (location.pathname === '/') {
+        didNavigateRef.current = true;
+        console.log('[GlobalActiveCall] Navigating to room after maximize');
+        navigate(`/room/${roomSlug}?name=${encodeURIComponent(participantName)}`, { replace: true });
+      }
+    }
+    
+    if (onRoomRoute) {
+      didNavigateRef.current = false;
+    }
+    
+    wasMinimizedRef.current = isMinimized;
+  }, [isActive, isMinimized, navigate, participantName, roomSlug, location.pathname]);
+
+  // Reset on unmount
+  useEffect(() => {
+    return () => {
+      hasConnectedRef.current = false;
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Handle room ready
   const handleRoomReady = useCallback((room: Room) => {
@@ -254,52 +320,10 @@ export function GlobalActiveCall() {
     eventHandlers.onError?.(error);
   }, [eventHandlers, reconnectAttempt]);
 
-  // Reset on unmount
-  useEffect(() => {
-    return () => {
-      hasConnectedRef.current = false;
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  // Keep the room mounted at all times to prevent reconnects on minimize/maximize.
-  // Only redirect when transitioning FROM minimized to maximized (user clicked maximize).
-  // Don't redirect on every render to prevent loops.
-  const wasMinimizedRef = useRef(isMinimized);
-  const didNavigateRef = useRef(false);
+  // =========================================
+  // EARLY RETURN - SAFE AFTER ALL HOOKS ARE DECLARED
+  // =========================================
   
-  useEffect(() => {
-    if (!isActive) {
-      didNavigateRef.current = false;
-      return;
-    }
-    // Read pathname inside effect body, not as dependency
-    const onRoomRoute = location.pathname.startsWith('/room/');
-    
-    // Only navigate if:
-    // 1. We're NOT minimized
-    // 2. We're NOT on room route
-    // 3. We just transitioned from minimized to maximized (wasMinimizedRef was true)
-    // 4. We haven't already navigated in this maximize action
-    // 5. We're currently on home page (to be safe)
-    if (!isMinimized && !onRoomRoute && wasMinimizedRef.current && !didNavigateRef.current) {
-      if (location.pathname === '/') {
-        didNavigateRef.current = true;
-        console.log('[GlobalActiveCall] Navigating to room after maximize');
-        navigate(`/room/${roomSlug}?name=${encodeURIComponent(participantName)}`, { replace: true });
-      }
-    }
-    
-    // Reset didNavigate when we're back on room route
-    if (onRoomRoute) {
-      didNavigateRef.current = false;
-    }
-    
-    wasMinimizedRef.current = isMinimized;
-  }, [isActive, isMinimized, navigate, participantName, roomSlug]); // Removed location.pathname from deps!
-
   // Don't render anything if no active call
   if (!isActive) {
     return null;
@@ -308,29 +332,6 @@ export function GlobalActiveCall() {
   // Check if we're on the meeting room route
   const isOnMeetingRoomRoute = location.pathname.startsWith('/room/');
   const shouldShowFullscreen = isOnMeetingRoomRoute && !isMinimized;
-
-  // Track animation states for smooth transitions
-  const [isAnimatingOut, setIsAnimatingOut] = useState(false);
-  const [isAnimatingIn, setIsAnimatingIn] = useState(false);
-  const prevMinimizedRef = useRef(isMinimized);
-  
-  // Handle animation states on minimize/maximize transitions
-  useEffect(() => {
-    if (prevMinimizedRef.current !== isMinimized) {
-      if (isMinimized) {
-        // Transitioning TO minimized - play exit animation
-        setIsAnimatingOut(true);
-        const timer = setTimeout(() => setIsAnimatingOut(false), 500);
-        return () => clearTimeout(timer);
-      } else {
-        // Transitioning FROM minimized - play entry animation
-        setIsAnimatingIn(true);
-        const timer = setTimeout(() => setIsAnimatingIn(false), 500);
-        return () => clearTimeout(timer);
-      }
-    }
-    prevMinimizedRef.current = isMinimized;
-  }, [isMinimized]);
 
   return (
     <>
