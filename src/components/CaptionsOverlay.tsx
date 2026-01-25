@@ -64,7 +64,7 @@ export function CaptionsOverlay({
   const [isDragging, setIsDragging] = useState(false);
   const dragRef = useRef({ startX: 0, startY: 0, startPosX: 0, startPosY: 0 });
 
-  const { captions, isProcessing, clearCaptions } = useRealtimeCaptions({
+  const { captions, isProcessing, clearCaptions, vadActive } = useRealtimeCaptions({
     room,
     targetLang,
     participantName,
@@ -175,10 +175,23 @@ export function CaptionsOverlay({
               ))}
             </div>
           ) : (
-            <div className="flex items-center justify-center gap-2 text-muted-foreground">
+            <div className="flex items-center justify-center gap-3 text-muted-foreground py-1">
+              {/* VAD indicator - green pulsing dot when voice detected */}
+              <div className="relative">
+                <div className={cn(
+                  "w-3 h-3 rounded-full transition-all duration-200",
+                  vadActive 
+                    ? "bg-green-500 shadow-[0_0_12px_rgba(34,197,94,0.8)]" 
+                    : "bg-gray-600"
+                )} />
+                {vadActive && (
+                  <div className="absolute inset-0 w-3 h-3 rounded-full bg-green-500 animate-ping opacity-75" />
+                )}
+              </div>
+              
               <Subtitles className="w-4 h-4" />
               <span className="text-sm">
-                {isProcessing ? 'Обработка...' : 'Ожидание речи...'}
+                {vadActive ? 'Голос обнаружен...' : (isProcessing ? 'Обработка...' : 'Ожидание речи...')}
               </span>
               {isProcessing && (
                 <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />

@@ -254,16 +254,16 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   }, []);
 
-  // Laser pointer drawing with smooth cosmic trail effect using current color
+  // Laser pointer drawing - ONLY glowing cursor, no trail
   const drawLaserPoints = useCallback(() => {
     const ctx = contextRef.current;
     const canvas = canvasRef.current;
     if (!ctx || !canvas) return;
     
     const now = Date.now();
-    const LASER_LIFETIME = 2000;
+    const LASER_LIFETIME = 100; // Very short - only show current position
     
-    // Filter old points
+    // Filter old points - keep only very recent
     laserPointsRef.current = laserPointsRef.current.filter(
       p => now - p.timestamp < LASER_LIFETIME
     );
@@ -272,57 +272,37 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
     if (laserPointsRef.current.length === 0) return;
     
     ctx.save();
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
     
-    // Draw smooth trail between consecutive points
-    for (let i = 1; i < laserPointsRef.current.length; i++) {
-      const prev = laserPointsRef.current[i - 1];
-      const curr = laserPointsRef.current[i];
-      const age = now - curr.timestamp;
-      const alpha = 1 - (age / LASER_LIFETIME);
-      
-      // Outer glow
-      ctx.beginPath();
-      ctx.moveTo(prev.x, prev.y);
-      ctx.lineTo(curr.x, curr.y);
-      ctx.strokeStyle = hexToRgba(color, alpha * 0.3);
-      ctx.lineWidth = 20;
-      ctx.stroke();
-      
-      // Middle glow
-      ctx.beginPath();
-      ctx.moveTo(prev.x, prev.y);
-      ctx.lineTo(curr.x, curr.y);
-      ctx.strokeStyle = hexToRgba(color, alpha * 0.6);
-      ctx.lineWidth = 10;
-      ctx.stroke();
-      
-      // Core line
-      ctx.beginPath();
-      ctx.moveTo(prev.x, prev.y);
-      ctx.lineTo(curr.x, curr.y);
-      ctx.strokeStyle = hexToRgba(color, alpha);
-      ctx.lineWidth = 3;
-      ctx.stroke();
-    }
-    
-    // Always draw glowing cursor at the last point (visible even when stationary)
+    // Only draw the last point - glowing cursor without trail
     const lastPoint = laserPointsRef.current[laserPointsRef.current.length - 1];
-    const gradient = ctx.createRadialGradient(lastPoint.x, lastPoint.y, 0, lastPoint.x, lastPoint.y, 25);
-    gradient.addColorStop(0, hexToRgba(color, 0.8));
-    gradient.addColorStop(0.5, hexToRgba(color, 0.4));
+    
+    // Create radial gradient for glow effect
+    const gradient = ctx.createRadialGradient(
+      lastPoint.x, lastPoint.y, 0, 
+      lastPoint.x, lastPoint.y, 30
+    );
+    gradient.addColorStop(0, hexToRgba(color, 0.9));
+    gradient.addColorStop(0.3, hexToRgba(color, 0.5));
+    gradient.addColorStop(0.6, hexToRgba(color, 0.2));
     gradient.addColorStop(1, hexToRgba(color, 0));
+    
     ctx.fillStyle = gradient;
     ctx.beginPath();
-    ctx.arc(lastPoint.x, lastPoint.y, 25, 0, Math.PI * 2);
+    ctx.arc(lastPoint.x, lastPoint.y, 30, 0, Math.PI * 2);
     ctx.fill();
     
-    // White core
+    // White core in center
     ctx.beginPath();
-    ctx.arc(lastPoint.x, lastPoint.y, 4, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255, 255, 255, 1)';
+    ctx.arc(lastPoint.x, lastPoint.y, 5, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
     ctx.fill();
+    
+    // Additional glow ring
+    ctx.beginPath();
+    ctx.arc(lastPoint.x, lastPoint.y, 8, 0, Math.PI * 2);
+    ctx.strokeStyle = hexToRgba(color, 0.6);
+    ctx.lineWidth = 2;
+    ctx.stroke();
     
     ctx.restore();
   }, [color, hexToRgba]);
@@ -849,15 +829,23 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
 
           <div className="w-px h-5 bg-white/20" />
 
-          {/* Tool buttons */}
+          {/* Tool buttons - toggle on repeated click */}
           {TOOLS.map((t) => {
             const Icon = t.icon;
+            const isActive = tool === t.id;
             return (
               <Button
                 key={t.id}
-                variant={tool === t.id ? 'default' : 'ghost'}
+                variant={isActive ? 'default' : 'ghost'}
                 size="icon"
-                onClick={() => setTool(t.id)}
+                onClick={() => {
+                  // Toggle: if already selected, go back to pen; otherwise select
+                  if (isActive && t.id !== 'pen') {
+                    setTool('pen');
+                  } else {
+                    setTool(t.id);
+                  }
+                }}
                 className="w-8 h-8 rounded-full"
                 title={t.label}
               >
@@ -917,16 +905,16 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
 
       {/* Instructions hint - positioned above bottom panel, synced visibility */}
       <div className={cn(
-        "absolute left-1/2 -translate-x-1/2 px-4 py-2 bg-black/70 backdrop-blur-xl border border-white/30 rounded-full transition-all duration-300",
+        "absolute left-1/2 -translate-x-1/2 px-4 py-2 bg-black/40 backdrop-blur-2xl border border-white/[0.08] rounded-full transition-all duration-300 shadow-[0_8px_32px_rgba(0,0,0,0.4)]",
         showControls 
           ? "bottom-24 opacity-100"
           : "bottom-4 opacity-0 pointer-events-none"
       )}>
-        <span className="text-sm font-medium text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
-          <kbd className="px-2 py-1 bg-white/30 rounded text-white font-bold">ESC</kbd> выйти 
-          <span className="mx-3 text-white/60">•</span>
-          <kbd className="px-2 py-1 bg-white/30 rounded text-white font-bold">Ctrl+Z</kbd> отменить
-          <span className="mx-3 text-white/60">•</span>
+        <span className="text-sm font-medium text-white">
+          <kbd className="px-2 py-1 bg-white/20 rounded text-white font-bold">ESC</kbd> выйти 
+          <span className="mx-3 text-white/40">•</span>
+          <kbd className="px-2 py-1 bg-white/20 rounded text-white font-bold">Ctrl+Z</kbd> отменить
+          <span className="mx-3 text-white/40">•</span>
           <span className="text-primary font-semibold">Рисунки видны всем</span>
         </span>
       </div>

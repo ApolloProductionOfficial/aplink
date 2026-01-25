@@ -266,7 +266,7 @@ export function CallTimer({ room, isHost = true }: CallTimerProps) {
           </Button>
         </PopoverTrigger>
         <PopoverContent 
-          className="w-64 p-4 bg-black/80 backdrop-blur-xl border-white/10"
+          className="w-64 p-4 bg-black/40 backdrop-blur-2xl border-white/[0.08] rounded-2xl"
           side="top"
           align="center"
         >

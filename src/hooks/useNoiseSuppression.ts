@@ -8,7 +8,7 @@ interface UseNoiseSuppressionReturn {
 }
 
 export const useNoiseSuppression = (): UseNoiseSuppressionReturn => {
-  const [isEnabled, setIsEnabled] = useState(true); // Enabled by default
+  const [isEnabled, setIsEnabled] = useState(false); // Disabled by default - user can enable if needed // Enabled by default
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const destinationNodeRef = useRef<MediaStreamAudioDestinationNode | null>(null);
