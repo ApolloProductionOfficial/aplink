@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
-import { X, Globe, MapPin, Loader2 } from 'lucide-react';
+import { useEffect, useState, useRef } from 'react';
+import { X, Globe, MapPin, Loader2, GripHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
+import { cn } from '@/lib/utils';
 
 interface ParticipantGeoData {
   id: string;
@@ -24,6 +25,63 @@ interface ParticipantsIPPanelProps {
 const ParticipantsIPPanel = ({ roomId, isOpen, onClose }: ParticipantsIPPanelProps) => {
   const [participants, setParticipants] = useState<ParticipantGeoData[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Draggable state
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+  const draggingRef = useRef(false);
+  const startRef = useRef<{ x: number; y: number; px: number; py: number } | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  // Initialize position when panel opens
+  useEffect(() => {
+    if (!isOpen) {
+      setPos(null);
+      return;
+    }
+    if (pos !== null) return;
+    
+    // Try to restore from storage
+    try {
+      const saved = sessionStorage.getItem('ip-panel-pos');
+      if (saved) {
+        setPos(JSON.parse(saved));
+        return;
+      }
+    } catch {}
+    // Default to top-right
+    setPos({ x: window.innerWidth - 340, y: 64 });
+  }, [isOpen, pos]);
+
+  // Persist position
+  useEffect(() => {
+    if (pos) {
+      try { sessionStorage.setItem('ip-panel-pos', JSON.stringify(pos)); } catch {}
+    }
+  }, [pos]);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (!pos) return;
+    draggingRef.current = true;
+    startRef.current = { x: pos.x, y: pos.y, px: e.clientX, py: e.clientY };
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    e.preventDefault();
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!draggingRef.current || !startRef.current || !panelRef.current) return;
+    const rect = panelRef.current.getBoundingClientRect();
+    const dx = e.clientX - startRef.current.px;
+    const dy = e.clientY - startRef.current.py;
+    const margin = 12;
+    const nextX = Math.min(Math.max(margin, startRef.current.x + dx), window.innerWidth - rect.width - margin);
+    const nextY = Math.min(Math.max(margin, startRef.current.y + dy), window.innerHeight - rect.height - margin);
+    setPos({ x: nextX, y: nextY });
+  };
+
+  const handlePointerUp = () => {
+    draggingRef.current = false;
+    startRef.current = null;
+  };
 
   useEffect(() => {
     if (!isOpen) return;
@@ -117,10 +175,24 @@ const ParticipantsIPPanel = ({ roomId, isOpen, onClose }: ParticipantsIPPanelPro
     };
   }, [roomId, isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !pos) return null;
 
   return (
-    <div className="absolute top-16 right-4 z-50 w-80 max-h-96 bg-black/40 backdrop-blur-2xl border border-white/[0.08] rounded-2xl shadow-[0_0_1px_rgba(255,255,255,0.1)] overflow-hidden animate-in slide-in-from-top-2 fade-in duration-200">
+    <div 
+      ref={panelRef}
+      className="fixed z-50 w-80 max-h-96 bg-black/40 backdrop-blur-2xl border border-white/[0.08] rounded-2xl shadow-[0_0_1px_rgba(255,255,255,0.1)] overflow-hidden animate-in fade-in duration-200"
+      style={{ left: pos.x, top: pos.y }}
+    >
+      {/* Drag handle */}
+      <div
+        className="flex items-center justify-center py-1 cursor-grab active:cursor-grabbing border-b border-white/[0.08] bg-white/[0.02]"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+      >
+        <GripHorizontal className="w-4 h-4 text-white/30" />
+      </div>
+      
       <div className="flex items-center justify-between p-3 border-b border-white/[0.08]">
         <div className="flex items-center gap-2">
           <Globe className="w-4 h-4 text-primary" />
