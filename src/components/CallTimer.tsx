@@ -64,7 +64,7 @@ export function CallTimer({ room, isHost = true }: CallTimerProps) {
   // Draggable state
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
   const draggingRef = useRef(false);
-  const offsetRef = useRef<{ x: number; y: number } | null>(null);
+  const startRef = useRef<{ x: number; y: number; px: number; py: number } | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
   // Initialize position
@@ -90,30 +90,34 @@ export function CallTimer({ room, isHost = true }: CallTimerProps) {
   }, [pos]);
 
   const handlePointerDown = (e: React.PointerEvent) => {
-    if (!pos || !panelRef.current) return;
+    if (!panelRef.current) return;
     draggingRef.current = true;
     const rect = panelRef.current.getBoundingClientRect();
-    offsetRef.current = { 
-      x: e.clientX - rect.left, 
-      y: e.clientY - rect.top 
+    // Use actual screen position, not state position
+    startRef.current = { 
+      x: rect.left, 
+      y: rect.top, 
+      px: e.clientX, 
+      py: e.clientY 
     };
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     e.preventDefault();
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
-    if (!draggingRef.current || !offsetRef.current || !panelRef.current) return;
+    if (!draggingRef.current || !startRef.current || !panelRef.current) return;
     const rect = panelRef.current.getBoundingClientRect();
-    const margin = 0;
-    const nextX = Math.min(Math.max(margin, e.clientX - offsetRef.current.x), window.innerWidth - rect.width - margin);
-    const nextY = Math.min(Math.max(margin, e.clientY - offsetRef.current.y), window.innerHeight - rect.height - margin);
+    const dx = e.clientX - startRef.current.px;
+    const dy = e.clientY - startRef.current.py;
+    const nextX = Math.min(Math.max(0, startRef.current.x + dx), window.innerWidth - rect.width);
+    const nextY = Math.min(Math.max(0, startRef.current.y + dy), window.innerHeight - rect.height);
     
     setPos({ x: nextX, y: nextY });
   };
 
   const handlePointerUp = () => {
     draggingRef.current = false;
-    offsetRef.current = null;
+    startRef.current = null;
   };
 
   // Play voice notification when timer ends
