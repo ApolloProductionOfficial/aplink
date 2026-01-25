@@ -254,54 +254,52 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   }, []);
 
-  // Laser pointer drawing - ONLY glowing cursor, no trail
+  // Laser pointer drawing - constant glow, smaller size, OnlyFans style
   const drawLaserPoints = useCallback(() => {
     const ctx = contextRef.current;
     const canvas = canvasRef.current;
     if (!ctx || !canvas) return;
     
-    const now = Date.now();
-    const LASER_LIFETIME = 100; // Very short - only show current position
-    
-    // Filter old points - keep only very recent
-    laserPointsRef.current = laserPointsRef.current.filter(
-      p => now - p.timestamp < LASER_LIFETIME
-    );
-    
-    // Need at least 1 point to draw cursor glow
+    // Keep only the most recent point - no fading, constant glow
     if (laserPointsRef.current.length === 0) return;
+    
+    // Always use the last point - constant visibility
+    const lastPoint = laserPointsRef.current[laserPointsRef.current.length - 1];
+    // Only keep last point to prevent memory buildup
+    laserPointsRef.current = [lastPoint];
     
     ctx.save();
     
-    // Only draw the last point - glowing cursor without trail
-    const lastPoint = laserPointsRef.current[laserPointsRef.current.length - 1];
+    // Smaller radius (18px instead of 30)
+    const radius = 18;
     
     // Create radial gradient for glow effect
     const gradient = ctx.createRadialGradient(
       lastPoint.x, lastPoint.y, 0, 
-      lastPoint.x, lastPoint.y, 30
+      lastPoint.x, lastPoint.y, radius
     );
-    gradient.addColorStop(0, hexToRgba(color, 0.9));
-    gradient.addColorStop(0.3, hexToRgba(color, 0.5));
-    gradient.addColorStop(0.6, hexToRgba(color, 0.2));
+    gradient.addColorStop(0, hexToRgba(color, 0.95));
+    gradient.addColorStop(0.35, hexToRgba(color, 0.6));
+    gradient.addColorStop(0.7, hexToRgba(color, 0.25));
     gradient.addColorStop(1, hexToRgba(color, 0));
     
     ctx.fillStyle = gradient;
     ctx.beginPath();
-    ctx.arc(lastPoint.x, lastPoint.y, 30, 0, Math.PI * 2);
+    ctx.arc(lastPoint.x, lastPoint.y, radius, 0, Math.PI * 2);
     ctx.fill();
     
-    // White core in center
-    ctx.beginPath();
-    ctx.arc(lastPoint.x, lastPoint.y, 5, 0, Math.PI * 2);
+    // OnlyFans-style "OF" text in center
+    ctx.font = 'bold 9px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
     ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-    ctx.fill();
+    ctx.fillText('OF', lastPoint.x, lastPoint.y);
     
-    // Additional glow ring
+    // Outer glow ring
     ctx.beginPath();
-    ctx.arc(lastPoint.x, lastPoint.y, 8, 0, Math.PI * 2);
-    ctx.strokeStyle = hexToRgba(color, 0.6);
-    ctx.lineWidth = 2;
+    ctx.arc(lastPoint.x, lastPoint.y, radius - 2, 0, Math.PI * 2);
+    ctx.strokeStyle = hexToRgba(color, 0.5);
+    ctx.lineWidth = 1.5;
     ctx.stroke();
     
     ctx.restore();
@@ -910,12 +908,12 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
           ? "bottom-24 opacity-100"
           : "bottom-4 opacity-0 pointer-events-none"
       )}>
-        <span className="text-sm font-medium text-white">
-          <kbd className="px-2 py-1 bg-white/20 rounded text-white font-bold">ESC</kbd> выйти 
-          <span className="mx-3 text-white/40">•</span>
-          <kbd className="px-2 py-1 bg-white/20 rounded text-white font-bold">Ctrl+Z</kbd> отменить
-          <span className="mx-3 text-white/40">•</span>
-          <span className="text-primary font-semibold">Рисунки видны всем</span>
+        <span className="text-xs font-normal text-white/90">
+          <kbd className="px-2.5 py-1 bg-white/15 rounded-full text-white font-normal">ESC</kbd> выйти 
+          <span className="mx-3 text-white/30">•</span>
+          <kbd className="px-2.5 py-1 bg-white/15 rounded-full text-white font-normal">Ctrl+Z</kbd> отменить
+          <span className="mx-3 text-white/30">•</span>
+          <span className="text-primary/90 font-normal">Рисунки видны всем</span>
         </span>
       </div>
     </div>,

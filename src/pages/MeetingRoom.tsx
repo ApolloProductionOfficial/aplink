@@ -324,14 +324,9 @@ const MeetingRoom = () => {
     checkAdmin();
   }, [user]);
 
-  // Save recovered recording to personal cabinet
+  // Save recovered recording to personal cabinet with custom SVG icons
   const saveRecoveredToProfile = async (audioBlob: Blob) => {
     if (!user) return;
-    
-    toast.loading('🎬 Сохранение записи...', {
-      description: 'Транскрипция и сохранение в личный кабинет...',
-      duration: 60000,
-    });
 
     try {
       const transcript = await transcribeAudio(audioBlob);
@@ -348,39 +343,74 @@ const MeetingRoom = () => {
 
       if (error) throw error;
 
-      toast.success('✅ Запись сохранена!', {
-        description: 'Конспект доступен в разделе "Созвоны" вашего личного кабинета.',
-        duration: 5000,
-      });
+      toast.success(
+        <div className="flex items-center gap-3">
+          <svg viewBox="0 0 24 24" className="w-6 h-6 flex-shrink-0">
+            <defs>
+              <linearGradient id="success-save-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#10b981"/>
+                <stop offset="100%" stopColor="#06b6e4"/>
+              </linearGradient>
+              <filter id="success-save-glow">
+                <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
+                <feMerge>
+                  <feMergeNode in="coloredBlur"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+            </defs>
+            <circle cx="12" cy="12" r="10" stroke="url(#success-save-gradient)" strokeWidth="2" fill="none" filter="url(#success-save-glow)"/>
+            <path d="M8 12l3 3 5-5" stroke="url(#success-save-gradient)" strokeWidth="2.5" fill="none" strokeLinecap="round" filter="url(#success-save-glow)"/>
+          </svg>
+          <div>
+            <div className="font-medium">Запись сохранена</div>
+            <div className="text-xs text-muted-foreground">Доступна в «Мои созвоны»</div>
+          </div>
+        </div>,
+        { duration: 5000 }
+      );
       
       clearRecoveredRecording();
     } catch (e) {
       console.error('Failed to save recovered recording:', e);
       toast.error('Ошибка сохранения', {
-        description: 'Не удалось сохранить запись. Попробуйте ещё раз.',
+        description: 'Не удалось сохранить запись.',
       });
     }
   };
 
-  // Check for recovered recording from crash
+  // Check for recovered recording from crash - auto-save silently
   useEffect(() => {
     const recovered = getRecoveredRecording();
     if (recovered && user) {
-      toast.info('📼 Найдена незавершённая запись', {
-        description: 'Запись предыдущего созвона была восстановлена после сбоя.',
-        duration: 30000,
-        action: {
-          label: '💾 Сохранить',
-          onClick: () => saveRecoveredToProfile(recovered),
-        },
-        cancel: {
-          label: '🗑️ Удалить',
-          onClick: () => {
-            clearRecoveredRecording();
-            toast.success('Запись удалена');
-          },
-        },
-      });
+      // Auto-save silently without asking
+      toast.info(
+        <div className="flex items-center gap-3">
+          <svg viewBox="0 0 24 24" className="w-6 h-6 animate-pulse flex-shrink-0">
+            <defs>
+              <linearGradient id="recover-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#06b6e4"/>
+                <stop offset="100%" stopColor="#8b5cf6"/>
+              </linearGradient>
+              <filter id="recover-glow">
+                <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
+                <feMerge>
+                  <feMergeNode in="coloredBlur"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+            </defs>
+            <circle cx="12" cy="12" r="10" stroke="url(#recover-gradient)" strokeWidth="2" fill="none" filter="url(#recover-glow)"/>
+            <path d="M12 8v8M8 12h8" stroke="url(#recover-gradient)" strokeWidth="2" strokeLinecap="round" filter="url(#recover-glow)"/>
+          </svg>
+          <div>
+            <div className="font-medium">Восстанавливаем запись...</div>
+            <div className="text-xs text-muted-foreground">Пожалуйста, подождите</div>
+          </div>
+        </div>,
+        { duration: 15000 }
+      );
+      saveRecoveredToProfile(recovered);
     }
   }, [user, getRecoveredRecording, clearRecoveredRecording]);
 
