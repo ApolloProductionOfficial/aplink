@@ -254,7 +254,12 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   }, []);
 
-  // Laser pointer drawing - constant glow, smaller size, OnlyFans style
+  // Clear laser points when color changes to prevent old color trails
+  useEffect(() => {
+    laserPointsRef.current = [];
+  }, [color]);
+
+  // Laser pointer drawing - constant glow, smaller size, OnlyFans SVG logo
   const drawLaserPoints = useCallback(() => {
     const ctx = contextRef.current;
     const canvas = canvasRef.current;
@@ -270,35 +275,58 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
     
     ctx.save();
     
-    // Smaller radius (18px instead of 30)
-    const radius = 18;
+    // Smaller radius (16px for compact logo)
+    const radius = 16;
     
     // Create radial gradient for glow effect
     const gradient = ctx.createRadialGradient(
       lastPoint.x, lastPoint.y, 0, 
-      lastPoint.x, lastPoint.y, radius
+      lastPoint.x, lastPoint.y, radius + 4
     );
-    gradient.addColorStop(0, hexToRgba(color, 0.95));
-    gradient.addColorStop(0.35, hexToRgba(color, 0.6));
-    gradient.addColorStop(0.7, hexToRgba(color, 0.25));
+    gradient.addColorStop(0, hexToRgba(color, 0.9));
+    gradient.addColorStop(0.4, hexToRgba(color, 0.5));
+    gradient.addColorStop(0.7, hexToRgba(color, 0.2));
     gradient.addColorStop(1, hexToRgba(color, 0));
     
     ctx.fillStyle = gradient;
     ctx.beginPath();
-    ctx.arc(lastPoint.x, lastPoint.y, radius, 0, Math.PI * 2);
+    ctx.arc(lastPoint.x, lastPoint.y, radius + 4, 0, Math.PI * 2);
     ctx.fill();
     
-    // OnlyFans-style "OF" text in center
-    ctx.font = 'bold 9px -apple-system, BlinkMacSystemFont, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
+    // Draw OnlyFans-style lock logo (simplified)
+    const logoSize = 10;
+    const cx = lastPoint.x;
+    const cy = lastPoint.y;
+    
+    // Lock body (rounded rectangle)
     ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-    ctx.fillText('OF', lastPoint.x, lastPoint.y);
+    ctx.beginPath();
+    ctx.roundRect(cx - logoSize/2, cy - logoSize/4, logoSize, logoSize * 0.7, 2);
+    ctx.fill();
+    
+    // Lock shackle (arc on top)
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(cx, cy - logoSize/4, logoSize/3, Math.PI, 0, false);
+    ctx.stroke();
+    
+    // Heart keyhole (in lock body)
+    ctx.fillStyle = hexToRgba(color, 0.95);
+    ctx.beginPath();
+    // Small heart shape
+    const hx = cx;
+    const hy = cy + logoSize * 0.1;
+    const hs = 2.5;
+    ctx.moveTo(hx, hy + hs);
+    ctx.bezierCurveTo(hx - hs * 1.5, hy, hx - hs, hy - hs, hx, hy - hs * 0.3);
+    ctx.bezierCurveTo(hx + hs, hy - hs, hx + hs * 1.5, hy, hx, hy + hs);
+    ctx.fill();
     
     // Outer glow ring
     ctx.beginPath();
-    ctx.arc(lastPoint.x, lastPoint.y, radius - 2, 0, Math.PI * 2);
-    ctx.strokeStyle = hexToRgba(color, 0.5);
+    ctx.arc(lastPoint.x, lastPoint.y, radius, 0, Math.PI * 2);
+    ctx.strokeStyle = hexToRgba(color, 0.6);
     ctx.lineWidth = 1.5;
     ctx.stroke();
     
@@ -358,7 +386,16 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
 
   // Start full screen + drawing overlay recording
   const startScreenRecording = useCallback(async () => {
+    // Prevent double-start
+    if (isScreenRecording) {
+      console.log('[DrawingOverlay] Already recording, skipping');
+      return;
+    }
+
     try {
+      // Set state BEFORE getDisplayMedia to prevent race conditions
+      setIsScreenRecording(true);
+      
       // Request screen capture - use type assertion for cursor option
       const displayStream = await navigator.mediaDevices.getDisplayMedia({
         video: { 
@@ -384,9 +421,12 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
       combinedCanvasRef.current = combinedCanvas;
       const ctx = combinedCanvas.getContext('2d')!;
       
+      // Use ref to track recording state inside animation loop
+      let isActive = true;
+      
       // Animation loop to combine screen + drawing canvas
       const drawFrame = () => {
-        if (!videoElementRef.current || !combinedCanvasRef.current) return;
+        if (!isActive || !videoElementRef.current || !combinedCanvasRef.current) return;
         
         ctx.drawImage(videoElementRef.current, 0, 0, combinedCanvas.width, combinedCanvas.height);
         
@@ -395,13 +435,10 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
           ctx.drawImage(canvasRef.current, 0, 0, combinedCanvas.width, combinedCanvas.height);
         }
         
-        if (isScreenRecording) {
-          animationFrameRef.current = requestAnimationFrame(drawFrame);
-        }
+        animationFrameRef.current = requestAnimationFrame(drawFrame);
       };
       
       drawFrame();
-      setIsScreenRecording(true);
       
       // Start recording combined stream
       const combinedStream = combinedCanvas.captureStream(30);
@@ -422,6 +459,8 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
       };
       
       recorder.onstop = () => {
+        isActive = false;
+        
         const blob = new Blob(screenChunksRef.current, { type: 'video/webm' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -454,9 +493,18 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
         stopScreenRecording();
       };
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to start screen recording:', error);
       setIsScreenRecording(false);
+      
+      // Show user-friendly error
+      if (error.name === 'NotAllowedError') {
+        // User cancelled - this is fine, just reset state
+        console.log('[DrawingOverlay] User cancelled screen share');
+      } else {
+        // Actual error - could show toast if imported
+        console.error('[DrawingOverlay] Screen recording error:', error.message);
+      }
     }
   }, [isScreenRecording]);
 

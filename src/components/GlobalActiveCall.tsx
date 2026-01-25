@@ -62,6 +62,10 @@ export function GlobalActiveCall() {
   const handleConnected = useCallback(() => {
     console.log('[GlobalActiveCall] Connected');
     setIsConnected(true);
+    
+    // Check if this was a reconnection
+    const wasReconnecting = reconnectAttempt > 0 || isReconnecting;
+    
     setReconnectAttempt(0); // Reset reconnect counter on successful connection
     setIsReconnecting(false);
     
@@ -71,10 +75,39 @@ export function GlobalActiveCall() {
       toast.success('Подключено', {
         description: 'Вы успешно подключились к комнате',
       });
+    } else if (wasReconnecting) {
+      // Reconnection success - play sound and show toast
+      playConnectedSound();
+      toast.success(
+        <div className="flex items-center gap-3">
+          <svg viewBox="0 0 24 24" className="w-5 h-5 flex-shrink-0">
+            <defs>
+              <linearGradient id="reconnect-success-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#10b981"/>
+                <stop offset="100%" stopColor="#06b6e4"/>
+              </linearGradient>
+              <filter id="reconnect-success-glow">
+                <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
+                <feMerge>
+                  <feMergeNode in="coloredBlur"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+            </defs>
+            <circle cx="12" cy="12" r="10" stroke="url(#reconnect-success-gradient)" strokeWidth="2" fill="none" filter="url(#reconnect-success-glow)"/>
+            <path d="M8 12l3 3 5-5" stroke="url(#reconnect-success-gradient)" strokeWidth="2.5" fill="none" strokeLinecap="round" filter="url(#reconnect-success-glow)"/>
+          </svg>
+          <div>
+            <div className="font-medium">Связь восстановлена!</div>
+            <div className="text-xs text-muted-foreground">Подключение стабильно</div>
+          </div>
+        </div>,
+        { duration: 4000 }
+      );
     }
     // Call MeetingRoom's onConnected handler
     eventHandlers.onConnected?.();
-  }, [playConnectedSound, eventHandlers]);
+  }, [playConnectedSound, eventHandlers, reconnectAttempt, isReconnecting]);
 
   // Handle disconnected
   const handleDisconnected = useCallback(() => {
