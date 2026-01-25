@@ -108,6 +108,8 @@ const MeetingRoom = () => {
   
   // Get room from context
   const { 
+    isActive,
+    roomSlug: activeRoomSlug,
     startCall, 
     minimize, 
     liveKitRoom, 
@@ -174,7 +176,13 @@ const MeetingRoom = () => {
   const safeUserName = userName ?? user?.email?.split('@')[0] ?? 'Guest';
 
   // Register active call in global context
+  // Skip if call is already active for this room (prevents re-initialization on maximize)
   useEffect(() => {
+    if (isActive && activeRoomSlug === roomSlug) {
+      console.log('[MeetingRoom] Call already active for room:', roomSlug, '- skipping startCall');
+      return;
+    }
+    
     participantsRef.current.add(safeUserName);
     
     startCall({
@@ -184,7 +192,7 @@ const MeetingRoom = () => {
       participantIdentity: user?.id,
       roomDisplayName,
     });
-  }, [startCall, roomDisplayName, roomSlug, safeUserName, user?.id]);
+  }, [isActive, activeRoomSlug, startCall, roomDisplayName, roomSlug, safeUserName, user?.id]);
 
   // Register event handlers with context
   useEffect(() => {

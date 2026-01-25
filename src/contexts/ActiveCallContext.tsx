@@ -68,19 +68,28 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
     participantIdentity?: string;
     roomDisplayName: string;
   }) => {
-    setState(prev => ({
-      isActive: true,
-      isMinimized: false,
-      roomName: params.roomName,
-      roomSlug: params.roomSlug,
-      participantName: params.participantName,
-      participantIdentity: params.participantIdentity,
-      roomDisplayName: params.roomDisplayName,
-      liveKitRoom: roomRef.current,
-      headerButtons: prev.headerButtons,
-      connectionIndicator: prev.connectionIndicator,
-      eventHandlers: handlersRef.current,
-    }));
+    // Skip if call is already active for the same room - prevents double initialization on maximize
+    setState(prev => {
+      if (prev.isActive && prev.roomSlug === params.roomSlug) {
+        console.log('[ActiveCallContext] Call already active for room:', params.roomSlug, '- skipping startCall');
+        return prev;
+      }
+      
+      console.log('[ActiveCallContext] Starting call for room:', params.roomSlug);
+      return {
+        isActive: true,
+        isMinimized: false,
+        roomName: params.roomName,
+        roomSlug: params.roomSlug,
+        participantName: params.participantName,
+        participantIdentity: params.participantIdentity,
+        roomDisplayName: params.roomDisplayName,
+        liveKitRoom: roomRef.current,
+        headerButtons: prev.headerButtons,
+        connectionIndicator: prev.connectionIndicator,
+        eventHandlers: handlersRef.current,
+      };
+    });
   }, []);
 
   const endCall = useCallback(() => {

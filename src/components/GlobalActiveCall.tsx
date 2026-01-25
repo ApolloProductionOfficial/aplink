@@ -72,24 +72,29 @@ export function GlobalActiveCall() {
   }, [setLiveKitRoom]);
 
   // Handle connected - notify MeetingRoom via context handlers
+  // IMPORTANT: Only play sounds/toasts on FIRST connection, not on minimize/maximize cycles
   const handleConnected = useCallback(() => {
-    console.log('[GlobalActiveCall] Connected');
+    console.log('[GlobalActiveCall] Connected, hasConnectedRef:', hasConnectedRef.current);
     setIsConnected(true);
     
-    // Check if this was a reconnection
+    // Check if this was a reconnection from network error
     const wasReconnecting = reconnectAttempt > 0 || isReconnecting;
     
     setReconnectAttempt(0); // Reset reconnect counter on successful connection
     setIsReconnecting(false);
     
+    // Only play sound and show toast on FIRST connection
+    // hasConnectedRef stays true during minimize/maximize to prevent re-triggering
     if (!hasConnectedRef.current) {
       hasConnectedRef.current = true;
       playConnectedSound();
       toast.success('Подключено', {
         description: 'Вы успешно подключились к комнате',
       });
+      // Only call onConnected on first connection
+      eventHandlers.onConnected?.();
     } else if (wasReconnecting) {
-      // Reconnection success - play sound and show toast
+      // Reconnection success after network error - play sound and show toast
       playConnectedSound();
       toast.success(
         <div className="flex items-center gap-3">
@@ -117,14 +122,17 @@ export function GlobalActiveCall() {
         </div>,
         { duration: 4000 }
       );
+      eventHandlers.onConnected?.();
     }
-    // Call MeetingRoom's onConnected handler
-    eventHandlers.onConnected?.();
+    // If already connected (hasConnectedRef.current === true) and not reconnecting,
+    // this is a maximize after minimize - do nothing special
   }, [playConnectedSound, eventHandlers, reconnectAttempt, isReconnecting]);
 
   // Handle disconnected
+  // IMPORTANT: This is called on REAL disconnects (network, server, user ended call)
+  // NOT on minimize/maximize - LiveKitRoom stays connected during those
   const handleDisconnected = useCallback(() => {
-    console.log('[GlobalActiveCall] Disconnected');
+    console.log('[GlobalActiveCall] Disconnected - real disconnect, resetting state');
     hasConnectedRef.current = false;
     setIsConnected(false);
     playDisconnectedSound();
