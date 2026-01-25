@@ -69,7 +69,7 @@ export function CallTimer({ room, isHost = true }: CallTimerProps) {
 
   // Dragging state
   const [position, setPosition] = useState<Position | null>(null);
-  const draggingRef = useRef(false);
+  const [isDragging, setIsDragging] = useState(false);
   const dragOffsetRef = useRef<Position>({ x: 0, y: 0 });
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -114,29 +114,12 @@ export function CallTimer({ room, isHost = true }: CallTimerProps) {
     };
   }, [position]);
 
-  const handlePointerDown = (e: React.PointerEvent) => {
+  // Global move handler
+  const handleMove = useCallback((e: PointerEvent) => {
     if (!panelRef.current) return;
     
-    draggingRef.current = true;
     const rect = panelRef.current.getBoundingClientRect();
     
-    // Store offset from click position to panel top-left
-    dragOffsetRef.current = {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    };
-    
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
-  const handlePointerMove = (e: React.PointerEvent) => {
-    if (!draggingRef.current || !panelRef.current) return;
-    
-    const rect = panelRef.current.getBoundingClientRect();
-    
-    // Calculate new position
     let newX = e.clientX - dragOffsetRef.current.x;
     let newY = e.clientY - dragOffsetRef.current.y;
     
@@ -145,15 +128,43 @@ export function CallTimer({ room, isHost = true }: CallTimerProps) {
     newY = Math.max(0, Math.min(newY, window.innerHeight - rect.height));
     
     setPosition({ x: newX, y: newY });
-    e.preventDefault();
-    e.stopPropagation();
-  };
+  }, []);
 
-  const handlePointerUp = (e: React.PointerEvent) => {
-    draggingRef.current = false;
+  // Global up handler
+  const handleUp = useCallback(() => {
+    setIsDragging(false);
+    document.removeEventListener('pointermove', handleMove);
+    document.removeEventListener('pointerup', handleUp);
+  }, [handleMove]);
+
+  // Start dragging
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    if (!panelRef.current) return;
+    
+    const rect = panelRef.current.getBoundingClientRect();
+    
+    dragOffsetRef.current = {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    };
+    
+    setIsDragging(true);
+    
+    // Attach global listeners
+    document.addEventListener('pointermove', handleMove);
+    document.addEventListener('pointerup', handleUp);
+    
     e.preventDefault();
     e.stopPropagation();
-  };
+  }, [handleMove, handleUp]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      document.removeEventListener('pointermove', handleMove);
+      document.removeEventListener('pointerup', handleUp);
+    };
+  }, [handleMove, handleUp]);
   
   // Play voice notification when timer ends
   const playVoiceNotification = useCallback(async () => {
@@ -355,12 +366,12 @@ export function CallTimer({ room, isHost = true }: CallTimerProps) {
             isLow 
               ? "bg-red-500/30 border-red-500/50 shadow-red-500/50 animate-pulse" 
               : "bg-black/60 border-white/[0.08]",
-            draggingRef.current && "shadow-primary/30 scale-105"
+            isDragging && "shadow-primary/30 scale-105"
           )}
           style={{ left: position.x, top: position.y }}
         >
           {/* Edge proximity indicators */}
-          {draggingRef.current && (
+          {isDragging && (
             <>
               {edgeProximity.left && (
                 <div className="fixed left-0 top-0 h-full w-1 bg-gradient-to-r from-primary/50 to-transparent pointer-events-none" />
@@ -381,8 +392,6 @@ export function CallTimer({ room, isHost = true }: CallTimerProps) {
           <div
             className="flex items-center justify-center py-1 cursor-grab active:cursor-grabbing border-b border-white/10"
             onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
           >
             <GripHorizontal className="w-4 h-4 text-white/30" />
           </div>
