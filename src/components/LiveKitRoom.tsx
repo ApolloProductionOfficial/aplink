@@ -365,6 +365,14 @@ function LiveKitContent({
   const [currentBackground, setCurrentBackground] = useState<'none' | 'blur-light' | 'blur-strong' | 'image'>('none');
   const [isProcessingBackground, setIsProcessingBackground] = useState(false);
   const [showScreenshotFlash, setShowScreenshotFlash] = useState(false);
+  
+  // Call recording state (records participants directly without picker dialog)
+  const [isCallRecording, setIsCallRecording] = useState(false);
+  const callRecorderRef = useRef<MediaRecorder | null>(null);
+  const callRecordingChunksRef = useRef<Blob[]>([]);
+  const callRecordingCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const callRecordingAnimationRef = useRef<number | null>(null);
+  
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -527,6 +535,153 @@ function LiveKitContent({
       setIsProcessingBackground(false);
     }
   }, [localParticipant]);
+
+  // Toggle call recording - records participants directly via canvas (no screen picker dialog)
+  const toggleCallRecording = useCallback(() => {
+    if (isCallRecording) {
+      // Stop recording
+      if (callRecorderRef.current) {
+        callRecorderRef.current.stop();
+        callRecorderRef.current = null;
+      }
+      if (callRecordingAnimationRef.current) {
+        cancelAnimationFrame(callRecordingAnimationRef.current);
+        callRecordingAnimationRef.current = null;
+      }
+      if (callRecordingCanvasRef.current) {
+        callRecordingCanvasRef.current = null;
+      }
+      setIsCallRecording(false);
+      return;
+    }
+    
+    try {
+      // Find all video elements in the call
+      const videoElements = containerRef.current?.querySelectorAll('video') ?? [];
+      if (videoElements.length === 0) {
+        toast.error('Нет видео для записи');
+        return;
+      }
+      
+      // Create canvas to composite all videos
+      const canvas = document.createElement('canvas');
+      canvas.width = 1920;
+      canvas.height = 1080;
+      const ctx = canvas.getContext('2d')!;
+      callRecordingCanvasRef.current = canvas;
+      
+      // Animation loop to draw all videos on canvas
+      let isActive = true;
+      const drawFrame = () => {
+        if (!isActive) return;
+        
+        // Clear canvas
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Get current video elements (may change during call)
+        const videos = Array.from(containerRef.current?.querySelectorAll('video') ?? []) as HTMLVideoElement[];
+        const count = videos.length;
+        
+        if (count === 1) {
+          // Single video - full screen
+          ctx.drawImage(videos[0], 0, 0, canvas.width, canvas.height);
+        } else if (count === 2) {
+          // 2 videos - side by side
+          const halfW = canvas.width / 2;
+          ctx.drawImage(videos[0], 0, 0, halfW, canvas.height);
+          ctx.drawImage(videos[1], halfW, 0, halfW, canvas.height);
+        } else if (count <= 4) {
+          // 2x2 grid
+          const halfW = canvas.width / 2;
+          const halfH = canvas.height / 2;
+          videos.forEach((video, i) => {
+            const x = (i % 2) * halfW;
+            const y = Math.floor(i / 2) * halfH;
+            ctx.drawImage(video, x, y, halfW, halfH);
+          });
+        } else {
+          // 3x3 grid for more
+          const thirdW = canvas.width / 3;
+          const thirdH = canvas.height / 3;
+          videos.slice(0, 9).forEach((video, i) => {
+            const x = (i % 3) * thirdW;
+            const y = Math.floor(i / 3) * thirdH;
+            ctx.drawImage(video, x, y, thirdW, thirdH);
+          });
+        }
+        
+        callRecordingAnimationRef.current = requestAnimationFrame(drawFrame);
+      };
+      
+      drawFrame();
+      
+      // Capture canvas stream
+      const stream = canvas.captureStream(30);
+      
+      // Try to get audio from participants
+      const audioContext = new AudioContext();
+      const destination = audioContext.createMediaStreamDestination();
+      
+      // Collect audio from all video elements
+      videoElements.forEach(video => {
+        try {
+          if ((video as HTMLVideoElement).srcObject instanceof MediaStream) {
+            const mediaStream = (video as HTMLVideoElement).srcObject as MediaStream;
+            const audioTracks = mediaStream.getAudioTracks();
+            if (audioTracks.length > 0) {
+              const source = audioContext.createMediaStreamSource(new MediaStream([audioTracks[0]]));
+              source.connect(destination);
+            }
+          }
+        } catch {
+          // Ignore cross-origin or unavailable audio
+        }
+      });
+      
+      // Merge audio into stream if available
+      destination.stream.getAudioTracks().forEach(track => stream.addTrack(track));
+      
+      // Create recorder
+      const recorder = new MediaRecorder(stream, {
+        mimeType: MediaRecorder.isTypeSupported('video/webm;codecs=vp9') 
+          ? 'video/webm;codecs=vp9' 
+          : 'video/webm'
+      });
+      
+      callRecordingChunksRef.current = [];
+      
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          callRecordingChunksRef.current.push(e.data);
+        }
+      };
+      
+      recorder.onstop = () => {
+        isActive = false;
+        
+        const blob = new Blob(callRecordingChunksRef.current, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `aplink-call-${Date.now()}.webm`;
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        audioContext.close().catch(() => {});
+        toast.success('Запись сохранена!');
+      };
+      
+      recorder.start(100);
+      callRecorderRef.current = recorder;
+      setIsCallRecording(true);
+      toast.success('Запись началась');
+      
+    } catch (err) {
+      console.error('Failed to start call recording:', err);
+      toast.error('Не удалось начать запись');
+    }
+  }, [isCallRecording]);
 
   // Fullscreen toggle
   const toggleFullscreen = useCallback(() => {
@@ -985,50 +1140,25 @@ function LiveKitContent({
                     <span className="text-xs whitespace-nowrap">{isScreenShareEnabled ? "Остановить" : "Экран"}</span>
                   </button>
                   
-                  {/* Direct screen recording without DrawingOverlay */}
+                  {/* Direct call recording - records participants without dialog */}
                   <button
-                    onClick={async () => {
-                      try {
-                        const displayStream = await navigator.mediaDevices.getDisplayMedia({
-                          video: { cursor: 'always' } as MediaTrackConstraints,
-                          audio: true
-                        });
-                        
-                        const mediaRecorder = new MediaRecorder(displayStream, {
-                          mimeType: MediaRecorder.isTypeSupported('video/webm;codecs=vp9') 
-                            ? 'video/webm;codecs=vp9' 
-                            : 'video/webm'
-                        });
-                        
-                        const chunks: Blob[] = [];
-                        mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
-                        mediaRecorder.onstop = () => {
-                          const blob = new Blob(chunks, { type: 'video/webm' });
-                          const url = URL.createObjectURL(blob);
-                          const a = document.createElement('a');
-                          a.href = url;
-                          a.download = `aplink-recording-${Date.now()}.webm`;
-                          a.click();
-                          URL.revokeObjectURL(url);
-                          displayStream.getTracks().forEach(t => t.stop());
-                          toast.success('Запись сохранена!');
-                        };
-                        
-                        mediaRecorder.start();
-                        toast.success('Запись экрана началась', { description: 'Остановите демонстрацию чтобы сохранить' });
-                        
-                        displayStream.getVideoTracks()[0].onended = () => {
-                          mediaRecorder.stop();
-                        };
-                      } catch (err) {
-                        console.error('Screen recording failed:', err);
-                        toast.error('Не удалось начать запись');
-                      }
-                    }}
-                    className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all"
+                    onClick={toggleCallRecording}
+                    className={cn(
+                      "flex flex-col items-center gap-1.5 p-3 rounded-xl transition-all relative",
+                      isCallRecording 
+                        ? "bg-red-500/20 border border-red-500/40" 
+                        : "bg-white/5 hover:bg-white/10"
+                    )}
                   >
-                    <Video className="w-5 h-5 text-red-400" />
-                    <span className="text-xs whitespace-nowrap">Запись</span>
+                    {/* REC indicator when recording */}
+                    {isCallRecording && (
+                      <div className="absolute -top-1 -right-1 flex items-center gap-1 px-1.5 py-0.5 bg-red-500 rounded-full animate-pulse">
+                        <div className="w-1.5 h-1.5 bg-white rounded-full" />
+                        <span className="text-[8px] font-bold text-white">REC</span>
+                      </div>
+                    )}
+                    <Video className={cn("w-5 h-5", isCallRecording ? "text-red-400" : "text-primary")} />
+                    <span className="text-xs whitespace-nowrap">{isCallRecording ? "Остановить" : "Запись"}</span>
                   </button>
                 </div>
               </div>
