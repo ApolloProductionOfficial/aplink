@@ -91,8 +91,18 @@ export function LiveKitRoom({
   const [serverUrl, setServerUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Prevent re-fetching token on component updates
+  const hasInitializedRef = useRef(false);
+  const currentRoomRef = useRef<string | null>(null);
 
   useEffect(() => {
+    // Skip if already initialized for this room
+    if (hasInitializedRef.current && currentRoomRef.current === roomName && token) {
+      console.log("[LiveKitRoom] Already have token for room, skipping re-fetch");
+      return;
+    }
+
     const getToken = async () => {
       try {
         setLoading(true);
@@ -120,6 +130,8 @@ export function LiveKitRoom({
         }
 
         console.log("[LiveKitRoom] Token received, connecting to:", data.url);
+        hasInitializedRef.current = true;
+        currentRoomRef.current = roomName;
         setToken(data.token);
         setServerUrl(data.url);
       } catch (err) {
@@ -133,7 +145,7 @@ export function LiveKitRoom({
     };
 
     getToken();
-  }, [roomName, participantName, participantIdentity, onError]);
+  }, [roomName]); // Only depend on roomName to prevent unnecessary re-fetches
 
   const handleConnected = useCallback(() => {
     console.log("[LiveKitRoom] Connected to room");
@@ -973,11 +985,45 @@ function LiveKitContent({
                     <span className="text-xs whitespace-nowrap">{isScreenShareEnabled ? "Остановить" : "Экран"}</span>
                   </button>
                   
-                  {/* Record screen + drawings - handled by DrawingOverlay */}
+                  {/* Direct screen recording without DrawingOverlay */}
                   <button
-                    onClick={() => {
-                      setShowDrawingOverlay(true);
-                      // Drawing overlay has its own screen recording functionality
+                    onClick={async () => {
+                      try {
+                        const displayStream = await navigator.mediaDevices.getDisplayMedia({
+                          video: { cursor: 'always' } as MediaTrackConstraints,
+                          audio: true
+                        });
+                        
+                        const mediaRecorder = new MediaRecorder(displayStream, {
+                          mimeType: MediaRecorder.isTypeSupported('video/webm;codecs=vp9') 
+                            ? 'video/webm;codecs=vp9' 
+                            : 'video/webm'
+                        });
+                        
+                        const chunks: Blob[] = [];
+                        mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+                        mediaRecorder.onstop = () => {
+                          const blob = new Blob(chunks, { type: 'video/webm' });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = `aplink-recording-${Date.now()}.webm`;
+                          a.click();
+                          URL.revokeObjectURL(url);
+                          displayStream.getTracks().forEach(t => t.stop());
+                          toast.success('Запись сохранена!');
+                        };
+                        
+                        mediaRecorder.start();
+                        toast.success('Запись экрана началась', { description: 'Остановите демонстрацию чтобы сохранить' });
+                        
+                        displayStream.getVideoTracks()[0].onended = () => {
+                          mediaRecorder.stop();
+                        };
+                      } catch (err) {
+                        console.error('Screen recording failed:', err);
+                        toast.error('Не удалось начать запись');
+                      }
                     }}
                     className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all"
                   >

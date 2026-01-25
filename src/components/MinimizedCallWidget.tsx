@@ -52,6 +52,42 @@ export function MinimizedCallWidget({
     };
   }, [liveKitRoom, isExpanded]);
 
+  // Request Picture-in-Picture for remote participants when minimized
+  useEffect(() => {
+    if (!liveKitRoom || isExpanded) return;
+
+    const requestPiP = async () => {
+      try {
+        // Find any remote participant's video
+        const remoteParticipants = Array.from(liveKitRoom.remoteParticipants.values());
+        for (const participant of remoteParticipants) {
+          const cameraPub = participant.getTrackPublication(Track.Source.Camera);
+          if (cameraPub?.track) {
+            // Find video element for this track
+            const videos = document.querySelectorAll('video[data-lk-source="camera"]');
+            for (const video of videos) {
+              const videoEl = video as HTMLVideoElement;
+              if (!videoEl.hasAttribute('data-lk-local') && document.pictureInPictureEnabled) {
+                try {
+                  await videoEl.requestPictureInPicture();
+                  return; // Success, exit
+                } catch {
+                  // Try next video
+                }
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.log('[PiP] Could not request Picture-in-Picture:', err);
+      }
+    };
+
+    // Delay to allow video elements to be ready
+    const timeout = setTimeout(requestPiP, 500);
+    return () => clearTimeout(timeout);
+  }, [liveKitRoom, isExpanded]);
+
   // Initial position (bottom-right) once on client
   useEffect(() => {
     if (pos) return;

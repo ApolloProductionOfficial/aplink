@@ -915,14 +915,19 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
           </Button>
         </div>
 
-      {/* Instructions hint - brighter */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-black/60 backdrop-blur-xl border border-white/20 rounded-full">
-        <span className="text-xs font-medium text-white/90 drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]">
-          <kbd className="px-1.5 py-0.5 bg-white/20 rounded text-white">ESC</kbd> - выйти 
-          <span className="mx-2 text-white/50">•</span>
-          <kbd className="px-1.5 py-0.5 bg-white/20 rounded text-white">Ctrl+Z</kbd> - отменить
-          <span className="mx-2 text-white/50">•</span>
-          <span className="text-primary">Рисунки видны всем</span>
+      {/* Instructions hint - positioned above bottom panel, synced visibility */}
+      <div className={cn(
+        "absolute left-1/2 -translate-x-1/2 px-4 py-2 bg-black/70 backdrop-blur-xl border border-white/30 rounded-full transition-all duration-300",
+        showControls 
+          ? "bottom-24 opacity-100"
+          : "bottom-4 opacity-0 pointer-events-none"
+      )}>
+        <span className="text-sm font-medium text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
+          <kbd className="px-2 py-1 bg-white/30 rounded text-white font-bold">ESC</kbd> выйти 
+          <span className="mx-3 text-white/60">•</span>
+          <kbd className="px-2 py-1 bg-white/30 rounded text-white font-bold">Ctrl+Z</kbd> отменить
+          <span className="mx-3 text-white/60">•</span>
+          <span className="text-primary font-semibold">Рисунки видны всем</span>
         </span>
       </div>
     </div>,

@@ -7,6 +7,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { useConnectionSounds } from "@/hooks/useConnectionSounds";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const CHAT_EMOJIS = ['😀', '😂', '❤️', '🔥', '👍', '💰', '🍑', '🍆', '💎', '💋', '🥵', '💸', '👑', '🎬', '🚀'];
 
@@ -18,7 +20,8 @@ interface ChatMessage {
   timestamp: Date;
   isLocal: boolean;
   type: 'text' | 'voice';
-  audioData?: string; // base64 audio
+  audioData?: string; // base64 audio (legacy)
+  audioUrl?: string; // URL to audio file in storage
   audioDuration?: number;
 }
 
@@ -55,6 +58,8 @@ export function InCallChat({ room, participantName, isOpen, onToggle, buttonOnly
   const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
   const activeStreamRef = useRef<MediaStream | null>(null);
+  const [recordingSize, setRecordingSize] = useState(0);
+  const [isSendingVoice, setIsSendingVoice] = useState(false);
 
   // Dragging state
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -106,7 +111,8 @@ export function InCallChat({ room, participantName, isOpen, onToggle, buttonOnly
             timestamp: new Date(message.timestamp),
             isLocal: false,
             type: 'voice',
-            audioData: message.audioData,
+            audioData: message.audioData, // Legacy base64
+            audioUrl: message.audioUrl, // New URL-based
             audioDuration: message.duration,
           };
 
@@ -246,6 +252,9 @@ export function InCallChat({ room, participantName, isOpen, onToggle, buttonOnly
         recorder.ondataavailable = (e) => {
           if (e.data.size > 0) {
             audioChunksRef.current.push(e.data);
+            // Update size indicator
+            const totalSize = audioChunksRef.current.reduce((acc, chunk) => acc + chunk.size, 0);
+            setRecordingSize(totalSize);
           }
         };
         
@@ -273,6 +282,7 @@ export function InCallChat({ room, participantName, isOpen, onToggle, buttonOnly
         mediaRecorderRef.current = recorder;
         setIsRecordingVoice(true);
         setRecordingDuration(0);
+        setRecordingSize(0);
         
         // Update duration display
         recordingIntervalRef.current = setInterval(() => {
@@ -318,75 +328,74 @@ export function InCallChat({ room, participantName, isOpen, onToggle, buttonOnly
     setIsPreviewPlaying(false);
   }, []);
 
-  // Send the recorded voice message
+  // Send the recorded voice message via Supabase Storage (no size limit)
   const sendVoiceMessage = useCallback(async () => {
     if (!recordedBlob || !room) return;
     
-    // Check blob size first - LiveKit limit is ~64KB
-    const sizeKB = recordedBlob.size / 1024;
-    console.log(`Voice message size: ${sizeKB.toFixed(2)} KB`);
+    setIsSendingVoice(true);
     
-    if (sizeKB > 45) {
-      // Too large for direct send, show error
-      const { toast } = await import('sonner');
-      toast.error('Голосовое слишком длинное', {
-        description: `Максимум ~8 секунд. Попробуйте короче.`
-      });
-      return;
-    }
-    
-    const reader = new FileReader();
-    reader.onloadend = async () => {
-      const base64Audio = reader.result as string;
+    try {
+      // Generate unique filename
+      const fileName = `voice-${Date.now()}-${Math.random().toString(36).slice(2)}.webm`;
       
-      // Double-check base64 size
-      if (base64Audio.length > 60000) {
-        const { toast } = await import('sonner');
-        toast.error('Сообщение слишком большое', {
-          description: 'Попробуйте записать короче'
+      // Upload to Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('voice-messages')
+        .upload(fileName, recordedBlob, {
+          contentType: 'audio/webm',
+          cacheControl: '3600'
         });
-        return;
+      
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw uploadError;
       }
       
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('voice-messages')
+        .getPublicUrl(fileName);
+      
+      // Send only URL via Data Channel (very small payload)
       const messageData = {
         type: 'voice_message',
         senderName: participantName,
         senderIdentity: room.localParticipant.identity,
-        audioData: base64Audio,
+        audioUrl: publicUrl,
         duration: recordedDuration,
         timestamp: new Date().toISOString(),
       };
       
-      try {
-        const encoder = new TextEncoder();
-        await room.localParticipant.publishData(encoder.encode(JSON.stringify(messageData)), { reliable: true });
-        
-        setMessages(prev => [...prev, {
-          id: `${Date.now()}-voice`,
-          senderName: participantName,
-          senderIdentity: room.localParticipant.identity,
-          timestamp: new Date(),
-          isLocal: true,
-          type: 'voice',
-          audioData: base64Audio,
-          audioDuration: recordedDuration,
-        }]);
-        
-        // Clear preview after sending
-        discardRecording();
-      } catch (err) {
-        console.error('Failed to send voice message:', err);
-        const { toast } = await import('sonner');
-        toast.error('Не удалось отправить', {
-          description: 'Попробуйте записать короче'
-        });
-      }
-    };
-    reader.readAsDataURL(recordedBlob);
+      const encoder = new TextEncoder();
+      await room.localParticipant.publishData(
+        encoder.encode(JSON.stringify(messageData)), 
+        { reliable: true }
+      );
+      
+      // Add to local messages
+      setMessages(prev => [...prev, {
+        id: `${Date.now()}-voice`,
+        senderName: participantName,
+        senderIdentity: room.localParticipant.identity,
+        timestamp: new Date(),
+        isLocal: true,
+        type: 'voice',
+        audioUrl: publicUrl,
+        audioDuration: recordedDuration,
+      }]);
+      
+      discardRecording();
+      toast.success('Голосовое отправлено');
+    } catch (err) {
+      console.error('Failed to send voice message:', err);
+      toast.error('Не удалось отправить голосовое');
+    } finally {
+      setIsSendingVoice(false);
+    }
   }, [recordedBlob, recordedDuration, room, participantName, discardRecording]);
 
-  // Play/pause voice message
-  const togglePlayVoice = useCallback((messageId: string, audioData: string) => {
+  // Play/pause voice message - supports both audioUrl and audioData
+  const togglePlayVoice = useCallback((messageId: string, audioSource: string) => {
     if (playingMessageId === messageId) {
       // Pause current
       if (audioRef.current) {
@@ -400,13 +409,16 @@ export function InCallChat({ room, participantName, isOpen, onToggle, buttonOnly
         audioRef.current.pause();
       }
       
-      // Play new
-      const audio = new Audio(audioData);
+      // Play new - audioSource can be URL or base64 data URI
+      const audio = new Audio(audioSource);
       audio.onended = () => {
         setPlayingMessageId(null);
         audioRef.current = null;
       };
-      audio.play();
+      audio.play().catch(err => {
+        console.error('Failed to play audio:', err);
+        toast.error('Не удалось воспроизвести');
+      });
       audioRef.current = audio;
       setPlayingMessageId(messageId);
     }
@@ -543,7 +555,10 @@ export function InCallChat({ room, participantName, isOpen, onToggle, buttonOnly
                     )}
                   >
                     <button 
-                      onClick={() => msg.audioData && togglePlayVoice(msg.id, msg.audioData)}
+                      onClick={() => {
+                        const audioSource = msg.audioUrl || msg.audioData;
+                        if (audioSource) togglePlayVoice(msg.id, audioSource);
+                      }}
                       className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-all"
                     >
                       {playingMessageId === msg.id ? (
@@ -683,7 +698,10 @@ export function InCallChat({ room, participantName, isOpen, onToggle, buttonOnly
           <div className="mt-2 text-xs text-destructive flex items-center gap-1.5 justify-center">
             <span className="w-2 h-2 rounded-full bg-destructive animate-pulse" />
             Запись... {formatDuration(recordingDuration)}
-            <span className="text-muted-foreground ml-1">нажмите ■ для остановки</span>
+            <span className="text-muted-foreground ml-2">
+              {(recordingSize / 1024).toFixed(1)} KB
+            </span>
+            <span className="text-muted-foreground ml-1">• нажмите ■</span>
           </div>
         )}
         
@@ -731,10 +749,18 @@ export function InCallChat({ room, participantName, isOpen, onToggle, buttonOnly
             {/* Send */}
             <button 
               onClick={sendVoiceMessage}
-              className="w-8 h-8 rounded-full bg-primary hover:bg-primary/80 flex items-center justify-center transition-all"
+              disabled={isSendingVoice}
+              className={cn(
+                "w-8 h-8 rounded-full bg-primary hover:bg-primary/80 flex items-center justify-center transition-all",
+                isSendingVoice && "opacity-50 cursor-not-allowed"
+              )}
               title="Отправить"
             >
-              <Send className="w-4 h-4" />
+              {isSendingVoice ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Send className="w-4 h-4" />
+              )}
             </button>
           </div>
         )}

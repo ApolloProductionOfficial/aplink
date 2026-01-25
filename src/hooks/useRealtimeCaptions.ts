@@ -34,6 +34,7 @@ export const useRealtimeCaptions = ({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const isRecordingRef = useRef(false);
   const vadActiveRef = useRef(false);
+  const [vadActive, setVadActive] = useState(false);
 
   // Process audio and get transcription
   const processAudioChunk = useCallback(async (audioBlob: Blob) => {
@@ -196,11 +197,18 @@ export const useRealtimeCaptions = ({
         }
         const rms = Math.sqrt(sum / dataArray.length) / 255;
 
-        const isSpeaking = rms > 0.015; // Ultra-sensitive threshold for instant voice detection
+        // Even more sensitive threshold for better detection
+        const isSpeaking = rms > 0.01;
+        
+        // Debug logging every 60 frames (~1 second)
+        if (Math.random() < 0.017) {
+          console.log(`[Captions VAD] rms=${rms.toFixed(4)}, speaking=${isSpeaking}, active=${vadActiveRef.current}`);
+        }
 
         if (isSpeaking && !vadActiveRef.current) {
           // Start recording
           vadActiveRef.current = true;
+          setVadActive(true);
           recordingChunksRef.current = [];
 
           if (silenceTimeoutRef.current) {
@@ -228,8 +236,9 @@ export const useRealtimeCaptions = ({
             mediaRecorderRef.current.onstop = () => {
               if (recordingChunksRef.current.length > 0) {
                 const blob = new Blob(recordingChunksRef.current, { type: 'audio/webm' });
-                // Only process if we have meaningful audio (at least 0.5s worth)
-                if (blob.size >= 5000) {
+                // Lower threshold - process even shorter clips
+                if (blob.size >= 2000) {
+                  console.log('[Captions] Processing audio:', blob.size, 'bytes');
                   processAudioChunk(blob);
                 } else {
                   console.log('[Captions] Recording too short:', blob.size, 'bytes');
@@ -246,10 +255,11 @@ export const useRealtimeCaptions = ({
           }
 
         } else if (!isSpeaking && vadActiveRef.current) {
-          // Silence detected - wait a bit before stopping (ultra-fast response)
+          // Silence detected - wait a bit before stopping
           if (!silenceTimeoutRef.current) {
             silenceTimeoutRef.current = setTimeout(() => {
               vadActiveRef.current = false;
+              setVadActive(false);
               silenceTimeoutRef.current = null;
 
               if (mediaRecorderRef.current && isRecordingRef.current) {
@@ -262,7 +272,7 @@ export const useRealtimeCaptions = ({
                 mediaRecorderRef.current.stop();
                 isRecordingRef.current = false;
               }
-            }, 400); // 0.4s silence - even faster response
+            }, 600); // Slightly longer pause to capture complete phrases
           }
         } else if (isSpeaking && silenceTimeoutRef.current) {
           // Voice resumed - cancel silence timeout
@@ -337,6 +347,7 @@ export const useRealtimeCaptions = ({
     captions,
     isProcessing,
     clearCaptions,
+    vadActive, // Expose VAD state for UI indicator
   };
 };
 
