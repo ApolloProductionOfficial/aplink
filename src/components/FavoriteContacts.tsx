@@ -203,8 +203,8 @@ const FavoriteContacts = () => {
     const roomName = `Звонок-${Date.now().toString(36)}`;
     const userName = user?.email?.split('@')[0] || 'User';
     
-    // Copy invite link
-    const link = `${window.location.origin}/room/${roomName}`;
+    // Copy invite link - use production domain
+    const link = `https://aplink.live/room/${roomName}`;
     navigator.clipboard.writeText(link);
     
     toast({

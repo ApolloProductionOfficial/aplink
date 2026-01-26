@@ -157,7 +157,8 @@ const FavoritesSheet = ({ open, onOpenChange }: FavoritesSheetProps) => {
     const roomName = `Звонок-${Date.now().toString(36)}`;
     const userName = user?.email?.split('@')[0] || 'User';
     
-    const link = `${window.location.origin}/room/${roomName}`;
+    // Use production domain
+    const link = `https://aplink.live/room/${roomName}`;
     navigator.clipboard.writeText(link);
     
     toast({

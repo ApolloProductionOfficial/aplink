@@ -6,7 +6,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const REPORTS_BOT_TOKEN = Deno.env.get("REPORTS_BOT_TOKEN");
 const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
 const ADMIN_CHAT_ID = "2061785720";
-const WELCOME_GIF_URL = "https://aplink.lovable.app/animations/aplink-welcome.gif";
+const WELCOME_GIF_URL = "https://aplink.live/animations/aplink-welcome.gif";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
