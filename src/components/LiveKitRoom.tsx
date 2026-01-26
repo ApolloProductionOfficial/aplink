@@ -51,6 +51,8 @@ import { useVoiceNotifications } from "@/hooks/useVoiceNotifications";
 import { useVoiceCommands } from "@/hooks/useVoiceCommands";
 import { CollaborativeWhiteboard } from "@/components/CollaborativeWhiteboard";
 import { DrawingOverlay } from "@/components/DrawingOverlay";
+import { AudioProblemDetector } from "@/components/AudioProblemDetector";
+import { FocusVideoLayout } from "@/components/FocusVideoLayout";
 import { toast } from "sonner";
 
 interface LiveKitRoomProps {
@@ -989,83 +991,41 @@ function LiveKitContent({
         </div>
       )}
 
-      {/* Self-view (Picture-in-Picture style) - only when there are other participants and chat is closed */}
-      {hasRemoteParticipants && isCameraEnabled && localVideoTrack && !showChat && (
-        <div className="absolute bottom-28 right-4 z-40 w-48 h-36 rounded-xl overflow-hidden border-2 border-primary/50 shadow-[0_0_20px_hsl(var(--primary)/0.3)] bg-black">
-          <VideoTrack 
-            trackRef={{ 
-              participant: localParticipant as LocalParticipant, 
-              source: Track.Source.Camera,
-              publication: localParticipant?.getTrackPublication(Track.Source.Camera)!
-            }} 
-            className="w-full h-full object-cover mirror"
-          />
-          <div className="absolute bottom-1 left-2 text-xs text-white/90 px-1.5 py-0.5 rounded">
-            Вы
-          </div>
-        </div>
-      )}
+      {/* Self-view PiP is now handled inside FocusVideoLayout */}
 
-      {/* Screen share self-view removed - unnecessary small preview window */}
-
-      {/* Main video grid - with screen share priority layout */}
+      {/* Main video - Focus layout with PiP */}
       <div className="flex-1 relative overflow-hidden">
-        {(() => {
-          // Find screen share tracks
-          const screenShareTracks = tracks.filter(t => t.source === Track.Source.ScreenShare);
-          const cameraTracks = tracks.filter(t => t.source === Track.Source.Camera);
-          
-          // If there's a screen share - use focus layout
-          if (screenShareTracks.length > 0) {
-            return (
-              <div className="flex h-full w-full gap-3 p-3">
-                {/* Main screen share area */}
-                <div className="flex-1 relative rounded-2xl overflow-hidden bg-black/40 border border-white/10">
-                  <GridLayout tracks={screenShareTracks} className="h-full">
-                    <ParticipantTile className="rounded-xl overflow-hidden" />
-                  </GridLayout>
+        <FocusVideoLayout
+          localParticipant={localParticipant as LocalParticipant}
+          isCameraEnabled={isCameraEnabled}
+          showChat={showChat}
+          isMaximizing={isMaximizing}
+        />
+        
+        {/* Raised hand indicators - BIG fullscreen overlay */}
+        {raisedHands.size > 0 && (
+          <div className="fixed inset-0 pointer-events-none z-[99998] flex justify-center pt-20">
+            <div className="flex flex-col gap-3">
+              {Array.from(raisedHands.entries()).map(([identity, hand]) => (
+                <div
+                  key={identity}
+                  className="flex items-center gap-3 px-6 py-3.5 rounded-full bg-yellow-500/90 shadow-[0_0_40px_rgba(234,179,8,0.6),0_0_80px_rgba(234,179,8,0.3)] animate-bounce"
+                >
+                  <Hand className="w-7 h-7 text-white animate-pulse" />
+                  <span className="text-white text-lg font-bold">{hand.participantName}</span>
+                  <span className="text-yellow-100 text-sm">поднял руку</span>
                 </div>
-                
-                {/* Side panel with camera feeds - vertical strip */}
-                {cameraTracks.length > 0 && (
-                  <div className="w-44 flex flex-col gap-2 overflow-y-auto">
-                    <GridLayout tracks={cameraTracks} className="flex flex-col gap-2">
-                      <ParticipantTile className="rounded-xl overflow-hidden aspect-video" />
-                    </GridLayout>
-                  </div>
-                )}
-              </div>
-            );
-          }
-          
-          // Default grid layout with raised hand indicators
-          return (
-            <div className="relative h-full">
-              <GridLayout tracks={tracks} className="p-3 gap-3">
-                <ParticipantTile className="rounded-xl overflow-hidden" />
-              </GridLayout>
-              
-              {/* Raised hand indicators - BIG fullscreen overlay */}
-              {raisedHands.size > 0 && (
-                <div className="fixed inset-0 pointer-events-none z-[99998] flex justify-center pt-20">
-                  <div className="flex flex-col gap-3">
-                    {Array.from(raisedHands.entries()).map(([identity, hand]) => (
-                      <div
-                        key={identity}
-                        className="flex items-center gap-3 px-6 py-3.5 rounded-full bg-yellow-500/90 shadow-[0_0_40px_rgba(234,179,8,0.6),0_0_80px_rgba(234,179,8,0.3)] animate-bounce"
-                      >
-                        <Hand className="w-7 h-7 text-white animate-pulse" />
-                        <span className="text-white text-lg font-bold">{hand.participantName}</span>
-                        <span className="text-yellow-100 text-sm">поднял руку</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              ))}
             </div>
-          );
-        })()}
+          </div>
+        )}
       </div>
+
+      {/* Audio Problem Detector */}
+      <AudioProblemDetector
+        room={room}
+        localParticipant={localParticipant as LocalParticipant}
+      />
 
       {/* Screenshot flash overlay */}
       {showScreenshotFlash && <div className="screenshot-flash" />}
