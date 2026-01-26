@@ -317,9 +317,9 @@ export function GlobalActiveCall() {
     return null;
   }
 
-  // Check if we're on the meeting room route
-  const isOnMeetingRoomRoute = location.pathname.startsWith('/room/');
-  const shouldShowFullscreen = isOnMeetingRoomRoute && !isMinimized;
+  // Show fullscreen when call is active and not minimized
+  // The call overlay should be visible regardless of the current route
+  const shouldShowFullscreen = !isMinimized;
 
   return (
     <>
