@@ -6,8 +6,7 @@ const WEB_APP_URL = "https://aplink.live";
 
 // Branded APLink welcome animation (GIF wolf animation)
 // NOTE: Telegram fetches this URL server-side; it must return raw bytes (not HTML).
-// Using the published domain is more reliable than custom domains/CDN that may return HTML.
-const WELCOME_GIF_URL = "https://aplink.lovable.app/animations/aplink-welcome.gif";
+const WELCOME_GIF_URL = "https://aplink.live/animations/aplink-welcome.gif";
 
 // Cache-bust helper: appends __cb=timestamp to force WebKit to fetch fresh assets
 const cbUrl = (path: string): string => {

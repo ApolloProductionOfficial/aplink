@@ -581,7 +581,7 @@ const Dashboard = () => {
         .maybeSingle();
       
       if (existingLink) {
-        const link = `${window.location.origin}/shared/${existingLink.share_token}`;
+        const link = `https://aplink.live/shared/${existingLink.share_token}`;
         setShareLink(link);
         setShareLinkActive(existingLink.is_active);
         return;
@@ -603,7 +603,7 @@ const Dashboard = () => {
       
       if (error) throw error;
       
-      const link = `${window.location.origin}/shared/${newLink.share_token}`;
+      const link = `https://aplink.live/shared/${newLink.share_token}`;
       setShareLink(link);
       setShareLinkActive(true);
       
