@@ -34,6 +34,7 @@ export const useRealtimeCaptions = ({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const isRecordingRef = useRef(false);
   const vadActiveRef = useRef(false);
+  const recordingMimeTypeRef = useRef<string>('audio/webm');
   const [vadActive, setVadActive] = useState(false);
 
   // Process audio and get transcription
@@ -217,14 +218,20 @@ export const useRealtimeCaptions = ({
           }
 
           try {
-            // Use audio/webm without specific codecs for better compatibility
-            const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-              ? 'audio/webm;codecs=opus'
-              : 'audio/webm';
+            // Determine best supported mimeType and save it
+            let mimeType = 'audio/webm';
+            if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+              mimeType = 'audio/webm;codecs=opus';
+            } else if (MediaRecorder.isTypeSupported('audio/webm;codecs=vp8,opus')) {
+              mimeType = 'audio/webm;codecs=vp8,opus';
+            }
+            
+            recordingMimeTypeRef.current = mimeType;
+            console.log('[Captions] Using MIME type:', mimeType);
               
             mediaRecorderRef.current = new MediaRecorder(stream, {
               mimeType,
-              audioBitsPerSecond: 128000, // Ensure good quality
+              audioBitsPerSecond: 128000,
             });
 
             mediaRecorderRef.current.ondataavailable = (e) => {
@@ -235,14 +242,15 @@ export const useRealtimeCaptions = ({
 
             mediaRecorderRef.current.onstop = () => {
               if (recordingChunksRef.current.length > 0) {
-                const blob = new Blob(recordingChunksRef.current, { type: 'audio/webm' });
-                // CRITICAL: Clear chunks IMMEDIATELY after creating blob to prevent loops
+                // CRITICAL: Use the SAME mimeType as MediaRecorder to preserve WebM container
+                const blob = new Blob(recordingChunksRef.current, { 
+                  type: recordingMimeTypeRef.current 
+                });
                 const chunksCount = recordingChunksRef.current.length;
-                recordingChunksRef.current = [];
+                recordingChunksRef.current = []; // Clear immediately
                 
-                // Lower threshold - process even shorter clips
                 if (blob.size >= 2000) {
-                  console.log('[Captions] Processing NEW audio:', chunksCount, 'chunks →', blob.size, 'bytes');
+                  console.log('[Captions] Created valid blob:', chunksCount, 'chunks →', blob.size, 'bytes, type:', blob.type);
                   processAudioChunk(blob);
                 } else {
                   console.log('[Captions] Recording too short, discarded:', blob.size, 'bytes');
