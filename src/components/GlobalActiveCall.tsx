@@ -469,15 +469,19 @@ export function GlobalActiveCall() {
         )}
 
       {/* === GLOBAL PANELS - Rendered via portals for z-index independence === */}
+      {/* IMPORTANT: Removed strict liveKitRoom check - panels handle null internally */}
       
       {/* Real-time Captions Overlay */}
-      {showCaptions && liveKitRoom &&
+      {showCaptions &&
         createPortal(
-          <div className="captions-overlay-portal">
+          <div 
+            key={`captions-portal-${isMinimized}-${liveKitRoom?.name || 'pending'}`}
+            className="captions-overlay-portal"
+          >
             <CaptionsOverlay
               room={liveKitRoom}
               participantName={participantName}
-              isEnabled={showCaptions}
+              isEnabled={showCaptions && !!liveKitRoom}
               onToggle={() => setShowCaptions(false)}
             />
           </div>,
@@ -487,9 +491,12 @@ export function GlobalActiveCall() {
       {/* Realtime Translator Panel */}
       {showTranslator &&
         createPortal(
-          <div className="translator-panel-portal">
+          <div 
+            key={`translator-portal-${isMinimized}-${liveKitRoom?.name || 'pending'}`}
+            className="translator-panel-portal"
+          >
             <RealtimeTranslator
-              isActive={showTranslator}
+              isActive={showTranslator && !!liveKitRoom}
               onToggle={() => setShowTranslator(false)}
               roomId={roomSlug}
               jitsiApi={null}
@@ -506,10 +513,13 @@ export function GlobalActiveCall() {
       {/* IP Panel for admins */}
       {isAdmin && showIPPanel &&
         createPortal(
-          <div className="ip-panel-portal">
+          <div 
+            key={`ip-panel-portal-${isMinimized}-${liveKitRoom?.name || 'pending'}`}
+            className="ip-panel-portal"
+          >
             <ParticipantsIPPanel
               roomId={roomSlug}
-              isOpen={showIPPanel}
+              isOpen={showIPPanel && !!liveKitRoom}
               onClose={() => setShowIPPanel(false)}
             />
           </div>,

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Room, RoomEvent } from "livekit-client";
 import { supabase } from "@/integrations/supabase/client";
+import { getCachedTranscription, setCachedTranscription } from "@/utils/transcriptionCache";
 
 export interface Caption {
   id: string;
@@ -37,7 +38,7 @@ export const useRealtimeCaptions = ({
   const recordingMimeTypeRef = useRef<string>('audio/webm');
   const [vadActive, setVadActive] = useState(false);
 
-  // Process audio and get transcription
+  // Process audio and get transcription with fallback and caching
   const processAudioChunk = useCallback(async (audioBlob: Blob) => {
     // Minimum 1.5KB for valid WebM - ultra-fast response
     if (!enabled || audioBlob.size < 1500) {
@@ -48,17 +49,82 @@ export const useRealtimeCaptions = ({
     try {
       setIsProcessing(true);
 
-      // Step 1: Transcribe with ElevenLabs
+      // Check cache first
+      const cached = await getCachedTranscription(audioBlob);
+      if (cached) {
+        console.log('[Captions] Using cached transcription');
+        
+        const newCaption: Caption = {
+          id: `${Date.now()}-cached`,
+          speakerName: participantName,
+          originalText: cached.originalText,
+          translatedText: cached.translatedText,
+          targetLang,
+          timestamp: Date.now(),
+        };
+
+        setCaptions(prev => [...prev.slice(-9), newCaption]);
+        
+        // Broadcast cached caption
+        if (room) {
+          const captionData = { type: 'realtime_caption', caption: newCaption };
+          const encoder = new TextEncoder();
+          const data = encoder.encode(JSON.stringify(captionData));
+          try {
+            await room.localParticipant.publishData(data, { reliable: true });
+          } catch (err) {
+            console.error('[Captions] Failed to broadcast cached caption:', err);
+          }
+        }
+        
+        return;
+      }
+
+      // Step 1: Transcribe with ElevenLabs (primary)
       const formData = new FormData();
       formData.append('audio', audioBlob, 'chunk.webm');
 
-      const { data: transcribeData, error: transcribeError } = await supabase.functions.invoke(
-        'elevenlabs-transcribe',
-        { body: formData }
-      );
+      let transcribeData: any = null;
+      let transcribeError: any = null;
 
+      try {
+        const result = await supabase.functions.invoke('elevenlabs-transcribe', { body: formData });
+        transcribeData = result.data;
+        transcribeError = result.error;
+      } catch (err) {
+        console.log('[Captions] ElevenLabs invoke error:', err);
+        transcribeError = err;
+      }
+
+      // Fallback to Whisper if ElevenLabs fails
       if (transcribeError || !transcribeData?.text) {
-        console.log('[Captions] No transcription result');
+        console.log('[Captions] ElevenLabs failed, trying Whisper fallback...');
+        
+        try {
+          const whisperFormData = new FormData();
+          whisperFormData.append('audio', audioBlob, 'chunk.webm');
+          
+          const { data: whisperData, error: whisperError } = await supabase.functions.invoke(
+            'whisper-transcribe',
+            { body: whisperFormData }
+          );
+
+          if (!whisperError && whisperData?.text) {
+            transcribeData = whisperData;
+            transcribeError = null;
+            console.log('[Captions] Whisper transcription successful');
+          } else {
+            console.error('[Captions] Whisper also failed:', whisperError);
+            return;
+          }
+        } catch (whisperErr) {
+          console.error('[Captions] Whisper invoke error:', whisperErr);
+          return;
+        }
+      }
+
+      if (!transcribeData?.text) {
+        console.log('[Captions] No transcription from any provider');
         return;
       }
 
@@ -86,6 +152,9 @@ export const useRealtimeCaptions = ({
 
       const corrected = correctedData?.corrected || originalText;
       const translated = correctedData?.translated || originalText;
+
+      // Save to cache for future use
+      await setCachedTranscription(audioBlob, corrected, translated);
 
       const newCaption: Caption = {
         id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
