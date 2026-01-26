@@ -3,6 +3,15 @@
 @tailwind utilities;
 
 /* ============================================
+   RADIX UI POPOVER Z-INDEX FIX
+   Ensure popovers appear above call overlay (z-60)
+   ============================================ */
+[data-radix-popper-content-wrapper],
+[data-radix-portal] {
+  z-index: 70 !important;
+}
+
+/* ============================================
    SONNER TOAST SLIDE ANIMATIONS
    ============================================ */
 [data-sonner-toaster][data-y-position="top"] [data-sonner-toast] {
