@@ -1,13 +1,17 @@
 import { useEffect, useCallback, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { createPortal } from 'react-dom';
-import { Room } from 'livekit-client';
+import { Room, RoomEvent } from 'livekit-client';
 import { toast } from 'sonner';
 import { useActiveCall } from '@/contexts/ActiveCallContext';
 import { LiveKitRoom } from '@/components/LiveKitRoom';
 import { MinimizedCallWidget } from '@/components/MinimizedCallWidget';
+import { CaptionsOverlay } from '@/components/CaptionsOverlay';
+import { RealtimeTranslator } from '@/components/RealtimeTranslator';
+import ParticipantsIPPanel from '@/components/ParticipantsIPPanel';
 import { useAuth } from '@/hooks/useAuth';
 import { useConnectionSounds } from '@/hooks/useConnectionSounds';
+import { useLiveKitTranslationBroadcast } from '@/hooks/useLiveKitTranslationBroadcast';
 import { cn } from '@/lib/utils';
 import '@/styles/call-animations.css';
 
@@ -42,7 +46,24 @@ export function GlobalActiveCall() {
     minimize,
     maximize,
     setLiveKitRoom,
+    // Panel visibility from context
+    showTranslator,
+    showCaptions,
+    showIPPanel,
+    isAdmin,
+    setShowTranslator,
+    setShowCaptions,
+    setShowIPPanel,
   } = useActiveCall();
+
+  // Translation broadcast for LiveKit
+  const { 
+    isBroadcasting, 
+    startBroadcast, 
+    stopBroadcast, 
+    playTranslatedAudio,
+    sendTranslationToParticipants 
+  } = useLiveKitTranslationBroadcast(liveKitRoom);
 
   // =========================================
   // ALL HOOKS MUST BE DECLARED HERE - BEFORE ANY CONDITIONAL RETURNS!
@@ -109,6 +130,48 @@ export function GlobalActiveCall() {
     // regardless of route. Navigation was causing LiveKit disconnect.
     wasMinimizedRef.current = isMinimized;
   }, [isActive, isMinimized]);
+
+  // Handle incoming translation data from other participants
+  useEffect(() => {
+    if (!liveKitRoom) return;
+    
+    const handleDataReceived = (payload: Uint8Array, participant: any) => {
+      try {
+        const decoder = new TextDecoder();
+        const message = JSON.parse(decoder.decode(payload));
+        
+        if (message.type === 'translation_audio' && message.audioBase64) {
+          console.log('[GlobalActiveCall] Received translation from:', message.senderName);
+          
+          // Play the translated audio
+          const audioUrl = `data:audio/mpeg;base64,${message.audioBase64}`;
+          playTranslatedAudio(audioUrl);
+          
+          toast.success(`🌐 ${message.senderName}`, {
+            description: message.text?.substring(0, 100) || 'Перевод получен',
+            duration: 3000,
+          });
+        }
+      } catch {
+        // Not a translation message
+      }
+    };
+    
+    liveKitRoom.on(RoomEvent.DataReceived, handleDataReceived);
+    
+    return () => {
+      liveKitRoom.off(RoomEvent.DataReceived, handleDataReceived);
+    };
+  }, [liveKitRoom, playTranslatedAudio]);
+  
+  // Start/stop broadcast when translator is toggled
+  useEffect(() => {
+    if (showTranslator && liveKitRoom && !isBroadcasting) {
+      startBroadcast();
+    } else if (!showTranslator && isBroadcasting) {
+      stopBroadcast();
+    }
+  }, [showTranslator, liveKitRoom, isBroadcasting, startBroadcast, stopBroadcast]);
 
   // Reset on unmount
   useEffect(() => {
@@ -402,6 +465,54 @@ export function GlobalActiveCall() {
               onEndCall={handleEndCall}
             />
           </>,
+          document.body
+        )}
+
+      {/* === GLOBAL PANELS - Rendered via portals for z-index independence === */}
+      
+      {/* Real-time Captions Overlay */}
+      {showCaptions && liveKitRoom &&
+        createPortal(
+          <div className="captions-overlay-portal">
+            <CaptionsOverlay
+              room={liveKitRoom}
+              participantName={participantName}
+              isEnabled={showCaptions}
+              onToggle={() => setShowCaptions(false)}
+            />
+          </div>,
+          document.body
+        )}
+
+      {/* Realtime Translator Panel */}
+      {showTranslator &&
+        createPortal(
+          <div className="translator-panel-portal">
+            <RealtimeTranslator
+              isActive={showTranslator}
+              onToggle={() => setShowTranslator(false)}
+              roomId={roomSlug}
+              jitsiApi={null}
+              liveKitRoom={liveKitRoom}
+              onTranslatedAudio={(audioUrl) => {
+                console.log('[GlobalActiveCall] Translation audio ready for broadcast');
+              }}
+              onSendTranslation={sendTranslationToParticipants}
+            />
+          </div>,
+          document.body
+        )}
+
+      {/* IP Panel for admins */}
+      {isAdmin && showIPPanel &&
+        createPortal(
+          <div className="ip-panel-portal">
+            <ParticipantsIPPanel
+              roomId={roomSlug}
+              isOpen={showIPPanel}
+              onClose={() => setShowIPPanel(false)}
+            />
+          </div>,
           document.body
         )}
     </>

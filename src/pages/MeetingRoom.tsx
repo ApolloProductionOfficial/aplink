@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
-import { Room, RoomEvent } from "livekit-client";
 import {
   Copy,
   Check,
@@ -21,7 +20,6 @@ import {
   Subtitles,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import ParticipantsIPPanel from "@/components/ParticipantsIPPanel";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,10 +28,7 @@ import { usePresence } from "@/hooks/usePresence";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 import { useConnectionSounds } from "@/hooks/useConnectionSounds";
-import { RealtimeTranslator } from "@/components/RealtimeTranslator";
-import { CaptionsOverlay } from "@/components/CaptionsOverlay";
 import { useTranslation } from "@/hooks/useTranslation";
-import { useLiveKitTranslationBroadcast } from "@/hooks/useLiveKitTranslationBroadcast";
 import { MeetingEndSaveDialog, type MeetingSaveStatus } from "@/components/MeetingEndSaveDialog";
 import { invokeBackendFunctionKeepalive } from "@/utils/invokeBackendFunctionKeepalive";
 import LeaveCallDialog from "@/components/LeaveCallDialog";
@@ -56,14 +51,8 @@ const MeetingRoom = () => {
   const userName = searchParams.get("name");
   const [copied, setCopied] = useState(false);
   const [showRegistrationHint, setShowRegistrationHint] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [showIPPanel, setShowIPPanel] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'reconnecting'>('connecting');
   const connectionStatusRef = useRef(connectionStatus);
-  
-  useEffect(() => {
-    connectionStatusRef.current = connectionStatus;
-  }, [connectionStatus]);
 
   const transcriptRef = useRef<string[]>([]);
   const participantsRef = useRef<Set<string>>(new Set());
@@ -97,16 +86,18 @@ const MeetingRoom = () => {
     isRecordingRef.current = isRecording;
   }, [isRecording]);
   
+  useEffect(() => {
+    connectionStatusRef.current = connectionStatus;
+  }, [connectionStatus]);
+  
   const { playConnectedSound, playDisconnectedSound, playReconnectingSound } = useConnectionSounds();
   const [isTranscribing, setIsTranscribing] = useState(false);
-  const [showTranslator, setShowTranslator] = useState(false);
-  const [showCaptions, setShowCaptions] = useState(false);
   const [connectionQuality, setConnectionQuality] = useState<number>(100);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const { t } = useTranslation();
   
-  // Get room from context
+  // Get room and panel states from context
   const { 
     isActive,
     roomSlug: activeRoomSlug,
@@ -116,57 +107,18 @@ const MeetingRoom = () => {
     setHeaderButtons, 
     setConnectionIndicator,
     setEventHandlers,
+    // Panel visibility from context
+    showTranslator,
+    showCaptions,
+    showIPPanel,
+    isAdmin,
+    setShowTranslator,
+    setShowCaptions,
+    setShowIPPanel,
+    setIsAdmin,
   } = useActiveCall();
   
-  const { 
-    isBroadcasting, 
-    startBroadcast, 
-    stopBroadcast, 
-    playTranslatedAudio,
-    sendTranslationToParticipants 
-  } = useLiveKitTranslationBroadcast(liveKitRoom);
-  
-  // Handle incoming translation data from other participants
-  useEffect(() => {
-    if (!liveKitRoom) return;
-    
-    const handleDataReceived = (payload: Uint8Array, participant: any) => {
-      try {
-        const decoder = new TextDecoder();
-        const message = JSON.parse(decoder.decode(payload));
-        
-        if (message.type === 'translation_audio' && message.audioBase64) {
-          console.log('[MeetingRoom] Received translation from:', message.senderName);
-          
-          // Play the translated audio
-          const audioUrl = `data:audio/mpeg;base64,${message.audioBase64}`;
-          playTranslatedAudio(audioUrl);
-          
-          toast.success(`🌐 ${message.senderName}`, {
-            description: message.text?.substring(0, 100) || 'Перевод получен',
-            duration: 3000,
-          });
-        }
-      } catch {
-        // Not a translation message
-      }
-    };
-    
-    liveKitRoom.on(RoomEvent.DataReceived, handleDataReceived);
-    
-    return () => {
-      liveKitRoom.off(RoomEvent.DataReceived, handleDataReceived);
-    };
-  }, [liveKitRoom, playTranslatedAudio]);
-  
-  // Start/stop broadcast when translator is toggled
-  useEffect(() => {
-    if (showTranslator && liveKitRoom && !isBroadcasting) {
-      startBroadcast();
-    } else if (!showTranslator && isBroadcasting) {
-      stopBroadcast();
-    }
-  }, [showTranslator, liveKitRoom, isBroadcasting, startBroadcast, stopBroadcast]);
+  // Translation handling moved to GlobalActiveCall.tsx
 
   // Prevent crashes on invalid / missing URL param
   if (!roomId) return null;
@@ -313,7 +265,7 @@ const MeetingRoom = () => {
     }
   };
 
-  // Check if user is admin
+  // Check if user is admin and update context
   useEffect(() => {
     const checkAdmin = async () => {
       if (user) {
@@ -325,12 +277,16 @@ const MeetingRoom = () => {
         
         if (roleData?.role === 'admin') {
           setIsAdmin(true);
+        } else {
+          setIsAdmin(false);
         }
+      } else {
+        setIsAdmin(false);
       }
     };
     
     checkAdmin();
-  }, [user]);
+  }, [user, setIsAdmin]);
 
   // Save recovered recording to personal cabinet with custom SVG icons
   const saveRecoveredToProfile = async (audioBlob: Blob) => {
@@ -970,35 +926,7 @@ const MeetingRoom = () => {
         onLeave={handleLeaveCall}
       />
       
-      {/* Realtime Translator - integrated with LiveKit */}
-      <RealtimeTranslator
-        isActive={showTranslator}
-        onToggle={() => setShowTranslator(false)}
-        roomId={roomSlug}
-        jitsiApi={null}
-        liveKitRoom={liveKitRoom}
-        onTranslatedAudio={(audioUrl) => {
-          console.log('[MeetingRoom] Translation audio ready for broadcast');
-        }}
-        onSendTranslation={sendTranslationToParticipants}
-      />
-      
-      {/* IP Panel for admins */}
-      {isAdmin && (
-        <ParticipantsIPPanel
-          roomId={roomSlug}
-          isOpen={showIPPanel}
-          onClose={() => setShowIPPanel(false)}
-        />
-      )}
-      
-      {/* Real-time Captions Overlay */}
-      <CaptionsOverlay
-        room={liveKitRoom}
-        participantName={safeUserName}
-        isEnabled={showCaptions}
-        onToggle={() => setShowCaptions(false)}
-      />
+      {/* NOTE: Translator, IP Panel, and Captions are now rendered in GlobalActiveCall.tsx */}
 
       {/* Registration hint for non-authenticated users */}
       {showRegistrationHint && !user && (
