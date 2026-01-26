@@ -69,19 +69,21 @@ serve(async (req) => {
       throw new Error("ELEVENLABS_API_KEY is not configured");
     }
 
-    // Read file content and create a proper File object
-    const arrayBuffer = await audioFile.arrayBuffer();
-    const audioBlob = new Blob([arrayBuffer], { type: "audio/webm" });
-    const properFile = new File([audioBlob], "audio.webm", { type: "audio/webm" });
+    // Preserve original file type - don't recreate the blob
+    // This maintains proper WebM headers and container structure
+    const originalType = audioFile.type || "audio/webm";
+    
+    console.log("Original file type:", originalType, "name:", audioFile.name, "size:", audioFile.size);
 
     const apiFormData = new FormData();
-    apiFormData.append("file", properFile);
-    apiFormData.append("model_id", "scribe_v2"); // Updated to v2 for better quality
+    // Use the original file directly without recreating it
+    // Recreating causes WebM header corruption
+    apiFormData.append("file", audioFile);
+    apiFormData.append("model_id", "scribe_v2");
     apiFormData.append("tag_audio_events", "false");
-    apiFormData.append("diarize", "false"); // Disable diarization for faster processing
-    // Don't set language_code - let it auto-detect for better accuracy
+    apiFormData.append("diarize", "false");
 
-    console.log("Sending to ElevenLabs API, file size:", properFile.size);
+    console.log("Sending to ElevenLabs API, file size:", audioFile.size, "type:", originalType);
 
     const response = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
       method: "POST",
