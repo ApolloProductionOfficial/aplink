@@ -327,7 +327,7 @@ export function GlobalActiveCall() {
       {isAnimatingIn &&
         createPortal(
           <div 
-            className="fixed inset-0 z-[9998] pointer-events-none animate-maximize-overlay"
+            className="fixed inset-0 z-[59] pointer-events-none animate-maximize-overlay"
             style={{
               background: 'radial-gradient(ellipse at center, hsl(var(--background) / 0.95) 0%, hsl(var(--background)) 100%)',
             }}
@@ -342,7 +342,7 @@ export function GlobalActiveCall() {
           // Smooth animation for opacity, transform and scale
           "transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
           shouldShowFullscreen 
-            ? "inset-0 z-[9999] opacity-100 pointer-events-auto scale-100" 
+            ? "inset-0 z-[60] opacity-100 pointer-events-auto scale-100" 
             : "opacity-0 pointer-events-none scale-95",
           // Entry animation when maximizing
           isAnimatingIn && "animate-expand-from-widget"
@@ -382,7 +382,7 @@ export function GlobalActiveCall() {
       {isAnimatingOut &&
         createPortal(
           <div 
-            className="fixed inset-0 z-[9998] pointer-events-none animate-shrink-overlay"
+            className="fixed inset-0 z-[59] pointer-events-none animate-shrink-overlay"
             style={{
               background: 'radial-gradient(ellipse at bottom right, hsl(var(--primary) / 0.3) 0%, transparent 60%)',
             }}
