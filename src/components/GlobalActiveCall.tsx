@@ -249,11 +249,32 @@ export function GlobalActiveCall() {
   // Handle disconnected
   // IMPORTANT: This is called on REAL disconnects (network, server, user ended call)
   // NOT on minimize/maximize - LiveKitRoom stays connected during those
-  const handleDisconnected = useCallback(() => {
-    console.log('[GlobalActiveCall] Disconnected - real disconnect, resetting state');
+  const handleDisconnected = useCallback((reason?: any) => {
+    console.log('[GlobalActiveCall] Disconnected, reason:', reason);
+    
+    // Check if user initiated disconnect (clicked "Exit" button)
+    // reason === 3 or reasonName === 'Cancelled' means client-initiated disconnect
+    const isUserInitiated = 
+      reason === 3 || 
+      reason?.reason === 3 || 
+      reason?.reasonName === 'Cancelled' ||
+      (typeof reason?.message === 'string' && reason.message.includes('Client initiated'));
+    
+    if (isUserInitiated) {
+      console.log('[GlobalActiveCall] User initiated disconnect - ending call without reconnect');
+    }
+    
     hasConnectedRef.current = false;
     setIsConnected(false);
     playDisconnectedSound();
+    
+    // Reset reconnect state
+    setReconnectAttempt(0);
+    setIsReconnecting(false);
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
     
     // Call MeetingRoom's onDisconnected handler first
     eventHandlers.onDisconnected?.();

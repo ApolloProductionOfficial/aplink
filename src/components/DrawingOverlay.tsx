@@ -85,13 +85,19 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
   // Auto-hide panel timer
   const hideTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastActivityRef = useRef<number>(Date.now());
-  // Initialize canvas
+  // Initialize canvas - CRITICAL: Re-acquire context on every isOpen change
+  // This fixes the issue where Clear/Undo buttons stop working after minimize/maximize
   useEffect(() => {
     if (!canvasRef.current || !isOpen) return;
     
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    
+    // ALWAYS re-acquire context when overlay opens (important after minimize/maximize)
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) {
+      console.error('[DrawingOverlay] Failed to get canvas context');
+      return;
+    }
     
     // Set canvas size to full screen
     canvas.width = window.innerWidth;
@@ -101,8 +107,14 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     
+    // Clear any stale laser state
+    laserPointsRef.current = [];
+    baseImageDataRef.current = null;
+    
     // Save initial empty state
     historyRef.current = [ctx.getImageData(0, 0, canvas.width, canvas.height)];
+    
+    console.log('[DrawingOverlay] Canvas initialized:', canvas.width, 'x', canvas.height);
   }, [isOpen]);
 
   // Handle window resize
@@ -213,25 +225,75 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
     }
   }, []);
 
+  // Broadcast clear to other participants (MUST be before clearCanvas)
+  const broadcastClear = useCallback(() => {
+    if (!room) return;
+    const data = JSON.stringify({ 
+      type: 'DRAWING_OVERLAY_CLEAR', 
+      sender: participantName 
+    });
+    room.localParticipant.publishData(
+      new TextEncoder().encode(data), 
+      { reliable: true }
+    );
+  }, [room, participantName]);
+
   // Clear canvas
   const clearCanvas = useCallback(() => {
     const canvas = canvasRef.current;
-    const ctx = contextRef.current;
-    if (!canvas || !ctx) return;
+    let ctx = contextRef.current;
+    
+    // Re-acquire context if lost (can happen after minimize/maximize)
+    if (!ctx && canvas) {
+      ctx = canvas.getContext('2d', { willReadFrequently: true });
+      if (ctx) {
+        contextRef.current = ctx;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+      }
+    }
+    
+    if (!canvas || !ctx) {
+      console.error('[DrawingOverlay] clearCanvas: canvas or context not available');
+      return;
+    }
+    
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    historyRef.current = [ctx.getImageData(0, 0, canvas.width, canvas.height)];
+    
+    // Clear laser state too
+    laserPointsRef.current = [];
+    baseImageDataRef.current = null;
+    
     broadcastClear();
-  }, []);
+    console.log('[DrawingOverlay] Canvas cleared');
+  }, [broadcastClear]);
 
   // Undo last action
   const undo = useCallback(() => {
-    const ctx = contextRef.current;
     const canvas = canvasRef.current;
-    if (!ctx || !canvas || historyRef.current.length <= 1) return;
+    let ctx = contextRef.current;
+    
+    // Re-acquire context if lost
+    if (!ctx && canvas) {
+      ctx = canvas.getContext('2d', { willReadFrequently: true });
+      if (ctx) {
+        contextRef.current = ctx;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+      }
+    }
+    
+    if (!ctx || !canvas || historyRef.current.length <= 1) {
+      console.log('[DrawingOverlay] undo: nothing to undo or context lost');
+      return;
+    }
     
     historyRef.current.pop();
     const lastState = historyRef.current[historyRef.current.length - 1];
     if (lastState) {
       ctx.putImageData(lastState, 0, 0);
+      console.log('[DrawingOverlay] Undo applied, history length:', historyRef.current.length);
     }
   }, []);
 
@@ -552,19 +614,6 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
     const data = JSON.stringify({ 
       type: 'DRAWING_OVERLAY_SHAPE', 
       shape,
-      sender: participantName 
-    });
-    room.localParticipant.publishData(
-      new TextEncoder().encode(data), 
-      { reliable: true }
-    );
-  }, [room, participantName]);
-
-  // Broadcast clear to other participants
-  const broadcastClear = useCallback(() => {
-    if (!room) return;
-    const data = JSON.stringify({ 
-      type: 'DRAWING_OVERLAY_CLEAR', 
       sender: participantName 
     });
     room.localParticipant.publishData(
