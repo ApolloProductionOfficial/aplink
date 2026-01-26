@@ -330,7 +330,7 @@ export function GlobalActiveCall() {
           // Smooth animation for opacity, transform and scale
           "transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
           shouldShowFullscreen 
-            ? "inset-0 z-50 opacity-100 pointer-events-auto scale-100" 
+            ? "inset-0 z-[9999] opacity-100 pointer-events-auto scale-100" 
             : "opacity-0 pointer-events-none scale-95",
           // Entry animation when maximizing
           isAnimatingIn && "animate-expand-from-widget"
