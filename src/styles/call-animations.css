@@ -22,6 +22,23 @@
   }
 }
 
+/* Overlay animation when maximizing - smooth darkening */
+@keyframes maximize-overlay {
+  0% {
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.animate-maximize-overlay {
+  animation: maximize-overlay 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
 /* Widget entry animation */
 @keyframes widget-enter {
   0% {
