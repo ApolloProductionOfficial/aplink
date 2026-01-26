@@ -45,7 +45,17 @@ const CustomCursor = () => {
   return (
     <div className="hidden md:block">
       <style>{`
-        *, *::before, *::after { cursor: none !important; }
+        *:not([data-preserve-cursor] *):not([data-preserve-cursor]),
+        *:not([data-preserve-cursor] *)::before,
+        *:not([data-preserve-cursor] *)::after { cursor: none !important; }
+        
+        /* Preserve cursor in drawing components */
+        [data-preserve-cursor],
+        [data-preserve-cursor] *,
+        [data-preserve-cursor] *::before,
+        [data-preserve-cursor] *::after { cursor: auto !important; }
+        
+        canvas[data-preserve-cursor] { cursor: crosshair !important; }
       `}</style>
 
       {/* Static spotlight (small) */}

@@ -399,27 +399,20 @@ export function GlobalActiveCall() {
         )}
 
       {/* Single always-mounted LiveKitRoom instance */}
+      {/* CRITICAL: Never reduce to 1x1 as it breaks MediaRecorder and Canvas */}
+      {/* Instead, use visibility:hidden to completely hide while preserving DOM state */}
       <div
         className={cn(
-          "fixed bg-background",
+          "fixed inset-0 bg-background",
           // Smooth animation for opacity, transform and scale
           "transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
           shouldShowFullscreen 
-            ? "inset-0 z-[60] opacity-100 pointer-events-auto scale-100" 
-            : "opacity-0 pointer-events-none scale-95",
+            ? "z-[60] opacity-100 pointer-events-auto scale-100 visible" 
+            : "z-[-1] opacity-0 pointer-events-none scale-95 invisible",
           // Entry animation when maximizing
           isAnimatingIn && "animate-expand-from-widget"
         )}
-        style={
-          shouldShowFullscreen
-            ? { transformOrigin: 'bottom right' }
-            : { 
-                width: 1, 
-                height: 1, 
-                overflow: 'hidden',
-                transformOrigin: 'bottom right'
-              }
-        }
+        style={{ transformOrigin: 'bottom right' }}
         aria-hidden={!shouldShowFullscreen}
       >
         <LiveKitRoom

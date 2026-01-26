@@ -77,12 +77,18 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
   }, []);
 
   // Save recording to localStorage periodically (crash protection)
+  // Skip backup if quota exceeded to prevent spam errors
+  const quotaExceededRef = useRef(false);
+  
   const saveBackup = useCallback(async () => {
+    // Skip if we already know quota is exceeded
+    if (quotaExceededRef.current) return;
+    
     const blob = createBlobFromChunks();
     if (blob && blob.size > 0) {
       try {
-        // Only save if blob is under 10MB (localStorage limit)
-        if (blob.size < 10 * 1024 * 1024) {
+        // Only save if blob is under 5MB (more conservative limit)
+        if (blob.size < 5 * 1024 * 1024) {
           const base64 = await blobToBase64(blob);
           localStorage.setItem(RECORDING_STORAGE_KEY, JSON.stringify({
             data: base64,
@@ -91,9 +97,19 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
           console.log('Backup saved, size:', blob.size);
         } else {
           console.log('Recording too large for backup:', blob.size);
+          // Clear old backup to free space
+          localStorage.removeItem(RECORDING_STORAGE_KEY);
         }
-      } catch (e) {
-        console.log('Failed to save backup:', e);
+      } catch (e: any) {
+        // Handle QuotaExceededError - stop trying to save
+        if (e?.name === 'QuotaExceededError' || e?.message?.includes('quota')) {
+          console.log('LocalStorage quota exceeded, disabling backup');
+          quotaExceededRef.current = true;
+          // Try to clear old data to free space
+          localStorage.removeItem(RECORDING_STORAGE_KEY);
+        } else {
+          console.log('Failed to save backup:', e);
+        }
       }
     }
   }, [createBlobFromChunks]);

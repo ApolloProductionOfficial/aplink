@@ -801,11 +801,13 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
   if (!isOpen) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[99995] pointer-events-auto">
+    <div className="fixed inset-0 z-[99995] pointer-events-auto" data-preserve-cursor>
       {/* Transparent canvas overlay */}
       <canvas 
         ref={canvasRef}
+        data-preserve-cursor
         className="absolute inset-0 cursor-crosshair"
+        style={{ cursor: 'crosshair' }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMoveWithPanel}
         onMouseUp={handleMouseUp}
