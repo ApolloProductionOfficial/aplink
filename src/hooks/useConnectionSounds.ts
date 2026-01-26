@@ -53,9 +53,35 @@ export const useConnectionSounds = () => {
     if (now - lastSoundRef.current < minInterval) return;
     lastSoundRef.current = now;
     
-    // Play two descending tones for "disconnected"
-    createSound(392, 0.15, 'error'); // G4
-    setTimeout(() => createSound(293.66, 0.25, 'error'), 150); // D4
+    // Soft descending tone for "disconnected" - gentle sine wave
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      // Use sine wave for softer sound
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(440, audioContext.currentTime); // A4
+      oscillator.frequency.exponentialRampToValueAtTime(220, audioContext.currentTime + 0.4); // Glide down to A3
+      
+      // Very gentle volume envelope
+      gainNode.gain.setValueAtTime(0.05, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.4);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.4);
+      
+      setTimeout(() => {
+        if (audioContext.state !== 'closed') {
+          audioContext.close().catch(() => {});
+        }
+      }, 500);
+    } catch (e) {
+      console.warn('Could not play disconnect sound:', e);
+    }
   }, []);
 
   const playReconnectingSound = useCallback(() => {
