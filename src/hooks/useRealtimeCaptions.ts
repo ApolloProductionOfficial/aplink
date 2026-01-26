@@ -40,8 +40,8 @@ export const useRealtimeCaptions = ({
 
   // Process audio and get transcription with fallback and caching
   const processAudioChunk = useCallback(async (audioBlob: Blob) => {
-    // Minimum 1.5KB for valid WebM - ultra-fast response
-    if (!enabled || audioBlob.size < 1500) {
+    // Lower threshold to 1KB for capturing shorter phrases
+    if (!enabled || audioBlob.size < 1000) {
       console.log('[Captions] Audio too small:', audioBlob.size, 'bytes, skipping');
       return;
     }
@@ -96,9 +96,16 @@ export const useRealtimeCaptions = ({
         transcribeError = err;
       }
 
-      // Fallback to Whisper if ElevenLabs fails
-      if (transcribeError || !transcribeData?.text) {
-        console.log('[Captions] ElevenLabs failed, trying Whisper fallback...');
+      // Fallback to Whisper if ElevenLabs fails (including "audio_too_short" errors)
+      const isAudioTooShort = transcribeError?.message?.includes('audio_too_short') || 
+        (typeof transcribeData?.error === 'string' && transcribeData.error.includes('audio_too_short'));
+      
+      if (transcribeError || !transcribeData?.text || isAudioTooShort) {
+        if (isAudioTooShort) {
+          console.log('[Captions] Audio too short for ElevenLabs, trying Whisper...');
+        } else {
+          console.log('[Captions] ElevenLabs failed, trying Whisper fallback...');
+        }
         
         try {
           const whisperFormData = new FormData();
@@ -355,7 +362,7 @@ export const useRealtimeCaptions = ({
                 mediaRecorderRef.current.stop();
                 isRecordingRef.current = false;
               }
-            }, 600); // Slightly longer pause to capture complete phrases
+            }, 1200); // Longer pause (1.2s) to capture complete phrases
           }
         } else if (isSpeaking && silenceTimeoutRef.current) {
           // Voice resumed - cancel silence timeout
