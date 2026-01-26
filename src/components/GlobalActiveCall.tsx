@@ -323,6 +323,18 @@ export function GlobalActiveCall() {
 
   return (
     <>
+      {/* Darkening overlay when maximizing */}
+      {isAnimatingIn &&
+        createPortal(
+          <div 
+            className="fixed inset-0 z-[9998] pointer-events-none animate-maximize-overlay"
+            style={{
+              background: 'radial-gradient(ellipse at center, hsl(var(--background) / 0.95) 0%, hsl(var(--background)) 100%)',
+            }}
+          />,
+          document.body
+        )}
+
       {/* Single always-mounted LiveKitRoom instance */}
       <div
         className={cn(
