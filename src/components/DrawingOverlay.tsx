@@ -257,6 +257,14 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
   // Clear laser points AND cached image when color changes to prevent old color trails
   const baseImageDataRef = useRef<ImageData | null>(null);
   
+  // Clear laser state when switching away from laser tool
+  useEffect(() => {
+    if (tool !== 'laser') {
+      laserPointsRef.current = [];
+      baseImageDataRef.current = null;
+    }
+  }, [tool]);
+  
   useEffect(() => {
     laserPointsRef.current = [];
     // CRITICAL: Clear cached baseImageData so old laser trails don't persist

@@ -140,10 +140,17 @@ export const useFullMeetingRecorder = (room: Room | null): UseFullMeetingRecorde
       }
 
       // Create MediaRecorder with mixed stream
+      // Try MP4 first for better compatibility, fallback to WebM
       chunksRef.current = [];
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-        ? 'audio/webm;codecs=opus'
-        : 'audio/webm';
+      
+      const mimeTypes = [
+        'audio/mp4',
+        'audio/webm;codecs=opus',
+        'audio/webm',
+      ];
+      
+      const mimeType = mimeTypes.find(type => MediaRecorder.isTypeSupported(type)) || 'audio/webm';
+      console.log('[FullRecorder] Using MIME type:', mimeType);
 
       mediaRecorderRef.current = new MediaRecorder(destinationRef.current.stream, {
         mimeType,
@@ -182,8 +189,10 @@ export const useFullMeetingRecorder = (room: Room | null): UseFullMeetingRecorde
       }
 
       mediaRecorderRef.current!.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
-        console.log('[FullRecorder] Recording stopped, size:', blob.size);
+        // Use the actual mimeType that was used for recording
+        const actualMimeType = mediaRecorderRef.current?.mimeType || 'audio/webm';
+        const blob = new Blob(chunksRef.current, { type: actualMimeType });
+        console.log('[FullRecorder] Recording stopped, size:', blob.size, 'type:', actualMimeType);
 
         // Cleanup
         if (localStreamRef.current) {
@@ -216,7 +225,8 @@ export const useFullMeetingRecorder = (room: Room | null): UseFullMeetingRecorde
 
   const getAudioBlob = useCallback((): Blob | null => {
     if (chunksRef.current.length === 0) return null;
-    return new Blob(chunksRef.current, { type: 'audio/webm' });
+    const actualMimeType = mediaRecorderRef.current?.mimeType || 'audio/webm';
+    return new Blob(chunksRef.current, { type: actualMimeType });
   }, []);
 
   return {
