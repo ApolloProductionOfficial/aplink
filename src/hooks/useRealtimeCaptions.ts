@@ -376,15 +376,24 @@ export const useRealtimeCaptions = ({
   }, [enabled, processAudioChunk]);
 
   const stopVAD = useCallback(() => {
+    console.log('[Captions] Stopping VAD...');
+    
     if (silenceTimeoutRef.current) {
       clearTimeout(silenceTimeoutRef.current);
       silenceTimeoutRef.current = null;
     }
 
-    if (mediaRecorderRef.current && isRecordingRef.current) {
-      mediaRecorderRef.current.stop();
-      isRecordingRef.current = false;
+    if (mediaRecorderRef.current) {
+      try {
+        if (mediaRecorderRef.current.state !== 'inactive') {
+          mediaRecorderRef.current.stop();
+        }
+      } catch (e) {
+        console.log('[Captions] Error stopping MediaRecorder:', e);
+      }
+      mediaRecorderRef.current = null;
     }
+    isRecordingRef.current = false;
 
     if (mediaStreamRef.current) {
       mediaStreamRef.current.getTracks().forEach(track => track.stop());
@@ -392,17 +401,50 @@ export const useRealtimeCaptions = ({
     }
 
     if (audioContextRef.current) {
-      audioContextRef.current.close();
+      try {
+        if (audioContextRef.current.state !== 'closed') {
+          audioContextRef.current.close();
+        }
+      } catch (e) {
+        console.log('[Captions] Error closing AudioContext:', e);
+      }
       audioContextRef.current = null;
     }
-
+    
+    analyserRef.current = null;
     vadActiveRef.current = false;
+    setVadActive(false);
+    recordingChunksRef.current = [];
+    
+    console.log('[Captions] VAD stopped and cleaned up');
   }, []);
 
-  // Start/stop VAD based on enabled state
+  // Start/stop VAD based on enabled state AND room availability
+  // Using a unique key to force restart when room changes
+  const roomIdentityRef = useRef<string | null>(null);
+  
   useEffect(() => {
-    if (enabled) {
-      startVAD();
+    const currentRoomIdentity = room?.localParticipant?.identity || null;
+    const roomChanged = roomIdentityRef.current !== currentRoomIdentity;
+    
+    if (roomChanged) {
+      console.log('[Captions] Room changed, resetting VAD. Was:', roomIdentityRef.current, 'Now:', currentRoomIdentity);
+      roomIdentityRef.current = currentRoomIdentity;
+      
+      // Force stop old VAD first
+      stopVAD();
+    }
+    
+    if (enabled && room) {
+      // Small delay to ensure clean state after stopVAD
+      const timer = setTimeout(() => {
+        startVAD();
+      }, roomChanged ? 300 : 0);
+      
+      return () => {
+        clearTimeout(timer);
+        stopVAD();
+      };
     } else {
       stopVAD();
     }
@@ -410,7 +452,7 @@ export const useRealtimeCaptions = ({
     return () => {
       stopVAD();
     };
-  }, [enabled, startVAD, stopVAD]);
+  }, [enabled, room, startVAD, stopVAD]);
 
   // Clear old captions
   useEffect(() => {

@@ -510,8 +510,8 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
 
   return createPortal(
     <>
-      <div className="fixed inset-0 z-[99990] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 md:p-8">
-        <div className="bg-black/70 rounded-3xl border border-white/10 p-4 w-full max-w-5xl flex flex-col gap-4">
+      <div className="fixed inset-0 z-[99990] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 md:p-8" data-preserve-cursor>
+        <div className="bg-black/70 rounded-3xl border border-white/10 p-4 w-full max-w-5xl flex flex-col gap-4" data-preserve-cursor>
           {/* Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -644,10 +644,12 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
             ref={canvasRef} 
             width={1280} 
             height={720}
+            data-preserve-cursor
             className="w-full rounded-2xl border border-white/10 cursor-crosshair"
             style={{ 
               aspectRatio: '16/9', 
               background: 'rgba(26, 26, 26, 0.8)',
+              cursor: 'crosshair',
             }}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
