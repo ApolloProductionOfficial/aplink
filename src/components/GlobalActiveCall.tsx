@@ -105,22 +105,10 @@ export function GlobalActiveCall() {
       didNavigateRef.current = false;
       return;
     }
-    const onRoomRoute = location.pathname.startsWith('/room/');
-    
-    if (!isMinimized && !onRoomRoute && wasMinimizedRef.current && !didNavigateRef.current) {
-      if (location.pathname === '/') {
-        didNavigateRef.current = true;
-        console.log('[GlobalActiveCall] Navigating to room after maximize');
-        navigate(`/room/${roomSlug}?name=${encodeURIComponent(participantName)}`, { replace: true });
-      }
-    }
-    
-    if (onRoomRoute) {
-      didNavigateRef.current = false;
-    }
-    
+    // No need to navigate on maximize - GlobalActiveCall already renders fullscreen LiveKitRoom
+    // regardless of route. Navigation was causing LiveKit disconnect.
     wasMinimizedRef.current = isMinimized;
-  }, [isActive, isMinimized, navigate, participantName, roomSlug, location.pathname]);
+  }, [isActive, isMinimized]);
 
   // Reset on unmount
   useEffect(() => {
