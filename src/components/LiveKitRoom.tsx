@@ -37,6 +37,8 @@ import {
   LayoutGrid,
   MonitorPlay,
   VolumeOff,
+  User,
+  Keyboard,
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
@@ -53,6 +55,8 @@ import { CollaborativeWhiteboard } from "@/components/CollaborativeWhiteboard";
 import { DrawingOverlay } from "@/components/DrawingOverlay";
 import { AudioProblemDetector } from "@/components/AudioProblemDetector";
 import { FocusVideoLayout } from "@/components/FocusVideoLayout";
+import { GalleryVideoLayout } from "@/components/GalleryVideoLayout";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { toast } from "sonner";
 
 interface LiveKitRoomProps {
@@ -429,6 +433,15 @@ function LiveKitContent({
   const [isProcessingBackground, setIsProcessingBackground] = useState(false);
   const [showScreenshotFlash, setShowScreenshotFlash] = useState(false);
   
+  // Layout mode: 'focus' (1-on-1) or 'gallery' (grid)
+  const [layoutMode, setLayoutMode] = useState<'focus' | 'gallery'>('focus');
+  
+  // Track speaking participant for indicators
+  const [speakingParticipant, setSpeakingParticipant] = useState<string | undefined>(undefined);
+  
+  // Track if gallery mode was suggested
+  const galleryModeSuggestedRef = useRef(false);
+  
   // Call recording state (records participants directly without picker dialog)
   const [isCallRecording, setIsCallRecording] = useState(false);
   const callRecorderRef = useRef<MediaRecorder | null>(null);
@@ -447,6 +460,63 @@ function LiveKitContent({
   // Check if there are remote participants (for self-view logic)
   const remoteParticipants = participants.filter(p => p.identity !== localParticipant?.identity);
   const hasRemoteParticipants = remoteParticipants.length > 0;
+  const remoteParticipantCount = remoteParticipants.length;
+  
+  // Toggle layout mode
+  const toggleLayoutMode = useCallback(() => {
+    setLayoutMode(prev => {
+      const newMode = prev === 'focus' ? 'gallery' : 'focus';
+      toast.success(newMode === 'gallery' ? 'Галерейный режим' : 'Фокус-режим', {
+        description: newMode === 'gallery' ? 'Все участники в сетке' : 'Один участник на весь экран',
+        duration: 2000,
+      });
+      return newMode;
+    });
+  }, []);
+  
+  // Suggest gallery mode when 3+ participants join
+  useEffect(() => {
+    if (remoteParticipantCount >= 2 && layoutMode === 'focus' && !galleryModeSuggestedRef.current) {
+      galleryModeSuggestedRef.current = true;
+      toast.info('Много участников', {
+        description: 'Переключитесь на галерейный режим для удобства',
+        action: {
+          label: 'Галерея',
+          onClick: () => setLayoutMode('gallery'),
+        },
+        duration: 6000,
+      });
+    }
+  }, [remoteParticipantCount, layoutMode]);
+  
+  // Auto-switch to focus mode when screen share starts
+  useEffect(() => {
+    if (isScreenShareEnabled && layoutMode === 'gallery') {
+      setLayoutMode('focus');
+      toast.info('Фокус-режим', {
+        description: 'Автоматическое переключение для демонстрации экрана',
+        duration: 2000,
+      });
+    }
+  }, [isScreenShareEnabled, layoutMode]);
+  
+  // Track active speaker
+  useEffect(() => {
+    if (!room) return;
+    
+    const handleActiveSpeakerChange = (speakers: any[]) => {
+      if (speakers.length > 0) {
+        setSpeakingParticipant(speakers[0].identity);
+      } else {
+        setSpeakingParticipant(undefined);
+      }
+    };
+    
+    room.on(RoomEvent.ActiveSpeakersChanged, handleActiveSpeakerChange);
+    return () => {
+      room.off(RoomEvent.ActiveSpeakersChanged, handleActiveSpeakerChange);
+    };
+  }, [room]);
 
   // Notify parent when room is ready and try to enable audio proactively
   useEffect(() => {
@@ -558,6 +628,16 @@ function LiveKitContent({
     onRaiseHand: toggleHand,
     onScreenShare: toggleScreenShare,
     onLeave: () => {},
+    enabled: true,
+  });
+  
+  // Keyboard shortcuts
+  const { showShortcutsHelp } = useKeyboardShortcuts({
+    onToggleMic: toggleMicrophone,
+    onToggleCamera: toggleCamera,
+    onToggleLayoutMode: toggleLayoutMode,
+    onRaiseHand: toggleHand,
+    onToggleChat: () => setShowChat(prev => !prev),
     enabled: true,
   });
 
@@ -991,16 +1071,23 @@ function LiveKitContent({
         </div>
       )}
 
-      {/* Self-view PiP is now handled inside FocusVideoLayout */}
-
-      {/* Main video - Focus layout with PiP */}
+      {/* Main video - Focus or Gallery layout */}
       <div className="flex-1 relative overflow-hidden">
-        <FocusVideoLayout
-          localParticipant={localParticipant as LocalParticipant}
-          isCameraEnabled={isCameraEnabled}
-          showChat={showChat}
-          isMaximizing={isMaximizing}
-        />
+        {layoutMode === 'focus' ? (
+          <FocusVideoLayout
+            localParticipant={localParticipant as LocalParticipant}
+            isCameraEnabled={isCameraEnabled}
+            showChat={showChat}
+            isMaximizing={isMaximizing}
+            speakingParticipant={speakingParticipant}
+          />
+        ) : (
+          <GalleryVideoLayout
+            localParticipant={localParticipant as LocalParticipant}
+            isCameraEnabled={isCameraEnabled}
+            speakingParticipant={speakingParticipant}
+          />
+        )}
         
         {/* Raised hand indicators - BIG fullscreen overlay */}
         {raisedHands.size > 0 && (
@@ -1241,6 +1328,26 @@ function LiveKitContent({
           {/* Divider */}
           <div className="w-px h-8 bg-white/10 mx-0.5" />
 
+          {/* Layout mode toggle */}
+          <Button
+            onClick={toggleLayoutMode}
+            variant="outline"
+            size="icon"
+            className={cn(
+              "w-12 h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg border-white/20",
+              layoutMode === 'gallery' 
+                ? "bg-primary/30 border-primary/50" 
+                : "bg-white/15 hover:bg-white/25"
+            )}
+            title={layoutMode === 'focus' ? 'Галерейный режим (G)' : 'Фокус-режим (G)'}
+          >
+            {layoutMode === 'focus' ? (
+              <LayoutGrid className="w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]" />
+            ) : (
+              <User className="w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]" />
+            )}
+          </Button>
+
           {/* Virtual Background selector (face filters removed) */}
           <VirtualBackgroundSelector
             onSelectBlur={applyBlurBackground}
@@ -1352,6 +1459,17 @@ function LiveKitContent({
             onToggle={() => setShowChat(!showChat)}
             buttonOnly
           />
+
+          {/* Keyboard shortcuts help button */}
+          <Button
+            onClick={showShortcutsHelp}
+            variant="outline"
+            size="icon"
+            className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 border-white/20 transition-all hover:scale-105"
+            title="Горячие клавиши (?)"
+          >
+            <Keyboard className="w-4 h-4 stroke-[1.8] drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]" />
+          </Button>
 
           {/* Divider */}
           <div className="w-px h-8 bg-white/10 mx-0.5" />
