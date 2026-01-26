@@ -11,6 +11,7 @@ import {
   useLocalParticipant,
   VideoTrack,
   DisconnectButton,
+  useStartAudio,
 } from "@livekit/components-react";
 import "@livekit/components-styles";
 import { Track, RoomEvent, Room, RemoteParticipant, VideoPresets, LocalParticipant } from "livekit-client";
@@ -35,6 +36,7 @@ import {
   Check,
   LayoutGrid,
   MonitorPlay,
+  VolumeOff,
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
@@ -364,6 +366,46 @@ function LiveKitContent({
   const [newParticipants, setNewParticipants] = useState<Set<string>>(new Set());
   const roomReadyCalledRef = useRef(false);
   
+  // Audio playback permission - handles browser autoplay blocking
+  const { mergedProps: startAudioProps, canPlayAudio } = useStartAudio({ room, props: {} });
+  const [showAudioPrompt, setShowAudioPrompt] = useState(false);
+  
+  // Show audio prompt when audio is blocked
+  useEffect(() => {
+    if (canPlayAudio === false) {
+      setShowAudioPrompt(true);
+      console.log('[LiveKitRoom] Audio blocked by browser, showing prompt');
+    } else if (canPlayAudio === true) {
+      setShowAudioPrompt(false);
+    }
+  }, [canPlayAudio]);
+  
+  // Try to start audio automatically when room connects
+  useEffect(() => {
+    if (room && canPlayAudio === false) {
+      // Attempt to start audio on any user interaction
+      const handleInteraction = async () => {
+        try {
+          await room.startAudio();
+          console.log('[LiveKitRoom] Audio started after user interaction');
+          setShowAudioPrompt(false);
+        } catch (err) {
+          console.log('[LiveKitRoom] Could not auto-start audio:', err);
+        }
+      };
+      
+      document.addEventListener('click', handleInteraction, { once: true });
+      document.addEventListener('touchstart', handleInteraction, { once: true });
+      document.addEventListener('keydown', handleInteraction, { once: true });
+      
+      return () => {
+        document.removeEventListener('click', handleInteraction);
+        document.removeEventListener('touchstart', handleInteraction);
+        document.removeEventListener('keydown', handleInteraction);
+      };
+    }
+  }, [room, canPlayAudio]);
+  
   // Raise hand hook
   const { isHandRaised, raisedHands, toggleHand } = useRaiseHand(room, participantName);
   
@@ -404,11 +446,21 @@ function LiveKitContent({
   const remoteParticipants = participants.filter(p => p.identity !== localParticipant?.identity);
   const hasRemoteParticipants = remoteParticipants.length > 0;
 
-  // Notify parent when room is ready
+  // Notify parent when room is ready and try to enable audio proactively
   useEffect(() => {
     if (room && onRoomReady && !roomReadyCalledRef.current) {
       roomReadyCalledRef.current = true;
       onRoomReady(room);
+      
+      // Proactively try to start audio when room connects
+      // This will work if user has already interacted with the page
+      room.startAudio().then(() => {
+        console.log('[LiveKitRoom] Audio started on room ready');
+        setShowAudioPrompt(false);
+      }).catch(() => {
+        // Expected to fail if no user interaction yet - that's ok
+        console.log('[LiveKitRoom] Audio start on ready failed (expected if no interaction)');
+      });
     }
   }, [room, onRoomReady]);
 
@@ -826,10 +878,25 @@ function LiveKitContent({
 
     room.on(RoomEvent.ParticipantConnected, handleParticipantConnected);
     room.on(RoomEvent.ParticipantDisconnected, handleParticipantDisconnected);
+    
+    // Log audio track status for debugging
+    const handleTrackSubscribed = (track: any, publication: any, participant: any) => {
+      if (track.kind === 'audio') {
+        console.log('[LiveKitRoom] Audio track subscribed:', {
+          participant: participant.identity,
+          trackSid: track.sid,
+          isMuted: track.isMuted,
+          isEnabled: publication.isEnabled,
+        });
+      }
+    };
+    
+    room.on(RoomEvent.TrackSubscribed, handleTrackSubscribed);
 
     return () => {
       room.off(RoomEvent.ParticipantConnected, handleParticipantConnected);
       room.off(RoomEvent.ParticipantDisconnected, handleParticipantDisconnected);
+      room.off(RoomEvent.TrackSubscribed, handleTrackSubscribed);
     };
   }, [room, onParticipantJoined, onParticipantLeft, announceParticipantJoined, announceParticipantLeft]);
 
@@ -1002,6 +1069,29 @@ function LiveKitContent({
 
       {/* Screenshot flash overlay */}
       {showScreenshotFlash && <div className="screenshot-flash" />}
+
+      {/* Audio blocked warning - prominent button to enable audio */}
+      {showAudioPrompt && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <button
+            {...startAudioProps}
+            onClick={async () => {
+              try {
+                await room.startAudio();
+                setShowAudioPrompt(false);
+                console.log('[LiveKitRoom] Audio enabled by user click');
+              } catch (err) {
+                console.error('[LiveKitRoom] Failed to start audio:', err);
+              }
+            }}
+            className="flex flex-col items-center gap-4 px-8 py-6 rounded-2xl bg-primary/90 hover:bg-primary text-primary-foreground shadow-[0_0_60px_hsl(var(--primary)/0.5)] transition-all hover:scale-105 cursor-pointer"
+          >
+            <VolumeOff className="w-12 h-12" />
+            <span className="text-xl font-bold">Нажмите для включения звука</span>
+            <span className="text-sm opacity-80">Браузер заблокировал автовоспроизведение</span>
+          </button>
+        </div>
+      )}
 
       {/* Bottom Control Bar - ПРОЗРАЧНАЯ панель, контраст только на иконках */}
       <div 
