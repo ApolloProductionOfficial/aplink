@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 
 interface KeyboardShortcutsConfig {
@@ -8,6 +8,8 @@ interface KeyboardShortcutsConfig {
   onRaiseHand?: () => void;
   onToggleChat?: () => void;
   onLeaveCall?: () => void;
+  onPinParticipant?: () => void;
+  onTogglePiP?: () => void;
   enabled?: boolean;
 }
 
@@ -17,11 +19,13 @@ interface KeyboardShortcutsConfig {
  * Shortcuts:
  * - M: Toggle microphone
  * - V: Toggle camera
- * - G: Toggle Grid/Focus layout
+ * - G: Toggle Grid/Focus/Webinar layout
  * - H: Raise/lower hand
  * - C: Toggle chat
- * - Space (hold): Push-to-talk (not implemented in basic version)
- * - Escape: Leave call (with confirmation)
+ * - P: Pin/unpin focused participant
+ * - I: Toggle Picture-in-Picture
+ * - Escape (double): Leave call with confirmation
+ * - ?: Show shortcuts help
  */
 export function useKeyboardShortcuts({
   onToggleMic,
@@ -30,8 +34,13 @@ export function useKeyboardShortcuts({
   onRaiseHand,
   onToggleChat,
   onLeaveCall,
+  onPinParticipant,
+  onTogglePiP,
   enabled = true,
 }: KeyboardShortcutsConfig) {
+  // Track double-escape for leaving call
+  const escapeTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const escapeCountRef = useRef(0);
   
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     // Don't trigger shortcuts when typing in inputs
@@ -74,15 +83,42 @@ export function useKeyboardShortcuts({
         e.preventDefault();
         onToggleChat?.();
         break;
+
+      case 'p':
+        e.preventDefault();
+        onPinParticipant?.();
+        break;
+
+      case 'i':
+        e.preventDefault();
+        onTogglePiP?.();
+        break;
         
       case 'escape':
         e.preventDefault();
-        // Show confirmation before leaving
         if (onLeaveCall) {
-          toast('Нажмите Escape ещё раз для выхода', {
-            id: 'leave-call-confirm',
-            duration: 2000,
-          });
+          escapeCountRef.current += 1;
+          
+          if (escapeCountRef.current === 1) {
+            // First escape - show warning
+            toast('Нажмите Escape ещё раз для выхода', {
+              id: 'leave-call-confirm',
+              duration: 2000,
+            });
+            
+            // Reset counter after 2 seconds
+            escapeTimerRef.current = setTimeout(() => {
+              escapeCountRef.current = 0;
+            }, 2000);
+          } else if (escapeCountRef.current >= 2) {
+            // Second escape within timeout - leave call
+            if (escapeTimerRef.current) {
+              clearTimeout(escapeTimerRef.current);
+            }
+            escapeCountRef.current = 0;
+            toast.dismiss('leave-call-confirm');
+            onLeaveCall();
+          }
         }
         break;
         
@@ -90,25 +126,30 @@ export function useKeyboardShortcuts({
         // Show shortcuts help
         e.preventDefault();
         toast.info('Горячие клавиши', {
-          description: 'M - микрофон, V - камера, G - режим, H - рука, C - чат',
+          description: 'M - микрофон, V - камера, G - режим, H - рука, C - чат, P - закрепить, I - PiP',
           duration: 4000,
         });
         break;
     }
-  }, [onToggleMic, onToggleCamera, onToggleLayoutMode, onRaiseHand, onToggleChat, onLeaveCall]);
+  }, [onToggleMic, onToggleCamera, onToggleLayoutMode, onRaiseHand, onToggleChat, onLeaveCall, onPinParticipant, onTogglePiP]);
 
   useEffect(() => {
     if (!enabled) return;
 
     document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      if (escapeTimerRef.current) {
+        clearTimeout(escapeTimerRef.current);
+      }
+    };
   }, [enabled, handleKeyDown]);
 
   // Return a helper to show shortcuts tooltip
   return {
     showShortcutsHelp: () => {
       toast.info('Горячие клавиши', {
-        description: 'M - микрофон | V - камера | G - режим | H - рука | C - чат | ? - помощь',
+        description: 'M - микрофон | V - камера | G - режим | H - рука | C - чат | P - закрепить | I - PiP | ? - помощь',
         duration: 5000,
       });
     },

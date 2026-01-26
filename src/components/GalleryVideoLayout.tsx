@@ -1,13 +1,21 @@
 import { useMemo } from 'react';
 import { Track, LocalParticipant, RemoteParticipant } from 'livekit-client';
 import { VideoTrack, useParticipants, useTracks } from '@livekit/components-react';
-import { User, VideoOff, Mic, MicOff } from 'lucide-react';
+import { User, VideoOff, Mic, MicOff, Pin } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu';
 
 interface GalleryVideoLayoutProps {
   localParticipant: LocalParticipant | null;
   isCameraEnabled: boolean;
-  speakingParticipant?: string; // identity of speaking participant
+  speakingParticipant?: string;
+  pinnedParticipant?: string;
+  onPinParticipant?: (identity: string | null) => void;
 }
 
 /**
@@ -16,23 +24,34 @@ interface GalleryVideoLayoutProps {
  * - Adaptive grid: 2 cols for 2-4, 3 cols for 5-9, 4 cols for 10+
  * - Speaking indicator (pulsing border)
  * - Local participant included in grid with "Вы" label
+ * - Pin participant with context menu or hover button
  */
 export function GalleryVideoLayout({ 
   localParticipant, 
   isCameraEnabled,
   speakingParticipant,
+  pinnedParticipant,
+  onPinParticipant,
 }: GalleryVideoLayoutProps) {
   const participants = useParticipants();
   const tracks = useTracks([
     { source: Track.Source.Camera, withPlaceholder: true },
   ]);
 
-  // All participants including local
-  const allParticipants = useMemo(() => {
-    return participants;
-  }, [participants]);
+  // All participants - pinned first, then others
+  const sortedParticipants = useMemo(() => {
+    const sorted = [...participants];
+    if (pinnedParticipant) {
+      sorted.sort((a, b) => {
+        if (a.identity === pinnedParticipant) return -1;
+        if (b.identity === pinnedParticipant) return 1;
+        return 0;
+      });
+    }
+    return sorted;
+  }, [participants, pinnedParticipant]);
 
-  const participantCount = allParticipants.length;
+  const participantCount = sortedParticipants.length;
 
   // Determine grid columns based on participant count
   const gridCols = useMemo(() => {
@@ -68,106 +87,142 @@ export function GalleryVideoLayout({
         gridCols,
         gridRows
       )}>
-        {allParticipants.map((participant) => {
+        {sortedParticipants.map((participant) => {
           const isLocal = participant.isLocal;
           const isSpeaking = speakingParticipant === participant.identity;
+          const isPinned = pinnedParticipant === participant.identity;
           const videoTrack = getVideoTrack(participant.identity);
           const hasVideo = videoTrack?.publication && !videoTrack.publication.isMuted;
           const isMuted = !participant.isMicrophoneEnabled;
           
           return (
-            <div
-              key={participant.identity}
-              className={cn(
-                "relative rounded-2xl overflow-hidden bg-black/40 backdrop-blur-sm border transition-all duration-300",
-                isSpeaking 
-                  ? "ring-2 ring-green-500 ring-offset-2 ring-offset-background border-green-500/50 shadow-[0_0_30px_rgba(34,197,94,0.3)]" 
-                  : "border-white/10",
-                isLocal && "border-primary/30"
-              )}
-            >
-              {/* Video or placeholder */}
-              {hasVideo && videoTrack ? (
-                <VideoTrack
-                  trackRef={{
-                    participant: videoTrack.participant,
-                    source: videoTrack.source,
-                    publication: videoTrack.publication!,
-                  }}
+            <ContextMenu key={participant.identity}>
+              <ContextMenuTrigger asChild>
+                <div
                   className={cn(
-                    "w-full h-full object-cover",
-                    isLocal && "mirror"
+                    "relative rounded-2xl overflow-hidden bg-black/40 backdrop-blur-sm border transition-all duration-300 group",
+                    isSpeaking 
+                      ? "ring-2 ring-green-500 ring-offset-2 ring-offset-background border-green-500/50 shadow-[0_0_30px_rgba(34,197,94,0.3)]" 
+                      : "border-white/10",
+                    isPinned && "border-primary/50 ring-1 ring-primary/30",
+                    isLocal && !isPinned && "border-primary/30"
                   )}
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5">
-                  <div className="flex flex-col items-center gap-2">
-                    <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center">
-                      <User className="w-8 h-8 text-muted-foreground" />
-                    </div>
-                    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                      <VideoOff className="w-4 h-4" />
-                      <span>Камера выкл.</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Speaking indicator overlay */}
-              {isSpeaking && (
-                <div className="absolute inset-0 pointer-events-none">
-                  <div className="absolute inset-0 rounded-2xl ring-2 ring-green-500/60 animate-pulse" />
-                </div>
-              )}
-
-              {/* Bottom info bar */}
-              <div className="absolute bottom-0 inset-x-0 p-2 bg-gradient-to-t from-black/70 to-transparent">
-                <div className="flex items-center justify-between">
-                  {/* Name */}
-                  <div className="flex items-center gap-2">
-                    <span className={cn(
-                      "text-sm font-medium text-white truncate max-w-[120px]",
-                      isLocal && "text-primary"
-                    )}>
-                      {isLocal ? 'Вы' : (participant.name || participant.identity)}
-                    </span>
-                    {isSpeaking && (
-                      <div className="flex gap-0.5">
-                        {[1,2,3].map(i => (
-                          <div 
-                            key={i}
-                            className="w-0.5 bg-green-500 rounded-full animate-pulse"
-                            style={{ 
-                              height: `${8 + i * 4}px`,
-                              animationDelay: `${i * 100}ms`
-                            }}
-                          />
-                        ))}
+                >
+                  {/* Video or placeholder */}
+                  {hasVideo && videoTrack?.publication ? (
+                    <VideoTrack
+                      trackRef={{
+                        participant: videoTrack.participant,
+                        source: videoTrack.source,
+                        publication: videoTrack.publication,
+                      }}
+                      className={cn(
+                        "w-full h-full object-cover",
+                        isLocal && "mirror"
+                      )}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5">
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center">
+                          <User className="w-8 h-8 text-muted-foreground" />
+                        </div>
+                        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                          <VideoOff className="w-4 h-4" />
+                          <span>Камера выкл.</span>
+                        </div>
                       </div>
-                    )}
+                    </div>
+                  )}
+
+                  {/* Pin indicator */}
+                  {isPinned && (
+                    <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-primary/80 flex items-center justify-center z-10">
+                      <Pin className="w-3 h-3 text-primary-foreground" />
+                    </div>
+                  )}
+
+                  {/* Pin button on hover (for non-local participants) */}
+                  {!isLocal && onPinParticipant && !isPinned && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onPinParticipant(participant.identity);
+                      }}
+                      className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-primary/80"
+                      title="Закрепить"
+                    >
+                      <Pin className="w-3 h-3 text-white" />
+                    </button>
+                  )}
+
+                  {/* Speaking indicator overlay */}
+                  {isSpeaking && (
+                    <div className="absolute inset-0 pointer-events-none">
+                      <div className="absolute inset-0 rounded-2xl ring-2 ring-green-500/60 animate-pulse" />
+                    </div>
+                  )}
+
+                  {/* Bottom info bar */}
+                  <div className="absolute bottom-0 inset-x-0 p-2 bg-gradient-to-t from-black/70 to-transparent">
+                    <div className="flex items-center justify-between">
+                      {/* Name */}
+                      <div className="flex items-center gap-2">
+                        <span className={cn(
+                          "text-sm font-medium text-white truncate max-w-[120px]",
+                          isLocal && "text-primary"
+                        )}>
+                          {isLocal ? 'Вы' : (participant.name || participant.identity)}
+                        </span>
+                        {isSpeaking && (
+                          <div className="flex gap-0.5">
+                            {[1,2,3].map(i => (
+                              <div 
+                                key={i}
+                                className="w-0.5 bg-green-500 rounded-full animate-pulse"
+                                style={{ 
+                                  height: `${8 + i * 4}px`,
+                                  animationDelay: `${i * 100}ms`
+                                }}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Mic indicator */}
+                      <div className={cn(
+                        "w-6 h-6 rounded-full flex items-center justify-center",
+                        isMuted ? "bg-destructive/60" : "bg-white/20"
+                      )}>
+                        {isMuted ? (
+                          <MicOff className="w-3.5 h-3.5 text-white" />
+                        ) : (
+                          <Mic className="w-3.5 h-3.5 text-white" />
+                        )}
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Mic indicator */}
-                  <div className={cn(
-                    "w-6 h-6 rounded-full flex items-center justify-center",
-                    isMuted ? "bg-destructive/60" : "bg-white/20"
-                  )}>
-                    {isMuted ? (
-                      <MicOff className="w-3.5 h-3.5 text-white" />
-                    ) : (
-                      <Mic className="w-3.5 h-3.5 text-white" />
-                    )}
-                  </div>
+                  {/* Local indicator badge */}
+                  {isLocal && (
+                    <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-primary/80 text-[10px] font-bold text-primary-foreground">
+                      ВЫ
+                    </div>
+                  )}
                 </div>
-              </div>
-
-              {/* Local indicator badge */}
-              {isLocal && (
-                <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-primary/80 text-[10px] font-bold text-primary-foreground">
-                  ВЫ
-                </div>
+              </ContextMenuTrigger>
+              
+              {/* Context menu for non-local participants */}
+              {!isLocal && onPinParticipant && (
+                <ContextMenuContent className="bg-background/95 backdrop-blur-xl border-white/10">
+                  <ContextMenuItem onClick={() => onPinParticipant(isPinned ? null : participant.identity)}>
+                    <Pin className="w-4 h-4 mr-2" />
+                    {isPinned ? 'Открепить' : 'Закрепить'}
+                  </ContextMenuItem>
+                </ContextMenuContent>
               )}
-            </div>
+            </ContextMenu>
           );
         })}
       </div>

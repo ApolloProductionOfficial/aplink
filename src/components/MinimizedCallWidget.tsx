@@ -100,21 +100,29 @@ export function MinimizedCallWidget({
 
     const requestPiP = async () => {
       try {
-        // Find any remote participant's video
+        // Find any remote participant's video track
         const remoteParticipants = Array.from(liveKitRoom.remoteParticipants.values());
         for (const participant of remoteParticipants) {
           const cameraPub = participant.getTrackPublication(Track.Source.Camera);
-          if (cameraPub?.track) {
-            // Find video element for this track
-            const videos = document.querySelectorAll('video[data-lk-source="camera"]');
-            for (const video of videos) {
+          const track = cameraPub?.track;
+          
+          if (track && !cameraPub.isMuted) {
+            // Find video element by checking srcObject MediaStream
+            const allVideos = document.querySelectorAll('video');
+            for (const video of allVideos) {
               const videoEl = video as HTMLVideoElement;
-              if (!videoEl.hasAttribute('data-lk-local') && document.pictureInPictureEnabled) {
-                try {
-                  await videoEl.requestPictureInPicture();
-                  return; // Success, exit
-                } catch {
-                  // Try next video
+              if (videoEl.srcObject instanceof MediaStream) {
+                const videoTracks = videoEl.srcObject.getVideoTracks();
+                // Check if this video element has the track we're looking for
+                if (videoTracks.some(t => t.id === track.mediaStreamTrack?.id)) {
+                  if (document.pictureInPictureEnabled && !document.pictureInPictureElement) {
+                    try {
+                      await videoEl.requestPictureInPicture();
+                      return; // Success, exit
+                    } catch {
+                      // Try next video
+                    }
+                  }
                 }
               }
             }
