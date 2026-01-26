@@ -39,6 +39,8 @@ import {
   VolumeOff,
   User,
   Keyboard,
+  Presentation,
+  PictureInPicture,
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
@@ -56,7 +58,9 @@ import { DrawingOverlay } from "@/components/DrawingOverlay";
 import { AudioProblemDetector } from "@/components/AudioProblemDetector";
 import { FocusVideoLayout } from "@/components/FocusVideoLayout";
 import { GalleryVideoLayout } from "@/components/GalleryVideoLayout";
+import { WebinarVideoLayout } from "@/components/WebinarVideoLayout";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { useNativePiP } from "@/hooks/useNativePiP";
 import { toast } from "sonner";
 
 interface LiveKitRoomProps {
@@ -433,8 +437,14 @@ function LiveKitContent({
   const [isProcessingBackground, setIsProcessingBackground] = useState(false);
   const [showScreenshotFlash, setShowScreenshotFlash] = useState(false);
   
-  // Layout mode: 'focus' (1-on-1) or 'gallery' (grid)
-  const [layoutMode, setLayoutMode] = useState<'focus' | 'gallery'>('focus');
+  // Layout mode: 'focus' (1-on-1), 'gallery' (grid), or 'webinar' (speaker + strip)
+  const [layoutMode, setLayoutMode] = useState<'focus' | 'gallery' | 'webinar'>('focus');
+  
+  // Pinned participant identity
+  const [pinnedParticipant, setPinnedParticipant] = useState<string | null>(null);
+  
+  // Native browser PiP
+  const { isPiPActive, isPiPSupported, togglePiP } = useNativePiP(room);
   
   // Track speaking participant for indicators
   const [speakingParticipant, setSpeakingParticipant] = useState<string | undefined>(undefined);
@@ -462,24 +472,48 @@ function LiveKitContent({
   const hasRemoteParticipants = remoteParticipants.length > 0;
   const remoteParticipantCount = remoteParticipants.length;
   
-  // Toggle layout mode
+  // Toggle layout mode (cycle through all 3)
   const toggleLayoutMode = useCallback(() => {
     setLayoutMode(prev => {
-      const newMode = prev === 'focus' ? 'gallery' : 'focus';
-      toast.success(newMode === 'gallery' ? 'Галерейный режим' : 'Фокус-режим', {
-        description: newMode === 'gallery' ? 'Все участники в сетке' : 'Один участник на весь экран',
+      const modes: Array<'focus' | 'gallery' | 'webinar'> = ['focus', 'gallery', 'webinar'];
+      const currentIndex = modes.indexOf(prev);
+      const nextMode = modes[(currentIndex + 1) % modes.length];
+      const modeNames = { focus: 'Фокус-режим', gallery: 'Галерейный режим', webinar: 'Вебинар-режим' };
+      const modeDescs = { 
+        focus: 'Один участник на весь экран', 
+        gallery: 'Все участники в сетке',
+        webinar: 'Спикер + лента зрителей'
+      };
+      toast.success(modeNames[nextMode], {
+        description: modeDescs[nextMode],
         duration: 2000,
       });
-      return newMode;
+      return nextMode;
     });
   }, []);
   
-  // Suggest gallery mode when 3+ participants join
+  // Pin participant handler
+  const handlePinParticipant = useCallback((identity: string | null) => {
+    setPinnedParticipant(prev => {
+      const newValue = prev === identity ? null : identity;
+      if (newValue) {
+        toast.success('Участник закреплен', {
+          description: 'Будет показан на главном экране',
+          duration: 2000,
+        });
+      } else {
+        toast.info('Закрепление снято', { duration: 1500 });
+      }
+      return newValue;
+    });
+  }, []);
+  
+  // Suggest gallery/webinar mode when 3+ participants join
   useEffect(() => {
     if (remoteParticipantCount >= 2 && layoutMode === 'focus' && !galleryModeSuggestedRef.current) {
       galleryModeSuggestedRef.current = true;
       toast.info('Много участников', {
-        description: 'Переключитесь на галерейный режим для удобства',
+        description: 'Переключитесь на галерейный или вебинар режим',
         action: {
           label: 'Галерея',
           onClick: () => setLayoutMode('gallery'),
@@ -488,6 +522,17 @@ function LiveKitContent({
       });
     }
   }, [remoteParticipantCount, layoutMode]);
+  
+  // Clear pinned participant if they leave
+  useEffect(() => {
+    if (pinnedParticipant) {
+      const stillExists = participants.some(p => p.identity === pinnedParticipant);
+      if (!stillExists) {
+        setPinnedParticipant(null);
+        toast.info('Закрепленный участник покинул комнату');
+      }
+    }
+  }, [participants, pinnedParticipant]);
   
   // Auto-switch to focus mode when screen share starts
   useEffect(() => {
@@ -638,6 +683,14 @@ function LiveKitContent({
     onToggleLayoutMode: toggleLayoutMode,
     onRaiseHand: toggleHand,
     onToggleChat: () => setShowChat(prev => !prev),
+    onPinParticipant: () => {
+      // Pin/unpin the first remote participant (basic implementation)
+      const firstRemote = remoteParticipants[0];
+      if (firstRemote) {
+        handlePinParticipant(pinnedParticipant === firstRemote.identity ? null : firstRemote.identity);
+      }
+    },
+    onTogglePiP: isPiPSupported ? togglePiP : undefined,
     enabled: true,
   });
 
@@ -1045,6 +1098,22 @@ function LiveKitContent({
               <PictureInPicture2 className="w-4 h-4" />
             </button>
 
+            {/* Native PiP button in header */}
+            {isPiPSupported && (
+              <button
+                onClick={togglePiP}
+                className={cn(
+                  "flex items-center justify-center w-9 h-9 rounded-full border border-white/[0.08] transition-all hover:scale-105 hover:shadow-lg [&_svg]:stroke-[2.5]",
+                  isPiPActive 
+                    ? "bg-green-500/30 border-green-500/40" 
+                    : "bg-white/10 hover:bg-white/20"
+                )}
+                title={isPiPActive ? "Выйти из PiP" : "Picture-in-Picture"}
+              >
+                <PictureInPicture className={cn("w-4 h-4", isPiPActive && "text-green-400")} />
+              </button>
+            )}
+
             {/* Room name */}
             {roomDisplayName && (
               <span className="text-sm font-semibold truncate max-w-[120px] px-2">{roomDisplayName}</span>
@@ -1071,7 +1140,7 @@ function LiveKitContent({
         </div>
       )}
 
-      {/* Main video - Focus or Gallery layout */}
+      {/* Main video - Focus, Gallery, or Webinar layout */}
       <div className="flex-1 relative overflow-hidden">
         {layoutMode === 'focus' ? (
           <FocusVideoLayout
@@ -1080,12 +1149,24 @@ function LiveKitContent({
             showChat={showChat}
             isMaximizing={isMaximizing}
             speakingParticipant={speakingParticipant}
+            pinnedParticipant={pinnedParticipant}
+            onPinParticipant={handlePinParticipant}
           />
-        ) : (
+        ) : layoutMode === 'gallery' ? (
           <GalleryVideoLayout
             localParticipant={localParticipant as LocalParticipant}
             isCameraEnabled={isCameraEnabled}
             speakingParticipant={speakingParticipant}
+            pinnedParticipant={pinnedParticipant}
+            onPinParticipant={handlePinParticipant}
+          />
+        ) : (
+          <WebinarVideoLayout
+            localParticipant={localParticipant as LocalParticipant}
+            isCameraEnabled={isCameraEnabled}
+            speakingParticipant={speakingParticipant}
+            pinnedParticipant={pinnedParticipant}
+            onPinParticipant={handlePinParticipant}
           />
         )}
         
@@ -1328,25 +1409,113 @@ function LiveKitContent({
           {/* Divider */}
           <div className="w-px h-8 bg-white/10 mx-0.5" />
 
-          {/* Layout mode toggle */}
-          <Button
-            onClick={toggleLayoutMode}
-            variant="outline"
-            size="icon"
-            className={cn(
-              "w-12 h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg border-white/20",
-              layoutMode === 'gallery' 
-                ? "bg-primary/30 border-primary/50" 
-                : "bg-white/15 hover:bg-white/25"
-            )}
-            title={layoutMode === 'focus' ? 'Галерейный режим (G)' : 'Фокус-режим (G)'}
-          >
-            {layoutMode === 'focus' ? (
-              <LayoutGrid className="w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]" />
-            ) : (
-              <User className="w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]" />
-            )}
-          </Button>
+          {/* Layout mode toggle with Popover for 3 modes */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                className={cn(
+                  "w-12 h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg border-white/20",
+                  layoutMode !== 'focus' 
+                    ? "bg-primary/30 border-primary/50" 
+                    : "bg-white/15 hover:bg-white/25"
+                )}
+                title="Режим отображения (G)"
+              >
+                {layoutMode === 'focus' ? (
+                  <User className="w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]" />
+                ) : layoutMode === 'gallery' ? (
+                  <LayoutGrid className="w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]" />
+                ) : (
+                  <Presentation className="w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]" />
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent 
+              side="top" 
+              align="center" 
+              sideOffset={12}
+              className="w-auto p-3 bg-black/40 backdrop-blur-2xl border border-white/[0.08] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4),0_0_1px_rgba(255,255,255,0.1)]"
+            >
+              <div className="flex flex-col gap-2">
+                <span className="text-[10px] text-muted-foreground font-medium text-center mb-1">Режим отображения</span>
+                <div className="flex items-center gap-3">
+                  {/* Focus mode */}
+                  <button
+                    onClick={() => {
+                      setLayoutMode('focus');
+                      toast.success('Фокус-режим');
+                    }}
+                    className={cn(
+                      "flex flex-col items-center gap-1.5 p-2 rounded-xl transition-all",
+                      layoutMode === 'focus' 
+                        ? "bg-primary/20 border border-primary/30" 
+                        : "bg-white/5 hover:bg-white/10"
+                    )}
+                  >
+                    <User className={cn("w-5 h-5", layoutMode === 'focus' && "text-primary")} />
+                    <span className="text-[10px] whitespace-nowrap">Фокус</span>
+                  </button>
+                  
+                  {/* Gallery mode */}
+                  <button
+                    onClick={() => {
+                      setLayoutMode('gallery');
+                      toast.success('Галерейный режим');
+                    }}
+                    className={cn(
+                      "flex flex-col items-center gap-1.5 p-2 rounded-xl transition-all",
+                      layoutMode === 'gallery' 
+                        ? "bg-primary/20 border border-primary/30" 
+                        : "bg-white/5 hover:bg-white/10"
+                    )}
+                  >
+                    <LayoutGrid className={cn("w-5 h-5", layoutMode === 'gallery' && "text-primary")} />
+                    <span className="text-[10px] whitespace-nowrap">Галерея</span>
+                  </button>
+                  
+                  {/* Webinar mode */}
+                  <button
+                    onClick={() => {
+                      setLayoutMode('webinar');
+                      toast.success('Вебинар-режим');
+                    }}
+                    className={cn(
+                      "flex flex-col items-center gap-1.5 p-2 rounded-xl transition-all",
+                      layoutMode === 'webinar' 
+                        ? "bg-primary/20 border border-primary/30" 
+                        : "bg-white/5 hover:bg-white/10"
+                    )}
+                  >
+                    <Presentation className={cn("w-5 h-5", layoutMode === 'webinar' && "text-primary")} />
+                    <span className="text-[10px] whitespace-nowrap">Вебинар</span>
+                  </button>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+          
+          {/* Native Picture-in-Picture button */}
+          {isPiPSupported && (
+            <Button
+              onClick={togglePiP}
+              variant="outline"
+              size="icon"
+              className={cn(
+                "w-12 h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg border-white/20",
+                isPiPActive 
+                  ? "bg-green-500/30 border-green-500/50" 
+                  : "bg-white/15 hover:bg-white/25"
+              )}
+              title="Picture-in-Picture (I)"
+            >
+              <PictureInPicture className={cn(
+                "w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]",
+                isPiPActive && "text-green-400"
+              )} />
+            </Button>
+          )}
 
           {/* Virtual Background selector (face filters removed) */}
           <VirtualBackgroundSelector
