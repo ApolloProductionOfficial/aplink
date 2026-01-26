@@ -12,6 +12,17 @@
 }
 
 /* ============================================
+   GLOBAL CALL PANEL PORTALS Z-INDEX
+   Ensure panels appear above call overlay (z-60)
+   ============================================ */
+.captions-overlay-portal,
+.translator-panel-portal,
+.ip-panel-portal {
+  z-index: 80 !important;
+  position: relative;
+}
+
+/* ============================================
    SONNER TOAST SLIDE ANIMATIONS
    ============================================ */
 [data-sonner-toaster][data-y-position="top"] [data-sonner-toast] {

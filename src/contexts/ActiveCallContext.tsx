@@ -21,6 +21,11 @@ interface ActiveCallState {
   headerButtons: ReactNode | null;
   connectionIndicator: ReactNode | null;
   eventHandlers: CallEventHandlers;
+  // Panel visibility states - managed globally for persistence across routes
+  showTranslator: boolean;
+  showCaptions: boolean;
+  showIPPanel: boolean;
+  isAdmin: boolean;
 }
 
 interface ActiveCallContextType extends ActiveCallState {
@@ -38,6 +43,11 @@ interface ActiveCallContextType extends ActiveCallState {
   setHeaderButtons: (node: ReactNode | null) => void;
   setConnectionIndicator: (node: ReactNode | null) => void;
   setEventHandlers: (handlers: CallEventHandlers) => void;
+  // Panel visibility setters
+  setShowTranslator: (show: boolean) => void;
+  setShowCaptions: (show: boolean) => void;
+  setShowIPPanel: (show: boolean) => void;
+  setIsAdmin: (isAdmin: boolean) => void;
 }
 
 const defaultState: ActiveCallState = {
@@ -52,6 +62,11 @@ const defaultState: ActiveCallState = {
   headerButtons: null,
   connectionIndicator: null,
   eventHandlers: {},
+  // Panel defaults
+  showTranslator: false,
+  showCaptions: false,
+  showIPPanel: false,
+  isAdmin: false,
 };
 
 const ActiveCallContext = createContext<ActiveCallContextType | null>(null);
@@ -77,6 +92,7 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       
       console.log('[ActiveCallContext] Starting call for room:', params.roomSlug);
       return {
+        ...defaultState,
         isActive: true,
         isMinimized: false,
         roomName: params.roomName,
@@ -88,6 +104,8 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
         headerButtons: prev.headerButtons,
         connectionIndicator: prev.connectionIndicator,
         eventHandlers: handlersRef.current,
+        // Preserve admin status
+        isAdmin: prev.isAdmin,
       };
     });
   }, []);
@@ -124,6 +142,23 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
     setState(prev => ({ ...prev, eventHandlers: handlers }));
   }, []);
 
+  // Panel visibility setters
+  const setShowTranslator = useCallback((show: boolean) => {
+    setState(prev => ({ ...prev, showTranslator: show }));
+  }, []);
+
+  const setShowCaptions = useCallback((show: boolean) => {
+    setState(prev => ({ ...prev, showCaptions: show }));
+  }, []);
+
+  const setShowIPPanel = useCallback((show: boolean) => {
+    setState(prev => ({ ...prev, showIPPanel: show }));
+  }, []);
+
+  const setIsAdmin = useCallback((isAdmin: boolean) => {
+    setState(prev => ({ ...prev, isAdmin }));
+  }, []);
+
   return (
     <ActiveCallContext.Provider
       value={{
@@ -136,6 +171,10 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
         setHeaderButtons,
         setConnectionIndicator,
         setEventHandlers,
+        setShowTranslator,
+        setShowCaptions,
+        setShowIPPanel,
+        setIsAdmin,
       }}
     >
       {children}

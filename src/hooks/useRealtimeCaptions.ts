@@ -236,13 +236,19 @@ export const useRealtimeCaptions = ({
             mediaRecorderRef.current.onstop = () => {
               if (recordingChunksRef.current.length > 0) {
                 const blob = new Blob(recordingChunksRef.current, { type: 'audio/webm' });
+                // CRITICAL: Clear chunks IMMEDIATELY after creating blob to prevent loops
+                const chunksCount = recordingChunksRef.current.length;
+                recordingChunksRef.current = [];
+                
                 // Lower threshold - process even shorter clips
                 if (blob.size >= 2000) {
-                  console.log('[Captions] Processing audio:', blob.size, 'bytes');
+                  console.log('[Captions] Processing NEW audio:', chunksCount, 'chunks →', blob.size, 'bytes');
                   processAudioChunk(blob);
                 } else {
-                  console.log('[Captions] Recording too short:', blob.size, 'bytes');
+                  console.log('[Captions] Recording too short, discarded:', blob.size, 'bytes');
                 }
+              } else {
+                console.log('[Captions] No chunks to process');
               }
             };
 
