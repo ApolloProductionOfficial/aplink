@@ -4,6 +4,7 @@ import { VideoTrack, useParticipants, useTracks, TrackReferenceOrPlaceholder } f
 import { User, VideoOff, Mic, MicOff, Pin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DraggablePiP } from '@/components/DraggablePiP';
+import { useAudioLevelMeter } from '@/hooks/useAudioLevelMeter';
 import {
   ContextMenu,
   ContextMenuContent,
@@ -124,6 +125,14 @@ export function FocusVideoLayout({
 
   // Call-level speaking state (so indicators don't disappear when the local user speaks in PiP)
   const isCallSpeaking = isLocalSpeaking || isRemoteSpeaking;
+
+  // Real-time audio level tracking for equalizer visualization
+  const localAudioLevel = useAudioLevelMeter(localParticipant);
+  const remoteAudioLevel = useAudioLevelMeter(mainRemoteParticipant);
+  
+  // Combined audio levels - use whoever is speaking
+  const activeAudioLevel = isLocalSpeaking ? localAudioLevel : (isRemoteSpeaking ? remoteAudioLevel : localAudioLevel);
+  const hasActiveAudio = activeAudioLevel.isActive || isCallSpeaking;
 
   // If screen share is active - show screen share layout
   if (hasScreenShare) {
@@ -315,18 +324,19 @@ export function FocusVideoLayout({
       {/* Side wave equalizer effect - left edge */}
       <div 
         className={cn(
-          "absolute left-0 top-0 bottom-0 w-3 pointer-events-none z-10 transition-opacity duration-500",
-          isCallSpeaking ? "opacity-100" : "opacity-0"
+          "absolute left-0 top-0 bottom-0 w-4 pointer-events-none z-10 transition-opacity duration-300",
+          hasActiveAudio ? "opacity-100" : "opacity-0"
         )}
       >
-        <div className="h-full w-full flex flex-col justify-center gap-1">
-          {[...Array(12)].map((_, i) => (
+        <div className="h-full w-full flex flex-col justify-center gap-0.5">
+          {activeAudioLevel.frequencyBins.map((level, i) => (
             <div
               key={`left-${i}`}
-              className="w-full bg-gradient-to-r from-primary/60 to-transparent rounded-r-full equalizer-bar"
+              className="bg-gradient-to-r from-primary to-transparent rounded-r-full transition-all duration-75"
               style={{
-                height: '6px',
-                animationDelay: `${i * 80}ms`,
+                height: '5px',
+                width: `${Math.max(15, level * 100)}%`,
+                opacity: Math.max(0.3, level),
               }}
             />
           ))}
@@ -336,18 +346,19 @@ export function FocusVideoLayout({
       {/* Side wave equalizer effect - right edge */}
       <div 
         className={cn(
-          "absolute right-0 top-0 bottom-0 w-3 pointer-events-none z-10 transition-opacity duration-500",
-          isCallSpeaking ? "opacity-100" : "opacity-0"
+          "absolute right-0 top-0 bottom-0 w-4 pointer-events-none z-10 transition-opacity duration-300",
+          hasActiveAudio ? "opacity-100" : "opacity-0"
         )}
       >
-        <div className="h-full w-full flex flex-col justify-center gap-1">
-          {[...Array(12)].map((_, i) => (
+        <div className="h-full w-full flex flex-col justify-center gap-0.5">
+          {activeAudioLevel.frequencyBins.map((level, i) => (
             <div
               key={`right-${i}`}
-              className="w-full bg-gradient-to-l from-primary/60 to-transparent rounded-l-full equalizer-bar"
+              className="bg-gradient-to-l from-primary to-transparent rounded-l-full transition-all duration-75 ml-auto"
               style={{
-                height: '6px',
-                animationDelay: `${i * 80 + 40}ms`,
+                height: '5px',
+                width: `${Math.max(15, level * 100)}%`,
+                opacity: Math.max(0.3, level),
               }}
             />
           ))}
@@ -357,18 +368,17 @@ export function FocusVideoLayout({
       {/* Speaking indicator badge */}
       <div 
         className={cn(
-          "absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/20 border border-primary/40 z-20 transition-all duration-400",
-          isCallSpeaking ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2 pointer-events-none"
+          "absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/20 border border-primary/40 z-20 transition-all duration-300",
+          hasActiveAudio ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2 pointer-events-none"
         )}
       >
-        <div className="flex gap-0.5">
-          {[1,2,3].map(i => (
+        <div className="flex gap-0.5 items-end">
+          {activeAudioLevel.frequencyBins.slice(0, 5).map((level, i) => (
             <div 
               key={i}
-              className="w-0.5 bg-primary rounded-full equalizer-bar-small"
+              className="w-0.5 bg-primary rounded-full transition-all duration-75"
               style={{ 
-                height: `${6 + i * 3}px`,
-                animationDelay: `${i * 120}ms`
+                height: `${Math.max(4, level * 16)}px`,
               }}
             />
           ))}
