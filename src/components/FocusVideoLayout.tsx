@@ -321,72 +321,97 @@ export function FocusVideoLayout({
         </div>
       )}
 
-      {/* Side wave equalizer effect - left edge - full height */}
+      {/* Audio glow aura - soft pulsing orbs instead of hard bars */}
+      {/* Left side glow */}
       <div 
         className={cn(
-          "absolute left-0 top-0 bottom-0 pointer-events-none z-10 transition-opacity duration-500",
+          "absolute left-0 top-0 bottom-0 pointer-events-none z-10 transition-all duration-700 ease-out",
           hasActiveAudio ? "opacity-100" : "opacity-0"
         )}
         style={{
-          // Dynamic width based on overall audio level - louder = wider toward center
-          width: `${Math.min(120, Math.max(32, activeAudioLevel.level * 300))}px`,
+          width: `${Math.min(250, Math.max(80, activeAudioLevel.level * 600))}px`,
         }}
       >
-        <div className="h-full w-full flex flex-col justify-between py-2">
-          {Array.from({ length: 24 }).map((_, i) => {
-            // Map to frequency bins (cycle through them for more bars)
-            const binIndex = i % activeAudioLevel.frequencyBins.length;
-            const level = activeAudioLevel.frequencyBins[binIndex];
-            // Boost levels significantly for more visible movement
-            const boostedLevel = Math.pow(level, 0.6) * 2.5;
-            
-            return (
-              <div
-                key={`left-${i}`}
-                className="bg-gradient-to-r from-primary via-primary/80 to-transparent rounded-r-full transition-all duration-75"
-                style={{
-                  height: '4px',
-                  width: `${Math.min(100, Math.max(10, boostedLevel * 120))}%`,
-                  opacity: Math.max(0.5, Math.min(1, boostedLevel)),
-                }}
-              />
-            );
-          })}
-        </div>
+        {/* Multiple layered glowing orbs for organic feel */}
+        <div 
+          className="absolute top-[15%] -left-20 rounded-full bg-primary/40 blur-[80px] transition-all duration-300"
+          style={{
+            width: `${Math.min(200, Math.max(60, activeAudioLevel.level * 500))}px`,
+            height: `${Math.min(200, Math.max(60, activeAudioLevel.level * 500))}px`,
+            opacity: Math.min(0.8, activeAudioLevel.level * 2),
+          }}
+        />
+        <div 
+          className="absolute top-[45%] -left-16 rounded-full bg-cyan-400/30 blur-[60px] transition-all duration-200"
+          style={{
+            width: `${Math.min(160, Math.max(40, activeAudioLevel.level * 400))}px`,
+            height: `${Math.min(160, Math.max(40, activeAudioLevel.level * 400))}px`,
+            opacity: Math.min(0.7, activeAudioLevel.level * 1.8),
+          }}
+        />
+        <div 
+          className="absolute top-[70%] -left-24 rounded-full bg-primary/35 blur-[100px] transition-all duration-400"
+          style={{
+            width: `${Math.min(180, Math.max(50, activeAudioLevel.level * 450))}px`,
+            height: `${Math.min(180, Math.max(50, activeAudioLevel.level * 450))}px`,
+            opacity: Math.min(0.6, activeAudioLevel.level * 1.5),
+          }}
+        />
+        {/* Accent glow for variety */}
+        <div 
+          className="absolute top-[30%] -left-10 rounded-full bg-teal-300/25 blur-[50px] transition-all duration-250"
+          style={{
+            width: `${Math.min(100, Math.max(30, activeAudioLevel.level * 300))}px`,
+            height: `${Math.min(100, Math.max(30, activeAudioLevel.level * 300))}px`,
+            opacity: Math.min(0.5, activeAudioLevel.level * 1.2),
+          }}
+        />
       </div>
 
-      {/* Side wave equalizer effect - right edge - full height */}
+      {/* Right side glow */}
       <div 
         className={cn(
-          "absolute right-0 top-0 bottom-0 pointer-events-none z-10 transition-opacity duration-500",
+          "absolute right-0 top-0 bottom-0 pointer-events-none z-10 transition-all duration-700 ease-out",
           hasActiveAudio ? "opacity-100" : "opacity-0"
         )}
         style={{
-          // Dynamic width based on overall audio level - louder = wider toward center
-          width: `${Math.min(120, Math.max(32, activeAudioLevel.level * 300))}px`,
+          width: `${Math.min(250, Math.max(80, activeAudioLevel.level * 600))}px`,
         }}
       >
-        <div className="h-full w-full flex flex-col justify-between py-2">
-          {Array.from({ length: 24 }).map((_, i) => {
-            // Offset the bins for variety between left and right
-            const binIndex = (i + 3) % activeAudioLevel.frequencyBins.length;
-            const level = activeAudioLevel.frequencyBins[binIndex];
-            // Boost levels significantly for more visible movement
-            const boostedLevel = Math.pow(level, 0.6) * 2.5;
-            
-            return (
-              <div
-                key={`right-${i}`}
-                className="bg-gradient-to-l from-primary via-primary/80 to-transparent rounded-l-full transition-all duration-75 ml-auto"
-                style={{
-                  height: '4px',
-                  width: `${Math.min(100, Math.max(10, boostedLevel * 120))}%`,
-                  opacity: Math.max(0.5, Math.min(1, boostedLevel)),
-                }}
-              />
-            );
-          })}
-        </div>
+        {/* Multiple layered glowing orbs for organic feel */}
+        <div 
+          className="absolute top-[20%] -right-20 rounded-full bg-primary/40 blur-[80px] transition-all duration-350"
+          style={{
+            width: `${Math.min(200, Math.max(60, activeAudioLevel.level * 500))}px`,
+            height: `${Math.min(200, Math.max(60, activeAudioLevel.level * 500))}px`,
+            opacity: Math.min(0.8, activeAudioLevel.level * 2),
+          }}
+        />
+        <div 
+          className="absolute top-[50%] -right-16 rounded-full bg-cyan-400/30 blur-[60px] transition-all duration-200"
+          style={{
+            width: `${Math.min(160, Math.max(40, activeAudioLevel.level * 400))}px`,
+            height: `${Math.min(160, Math.max(40, activeAudioLevel.level * 400))}px`,
+            opacity: Math.min(0.7, activeAudioLevel.level * 1.8),
+          }}
+        />
+        <div 
+          className="absolute top-[75%] -right-24 rounded-full bg-primary/35 blur-[100px] transition-all duration-450"
+          style={{
+            width: `${Math.min(180, Math.max(50, activeAudioLevel.level * 450))}px`,
+            height: `${Math.min(180, Math.max(50, activeAudioLevel.level * 450))}px`,
+            opacity: Math.min(0.6, activeAudioLevel.level * 1.5),
+          }}
+        />
+        {/* Accent glow for variety */}
+        <div 
+          className="absolute top-[60%] -right-10 rounded-full bg-teal-300/25 blur-[50px] transition-all duration-300"
+          style={{
+            width: `${Math.min(100, Math.max(30, activeAudioLevel.level * 300))}px`,
+            height: `${Math.min(100, Math.max(30, activeAudioLevel.level * 300))}px`,
+            opacity: Math.min(0.5, activeAudioLevel.level * 1.2),
+          }}
+        />
       </div>
 
       {/* PiP - Draggable local participant in corner - ALWAYS show */}
