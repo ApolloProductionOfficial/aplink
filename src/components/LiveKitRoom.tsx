@@ -1083,21 +1083,6 @@ function LiveKitContent({
           )}
         >
           <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-[2.5rem] bg-transparent backdrop-blur-[2px] border border-white/[0.1] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)]">
-            {/* Minimize button - just minimize without PiP */}
-            <button
-              onClick={() => {
-                // Exit any existing PiP first
-                if (document.pictureInPictureElement) {
-                  document.exitPictureInPicture().catch(() => {});
-                }
-                onMinimize?.();
-              }}
-              className="flex items-center justify-center w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 border border-white/[0.08] transition-all hover:scale-105 hover:shadow-lg [&_svg]:stroke-[2.5]"
-              title="Свернуть звонок"
-            >
-              <PictureInPicture2 className="w-4 h-4" />
-            </button>
-
             {/* Native PiP button in header */}
             {isPiPSupported && (
               <button
@@ -1630,16 +1615,6 @@ function LiveKitContent({
             buttonOnly
           />
 
-          {/* Keyboard shortcuts help button */}
-          <Button
-            onClick={showShortcutsHelp}
-            variant="outline"
-            size="icon"
-            className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 border-white/20 transition-all hover:scale-105"
-            title="Горячие клавиши (?)"
-          >
-            <Keyboard className="w-4 h-4 stroke-[1.8] drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]" />
-          </Button>
 
           {/* Divider */}
           <div className="w-px h-8 bg-white/10 mx-0.5" />
