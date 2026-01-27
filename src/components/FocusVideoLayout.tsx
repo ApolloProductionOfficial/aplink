@@ -324,9 +324,13 @@ export function FocusVideoLayout({
       {/* Side wave equalizer effect - left edge - full height */}
       <div 
         className={cn(
-          "absolute left-0 top-0 bottom-0 w-8 pointer-events-none z-10 transition-opacity duration-300",
+          "absolute left-0 top-0 bottom-0 pointer-events-none z-10 transition-opacity duration-500",
           hasActiveAudio ? "opacity-100" : "opacity-0"
         )}
+        style={{
+          // Dynamic width based on overall audio level - louder = wider toward center
+          width: `${Math.min(120, Math.max(32, activeAudioLevel.level * 300))}px`,
+        }}
       >
         <div className="h-full w-full flex flex-col justify-between py-2">
           {Array.from({ length: 24 }).map((_, i) => {
@@ -339,11 +343,11 @@ export function FocusVideoLayout({
             return (
               <div
                 key={`left-${i}`}
-                className="bg-gradient-to-r from-primary via-primary/80 to-transparent rounded-r-full transition-all duration-[50ms]"
+                className="bg-gradient-to-r from-primary via-primary/80 to-transparent rounded-r-full transition-all duration-75"
                 style={{
                   height: '4px',
-                  width: `${Math.min(100, Math.max(8, boostedLevel * 100))}%`,
-                  opacity: Math.max(0.4, Math.min(1, boostedLevel)),
+                  width: `${Math.min(100, Math.max(10, boostedLevel * 120))}%`,
+                  opacity: Math.max(0.5, Math.min(1, boostedLevel)),
                 }}
               />
             );
@@ -354,9 +358,13 @@ export function FocusVideoLayout({
       {/* Side wave equalizer effect - right edge - full height */}
       <div 
         className={cn(
-          "absolute right-0 top-0 bottom-0 w-8 pointer-events-none z-10 transition-opacity duration-300",
+          "absolute right-0 top-0 bottom-0 pointer-events-none z-10 transition-opacity duration-500",
           hasActiveAudio ? "opacity-100" : "opacity-0"
         )}
+        style={{
+          // Dynamic width based on overall audio level - louder = wider toward center
+          width: `${Math.min(120, Math.max(32, activeAudioLevel.level * 300))}px`,
+        }}
       >
         <div className="h-full w-full flex flex-col justify-between py-2">
           {Array.from({ length: 24 }).map((_, i) => {
@@ -369,11 +377,11 @@ export function FocusVideoLayout({
             return (
               <div
                 key={`right-${i}`}
-                className="bg-gradient-to-l from-primary via-primary/80 to-transparent rounded-l-full transition-all duration-[50ms] ml-auto"
+                className="bg-gradient-to-l from-primary via-primary/80 to-transparent rounded-l-full transition-all duration-75 ml-auto"
                 style={{
                   height: '4px',
-                  width: `${Math.min(100, Math.max(8, boostedLevel * 100))}%`,
-                  opacity: Math.max(0.4, Math.min(1, boostedLevel)),
+                  width: `${Math.min(100, Math.max(10, boostedLevel * 120))}%`,
+                  opacity: Math.max(0.5, Math.min(1, boostedLevel)),
                 }}
               />
             );
