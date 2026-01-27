@@ -77,11 +77,20 @@ export function FocusVideoLayout({
     return tracks.filter(t => t.source === Track.Source.ScreenShare && t.publication);
   }, [tracks]);
 
-  // Local video track reference
-  const localVideoTrack = useMemo(() => {
+  // Local video track reference - use tracks from hook for reactivity
+  const localVideoTrackRef = useMemo(() => {
     if (!localParticipant) return null;
+    // First try to find from useTracks (more reactive)
+    const fromTracks = tracks.find(t => 
+      t.participant.identity === localParticipant.identity && 
+      t.source === Track.Source.Camera
+    );
+    if (fromTracks?.publication) return fromTracks.publication;
+    // Fallback to getTrackPublication
     return localParticipant.getTrackPublication(Track.Source.Camera);
-  }, [localParticipant]);
+  }, [localParticipant, tracks]);
+  
+  const localVideoTrack = localVideoTrackRef;
 
   // Remote video track reference
   const remoteVideoTrack = useMemo(() => {
@@ -141,7 +150,7 @@ export function FocusVideoLayout({
               <ContextMenuTrigger asChild>
                 <div className={cn(
                   "w-32 h-24 rounded-xl overflow-hidden border-2 shadow-lg bg-black transition-all cursor-pointer group",
-                  isRemoteSpeaking ? "border-green-500 ring-2 ring-green-500/50" : "border-white/20",
+                  isRemoteSpeaking ? "border-primary ring-2 ring-primary/50" : "border-white/20",
                   isRemotePinned && "border-primary/50"
                 )}>
                   {hasRemoteVideo ? (
@@ -183,7 +192,7 @@ export function FocusVideoLayout({
           {isCameraEnabled && localVideoTrack && (
             <div className={cn(
               "w-32 h-24 rounded-xl overflow-hidden border-2 shadow-lg bg-black transition-all",
-              isLocalSpeaking ? "border-green-500 ring-2 ring-green-500/50" : "border-primary/50"
+              isLocalSpeaking ? "border-primary ring-2 ring-primary/50" : "border-primary/50"
             )}>
               <VideoTrack
                 trackRef={{
@@ -219,7 +228,7 @@ export function FocusVideoLayout({
         <ContextMenuTrigger asChild>
           <div className={cn(
             "absolute inset-0 bg-gradient-to-br from-background via-background/95 to-primary/5 transition-all",
-            isMainSpeaking && "ring-2 ring-inset ring-green-500/30"
+            isMainSpeaking && "ring-2 ring-inset ring-primary/30"
           )}>
             {mainParticipant && hasMainVideo && mainVideoTrack ? (
               <VideoTrack
@@ -239,7 +248,7 @@ export function FocusVideoLayout({
                 <div className="flex flex-col items-center gap-4">
                   <div className={cn(
                     "w-32 h-32 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center border transition-all",
-                    isMainSpeaking ? "border-green-500 ring-4 ring-green-500/30" : "border-primary/20"
+                    isMainSpeaking ? "border-primary ring-4 ring-primary/30" : "border-primary/20"
                   )}>
                     <User className="w-16 h-16 text-muted-foreground" />
                   </div>
@@ -292,12 +301,12 @@ export function FocusVideoLayout({
 
       {/* Speaking indicator for main view */}
       {isMainSpeaking && (
-        <div className="absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/20 border border-green-500/40 z-20">
+        <div className="absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/20 border border-primary/40 z-20">
           <div className="flex gap-0.5">
             {[1,2,3].map(i => (
               <div 
                 key={i}
-                className="w-0.5 bg-green-500 rounded-full animate-pulse"
+                className="w-0.5 bg-primary rounded-full animate-pulse"
                 style={{ 
                   height: `${6 + i * 3}px`,
                   animationDelay: `${i * 100}ms`
@@ -305,12 +314,12 @@ export function FocusVideoLayout({
               />
             ))}
           </div>
-          <span className="text-xs text-green-400 font-medium">Говорит</span>
+          <span className="text-xs text-primary font-medium">Говорит</span>
         </div>
       )}
 
-      {/* PiP - Draggable local participant in corner (or remote when swapped) */}
-      {!showChat && (mainRemoteParticipant || (!mainRemoteParticipant && isCameraEnabled)) && (
+      {/* PiP - Draggable local participant in corner - ALWAYS show */}
+      {!showChat && localParticipant && (
         <DraggablePiP
           storageKey="local-pip-position"
           snapToCorners={true}
@@ -318,45 +327,56 @@ export function FocusVideoLayout({
           initialCorner="bottom-right"
           bottomOffset={112}
           className={cn(
-            (showLocalInMain ? isRemoteSpeaking : isLocalSpeaking) && "ring-2 ring-green-500/50"
+            (showLocalInMain ? isRemoteSpeaking : isLocalSpeaking) && "ring-2 ring-primary/60 animate-pulse"
           )}
         >
           {/* PiP content */}
           {mainRemoteParticipant ? (
             // Normal case: show either local or remote in PiP based on swap
-            (showLocalInMain ? hasRemoteVideo : (isCameraEnabled && localVideoTrack)) ? (
-              <VideoTrack
-                trackRef={{
-                  participant: showLocalInMain ? mainRemoteParticipant as RemoteParticipant : localParticipant as LocalParticipant,
-                  source: Track.Source.Camera,
-                  publication: showLocalInMain ? remoteVideoTrack! : localVideoTrack!,
-                }}
-                className={cn(
-                  "w-full h-full object-cover",
-                  !showLocalInMain && "mirror"
-                )}
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
-                <User className="w-8 h-8 text-muted-foreground" />
-              </div>
-            )
+            (() => {
+              const showVideo = showLocalInMain 
+                ? hasRemoteVideo 
+                : (localVideoTrack && !localVideoTrack.isMuted);
+              const trackToShow = showLocalInMain ? remoteVideoTrack : localVideoTrack;
+              
+              return showVideo && trackToShow ? (
+                <VideoTrack
+                  trackRef={{
+                    participant: showLocalInMain ? mainRemoteParticipant as RemoteParticipant : localParticipant as LocalParticipant,
+                    source: Track.Source.Camera,
+                    publication: trackToShow,
+                  }}
+                  className={cn(
+                    "w-full h-full object-cover",
+                    !showLocalInMain && "mirror"
+                  )}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
+                  <User className="w-8 h-8 text-muted-foreground" />
+                </div>
+              );
+            })()
           ) : (
-            // Solo case: show self in PiP
-            isCameraEnabled && localVideoTrack ? (
-              <VideoTrack
-                trackRef={{
-                  participant: localParticipant as LocalParticipant,
-                  source: Track.Source.Camera,
-                  publication: localVideoTrack,
-                }}
-                className="w-full h-full object-cover mirror"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
-                <User className="w-8 h-8 text-muted-foreground" />
-              </div>
-            )
+            // Solo case: show self in PiP - check track exists and not muted
+            (() => {
+              const hasLocalVideo = localVideoTrack && !localVideoTrack.isMuted;
+              
+              return hasLocalVideo ? (
+                <VideoTrack
+                  trackRef={{
+                    participant: localParticipant as LocalParticipant,
+                    source: Track.Source.Camera,
+                    publication: localVideoTrack,
+                  }}
+                  className="w-full h-full object-cover mirror"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
+                  <User className="w-8 h-8 text-muted-foreground" />
+                </div>
+              );
+            })()
           )}
           
           {/* PiP label */}
@@ -380,7 +400,7 @@ export function FocusVideoLayout({
             return (
               <div className={cn(
                 "absolute top-1.5 right-1.5 w-5 h-5 rounded-full flex items-center justify-center",
-                micEnabled ? "bg-green-500/60" : "bg-destructive/60"
+                micEnabled ? "bg-primary/60" : "bg-destructive/60"
               )}>
                 {micEnabled ? (
                   <Mic className="w-3 h-3 text-white" />
