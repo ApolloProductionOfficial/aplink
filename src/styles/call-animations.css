@@ -126,24 +126,43 @@
 }
 
 /* Call-wide speaking frame (Focus mode) */
-@keyframes call-frame-glow {
+/* Removed call-frame-glow - using side wave equalizer instead */
+
+/* Equalizer bar animation - smooth wave effect */
+@keyframes equalizer-wave {
   0%, 100% {
-    box-shadow:
-      inset 0 0 0 0 hsl(var(--primary) / 0),
-      inset 0 0 40px 0 hsl(var(--primary) / 0.08);
+    transform: scaleX(0.3);
+    opacity: 0.4;
   }
   50% {
-    box-shadow:
-      inset 0 0 0 3px hsl(var(--primary) / 0.25),
-      inset 0 0 70px 0 hsl(var(--primary) / 0.14);
+    transform: scaleX(1);
+    opacity: 1;
   }
 }
 
-.call-speaking-frame[data-speaking="true"] {
-  animation: call-frame-glow 1.6s ease-in-out infinite;
+@keyframes equalizer-wave-small {
+  0%, 100% {
+    transform: scaleY(0.6);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scaleY(1.2);
+    opacity: 1;
+  }
 }
 
+.equalizer-bar {
+  animation: equalizer-wave 0.8s ease-in-out infinite;
+  transform-origin: left center;
+}
+
+.equalizer-bar-small {
+  animation: equalizer-wave-small 0.6s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+
+/* Call frame no longer uses glow animation - side equalizers handle it */
+.call-speaking-frame[data-speaking="true"],
 .call-speaking-frame[data-speaking="false"] {
   box-shadow: none;
-  transition: box-shadow 0.35s ease-out;
 }

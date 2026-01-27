@@ -312,26 +312,71 @@ export function FocusVideoLayout({
         </div>
       )}
 
-      {/* Speaking indicator for call (not only main tile) */}
-      {isCallSpeaking && (
-        <div className="absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/20 border border-primary/40 z-20">
-          <div className="flex gap-0.5">
-            {[1,2,3].map(i => (
-              <div 
-                key={i}
-                className="w-0.5 bg-primary rounded-full animate-pulse"
-                style={{ 
-                  height: `${6 + i * 3}px`,
-                  animationDelay: `${i * 100}ms`
-                }}
-              />
-            ))}
-          </div>
-          <span className="text-xs text-primary font-medium">
-            {isLocalSpeaking ? 'Вы говорите' : 'Говорит'}
-          </span>
+      {/* Side wave equalizer effect - left edge */}
+      <div 
+        className={cn(
+          "absolute left-0 top-0 bottom-0 w-3 pointer-events-none z-10 transition-opacity duration-500",
+          isCallSpeaking ? "opacity-100" : "opacity-0"
+        )}
+      >
+        <div className="h-full w-full flex flex-col justify-center gap-1">
+          {[...Array(12)].map((_, i) => (
+            <div
+              key={`left-${i}`}
+              className="w-full bg-gradient-to-r from-primary/60 to-transparent rounded-r-full equalizer-bar"
+              style={{
+                height: '6px',
+                animationDelay: `${i * 80}ms`,
+              }}
+            />
+          ))}
         </div>
-      )}
+      </div>
+
+      {/* Side wave equalizer effect - right edge */}
+      <div 
+        className={cn(
+          "absolute right-0 top-0 bottom-0 w-3 pointer-events-none z-10 transition-opacity duration-500",
+          isCallSpeaking ? "opacity-100" : "opacity-0"
+        )}
+      >
+        <div className="h-full w-full flex flex-col justify-center gap-1">
+          {[...Array(12)].map((_, i) => (
+            <div
+              key={`right-${i}`}
+              className="w-full bg-gradient-to-l from-primary/60 to-transparent rounded-l-full equalizer-bar"
+              style={{
+                height: '6px',
+                animationDelay: `${i * 80 + 40}ms`,
+              }}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Speaking indicator badge */}
+      <div 
+        className={cn(
+          "absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/20 border border-primary/40 z-20 transition-all duration-400",
+          isCallSpeaking ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2 pointer-events-none"
+        )}
+      >
+        <div className="flex gap-0.5">
+          {[1,2,3].map(i => (
+            <div 
+              key={i}
+              className="w-0.5 bg-primary rounded-full equalizer-bar-small"
+              style={{ 
+                height: `${6 + i * 3}px`,
+                animationDelay: `${i * 120}ms`
+              }}
+            />
+          ))}
+        </div>
+        <span className="text-xs text-primary font-medium">
+          {isLocalSpeaking ? 'Вы говорите' : 'Говорит'}
+        </span>
+      </div>
 
       {/* PiP - Draggable local participant in corner - ALWAYS show */}
       {!showChat && localParticipant && (
