@@ -321,71 +321,64 @@ export function FocusVideoLayout({
         </div>
       )}
 
-      {/* Side wave equalizer effect - left edge */}
+      {/* Side wave equalizer effect - left edge - full height */}
       <div 
         className={cn(
-          "absolute left-0 top-0 bottom-0 w-4 pointer-events-none z-10 transition-opacity duration-300",
+          "absolute left-0 top-0 bottom-0 w-8 pointer-events-none z-10 transition-opacity duration-300",
           hasActiveAudio ? "opacity-100" : "opacity-0"
         )}
       >
-        <div className="h-full w-full flex flex-col justify-center gap-0.5">
-          {activeAudioLevel.frequencyBins.map((level, i) => (
-            <div
-              key={`left-${i}`}
-              className="bg-gradient-to-r from-primary to-transparent rounded-r-full transition-all duration-75"
-              style={{
-                height: '5px',
-                width: `${Math.max(15, level * 100)}%`,
-                opacity: Math.max(0.3, level),
-              }}
-            />
-          ))}
+        <div className="h-full w-full flex flex-col justify-between py-2">
+          {Array.from({ length: 24 }).map((_, i) => {
+            // Map to frequency bins (cycle through them for more bars)
+            const binIndex = i % activeAudioLevel.frequencyBins.length;
+            const level = activeAudioLevel.frequencyBins[binIndex];
+            // Boost levels significantly for more visible movement
+            const boostedLevel = Math.pow(level, 0.6) * 2.5;
+            
+            return (
+              <div
+                key={`left-${i}`}
+                className="bg-gradient-to-r from-primary via-primary/80 to-transparent rounded-r-full transition-all duration-[50ms]"
+                style={{
+                  height: '4px',
+                  width: `${Math.min(100, Math.max(8, boostedLevel * 100))}%`,
+                  opacity: Math.max(0.4, Math.min(1, boostedLevel)),
+                }}
+              />
+            );
+          })}
         </div>
       </div>
 
-      {/* Side wave equalizer effect - right edge */}
+      {/* Side wave equalizer effect - right edge - full height */}
       <div 
         className={cn(
-          "absolute right-0 top-0 bottom-0 w-4 pointer-events-none z-10 transition-opacity duration-300",
+          "absolute right-0 top-0 bottom-0 w-8 pointer-events-none z-10 transition-opacity duration-300",
           hasActiveAudio ? "opacity-100" : "opacity-0"
         )}
       >
-        <div className="h-full w-full flex flex-col justify-center gap-0.5">
-          {activeAudioLevel.frequencyBins.map((level, i) => (
-            <div
-              key={`right-${i}`}
-              className="bg-gradient-to-l from-primary to-transparent rounded-l-full transition-all duration-75 ml-auto"
-              style={{
-                height: '5px',
-                width: `${Math.max(15, level * 100)}%`,
-                opacity: Math.max(0.3, level),
-              }}
-            />
-          ))}
+        <div className="h-full w-full flex flex-col justify-between py-2">
+          {Array.from({ length: 24 }).map((_, i) => {
+            // Offset the bins for variety between left and right
+            const binIndex = (i + 3) % activeAudioLevel.frequencyBins.length;
+            const level = activeAudioLevel.frequencyBins[binIndex];
+            // Boost levels significantly for more visible movement
+            const boostedLevel = Math.pow(level, 0.6) * 2.5;
+            
+            return (
+              <div
+                key={`right-${i}`}
+                className="bg-gradient-to-l from-primary via-primary/80 to-transparent rounded-l-full transition-all duration-[50ms] ml-auto"
+                style={{
+                  height: '4px',
+                  width: `${Math.min(100, Math.max(8, boostedLevel * 100))}%`,
+                  opacity: Math.max(0.4, Math.min(1, boostedLevel)),
+                }}
+              />
+            );
+          })}
         </div>
-      </div>
-
-      {/* Speaking indicator badge */}
-      <div 
-        className={cn(
-          "absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/20 border border-primary/40 z-20 transition-all duration-300",
-          hasActiveAudio ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2 pointer-events-none"
-        )}
-      >
-        <div className="flex gap-0.5 items-end">
-          {activeAudioLevel.frequencyBins.slice(0, 5).map((level, i) => (
-            <div 
-              key={i}
-              className="w-0.5 bg-primary rounded-full transition-all duration-75"
-              style={{ 
-                height: `${Math.max(4, level * 16)}px`,
-              }}
-            />
-          ))}
-        </div>
-        <span className="text-xs text-primary font-medium">
-          {isLocalSpeaking ? 'Вы говорите' : 'Говорит'}
-        </span>
       </div>
 
       {/* PiP - Draggable local participant in corner - ALWAYS show */}
