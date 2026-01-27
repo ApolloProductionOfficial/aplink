@@ -334,9 +334,8 @@ export function FocusVideoLayout({
           onDoubleClick={mainRemoteParticipant ? handlePipDoubleClick : undefined}
           initialCorner="bottom-right"
           bottomOffset={112}
-          className={cn(
-            (showLocalInMain ? isRemoteSpeaking : isLocalSpeaking) && "ring-2 ring-primary/60 animate-pulse"
-          )}
+          className="pip-speaking-glow"
+          data-speaking={showLocalInMain ? isRemoteSpeaking : isLocalSpeaking}
         >
           {/* PiP content */}
           {mainRemoteParticipant ? (

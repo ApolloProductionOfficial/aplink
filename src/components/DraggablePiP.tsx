@@ -256,8 +256,8 @@ export function DraggablePiP({
       {/* Drag handle indicator */}
       <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-8 h-1 rounded-full bg-white/30 opacity-0 group-hover:opacity-100 transition-opacity" />
       
-      {/* Content */}
-      <div className="w-full h-full rounded-xl overflow-hidden shadow-[0_0_25px_hsl(var(--primary)/0.35)] border-2 border-primary/50">
+      {/* Content - soft rounded border without harsh colors */}
+      <div className="w-full h-full rounded-xl overflow-hidden shadow-lg border border-white/20">
         {children}
       </div>
       

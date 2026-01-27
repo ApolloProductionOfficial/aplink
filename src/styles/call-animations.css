@@ -88,3 +88,39 @@
   animation: panel-fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
   transform: none !important;
 }
+
+/* Speaking glow animation for PiP - soft pulsing edges */
+@keyframes speaking-glow {
+  0%, 100% {
+    box-shadow: 
+      0 0 0 0 hsl(var(--primary) / 0),
+      0 0 15px 2px hsl(var(--primary) / 0.3);
+  }
+  50% {
+    box-shadow: 
+      0 0 0 4px hsl(var(--primary) / 0.25),
+      0 0 25px 6px hsl(var(--primary) / 0.4);
+  }
+}
+
+@keyframes speaking-border-glow {
+  0%, 100% {
+    border-color: hsl(var(--primary) / 0.4);
+  }
+  50% {
+    border-color: hsl(var(--primary) / 0.8);
+  }
+}
+
+/* PiP speaking indicator - smooth glow effect */
+.pip-speaking-glow[data-speaking="true"] > div:last-of-type {
+  animation: speaking-glow 1.5s ease-in-out infinite, speaking-border-glow 1.5s ease-in-out infinite;
+  border-width: 2px;
+  border-style: solid;
+}
+
+.pip-speaking-glow[data-speaking="false"] > div:last-of-type {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  border-color: rgba(255, 255, 255, 0.15);
+  transition: box-shadow 0.4s ease-out, border-color 0.4s ease-out;
+}
