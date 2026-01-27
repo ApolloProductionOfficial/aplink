@@ -122,6 +122,9 @@ export function FocusVideoLayout({
   const isRemoteSpeaking = speakingParticipant === mainRemoteParticipant?.identity;
   const isRemotePinned = pinnedParticipant === mainRemoteParticipant?.identity;
 
+  // Call-level speaking state (so indicators don't disappear when the local user speaks in PiP)
+  const isCallSpeaking = isLocalSpeaking || isRemoteSpeaking;
+
   // If screen share is active - show screen share layout
   if (hasScreenShare) {
     const screenTrack = screenShareTracks[0];
@@ -226,10 +229,12 @@ export function FocusVideoLayout({
       {/* Main video - fills entire screen */}
       <ContextMenu>
         <ContextMenuTrigger asChild>
-          <div className={cn(
-            "absolute inset-0 bg-gradient-to-br from-background via-background/95 to-primary/5 transition-all",
-            isMainSpeaking && "ring-2 ring-inset ring-primary/30"
-          )}>
+          <div
+            className={cn(
+              "absolute inset-0 bg-gradient-to-br from-background via-background/95 to-primary/5 transition-all call-speaking-frame"
+            )}
+            data-speaking={isCallSpeaking}
+          >
             {mainParticipant && hasMainVideo && mainVideoTrack ? (
               <VideoTrack
                 trackRef={{
@@ -307,8 +312,8 @@ export function FocusVideoLayout({
         </div>
       )}
 
-      {/* Speaking indicator for main view */}
-      {isMainSpeaking && (
+      {/* Speaking indicator for call (not only main tile) */}
+      {isCallSpeaking && (
         <div className="absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/20 border border-primary/40 z-20">
           <div className="flex gap-0.5">
             {[1,2,3].map(i => (
@@ -322,7 +327,9 @@ export function FocusVideoLayout({
               />
             ))}
           </div>
-          <span className="text-xs text-primary font-medium">Говорит</span>
+          <span className="text-xs text-primary font-medium">
+            {isLocalSpeaking ? 'Вы говорите' : 'Говорит'}
+          </span>
         </div>
       )}
 
