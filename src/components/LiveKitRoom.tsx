@@ -30,7 +30,6 @@ import {
   Hand,
   Volume2,
   VolumeX,
-  PictureInPicture2,
   Pencil,
   Mic2,
   Check,
@@ -38,12 +37,12 @@ import {
   MonitorPlay,
   VolumeOff,
   User,
-  Keyboard,
   Presentation,
   PictureInPicture,
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { InCallChat } from "@/components/InCallChat";
 import { VirtualBackgroundSelector } from "@/components/VirtualBackgroundSelector";
@@ -677,7 +676,7 @@ function LiveKitContent({
   });
   
   // Keyboard shortcuts
-  const { showShortcutsHelp } = useKeyboardShortcuts({
+  useKeyboardShortcuts({
     onToggleMic: toggleMicrophone,
     onToggleCamera: toggleCamera,
     onToggleLayoutMode: toggleLayoutMode,
@@ -1221,44 +1220,58 @@ function LiveKitContent({
       >
         <div className="flex items-center gap-2.5 px-5 py-3.5 rounded-[2.5rem] bg-transparent backdrop-blur-[2px] border border-white/[0.1] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)]">
           {/* Camera toggle */}
-          <Button
-            onClick={toggleCamera}
-            variant={isCameraEnabled ? "outline" : "secondary"}
-            size="icon"
-            className={cn(
-              "w-12 h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg border-white/20",
-              isCameraEnabled 
-                ? "bg-white/15 hover:bg-white/25" 
-                : "bg-destructive/40 border-destructive/60 hover:bg-destructive/50"
-            )}
-          >
-            {isCameraEnabled ? (
-              <Video className="w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]" />
-            ) : (
-              <VideoOff className="w-5 h-5 stroke-[1.8] text-destructive drop-shadow-[0_0_3px_rgba(255,255,255,0.4)]" />
-            )}
-          </Button>
-
-          {/* Mic toggle with popup menu */}
-          <Popover>
-            <PopoverTrigger asChild>
+          <Tooltip>
+            <TooltipTrigger asChild>
               <Button
-                variant={isMicrophoneEnabled ? "outline" : "secondary"}
+                onClick={toggleCamera}
+                variant={isCameraEnabled ? "outline" : "secondary"}
                 size="icon"
                 className={cn(
                   "w-12 h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg border-white/20",
-                  isMicrophoneEnabled 
+                  isCameraEnabled 
                     ? "bg-white/15 hover:bg-white/25" 
                     : "bg-destructive/40 border-destructive/60 hover:bg-destructive/50"
                 )}
               >
-                {isMicrophoneEnabled ? (
-                  <Mic className="w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]" />
+                {isCameraEnabled ? (
+                  <Video className="w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]" />
                 ) : (
-                  <MicOff className="w-5 h-5 stroke-[1.8] text-destructive drop-shadow-[0_0_3px_rgba(255,255,255,0.4)]" />
+                  <VideoOff className="w-5 h-5 stroke-[1.8] text-destructive drop-shadow-[0_0_3px_rgba(255,255,255,0.4)]" />
                 )}
               </Button>
-            </PopoverTrigger>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="bg-black/80 border-white/10">
+              <p>{isCameraEnabled ? "Выключить камеру (V)" : "Включить камеру (V)"}</p>
+            </TooltipContent>
+          </Tooltip>
+
+          {/* Mic toggle with popup menu */}
+          <Popover>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={isMicrophoneEnabled ? "outline" : "secondary"}
+                    size="icon"
+                    className={cn(
+                      "w-12 h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg border-white/20",
+                      isMicrophoneEnabled 
+                        ? "bg-white/15 hover:bg-white/25" 
+                        : "bg-destructive/40 border-destructive/60 hover:bg-destructive/50"
+                    )}
+                  >
+                    {isMicrophoneEnabled ? (
+                      <Mic className="w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]" />
+                    ) : (
+                      <MicOff className="w-5 h-5 stroke-[1.8] text-destructive drop-shadow-[0_0_3px_rgba(255,255,255,0.4)]" />
+                    )}
+                  </Button>
+                </PopoverTrigger>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="bg-black/80 border-white/10">
+                <p>{isMicrophoneEnabled ? "Настройки микрофона (M)" : "Включить микрофон (M)"}</p>
+              </TooltipContent>
+            </Tooltip>
             <PopoverContent 
               side="top" 
               align="center" 
@@ -1327,23 +1340,30 @@ function LiveKitContent({
 
           {/* Screen share toggle with menu */}
           <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant={isScreenShareEnabled ? "default" : "outline"}
-                size="icon"
-                className={cn(
-                  "w-12 h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg border-white/20",
-                  isScreenShareEnabled 
-                    ? "bg-green-500/40 border-green-500/60 hover:bg-green-500/50" 
-                    : "bg-white/15 hover:bg-white/25"
-                )}
-              >
-                <MonitorUp className={cn(
-                  "w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]",
-                  isScreenShareEnabled && "text-green-400"
-                )} />
-              </Button>
-            </PopoverTrigger>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={isScreenShareEnabled ? "default" : "outline"}
+                    size="icon"
+                    className={cn(
+                      "w-12 h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg border-white/20",
+                      isScreenShareEnabled 
+                        ? "bg-green-500/40 border-green-500/60 hover:bg-green-500/50" 
+                        : "bg-white/15 hover:bg-white/25"
+                    )}
+                  >
+                    <MonitorUp className={cn(
+                      "w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]",
+                      isScreenShareEnabled && "text-green-400"
+                    )} />
+                  </Button>
+                </PopoverTrigger>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="bg-black/80 border-white/10">
+                <p>{isScreenShareEnabled ? "Остановить демонстрацию" : "Демонстрация экрана"}</p>
+              </TooltipContent>
+            </Tooltip>
             <PopoverContent 
               side="top" 
               align="center" 
@@ -1397,27 +1417,33 @@ function LiveKitContent({
 
           {/* Layout mode toggle with Popover for 3 modes */}
           <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                className={cn(
-                  "w-12 h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg border-white/20",
-                  layoutMode !== 'focus' 
-                    ? "bg-primary/30 border-primary/50" 
-                    : "bg-white/15 hover:bg-white/25"
-                )}
-                title="Режим отображения (G)"
-              >
-                {layoutMode === 'focus' ? (
-                  <User className="w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]" />
-                ) : layoutMode === 'gallery' ? (
-                  <LayoutGrid className="w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]" />
-                ) : (
-                  <Presentation className="w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]" />
-                )}
-              </Button>
-            </PopoverTrigger>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className={cn(
+                      "w-12 h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg border-white/20",
+                      layoutMode !== 'focus' 
+                        ? "bg-primary/30 border-primary/50" 
+                        : "bg-white/15 hover:bg-white/25"
+                    )}
+                  >
+                    {layoutMode === 'focus' ? (
+                      <User className="w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]" />
+                    ) : layoutMode === 'gallery' ? (
+                      <LayoutGrid className="w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]" />
+                    ) : (
+                      <Presentation className="w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]" />
+                    )}
+                  </Button>
+                </PopoverTrigger>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="bg-black/80 border-white/10">
+                <p>Режим отображения (G)</p>
+              </TooltipContent>
+            </Tooltip>
             <PopoverContent 
               side="top" 
               align="center" 
@@ -1484,23 +1510,29 @@ function LiveKitContent({
           
           {/* Native Picture-in-Picture button */}
           {isPiPSupported && (
-            <Button
-              onClick={togglePiP}
-              variant="outline"
-              size="icon"
-              className={cn(
-                "w-12 h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg border-white/20",
-                isPiPActive 
-                  ? "bg-green-500/30 border-green-500/50" 
-                  : "bg-white/15 hover:bg-white/25"
-              )}
-              title="Picture-in-Picture (I)"
-            >
-              <PictureInPicture className={cn(
-                "w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]",
-                isPiPActive && "text-green-400"
-              )} />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={togglePiP}
+                  variant="outline"
+                  size="icon"
+                  className={cn(
+                    "w-12 h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg border-white/20",
+                    isPiPActive 
+                      ? "bg-green-500/30 border-green-500/50" 
+                      : "bg-white/15 hover:bg-white/25"
+                  )}
+                >
+                  <PictureInPicture className={cn(
+                    "w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]",
+                    isPiPActive && "text-green-400"
+                  )} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="bg-black/80 border-white/10">
+                <p>{isPiPActive ? "Выйти из PiP (I)" : "Picture-in-Picture (I)"}</p>
+              </TooltipContent>
+            </Tooltip>
           )}
 
           {/* Virtual Background selector (face filters removed) */}
@@ -1517,19 +1549,25 @@ function LiveKitContent({
 
           {/* Drawing mode selector (Whiteboard / Screen Overlay) */}
           <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                className={cn(
-                  "w-12 h-12 rounded-full bg-white/15 hover:bg-white/25 border-white/20 transition-all hover:scale-105 hover:shadow-lg",
-                  (showWhiteboard || showDrawingOverlay) && "bg-primary/20 border-primary/50"
-                )}
-                title="Рисование"
-              >
-                <Pencil className="w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]" />
-              </Button>
-            </PopoverTrigger>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className={cn(
+                      "w-12 h-12 rounded-full bg-white/15 hover:bg-white/25 border-white/20 transition-all hover:scale-105 hover:shadow-lg",
+                      (showWhiteboard || showDrawingOverlay) && "bg-primary/20 border-primary/50"
+                    )}
+                  >
+                    <Pencil className="w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]" />
+                  </Button>
+                </PopoverTrigger>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="bg-black/80 border-white/10">
+                <p>Рисование и доска</p>
+              </TooltipContent>
+            </Tooltip>
             <PopoverContent 
               side="top" 
               align="center" 
@@ -1588,23 +1626,29 @@ function LiveKitContent({
           />
 
           {/* Raise Hand button */}
-          <Button
-            onClick={toggleHand}
-            variant="outline"
-            size="icon"
-            className={cn(
-              "w-12 h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg border-white/20",
-              isHandRaised 
-                ? "bg-yellow-500/40 border-yellow-500/60 hover:bg-yellow-500/50 animate-pulse" 
-                : "bg-white/15 hover:bg-white/25"
-            )}
-            title={isHandRaised ? "Опустить руку" : "Поднять руку"}
-          >
-            <Hand className={cn(
-              "w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]", 
-              isHandRaised && "text-yellow-400"
-            )} />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                onClick={toggleHand}
+                variant="outline"
+                size="icon"
+                className={cn(
+                  "w-12 h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg border-white/20",
+                  isHandRaised 
+                    ? "bg-yellow-500/40 border-yellow-500/60 hover:bg-yellow-500/50 animate-pulse" 
+                    : "bg-white/15 hover:bg-white/25"
+                )}
+              >
+                <Hand className={cn(
+                  "w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]", 
+                  isHandRaised && "text-yellow-400"
+                )} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="bg-black/80 border-white/10">
+              <p>{isHandRaised ? "Опустить руку (H)" : "Поднять руку (H)"}</p>
+            </TooltipContent>
+          </Tooltip>
 
           {/* Chat toggle button - buttonOnly mode for bottom panel */}
           <InCallChat
@@ -1620,10 +1664,17 @@ function LiveKitContent({
           <div className="w-px h-8 bg-white/10 mx-0.5" />
 
           {/* Leave button */}
-          <DisconnectButton className="flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-destructive/90 hover:bg-destructive text-destructive-foreground transition-all hover:scale-105 hover:shadow-lg border border-destructive/60 shadow-[0_0_15px_rgba(220,50,50,0.3)]">
-            <PhoneOff className="w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]" />
-            <span className="text-sm font-medium tracking-wide">Выйти</span>
-          </DisconnectButton>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <DisconnectButton className="flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-destructive/90 hover:bg-destructive text-destructive-foreground transition-all hover:scale-105 hover:shadow-lg border border-destructive/60 shadow-[0_0_15px_rgba(220,50,50,0.3)]">
+                <PhoneOff className="w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]" />
+                <span className="text-sm font-medium tracking-wide">Выйти</span>
+              </DisconnectButton>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="bg-black/80 border-white/10">
+              <p>Выйти из звонка (Esc×2)</p>
+            </TooltipContent>
+          </Tooltip>
         </div>
       </div>
 
