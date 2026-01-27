@@ -1105,12 +1105,12 @@ function LiveKitContent({
                 className={cn(
                   "flex items-center justify-center w-9 h-9 rounded-full border border-white/[0.08] transition-all hover:scale-105 hover:shadow-lg [&_svg]:stroke-[2.5]",
                   isPiPActive 
-                    ? "bg-green-500/30 border-green-500/40" 
+                    ? "bg-primary/30 border-primary/40" 
                     : "bg-white/10 hover:bg-white/20"
                 )}
                 title={isPiPActive ? "Выйти из PiP" : "Picture-in-Picture"}
               >
-                <PictureInPicture className={cn("w-4 h-4", isPiPActive && "text-green-400")} />
+                <PictureInPicture className={cn("w-4 h-4", isPiPActive && "text-primary")} />
               </button>
             )}
 
@@ -1374,11 +1374,11 @@ function LiveKitContent({
                     className={cn(
                       "flex flex-col items-center gap-1.5 p-3 rounded-xl transition-all",
                       isScreenShareEnabled 
-                        ? "bg-green-500/20 border border-green-500/30" 
+                        ? "bg-primary/20 border border-primary/30" 
                         : "bg-white/5 hover:bg-white/10"
                     )}
                   >
-                    <MonitorUp className={cn("w-5 h-5", isScreenShareEnabled ? "text-green-400" : "text-primary")} />
+                    <MonitorUp className={cn("w-5 h-5", isScreenShareEnabled ? "text-primary" : "text-primary")} />
                     <span className="text-xs whitespace-nowrap">{isScreenShareEnabled ? "Остановить" : "Экран"}</span>
                   </button>
                   

@@ -102,7 +102,7 @@ export function GalleryVideoLayout({
                   className={cn(
                     "relative rounded-2xl overflow-hidden bg-black/40 backdrop-blur-sm border transition-all duration-300 group",
                     isSpeaking 
-                      ? "ring-2 ring-green-500 ring-offset-2 ring-offset-background border-green-500/50 shadow-[0_0_30px_rgba(34,197,94,0.3)]" 
+                      ? "ring-2 ring-primary ring-offset-2 ring-offset-background border-primary/50 shadow-[0_0_30px_hsl(var(--primary)/0.3)]" 
                       : "border-white/10",
                     isPinned && "border-primary/50 ring-1 ring-primary/30",
                     isLocal && !isPinned && "border-primary/30"
@@ -159,7 +159,7 @@ export function GalleryVideoLayout({
                   {/* Speaking indicator overlay */}
                   {isSpeaking && (
                     <div className="absolute inset-0 pointer-events-none">
-                      <div className="absolute inset-0 rounded-2xl ring-2 ring-green-500/60 animate-pulse" />
+                      <div className="absolute inset-0 rounded-2xl ring-2 ring-primary/60 animate-pulse" />
                     </div>
                   )}
 
@@ -179,7 +179,7 @@ export function GalleryVideoLayout({
                             {[1,2,3].map(i => (
                               <div 
                                 key={i}
-                                className="w-0.5 bg-green-500 rounded-full animate-pulse"
+                                className="w-0.5 bg-primary rounded-full animate-pulse"
                                 style={{ 
                                   height: `${8 + i * 4}px`,
                                   animationDelay: `${i * 100}ms`

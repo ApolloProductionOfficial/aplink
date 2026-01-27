@@ -99,7 +99,7 @@ export function WebinarVideoLayout({
             <div className={cn(
               "h-full w-full rounded-2xl overflow-hidden relative bg-black/40 backdrop-blur-sm border transition-all",
               isSpeakerSpeaking 
-                ? "ring-2 ring-green-500 ring-offset-2 ring-offset-background border-green-500/50 shadow-[0_0_30px_rgba(34,197,94,0.3)]" 
+                ? "ring-2 ring-primary ring-offset-2 ring-offset-background border-primary/50 shadow-[0_0_30px_hsl(var(--primary)/0.3)]" 
                 : "border-white/10",
               isSpeakerPinned && "border-primary/50"
             )}>
@@ -121,7 +121,7 @@ export function WebinarVideoLayout({
                   <div className="flex flex-col items-center gap-4">
                     <div className={cn(
                       "w-32 h-32 rounded-full bg-primary/20 flex items-center justify-center border transition-all",
-                      isSpeakerSpeaking ? "border-green-500 ring-4 ring-green-500/30" : "border-primary/30"
+                      isSpeakerSpeaking ? "border-primary ring-4 ring-primary/30" : "border-primary/30"
                     )}>
                       <User className="w-16 h-16 text-muted-foreground" />
                     </div>
@@ -160,12 +160,12 @@ export function WebinarVideoLayout({
 
               {/* Speaking indicator */}
               {isSpeakerSpeaking && (
-                <div className="absolute top-4 right-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/20 border border-green-500/40">
+                <div className="absolute top-4 right-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/20 border border-primary/40">
                   <div className="flex gap-0.5">
                     {[1,2,3].map(i => (
                       <div 
                         key={i}
-                        className="w-0.5 bg-green-500 rounded-full animate-pulse"
+                        className="w-0.5 bg-primary rounded-full animate-pulse"
                         style={{ 
                           height: `${6 + i * 3}px`,
                           animationDelay: `${i * 100}ms`
@@ -173,7 +173,7 @@ export function WebinarVideoLayout({
                       />
                     ))}
                   </div>
-                  <span className="text-xs text-green-400 font-medium">Говорит</span>
+                  <span className="text-xs text-primary font-medium">Говорит</span>
                 </div>
               )}
 
@@ -231,7 +231,7 @@ export function WebinarVideoLayout({
                         className={cn(
                           "flex-shrink-0 w-[160px] h-full rounded-xl overflow-hidden relative bg-black/40 backdrop-blur-sm border transition-all cursor-pointer hover:border-white/30",
                           isSpeaking 
-                            ? "ring-2 ring-green-500/60 border-green-500/50" 
+                            ? "ring-2 ring-primary/60 border-primary/50" 
                             : "border-white/10",
                           isPinned && "border-primary/50",
                           isLocal && "border-primary/30"
@@ -270,7 +270,7 @@ export function WebinarVideoLayout({
                             {[1,2,3].map(i => (
                               <div 
                                 key={i}
-                                className="w-0.5 bg-green-500 rounded-full animate-pulse"
+                                className="w-0.5 bg-primary rounded-full animate-pulse"
                                 style={{ 
                                   height: `${4 + i * 2}px`,
                                   animationDelay: `${i * 100}ms`
