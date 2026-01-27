@@ -361,7 +361,8 @@ export function EmojiReactions({ room, participantName }: EmojiReactionsProps) {
             id: `${Date.now()}-${Math.random()}`,
             reactionId: message.reactionId,
             senderName: message.senderName,
-            x: 10 + Math.random() * 80, // Random position 10-90% horizontal
+            // Avoid center area (30-70%) to prevent overlap with "Waiting for participant" text
+            x: Math.random() > 0.5 ? (5 + Math.random() * 25) : (70 + Math.random() * 25), // Left 5-30% or right 70-95%
             y: 20 + Math.random() * 25, // Random position 20-45% from bottom
             timestamp: Date.now(),
           };
@@ -397,13 +398,13 @@ export function EmojiReactions({ room, participantName }: EmojiReactionsProps) {
       
       await room.localParticipant.publishData(data, { reliable: true });
 
-      // Also show locally
+      // Also show locally - avoid center area
       const localReaction: EmojiReaction = {
         id: `${Date.now()}-local`,
         reactionId,
         senderName: participantName,
-        x: 10 + Math.random() * 80,
-        y: 20 + Math.random() * 25,
+        x: Math.random() > 0.5 ? (5 + Math.random() * 25) : (70 + Math.random() * 25),
+        y: 15 + Math.random() * 30,
         timestamp: Date.now(),
       };
 

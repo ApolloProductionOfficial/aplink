@@ -262,14 +262,15 @@ export function FocusVideoLayout({
                 </div>
               </div>
             ) : (
-              // No remote participants yet - show waiting state
+              // No remote participants yet - show waiting state (static, no distracting animations)
               <div className="w-full h-full flex items-center justify-center">
                 <div className="flex flex-col items-center gap-6 text-center">
                   <div className="relative">
-                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center animate-pulse">
+                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border border-primary/20">
                       <User className="w-12 h-12 text-muted-foreground" />
                     </div>
-                    <div className="absolute -inset-2 rounded-full border border-primary/20 animate-[ping_2s_ease-out_infinite]" />
+                    {/* Subtle slow breathing animation */}
+                    <div className="absolute -inset-3 rounded-full border border-primary/10 animate-[pulse_4s_ease-in-out_infinite]" />
                   </div>
                   <div>
                     <div className="text-lg font-medium text-foreground mb-1">Ожидание участника...</div>

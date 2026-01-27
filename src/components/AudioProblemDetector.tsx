@@ -123,15 +123,33 @@ export function AudioProblemDetector({ room, localParticipant }: AudioProblemDet
   }, [localParticipant, room]);
 
   // Monitor local mic mute state and detect if user tries to talk
+  // ONLY show warning if user explicitly muted AFTER having it enabled
   useEffect(() => {
     if (!localParticipant) return;
 
+    // Track if mic was ever enabled - only warn after explicit mute
+    let wasEverEnabled = false;
+    let muteWarningTimer: NodeJS.Timeout | null = null;
+    
     const checkMicMuted = () => {
       const micPub = localParticipant.getTrackPublication(Track.Source.Microphone) as LocalTrackPublication | undefined;
       
-      if (!micPub || micPub.isMuted) {
-        // Set mic muted warning after delay
-        const timer = setTimeout(() => {
+      // If mic is currently enabled, mark it
+      if (micPub && !micPub.isMuted && micPub.track) {
+        wasEverEnabled = true;
+        // Clear any pending warning
+        if (muteWarningTimer) {
+          clearTimeout(muteWarningTimer);
+          muteWarningTimer = null;
+        }
+        setIssues(prev => prev.filter(i => i.type !== 'mic_muted'));
+        return;
+      }
+      
+      // Only show warning if mic was previously enabled and is now muted
+      // This prevents false warnings during initial connection
+      if (wasEverEnabled && micPub && micPub.isMuted) {
+        muteWarningTimer = setTimeout(() => {
           if (shouldShowWarning('mic_muted_hint')) {
             setIssues(prev => {
               if (!prev.find(i => i.type === 'mic_muted')) {
@@ -141,22 +159,28 @@ export function AudioProblemDetector({ room, localParticipant }: AudioProblemDet
             });
           }
         }, 10000); // Show after 10 seconds of being muted
-        
-        return () => clearTimeout(timer);
-      } else {
-        setIssues(prev => prev.filter(i => i.type !== 'mic_muted'));
       }
     };
 
-    checkMicMuted();
+    // Initial check after a delay to let tracks publish
+    const initTimer = setTimeout(() => {
+      const micPub = localParticipant.getTrackPublication(Track.Source.Microphone) as LocalTrackPublication | undefined;
+      if (micPub && !micPub.isMuted && micPub.track) {
+        wasEverEnabled = true;
+      }
+    }, 3000);
 
     const handleMuteChanged = () => checkMicMuted();
     localParticipant.on('trackMuted', handleMuteChanged);
     localParticipant.on('trackUnmuted', handleMuteChanged);
+    localParticipant.on('trackPublished', handleMuteChanged);
 
     return () => {
+      clearTimeout(initTimer);
+      if (muteWarningTimer) clearTimeout(muteWarningTimer);
       localParticipant.off('trackMuted', handleMuteChanged);
       localParticipant.off('trackUnmuted', handleMuteChanged);
+      localParticipant.off('trackPublished', handleMuteChanged);
     };
   }, [localParticipant]);
 
