@@ -262,7 +262,7 @@ export function FocusVideoLayout({
                 </div>
               </div>
             ) : (
-              // No remote participants yet - show waiting state (static, no distracting animations)
+              // No remote participants yet - show waiting state (single center stack, no overlays)
               <div className="w-full h-full flex items-center justify-center">
                 <div className="flex flex-col items-center gap-6 text-center">
                   <div className="relative">
@@ -275,6 +275,13 @@ export function FocusVideoLayout({
                   <div>
                     <div className="text-lg font-medium text-foreground mb-1">Ожидание участника...</div>
                     <div className="text-sm text-muted-foreground">Отправьте ссылку на комнату</div>
+
+                    {!isCameraEnabled && (
+                      <div className="mt-2 inline-flex items-center gap-2 text-xs text-muted-foreground">
+                        <VideoOff className="w-3.5 h-3.5" />
+                        <span>Камера отключена</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -412,24 +419,6 @@ export function FocusVideoLayout({
             );
           })()}
         </DraggablePiP>
-      )}
-
-      {/* Show self fullscreen when alone and no camera */}
-      {!mainRemoteParticipant && !isCameraEnabled && localParticipant && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="flex flex-col items-center gap-4">
-            <div className="w-32 h-32 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center border border-primary/20">
-              <User className="w-16 h-16 text-muted-foreground" />
-            </div>
-            <div className="text-xl font-medium text-foreground">
-              {localParticipant.name || localParticipant.identity}
-            </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <VideoOff className="w-4 h-4" />
-              <span>Камера отключена</span>
-            </div>
-          </div>
-        </div>
       )}
 
       {/* Hint for double-click swap */}
