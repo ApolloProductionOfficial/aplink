@@ -63,7 +63,8 @@ export function useAudioLevelMeter(
     }
   }, []);
 
-  // Subscribe to track events to detect when mic becomes available
+  // Subscribe to track lifecycle events so we can re-init when mic appears/mutes/unmutes.
+  // NOTE: Local tracks do NOT emit TrackPublished/TrackUnpublished; they emit LocalTrackPublished/LocalTrackUnpublished.
   useEffect(() => {
     if (!participant) return;
 
@@ -76,6 +77,8 @@ export function useAudioLevelMeter(
     participant.on(ParticipantEvent.TrackSubscribed, handleTrackChange);
     participant.on(ParticipantEvent.TrackUnpublished, handleTrackChange);
     participant.on(ParticipantEvent.TrackUnsubscribed, handleTrackChange);
+    participant.on(ParticipantEvent.LocalTrackPublished, handleTrackChange);
+    participant.on(ParticipantEvent.LocalTrackUnpublished, handleTrackChange);
     participant.on(ParticipantEvent.TrackMuted, handleTrackChange);
     participant.on(ParticipantEvent.TrackUnmuted, handleTrackChange);
 
@@ -84,6 +87,8 @@ export function useAudioLevelMeter(
       participant.off(ParticipantEvent.TrackSubscribed, handleTrackChange);
       participant.off(ParticipantEvent.TrackUnpublished, handleTrackChange);
       participant.off(ParticipantEvent.TrackUnsubscribed, handleTrackChange);
+      participant.off(ParticipantEvent.LocalTrackPublished, handleTrackChange);
+      participant.off(ParticipantEvent.LocalTrackUnpublished, handleTrackChange);
       participant.off(ParticipantEvent.TrackMuted, handleTrackChange);
       participant.off(ParticipantEvent.TrackUnmuted, handleTrackChange);
     };
