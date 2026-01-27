@@ -14,6 +14,7 @@ import {
 interface FocusVideoLayoutProps {
   localParticipant: LocalParticipant | null;
   isCameraEnabled: boolean;
+  isMicrophoneEnabled: boolean;
   showChat: boolean;
   isMaximizing?: boolean;
   speakingParticipant?: string;
@@ -31,6 +32,7 @@ interface FocusVideoLayoutProps {
 export function FocusVideoLayout({ 
   localParticipant, 
   isCameraEnabled, 
+  isMicrophoneEnabled,
   showChat,
   isMaximizing,
   speakingParticipant,
@@ -367,28 +369,27 @@ export function FocusVideoLayout({
             }
           </div>
           
-          {/* Mic status indicator */}
-          <div className={cn(
-            "absolute top-1.5 right-1.5 w-5 h-5 rounded-full flex items-center justify-center",
-            mainRemoteParticipant
-              ? ((showLocalInMain ? !mainRemoteParticipant?.isMicrophoneEnabled : !localParticipant?.isMicrophoneEnabled)
-                  ? "bg-destructive/60" 
-                  : "bg-green-500/60")
-              : (!localParticipant?.isMicrophoneEnabled ? "bg-destructive/60" : "bg-green-500/60")
-          )}>
-            {mainRemoteParticipant
-              ? ((showLocalInMain ? !mainRemoteParticipant?.isMicrophoneEnabled : !localParticipant?.isMicrophoneEnabled) ? (
-                  <MicOff className="w-3 h-3 text-white" />
-                ) : (
+          {/* Mic status indicator - use prop for local, property for remote */}
+          {(() => {
+            // Determine whose mic status to show
+            const isShowingLocal = !mainRemoteParticipant || !showLocalInMain;
+            const micEnabled = isShowingLocal 
+              ? isMicrophoneEnabled 
+              : (mainRemoteParticipant?.isMicrophoneEnabled ?? false);
+            
+            return (
+              <div className={cn(
+                "absolute top-1.5 right-1.5 w-5 h-5 rounded-full flex items-center justify-center",
+                micEnabled ? "bg-green-500/60" : "bg-destructive/60"
+              )}>
+                {micEnabled ? (
                   <Mic className="w-3 h-3 text-white" />
-                ))
-              : (!localParticipant?.isMicrophoneEnabled ? (
-                  <MicOff className="w-3 h-3 text-white" />
                 ) : (
-                  <Mic className="w-3 h-3 text-white" />
-                ))
-            }
-          </div>
+                  <MicOff className="w-3 h-3 text-white" />
+                )}
+              </div>
+            );
+          })()}
         </DraggablePiP>
       )}
 

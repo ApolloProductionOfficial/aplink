@@ -1146,6 +1146,7 @@ function LiveKitContent({
           <FocusVideoLayout
             localParticipant={localParticipant as LocalParticipant}
             isCameraEnabled={isCameraEnabled}
+            isMicrophoneEnabled={isMicrophoneEnabled}
             showChat={showChat}
             isMaximizing={isMaximizing}
             speakingParticipant={speakingParticipant}
