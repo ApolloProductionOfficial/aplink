@@ -704,11 +704,9 @@ function LiveKitContent({
     }, 3000);
   }, [isMobile]);
 
-  // Touch handler for mobile - tap to show/hide panels
-  const handleTouchStart = useCallback(() => {
-    if (!isMobile) return;
-    
-    // Show panels
+  // Handle click to show panels (works like finger tap on desktop too)
+  const handleClick = useCallback(() => {
+    // Show both panels on click
     setShowTopPanel(true);
     setShowBottomPanel(true);
     lastTouchRef.current = Date.now();
@@ -723,7 +721,26 @@ function LiveKitContent({
         setShowBottomPanel(false);
       }
     }, 4000);
-  }, [isMobile]);
+  }, []);
+
+  // Touch handler for mobile - tap to show/hide panels
+  const handleTouchStart = useCallback(() => {
+    // Show panels on touch
+    setShowTopPanel(true);
+    setShowBottomPanel(true);
+    lastTouchRef.current = Date.now();
+    
+    // Auto-hide after 4 seconds
+    if (hideTimeoutRef.current) {
+      clearTimeout(hideTimeoutRef.current);
+    }
+    hideTimeoutRef.current = setTimeout(() => {
+      if (Date.now() - lastTouchRef.current >= 4000) {
+        setShowTopPanel(false);
+        setShowBottomPanel(false);
+      }
+    }, 4000);
+  }, []);
 
   // Toggle camera
   const toggleCamera = useCallback(async () => {
@@ -1140,6 +1157,7 @@ function LiveKitContent({
       className="flex flex-col h-full livekit-room-container bg-background relative cursor-default"
       onMouseMove={handleMouseMove}
       onTouchStart={handleTouchStart}
+      onClick={handleClick}
     >
       {/* Subtle onboarding arrow hints */}
       {showOnboarding && (
