@@ -35,12 +35,40 @@ interface InCallChatProps {
 }
 
 export function InCallChat({ room, participantName, isOpen, onToggle, buttonOnly = false }: InCallChatProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  // Use ref for initial messages to preserve across remounts
+  const roomId = room?.name || 'default';
+  const storageKey = `aplink-chat-${roomId}`;
+  
+  // Load persisted messages from sessionStorage on mount
+  const loadPersistedMessages = (): ChatMessage[] => {
+    try {
+      const stored = sessionStorage.getItem(storageKey);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return parsed.map((m: any) => ({
+          ...m,
+          timestamp: new Date(m.timestamp),
+        }));
+      }
+    } catch {}
+    return [];
+  };
+  
+  const [messages, setMessages] = useState<ChatMessage[]>(loadPersistedMessages);
   const [inputValue, setInputValue] = useState("");
   const [unreadCount, setUnreadCount] = useState(0);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { playMessageSound } = useConnectionSounds();
+
+  // Persist messages to sessionStorage whenever they change
+  useEffect(() => {
+    if (messages.length > 0) {
+      try {
+        sessionStorage.setItem(storageKey, JSON.stringify(messages));
+      } catch {}
+    }
+  }, [messages, storageKey]);
 
   // Voice recording state
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
@@ -444,7 +472,7 @@ export function InCallChat({ room, participantName, isOpen, onToggle, buttonOnly
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Button component (used in both modes)
+  // Button component (used in both modes) - with glow animation when unread
   const ChatButton = (
     <Button
       onClick={onToggle}
@@ -454,10 +482,15 @@ export function InCallChat({ room, participantName, isOpen, onToggle, buttonOnly
         "relative w-12 h-12 rounded-full border-white/[0.12] transition-all hover:scale-105 hover:shadow-lg",
         isOpen 
           ? "bg-primary/20 border-primary/50" 
-          : "bg-white/10 hover:bg-white/20"
+          : "bg-white/10 hover:bg-white/20",
+        // Pulsing glow when there are unread messages
+        unreadCount > 0 && !isOpen && "animate-pulse shadow-[0_0_20px_hsl(var(--primary)/0.6)] border-primary/50"
       )}
     >
-      <MessageCircle className="w-5 h-5" />
+      <MessageCircle className={cn(
+        "w-5 h-5",
+        unreadCount > 0 && !isOpen && "text-primary"
+      )} />
       {unreadCount > 0 && !isOpen && (
         <span className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground text-xs rounded-full flex items-center justify-center animate-pulse font-bold">
           {unreadCount > 9 ? '9+' : unreadCount}

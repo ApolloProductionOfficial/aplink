@@ -413,12 +413,19 @@ const MeetingRoom = () => {
     };
   }, [userName, roomSlug, user?.id]);
 
-  // Redirect to home page if no name provided
-  useEffect(() => {
-    if (!userName) {
-      navigate(`/?room=${encodeURIComponent(roomSlug)}`);
-    }
-  }, [userName, roomSlug, navigate]);
+  // Redirect to home page immediately if no name provided
+  // Show nothing while redirecting to prevent flash
+  if (!userName) {
+    navigate(`/?room=${encodeURIComponent(roomSlug)}`, { replace: true });
+    return (
+      <div className="flex items-center justify-center h-screen bg-background">
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 mx-auto rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+          <p className="text-muted-foreground">Перенаправление...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Use production URL for sharing, not preview URL
   const productionUrl = 'https://aplink.live';

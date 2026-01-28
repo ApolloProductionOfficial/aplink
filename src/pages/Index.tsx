@@ -59,9 +59,25 @@ const Index = () => {
   usePresence();
   useTelegramLinking(user?.id);
 
+  // Highlight form and scroll to it when room param is present
   useEffect(() => {
     if (roomFromUrl) {
       setRoomName(roomFromUrl);
+      // Scroll to form and highlight it
+      setFormHighlight(true);
+      setTimeout(() => {
+        const formEl = document.getElementById('create-room-form');
+        if (formEl) {
+          formEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        // Auto-focus the name input
+        const nameInput = formEl?.querySelector('input[type="text"]') as HTMLInputElement;
+        if (nameInput && !nameInput.value) {
+          nameInput.focus();
+        }
+      }, 300);
+      // Remove highlight after 5 seconds
+      setTimeout(() => setFormHighlight(false), 5000);
     }
   }, [roomFromUrl]);
 

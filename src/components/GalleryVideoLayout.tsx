@@ -53,21 +53,21 @@ export function GalleryVideoLayout({
 
   const participantCount = sortedParticipants.length;
 
-  // Determine grid columns based on participant count
+  // Determine grid columns based on participant count - mobile responsive
   const gridCols = useMemo(() => {
     if (participantCount <= 1) return 'grid-cols-1';
-    if (participantCount <= 2) return 'grid-cols-2';
+    if (participantCount <= 2) return 'grid-cols-1 sm:grid-cols-2';
     if (participantCount <= 4) return 'grid-cols-2';
-    if (participantCount <= 6) return 'grid-cols-3';
-    if (participantCount <= 9) return 'grid-cols-3';
-    return 'grid-cols-4';
+    if (participantCount <= 6) return 'grid-cols-2 md:grid-cols-3';
+    if (participantCount <= 9) return 'grid-cols-2 md:grid-cols-3';
+    return 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4';
   }, [participantCount]);
 
   // Determine rows for better aspect ratios
   const gridRows = useMemo(() => {
-    if (participantCount <= 2) return 'grid-rows-1';
+    if (participantCount <= 2) return 'grid-rows-1 sm:grid-rows-1';
     if (participantCount <= 4) return 'grid-rows-2';
-    if (participantCount <= 6) return 'grid-rows-2';
+    if (participantCount <= 6) return 'grid-rows-2 md:grid-rows-2';
     return 'auto-rows-fr';
   }, [participantCount]);
 
@@ -81,9 +81,9 @@ export function GalleryVideoLayout({
   };
 
   return (
-    <div className="h-full w-full p-4 bg-gradient-to-br from-background via-background/95 to-primary/5">
+    <div className="h-full w-full p-2 sm:p-4 bg-gradient-to-br from-background via-background/95 to-primary/5">
       <div className={cn(
-        "grid gap-3 h-full w-full",
+        "grid gap-2 sm:gap-3 h-full w-full",
         gridCols,
         gridRows
       )}>
