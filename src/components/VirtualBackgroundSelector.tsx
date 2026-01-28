@@ -114,25 +114,37 @@ export function VirtualBackgroundSelector({
     });
   }, []);
 
+  // Track loading state for static images to prevent double-click toggle issue
+  const [isLoadingStatic, setIsLoadingStatic] = useState(false);
+
   const handleStaticImageSelect = async (url: string, id: string) => {
-    if (selectedId === id) {
+    // If already loading, ignore click
+    if (isLoadingStatic) return;
+    
+    // If already selected and NOT loading, toggle off
+    if (selectedId === id && !isProcessing) {
       onRemove();
       setSelectedId(null);
-    } else {
-      try {
-        // Mirror the Apollo background to fix orientation
-        if (id === 'apollo') {
-          const mirroredUrl = await mirrorImage(url);
-          onSelectImage(mirroredUrl);
-        } else {
-          onSelectImage(url);
-        }
-        setSelectedId(id);
-      } catch (err) {
-        console.error('Failed to process image:', err);
+      return;
+    }
+    
+    // Apply the background on first click
+    setIsLoadingStatic(true);
+    setSelectedId(id);
+    
+    try {
+      // Mirror the Apollo background to fix orientation
+      if (id === 'apollo') {
+        const mirroredUrl = await mirrorImage(url);
+        onSelectImage(mirroredUrl);
+      } else {
         onSelectImage(url);
-        setSelectedId(id);
       }
+    } catch (err) {
+      console.error('Failed to process image:', err);
+      onSelectImage(url);
+    } finally {
+      setIsLoadingStatic(false);
     }
   };
 

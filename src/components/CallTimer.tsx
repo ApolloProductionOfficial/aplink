@@ -8,8 +8,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { MobileTooltip } from '@/components/ui/MobileTooltip';
 import { cn } from '@/lib/utils';
-
 interface CallTimerProps {
   room: Room | null;
   isHost?: boolean;
@@ -418,23 +418,23 @@ export function CallTimer({ room, isHost = true }: CallTimerProps) {
         document.body
       )}
 
-      {/* Timer control button (in toolbar) */}
-      <Popover open={isOpen} onOpenChange={setIsOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className={cn(
-              "w-10 h-10 rounded-full transition-all",
-              isActive 
-                ? "bg-primary/30 border border-primary/50" 
-                : "bg-white/10 hover:bg-white/20 border border-white/10"
-            )}
-            title="Таймер"
-          >
-            <Timer className="w-5 h-5" />
-          </Button>
-        </PopoverTrigger>
+      {/* Timer control button (in toolbar) - with MobileTooltip */}
+      <MobileTooltip content="Таймер звонка" side="bottom">
+        <Popover open={isOpen} onOpenChange={setIsOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn(
+                "w-9 h-9 sm:w-10 sm:h-10 rounded-full transition-all",
+                isActive 
+                  ? "bg-primary/30 border border-primary/50" 
+                  : "bg-white/10 hover:bg-white/20 border border-white/10"
+              )}
+            >
+              <Timer className="w-4 h-4 sm:w-5 sm:h-5" />
+            </Button>
+          </PopoverTrigger>
         <PopoverContent 
           className="w-64 p-4 bg-black/60 backdrop-blur-2xl border-white/[0.08] rounded-2xl"
           side="top"
@@ -496,7 +496,8 @@ export function CallTimer({ room, isHost = true }: CallTimerProps) {
             </div>
           </div>
         </PopoverContent>
-      </Popover>
+        </Popover>
+      </MobileTooltip>
     </>
   );
 }

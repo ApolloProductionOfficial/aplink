@@ -43,6 +43,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { MobileTooltip } from "@/components/ui/MobileTooltip";
 import { cn } from "@/lib/utils";
 import { InCallChat } from "@/components/InCallChat";
 import { VirtualBackgroundSelector } from "@/components/VirtualBackgroundSelector";
@@ -60,6 +61,7 @@ import { GalleryVideoLayout } from "@/components/GalleryVideoLayout";
 import { WebinarVideoLayout } from "@/components/WebinarVideoLayout";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useNativePiP } from "@/hooks/useNativePiP";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
 
 interface LiveKitRoomProps {
@@ -446,8 +448,14 @@ function LiveKitContent({
   // Native browser PiP
   const { isPiPActive, isPiPSupported, togglePiP } = useNativePiP(room);
   
+  // Mobile detection for touch handling and tooltip suppression
+  const isMobile = useIsMobile();
+  
+  // Touch-to-show panels on mobile
+  const lastTouchRef = useRef<number>(Date.now());
+  
   // Track speaking participant for indicators
-  const [speakingParticipant, setSpeakingParticipant] = useState<string | undefined>(undefined);
+  const speakingParticipant = useMemo(() => undefined as string | undefined, []);
   
   // Track if gallery mode was suggested
   const galleryModeSuggestedRef = useRef(false);
@@ -547,7 +555,9 @@ function LiveKitContent({
     }
   }, [isScreenShareEnabled, layoutMode]);
   
-  // Track active speaker
+  // Track active speaker (keep the handler in a separate effect)
+  const [speakingParticipantState, setSpeakingParticipant] = useState<string | undefined>(undefined);
+  
   useEffect(() => {
     if (!room) return;
     
@@ -662,8 +672,11 @@ function LiveKitContent({
     };
   }, []);
 
-  // Handle mouse movement for panel visibility
+  // Handle mouse movement for panel visibility (desktop)
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    // Skip mouse handling on mobile - use touch instead
+    if (isMobile) return;
+    
     const container = containerRef.current;
     if (!container) return;
 
@@ -689,7 +702,28 @@ function LiveKitContent({
       setShowTopPanel(false);
       setShowBottomPanel(false);
     }, 3000);
-  }, []);
+  }, [isMobile]);
+
+  // Touch handler for mobile - tap to show/hide panels
+  const handleTouchStart = useCallback(() => {
+    if (!isMobile) return;
+    
+    // Show panels
+    setShowTopPanel(true);
+    setShowBottomPanel(true);
+    lastTouchRef.current = Date.now();
+    
+    // Auto-hide after 4 seconds
+    if (hideTimeoutRef.current) {
+      clearTimeout(hideTimeoutRef.current);
+    }
+    hideTimeoutRef.current = setTimeout(() => {
+      if (Date.now() - lastTouchRef.current >= 4000) {
+        setShowTopPanel(false);
+        setShowBottomPanel(false);
+      }
+    }, 4000);
+  }, [isMobile]);
 
   // Toggle camera
   const toggleCamera = useCallback(async () => {
@@ -1105,6 +1139,7 @@ function LiveKitContent({
       ref={containerRef}
       className="flex flex-col h-full livekit-room-container bg-background relative cursor-default"
       onMouseMove={handleMouseMove}
+      onTouchStart={handleTouchStart}
     >
       {/* Subtle onboarding arrow hints */}
       {showOnboarding && (
@@ -1134,25 +1169,26 @@ function LiveKitContent({
                 : "-translate-y-8 opacity-0 scale-90 pointer-events-none"
           )}
         >
-          <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-[2.5rem] bg-transparent backdrop-blur-[2px] border border-white/[0.1] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)]">
+          <div className="flex items-center gap-1.5 sm:gap-2.5 px-2 sm:px-4 py-2 sm:py-2.5 rounded-[2rem] sm:rounded-[2.5rem] bg-transparent backdrop-blur-[2px] border border-white/[0.1] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)]">
             {/* Native PiP button in header */}
             {isPiPSupported && (
-              <button
-                onClick={togglePiP}
-                className={cn(
-                  "flex items-center justify-center w-9 h-9 rounded-full border border-white/[0.08] transition-all hover:scale-105 hover:shadow-lg [&_svg]:stroke-[2.5]",
-                  isPiPActive 
-                    ? "bg-primary/30 border-primary/40" 
-                    : "bg-white/10 hover:bg-white/20"
-                )}
-                title={isPiPActive ? "Выйти из PiP" : "Picture-in-Picture"}
-              >
-                <PictureInPicture className={cn("w-4 h-4", isPiPActive && "text-primary")} />
-              </button>
+              <MobileTooltip content={isPiPActive ? "Выйти из PiP" : "Picture-in-Picture"} side="bottom">
+                <button
+                  onClick={togglePiP}
+                  className={cn(
+                    "flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-white/[0.08] transition-all hover:scale-105 hover:shadow-lg [&_svg]:stroke-[2.5]",
+                    isPiPActive 
+                      ? "bg-primary/30 border-primary/40" 
+                      : "bg-white/10 hover:bg-white/20"
+                  )}
+                >
+                  <PictureInPicture className={cn("w-3.5 h-3.5 sm:w-4 sm:h-4", isPiPActive && "text-primary")} />
+                </button>
+              </MobileTooltip>
             )}
 
-            {/* Room name */}
-            {roomDisplayName && (
+            {/* Room name - hidden on mobile */}
+            {roomDisplayName && !isMobile && (
               <span className="text-sm font-semibold truncate max-w-[120px] px-2">{roomDisplayName}</span>
             )}
 
