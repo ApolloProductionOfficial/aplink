@@ -67,7 +67,7 @@ export function initGlobalErrorHandlers() {
     const errorMessage =
       reason?.message || (typeof reason === 'string' ? reason : 'Unhandled Promise Rejection');
 
-    // Filter out noise (network, extensions, non-app errors)
+    // Filter out noise (network, extensions, non-app errors, expected disconnects)
     if (
       errorMessage.includes('FunctionsFetchError') ||
       errorMessage.includes('AbortError') ||
@@ -83,7 +83,11 @@ export function initGlobalErrorHandlers() {
       errorMessage.includes('grammarly') ||
       errorMessage.includes('Grammarly') ||
       errorMessage.includes('Loading chunk') ||
-      errorMessage.includes('dynamically imported module')
+      errorMessage.includes('dynamically imported module') ||
+      // Filter out expected LiveKit disconnection reasons
+      errorMessage.includes('"reason":3') ||
+      errorMessage.includes('"reasonName":"Cancelled"') ||
+      errorMessage.includes('Cancelled')
     ) {
       return;
     }

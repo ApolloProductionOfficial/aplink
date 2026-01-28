@@ -3,16 +3,37 @@ import { Room, Track } from 'livekit-client';
 import { toast } from 'sonner';
 
 /**
+ * Detect if running on iOS (iPhone/iPad)
+ * iOS Safari doesn't support programmatic PiP requests
+ */
+function isIOSDevice(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent;
+  return /iPhone|iPad|iPod/i.test(ua) || 
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+/**
  * Hook for managing native browser Picture-in-Picture functionality
  * Allows viewing the call in a floating window when switching tabs
+ * 
+ * NOTE: iOS Safari does not support programmatic PiP - only user-initiated
+ * via native video controls, so we disable this feature on iOS
  */
 export function useNativePiP(room: Room | null) {
   const [isPiPActive, setIsPiPActive] = useState(false);
   const [isPiPSupported, setIsPiPSupported] = useState(false);
   const activeVideoRef = useRef<HTMLVideoElement | null>(null);
+  const isIOS = useRef(isIOSDevice());
 
-  // Check if PiP is supported
+  // Check if PiP is supported (disabled on iOS)
   useEffect(() => {
+    // iOS doesn't support programmatic PiP requests
+    if (isIOS.current) {
+      setIsPiPSupported(false);
+      return;
+    }
+    
     setIsPiPSupported(
       'pictureInPictureEnabled' in document && 
       document.pictureInPictureEnabled
@@ -41,6 +62,12 @@ export function useNativePiP(room: Room | null) {
 
   // Request PiP for remote participant's video
   const requestPiP = useCallback(async () => {
+    // Skip on iOS - programmatic PiP not supported
+    if (isIOS.current) {
+      console.log('[useNativePiP] PiP not supported on iOS');
+      return;
+    }
+    
     if (!room || !isPiPSupported) {
       toast.error('Picture-in-Picture не поддерживается');
       return;
