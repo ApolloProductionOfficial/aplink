@@ -1,313 +1,280 @@
 
-# APLink Call Interface Improvements - Implementation Plan
+# APLink Mobile & UX Improvements Plan
 
 ## Overview
 
-This plan addresses 9 major improvements to the APLink video call system, ranging from UI enhancements to core functionality fixes for collaborative features and mobile responsiveness.
+This plan addresses multiple improvements:
+1. Make chat fullscreen on mobile (bottom sheet style)
+2. Add tooltips to header buttons (Timer, PiP) with smoother animations
+3. Complete mobile-first redesign for call controls
+4. Touch-to-show panels on mobile
+5. Remove or minimize tooltips on mobile to prevent overflow
+6. Fix whiteboard on mobile with landscape orientation hint
+7. Fix DrawingOverlay mobile controls (remove escape panel, fit all buttons)
+8. Fix Apollo background requiring two clicks
 
 ---
 
-## Task 1: Add Tooltips to Header Buttons + Smoother Animation
+## Task 1: Fix Apollo Virtual Background (Two-Click Issue)
+
+### Problem
+The Apollo background requires two clicks because `handleStaticImageSelect` toggles selection - first click selects, but background processing is async and may not complete before UI state updates.
+
+### Solution
+In `VirtualBackgroundSelector.tsx`:
+1. Track loading state specifically for static images
+2. Don't toggle off if we're still processing the image
+3. Apply background immediately on first click
+
+### Files to Modify
+- `src/components/VirtualBackgroundSelector.tsx`
+
+---
+
+## Task 2: Add Tooltips to Header Buttons + Smoother Animations
 
 ### Current State
-- Top header buttons (PiP, Timer, etc.) lack tooltips
-- Tooltip animations use default Radix UI timing
+- Header panel has PiP button and Timer without tooltips
+- Tooltip animation is default Radix timing
 
 ### Implementation
-1. **Wrap header buttons with Tooltip components**
-   - In `LiveKitRoom.tsx` and `MeetingRoom.tsx`, wrap PiP button, Timer button, and other header actions with `<Tooltip>` wrappers
-   - Add Russian descriptions: "Picture-in-Picture", "Таймер звонка", etc.
+1. **Wrap PiP button in header with Tooltip** (already has `title` attr, upgrade to proper Tooltip)
+2. **Wrap Timer button with Tooltip**
+3. **Disable tooltips on mobile** - use `useIsMobile` hook to conditionally render tooltips only on desktop
 
-2. **Enhance tooltip animations in `tooltip.tsx`**
-   - Increase animation duration from default to 300ms
-   - Add custom fade-in animation with transform
-   - Use `data-[state=delayed-open]` for entrance animation
-
-**Files to modify:**
-- `src/components/ui/tooltip.tsx` - Add smoother animation classes
-- `src/components/LiveKitRoom.tsx` - Wrap header buttons with tooltips
-- `src/pages/MeetingRoom.tsx` - Wrap any header buttons
+### Files to Modify
+- `src/components/LiveKitRoom.tsx` - Wrap header PiP button
+- `src/components/CallTimer.tsx` - Wrap timer trigger button
 
 ---
 
-## Task 2: Fix Call Sharing Link Flow
+## Task 3: Mobile-First Chat Panel (Fullscreen Bottom Sheet)
 
 ### Current State
-- When guests click a `/room/[roomSlug]` link, they go directly to the room
-- The `MeetingRoom.tsx` redirects to Index if no name, but users see the room first
+- Chat panel is fixed at 320px wide, positioned with drag
+- Not optimized for mobile
 
 ### Implementation
-1. **Update `MeetingRoom.tsx` redirect logic**
-   - Currently: `if (!userName) navigate(\`/?room=\${roomSlug}\`)`
-   - This is correct, but happens after component mount
+1. **Detect mobile using `useIsMobile` hook**
+2. **Mobile layout**:
+   - Full width (`inset-x-0`)
+   - Height: `h-[70vh]` or similar
+   - Position: bottom of screen
+   - Slide-up animation
+   - Remove drag functionality on mobile
+   - Larger touch targets for buttons
+3. **Desktop layout**: Keep current draggable panel
 
-2. **Make redirect happen earlier**
-   - Move the redirect check to the top of the component
-   - Show a loading state while redirecting to prevent flash
-   - Ensure the room parameter is preserved in URL
-
-3. **Improve Index.tsx to auto-scroll to form**
-   - When `?room=` param is present, highlight the form
-   - Auto-focus the name input field
-
-**Files to modify:**
-- `src/pages/MeetingRoom.tsx` - Earlier redirect with loading state
-- `src/pages/Index.tsx` - Better handling of `?room=` parameter
+### Files to Modify
+- `src/components/InCallChat.tsx`
 
 ---
 
-## Task 3: Default to Gallery View
+## Task 4: Touch-to-Show Panels on Mobile
 
 ### Current State
-- `layoutMode` defaults to `'focus'` in `LiveKitRoom.tsx` line 440
+- Panels auto-hide based on mouse movement
+- No tap-to-show for touch devices
 
 ### Implementation
-1. **Change default layout mode**
-   - Change: `useState<'focus' | 'gallery' | 'webinar'>('focus')`
-   - To: `useState<'focus' | 'gallery' | 'webinar'>('gallery')`
+1. **Add touch handler to video container**:
+   - On tap, toggle panel visibility
+   - Auto-hide after 4 seconds of no interaction
+2. **Update `handleMouseMove` logic**:
+   - On mobile, use touch events instead of mouse
+   - Detect tap vs swipe
 
-2. **Remove gallery suggestion toast**
-   - The toast suggesting gallery mode for 3+ participants becomes redundant
-   - Keep the auto-switch logic for screen sharing
-
-**Files to modify:**
-- `src/components/LiveKitRoom.tsx` - Change default layout, remove suggestion
+### Files to Modify
+- `src/components/LiveKitRoom.tsx`
 
 ---
 
-## Task 4: Make Top Panel Visible to All Participants (Guests)
+## Task 5: Remove/Minimize Tooltips on Mobile
+
+### Problem
+- TooltipContent overflows on small screens
+- Buttons with tooltips go out of view when descriptions appear
+
+### Solution
+1. **Create mobile-aware Tooltip wrapper**:
+   - On mobile: render only children (no tooltip)
+   - On desktop: full tooltip with content
+2. **Apply to all control buttons**
+
+### Implementation
+Create a `MobileTooltip` component that conditionally renders:
+```tsx
+const MobileTooltip = ({ children, content }) => {
+  const isMobile = useIsMobile();
+  if (isMobile) return children;
+  return <Tooltip>{/* ... */}</Tooltip>;
+};
+```
+
+### Files to Modify
+- `src/components/LiveKitRoom.tsx` - Replace all bottom panel Tooltips with MobileTooltip
+
+---
+
+## Task 6: Fix Whiteboard on Mobile (Landscape Hint)
 
 ### Current State
-- The IP Panel is admin-only (`{isAdmin && showIPPanel && ...}`)
-- Translator and Captions panels are rendered but buttons may be hidden
+- Whiteboard tools in header overflow on mobile
+- Canvas aspect ratio doesn't work well in portrait
 
 ### Implementation
-1. **Verify button visibility in LiveKitRoom.tsx**
-   - Check if translator/captions buttons are conditionally hidden
-   - Ensure all participants see the same header buttons
+1. **Add orientation detection**:
+   - Detect if phone is in portrait mode
+   - Show overlay hint: "Поверните телефон для лучшей работы с доской"
+2. **Mobile-optimized toolbar**:
+   - Collapse tools into a hamburger/expandable menu
+   - Show only essential tools (pen, eraser, clear, close)
+   - Color picker in a popover
+   - Slider in a separate popover
+3. **Larger touch targets** (minimum 44px)
+4. **Close button always visible** in corner
 
-2. **Update headerButtons passed from MeetingRoom.tsx**
-   - Verify the buttons are created without admin checks
-   - Translator and Subtitles should be visible to everyone
-   - Only IP Panel should remain admin-only
-
-3. **Check GlobalActiveCall.tsx panel rendering**
-   - Currently: Captions and Translator are not admin-restricted
-   - IP Panel correctly checks `isAdmin`
-
-**Files to modify:**
-- `src/pages/MeetingRoom.tsx` - Ensure headerButtons include translator/subtitles for all
-- `src/components/LiveKitRoom.tsx` - Verify control buttons are not admin-gated
+### Files to Modify
+- `src/components/CollaborativeWhiteboard.tsx`
 
 ---
 
-## Task 5: Make Whiteboard Visible to All Participants
+## Task 7: Fix DrawingOverlay on Mobile
 
 ### Current State
-- `CollaborativeWhiteboard.tsx` and `DrawingOverlay.tsx` broadcast strokes via LiveKit Data Channel
-- Each participant only sees their own local canvas plus received remote strokes
-- The canvas itself is not synchronized when opened
+- ESC hint panel shown at bottom (useless on mobile)
+- Controls may overflow
+- Close button may be hidden
 
 ### Implementation
+1. **Remove ESC/Ctrl+Z hint panel on mobile**
+2. **Simplify mobile toolbar**:
+   - Only show: color row, 3-4 essential tools, close button
+   - Collapsible advanced options
+3. **Fixed close button** in top-right corner (always visible)
+4. **Touch-friendly interactions**:
+   - Larger color buttons
+   - Larger tool buttons
 
-#### 5a. Collaborative Whiteboard Sync
-1. **Broadcast whiteboard open/close state**
-   - When any participant opens whiteboard, broadcast: `{ type: 'WHITEBOARD_OPEN' }`
-   - Other participants auto-open whiteboard in response
-   
-2. **Sync canvas state on open**
-   - When whiteboard opens, request current state from other participants
-   - Broadcast full canvas ImageData as base64 for initial sync
-   - OR broadcast drawing history array
-
-3. **Add visual indicator when whiteboard is active**
-   - Show badge/icon when another participant has whiteboard open
-
-#### 5b. DrawingOverlay Sync (Drawing on Screen)
-1. **Broadcast drawing overlay open/close**
-   - Similar to whiteboard - sync the open state
-   - Other participants see drawing overlay appear
-
-2. **Sync strokes in real-time**
-   - Current implementation already broadcasts strokes
-   - Need to sync the initial canvas state when overlay opens
-
-**Files to modify:**
-- `src/components/CollaborativeWhiteboard.tsx` - Add open/close sync, canvas state sync
-- `src/components/DrawingOverlay.tsx` - Add open/close sync, improve initial state sync
-- `src/components/LiveKitRoom.tsx` - Add listeners for whiteboard/overlay open events
+### Files to Modify
+- `src/components/DrawingOverlay.tsx`
 
 ---
 
-## Task 6: Fix Chat Message Persistence + Notifications
+## Task 8: Complete Mobile Control Bar Redesign
 
 ### Current State
-- Messages are stored in component state: `useState<ChatMessage[]>([])`
-- When component unmounts/remounts, messages are lost
-- The `buttonOnly` mode and panel visibility cause remounting
+- Bottom panel has many buttons, some overflow
+- Button sizes inconsistent on mobile
 
 ### Implementation
+1. **Two-row layout on mobile** if too many buttons:
+   - Primary row: Camera, Mic, End Call
+   - Secondary row (expandable): Other tools
+2. **Or: Collapsible "More" button** that opens a sheet with additional controls
+3. **Smaller button sizes on mobile**: `w-10 h-10` instead of `w-12 h-12`
+4. **Remove text from "Выйти" button on mobile** - icon only
+5. **Ensure all buttons fit** in viewport width
 
-#### 6a. Persist Messages
-1. **Move message state to a ref or context**
-   - Create a `messagesRef` that survives remounts
-   - OR store messages in `sessionStorage` with room ID as key
-   - Load messages on mount, save on every new message
-
-2. **Use stable component mounting**
-   - Ensure `InCallChat` stays mounted even when closed
-   - Use CSS visibility instead of conditional rendering
-
-#### 6b. New Message Notification
-1. **Add glow effect to chat button when new message arrives**
-   - Already has `unreadCount` with red badge
-   - Add pulsing glow animation when `unreadCount > 0`
-   - Use CSS `box-shadow` with animation
-
-2. **Optional: Sound notification**
-   - Already calls `playMessageSound()` when chat is closed
-
-**Files to modify:**
-- `src/components/InCallChat.tsx` - Persist messages, add glow animation
-- `src/components/LiveKitRoom.tsx` - Ensure chat stays mounted
+### Files to Modify
+- `src/components/LiveKitRoom.tsx`
 
 ---
 
-## Task 7: Real-Time Translation Audio Broadcast to Other Participants
+## Task 9: Header Panel Mobile Optimization
 
 ### Current State
-- `RealtimeTranslator.tsx` translates speech and plays audio locally
-- `useLiveKitTranslationBroadcast.ts` has `sendTranslationToParticipants` method
-- `GlobalActiveCall.tsx` listens for incoming translations and plays them
+- Header buttons may overflow on narrow screens
+- Room name takes space
 
 ### Implementation
+1. **Hide room name on mobile** (or truncate severely)
+2. **Collapse header buttons into menu** on very small screens
+3. **Reduce button sizes** in header for mobile
 
-#### 7a. Fix Outgoing Translation Broadcast
-1. **Connect translator output to broadcast**
-   - In `RealtimeTranslator.tsx`, after generating TTS audio:
-   - Call `onSendTranslation(audioBase64, translatedText, originalText, sourceLang)`
-   - This should already be connected via `GlobalActiveCall`
-
-2. **Verify data channel payload format**
-   - Ensure the payload includes: `{ type: 'translation_audio', audioBase64, text, originalText, sourceLang, senderName }`
-
-#### 7b. Fix Incoming Translation Playback
-1. **Update GlobalActiveCall handler**
-   - Currently listens for `translation_audio` messages
-   - Plays via `playTranslatedAudio`
-   - Verify this is working correctly
-
-2. **Add bidirectional support**
-   - Each participant needs their own translator instance
-   - When Partner A speaks Russian → translated to English → broadcast to Partner B
-   - Partner B hears English translation
-   - Vice versa for Partner B speaking English
-
-3. **Handle translation direction**
-   - Add `direction` field to indicate incoming vs outgoing
-   - Don't play your own translations back to yourself
-
-**Files to modify:**
-- `src/components/RealtimeTranslator.tsx` - Ensure broadcast is called after TTS
-- `src/components/GlobalActiveCall.tsx` - Verify incoming handler, add self-filter
-- `src/hooks/useLiveKitTranslationBroadcast.ts` - Verify broadcast format
+### Files to Modify
+- `src/components/LiveKitRoom.tsx`
 
 ---
 
-## Task 8: Fix Mobile Responsiveness for Calls
+## Technical Implementation Details
 
-### Current State
-- Call interface designed for desktop
-- Buttons and panels may overflow or be too small on mobile
+### Mobile Detection
+Use existing `useIsMobile` hook from `src/hooks/use-mobile.tsx`
 
-### Implementation
+### New MobileTooltip Component
+Create a wrapper that disables tooltips on mobile to prevent overflow:
 
-#### 8a. Responsive Control Bar
-1. **Mobile control layout**
-   - Use flex-wrap for buttons
-   - Reduce button sizes on mobile (use `md:` breakpoints)
-   - Consider bottom sheet for additional controls
+```tsx
+// In LiveKitRoom.tsx or as separate component
+const MobileTooltip = ({ children, content, ...props }) => {
+  const isMobile = useIsMobile();
+  if (isMobile) return <>{children}</>;
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent {...props}>{content}</TooltipContent>
+    </Tooltip>
+  );
+};
+```
 
-2. **Touch-friendly interactions**
-   - Increase tap targets to minimum 44x44px
-   - Add haptic feedback where supported
+### Touch Panel Toggle
+```tsx
+// In LiveKitRoom.tsx
+const [panelsVisible, setPanelsVisible] = useState(true);
+const lastTouchRef = useRef(Date.now());
 
-#### 8b. Responsive Video Layout
-1. **Focus mode on mobile**
-   - Remote video fills most of screen
-   - Local video as small PiP in corner
-   
-2. **Gallery mode on mobile**
-   - 2-column grid instead of 4
-   - Larger touch targets for pinning
-
-#### 8c. Panel Responsiveness
-1. **Chat panel**
-   - Full-screen slide-up on mobile
-   - Bottom sheet style
-
-2. **Translator panel**
-   - Collapsible on mobile
-   - Simplified controls
-
-3. **Header controls**
-   - Collapse into hamburger menu on very small screens
-   - Priority: mic, camera, end call always visible
-
-**Files to modify:**
-- `src/components/LiveKitRoom.tsx` - Add responsive classes throughout
-- `src/components/InCallChat.tsx` - Mobile-optimized layout
-- `src/components/RealtimeTranslator.tsx` - Mobile layout
-- `src/components/FocusVideoLayout.tsx` - Mobile video sizing
-- `src/components/GalleryVideoLayout.tsx` - Mobile grid
+const handleTouchStart = () => {
+  if (isMobile) {
+    setPanelsVisible(true);
+    lastTouchRef.current = Date.now();
+    // Auto-hide after 4 seconds
+    setTimeout(() => {
+      if (Date.now() - lastTouchRef.current >= 4000) {
+        setPanelsVisible(false);
+      }
+    }, 4000);
+  }
+};
+```
 
 ---
 
-## Technical Considerations
-
-### Data Channel Usage
-- LiveKit data channel has size limits (~16KB per message)
-- For whiteboard sync, may need to chunk large canvas data
-- Translation audio as base64 can be large; consider compression
-
-### State Management
-- Panel visibility is already in `ActiveCallContext` (good)
-- Chat messages should move to a more persistent store
-- Whiteboard state sync may need a dedicated broadcast channel
-
-### Performance
-- Mobile devices have limited CPU/memory
-- Reduce video resolution on mobile if needed
-- Lazy-load translator/whiteboard components
-
----
-
-## Implementation Order (Recommended)
-
-1. **Task 3** - Default to gallery (simple change)
-2. **Task 1** - Tooltips (low risk, UI improvement)
-3. **Task 2** - Call sharing link flow (UX improvement)
-4. **Task 4** - Panel visibility for guests (permission fix)
-5. **Task 6** - Chat persistence + notifications (medium complexity)
-6. **Task 8** - Mobile responsiveness (extensive but safe)
-7. **Task 5** - Whiteboard sync (complex, requires testing)
-8. **Task 7** - Translation broadcast (complex, audio handling)
-
----
-
-## Estimated Files to Modify
+## Files Summary
 
 | File | Changes |
 |------|---------|
-| `src/components/ui/tooltip.tsx` | Smoother animation |
-| `src/components/LiveKitRoom.tsx` | Tooltips, default layout, responsive classes |
-| `src/pages/MeetingRoom.tsx` | Earlier redirect, header buttons |
-| `src/pages/Index.tsx` | Better room param handling |
-| `src/components/InCallChat.tsx` | Message persistence, glow notification, mobile layout |
-| `src/components/CollaborativeWhiteboard.tsx` | Sync open state, canvas state |
-| `src/components/DrawingOverlay.tsx` | Sync open state |
-| `src/components/RealtimeTranslator.tsx` | Broadcast connection, mobile layout |
-| `src/components/GlobalActiveCall.tsx` | Translation handler fixes |
-| `src/hooks/useLiveKitTranslationBroadcast.ts` | Verify broadcast format |
-| `src/components/FocusVideoLayout.tsx` | Mobile responsive |
-| `src/components/GalleryVideoLayout.tsx` | Mobile responsive |
+| `src/components/VirtualBackgroundSelector.tsx` | Fix two-click issue for Apollo background |
+| `src/components/LiveKitRoom.tsx` | Mobile control bar, touch panels, MobileTooltip, header optimization |
+| `src/components/InCallChat.tsx` | Fullscreen bottom sheet on mobile |
+| `src/components/CallTimer.tsx` | Add tooltip to trigger button |
+| `src/components/CollaborativeWhiteboard.tsx` | Mobile toolbar, landscape hint |
+| `src/components/DrawingOverlay.tsx` | Mobile toolbar, remove ESC hint, always-visible close |
+
+---
+
+## Implementation Order
+
+1. **Task 1** - Fix Apollo background (quick fix)
+2. **Task 2** - Add tooltips to header (quick)
+3. **Task 5** - Create MobileTooltip wrapper (foundation for others)
+4. **Task 8** - Mobile control bar redesign
+5. **Task 9** - Header mobile optimization
+6. **Task 4** - Touch-to-show panels
+7. **Task 3** - Mobile chat fullscreen
+8. **Task 6** - Whiteboard mobile fix
+9. **Task 7** - DrawingOverlay mobile fix
+
+---
+
+## Visual Behavior Summary
+
+### Mobile Call Interface
+- Tap anywhere on video to show/hide top and bottom panels
+- Panels auto-hide after 4 seconds
+- No tooltip descriptions (prevents overflow)
+- Smaller button sizes throughout
+- Chat opens as fullscreen bottom sheet
+- Whiteboard shows landscape orientation hint
+- Drawing overlay has simplified, always-visible close button
