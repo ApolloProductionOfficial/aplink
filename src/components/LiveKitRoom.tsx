@@ -758,30 +758,92 @@ function LiveKitContent({
     }, 4000);
   }, []);
 
-  // Toggle camera
+  // Track media toggle lock to prevent NegotiationError on iOS
+  const isTogglingMediaRef = useRef(false);
+
+  // Toggle camera with lock to prevent concurrent negotiations
   const toggleCamera = useCallback(async () => {
+    if (isTogglingMediaRef.current) {
+      console.log('[LiveKitRoom] Media toggle in progress, skipping camera toggle');
+      return;
+    }
     try {
+      isTogglingMediaRef.current = true;
       await localParticipant?.setCameraEnabled(!isCameraEnabled);
-    } catch (err) {
-      console.error('Failed to toggle camera:', err);
+    } catch (err: any) {
+      // NegotiationError (code 13) - retry once after delay
+      if (err?.code === 13 || err?.name === 'NegotiationError') {
+        console.log('[LiveKitRoom] NegotiationError on camera toggle, retrying...');
+        await new Promise(r => setTimeout(r, 500));
+        try {
+          await localParticipant?.setCameraEnabled(!isCameraEnabled);
+        } catch (retryErr) {
+          console.error('Failed to toggle camera after retry:', retryErr);
+          toast.error('Не удалось переключить камеру', { description: 'Попробуйте ещё раз' });
+        }
+      } else {
+        console.error('Failed to toggle camera:', err);
+        toast.error('Ошибка камеры');
+      }
+    } finally {
+      // Release lock after a brief delay to allow negotiation to complete
+      setTimeout(() => { isTogglingMediaRef.current = false; }, 300);
     }
   }, [localParticipant, isCameraEnabled]);
 
-  // Toggle microphone
+  // Toggle microphone with lock to prevent concurrent negotiations
   const toggleMicrophone = useCallback(async () => {
+    if (isTogglingMediaRef.current) {
+      console.log('[LiveKitRoom] Media toggle in progress, skipping mic toggle');
+      return;
+    }
     try {
+      isTogglingMediaRef.current = true;
       await localParticipant?.setMicrophoneEnabled(!isMicrophoneEnabled);
-    } catch (err) {
-      console.error('Failed to toggle microphone:', err);
+    } catch (err: any) {
+      // NegotiationError (code 13) - retry once after delay
+      if (err?.code === 13 || err?.name === 'NegotiationError') {
+        console.log('[LiveKitRoom] NegotiationError on mic toggle, retrying...');
+        await new Promise(r => setTimeout(r, 500));
+        try {
+          await localParticipant?.setMicrophoneEnabled(!isMicrophoneEnabled);
+        } catch (retryErr) {
+          console.error('Failed to toggle microphone after retry:', retryErr);
+          toast.error('Не удалось переключить микрофон', { description: 'Попробуйте ещё раз' });
+        }
+      } else {
+        console.error('Failed to toggle microphone:', err);
+        toast.error('Ошибка микрофона');
+      }
+    } finally {
+      setTimeout(() => { isTogglingMediaRef.current = false; }, 300);
     }
   }, [localParticipant, isMicrophoneEnabled]);
 
-  // Toggle screen share
+  // Toggle screen share with lock
   const toggleScreenShare = useCallback(async () => {
+    if (isTogglingMediaRef.current) {
+      console.log('[LiveKitRoom] Media toggle in progress, skipping screen share toggle');
+      return;
+    }
     try {
+      isTogglingMediaRef.current = true;
       await localParticipant?.setScreenShareEnabled(!isScreenShareEnabled);
-    } catch (err) {
-      console.error('Failed to toggle screen share:', err);
+    } catch (err: any) {
+      if (err?.code === 13 || err?.name === 'NegotiationError') {
+        console.log('[LiveKitRoom] NegotiationError on screen share, retrying...');
+        await new Promise(r => setTimeout(r, 500));
+        try {
+          await localParticipant?.setScreenShareEnabled(!isScreenShareEnabled);
+        } catch (retryErr) {
+          console.error('Failed to toggle screen share after retry:', retryErr);
+          toast.error('Не удалось включить демонстрацию экрана');
+        }
+      } else {
+        console.error('Failed to toggle screen share:', err);
+      }
+    } finally {
+      setTimeout(() => { isTogglingMediaRef.current = false; }, 300);
     }
   }, [localParticipant, isScreenShareEnabled]);
 
