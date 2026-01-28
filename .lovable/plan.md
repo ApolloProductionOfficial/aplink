@@ -1,280 +1,300 @@
 
-# APLink Mobile & UX Improvements Plan
+# APLink: Локальная запись экрана + рисунки и дополнительные улучшения
 
-## Overview
+## Обзор
 
-This plan addresses multiple improvements:
-1. Make chat fullscreen on mobile (bottom sheet style)
-2. Add tooltips to header buttons (Timer, PiP) with smoother animations
-3. Complete mobile-first redesign for call controls
-4. Touch-to-show panels on mobile
-5. Remove or minimize tooltips on mobile to prevent overflow
-6. Fix whiteboard on mobile with landscape orientation hint
-7. Fix DrawingOverlay mobile controls (remove escape panel, fit all buttons)
-8. Fix Apollo background requiring two clicks
+Данный план охватывает:
+1. **Локальная запись экрана с рисунками** - запись видео всей комнаты с наложением рисунков из DrawingOverlay в формате .webm
+2. **Дополнительные улучшения** - оптимизации и новые возможности для улучшения пользовательского опыта
 
 ---
 
-## Task 1: Fix Apollo Virtual Background (Two-Click Issue)
+## Задача 1: Локальная запись экрана с рисунками (.webm)
 
-### Problem
-The Apollo background requires two clicks because `handleStaticImageSelect` toggles selection - first click selects, but background processing is async and may not complete before UI state updates.
+### Текущее состояние
+В `DrawingOverlay.tsx` уже есть функция `startScreenRecording()` (строки 463-585), которая:
+- Запрашивает `getDisplayMedia` для захвата экрана
+- Создаёт скрытый canvas для объединения экрана + рисунков
+- Записывает в формате `video/webm;codecs=vp9`
+- Сохраняет файл `aplink-screen-recording-{timestamp}.webm`
 
-### Solution
-In `VirtualBackgroundSelector.tsx`:
-1. Track loading state specifically for static images
-2. Don't toggle off if we're still processing the image
-3. Apply background immediately on first click
+### Проблема
+Эта функция работает только когда открыт DrawingOverlay. Нужно добавить **глобальную запись комнаты**, которая:
+1. Записывает все видео участников (без диалога выбора экрана)
+2. Наносит слой рисунков DrawingOverlay поверх записи
+3. Доступна из главной панели инструментов (не только из DrawingOverlay)
 
-### Files to Modify
-- `src/components/VirtualBackgroundSelector.tsx`
+### Решение
 
----
+#### 1.1 Расширить логику записи в LiveKitRoom
 
-## Task 2: Add Tooltips to Header Buttons + Smoother Animations
+Добавить состояние для отслеживания активного DrawingOverlay canvas:
 
-### Current State
-- Header panel has PiP button and Timer without tooltips
-- Tooltip animation is default Radix timing
+```typescript
+// В LiveKitContent
+const drawingCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
-### Implementation
-1. **Wrap PiP button in header with Tooltip** (already has `title` attr, upgrade to proper Tooltip)
-2. **Wrap Timer button with Tooltip**
-3. **Disable tooltips on mobile** - use `useIsMobile` hook to conditionally render tooltips only on desktop
-
-### Files to Modify
-- `src/components/LiveKitRoom.tsx` - Wrap header PiP button
-- `src/components/CallTimer.tsx` - Wrap timer trigger button
-
----
-
-## Task 3: Mobile-First Chat Panel (Fullscreen Bottom Sheet)
-
-### Current State
-- Chat panel is fixed at 320px wide, positioned with drag
-- Not optimized for mobile
-
-### Implementation
-1. **Detect mobile using `useIsMobile` hook**
-2. **Mobile layout**:
-   - Full width (`inset-x-0`)
-   - Height: `h-[70vh]` or similar
-   - Position: bottom of screen
-   - Slide-up animation
-   - Remove drag functionality on mobile
-   - Larger touch targets for buttons
-3. **Desktop layout**: Keep current draggable panel
-
-### Files to Modify
-- `src/components/InCallChat.tsx`
-
----
-
-## Task 4: Touch-to-Show Panels on Mobile
-
-### Current State
-- Panels auto-hide based on mouse movement
-- No tap-to-show for touch devices
-
-### Implementation
-1. **Add touch handler to video container**:
-   - On tap, toggle panel visibility
-   - Auto-hide after 4 seconds of no interaction
-2. **Update `handleMouseMove` logic**:
-   - On mobile, use touch events instead of mouse
-   - Detect tap vs swipe
-
-### Files to Modify
-- `src/components/LiveKitRoom.tsx`
-
----
-
-## Task 5: Remove/Minimize Tooltips on Mobile
-
-### Problem
-- TooltipContent overflows on small screens
-- Buttons with tooltips go out of view when descriptions appear
-
-### Solution
-1. **Create mobile-aware Tooltip wrapper**:
-   - On mobile: render only children (no tooltip)
-   - On desktop: full tooltip with content
-2. **Apply to all control buttons**
-
-### Implementation
-Create a `MobileTooltip` component that conditionally renders:
-```tsx
-const MobileTooltip = ({ children, content }) => {
-  const isMobile = useIsMobile();
-  if (isMobile) return children;
-  return <Tooltip>{/* ... */}</Tooltip>;
-};
+// Передать ref в DrawingOverlay для получения его canvas
+<DrawingOverlay 
+  room={room}
+  participantName={participantName}
+  isOpen={showDrawingOverlay}
+  onClose={() => setShowDrawingOverlay(false)}
+  onCanvasReady={(canvas) => { drawingCanvasRef.current = canvas; }}
+/>
 ```
 
-### Files to Modify
-- `src/components/LiveKitRoom.tsx` - Replace all bottom panel Tooltips with MobileTooltip
+#### 1.2 Изменить toggleCallRecording в LiveKitRoom
 
----
+Обновить функцию записи (строки 926-1050) для наложения рисунков:
 
-## Task 6: Fix Whiteboard on Mobile (Landscape Hint)
-
-### Current State
-- Whiteboard tools in header overflow on mobile
-- Canvas aspect ratio doesn't work well in portrait
-
-### Implementation
-1. **Add orientation detection**:
-   - Detect if phone is in portrait mode
-   - Show overlay hint: "Поверните телефон для лучшей работы с доской"
-2. **Mobile-optimized toolbar**:
-   - Collapse tools into a hamburger/expandable menu
-   - Show only essential tools (pen, eraser, clear, close)
-   - Color picker in a popover
-   - Slider in a separate popover
-3. **Larger touch targets** (minimum 44px)
-4. **Close button always visible** in corner
-
-### Files to Modify
-- `src/components/CollaborativeWhiteboard.tsx`
-
----
-
-## Task 7: Fix DrawingOverlay on Mobile
-
-### Current State
-- ESC hint panel shown at bottom (useless on mobile)
-- Controls may overflow
-- Close button may be hidden
-
-### Implementation
-1. **Remove ESC/Ctrl+Z hint panel on mobile**
-2. **Simplify mobile toolbar**:
-   - Only show: color row, 3-4 essential tools, close button
-   - Collapsible advanced options
-3. **Fixed close button** in top-right corner (always visible)
-4. **Touch-friendly interactions**:
-   - Larger color buttons
-   - Larger tool buttons
-
-### Files to Modify
-- `src/components/DrawingOverlay.tsx`
-
----
-
-## Task 8: Complete Mobile Control Bar Redesign
-
-### Current State
-- Bottom panel has many buttons, some overflow
-- Button sizes inconsistent on mobile
-
-### Implementation
-1. **Two-row layout on mobile** if too many buttons:
-   - Primary row: Camera, Mic, End Call
-   - Secondary row (expandable): Other tools
-2. **Or: Collapsible "More" button** that opens a sheet with additional controls
-3. **Smaller button sizes on mobile**: `w-10 h-10` instead of `w-12 h-12`
-4. **Remove text from "Выйти" button on mobile** - icon only
-5. **Ensure all buttons fit** in viewport width
-
-### Files to Modify
-- `src/components/LiveKitRoom.tsx`
-
----
-
-## Task 9: Header Panel Mobile Optimization
-
-### Current State
-- Header buttons may overflow on narrow screens
-- Room name takes space
-
-### Implementation
-1. **Hide room name on mobile** (or truncate severely)
-2. **Collapse header buttons into menu** on very small screens
-3. **Reduce button sizes** in header for mobile
-
-### Files to Modify
-- `src/components/LiveKitRoom.tsx`
-
----
-
-## Technical Implementation Details
-
-### Mobile Detection
-Use existing `useIsMobile` hook from `src/hooks/use-mobile.tsx`
-
-### New MobileTooltip Component
-Create a wrapper that disables tooltips on mobile to prevent overflow:
-
-```tsx
-// In LiveKitRoom.tsx or as separate component
-const MobileTooltip = ({ children, content, ...props }) => {
-  const isMobile = useIsMobile();
-  if (isMobile) return <>{children}</>;
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>{children}</TooltipTrigger>
-      <TooltipContent {...props}>{content}</TooltipContent>
-    </Tooltip>
-  );
-};
-```
-
-### Touch Panel Toggle
-```tsx
-// In LiveKitRoom.tsx
-const [panelsVisible, setPanelsVisible] = useState(true);
-const lastTouchRef = useRef(Date.now());
-
-const handleTouchStart = () => {
-  if (isMobile) {
-    setPanelsVisible(true);
-    lastTouchRef.current = Date.now();
-    // Auto-hide after 4 seconds
-    setTimeout(() => {
-      if (Date.now() - lastTouchRef.current >= 4000) {
-        setPanelsVisible(false);
-      }
-    }, 4000);
+```typescript
+const toggleCallRecording = useCallback(() => {
+  if (isCallRecording) {
+    // ... существующая логика остановки
+    return;
   }
-};
+  
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1920;
+    canvas.height = 1080;
+    const ctx = canvas.getContext('2d')!;
+    
+    const drawFrame = () => {
+      // ... рисуем все видео участников
+      
+      // НОВОЕ: Наложить слой рисунков если DrawingOverlay активен
+      if (drawingCanvasRef.current && showDrawingOverlay) {
+        ctx.drawImage(drawingCanvasRef.current, 0, 0, canvas.width, canvas.height);
+      }
+      
+      callRecordingAnimationRef.current = requestAnimationFrame(drawFrame);
+    };
+    
+    // ... остальная логика записи
+  } catch (err) {
+    // ...
+  }
+}, [isCallRecording, showDrawingOverlay]);
+```
+
+### Файлы для изменения
+- `src/components/LiveKitRoom.tsx` - интеграция drawingCanvas в запись
+- `src/components/DrawingOverlay.tsx` - добавить callback `onCanvasReady`
+
+---
+
+## Задача 2: Улучшить UI кнопки записи
+
+### Текущее состояние
+Кнопка "Запись" находится в Popover меню демонстрации экрана (строки 1576-1595).
+
+### Улучшения
+1. **Добавить отдельную кнопку записи** в основную панель (рядом с камерой/микрофоном) на мобильных устройствах
+2. **Индикатор REC** должен быть более заметным на мобильных устройствах
+
+### Реализация
+```tsx
+{/* Отдельная кнопка записи для мобильных */}
+{isMobile && (
+  <Button
+    onClick={toggleCallRecording}
+    variant={isCallRecording ? "destructive" : "outline"}
+    size="icon"
+    className="w-10 h-10 rounded-full relative"
+  >
+    {isCallRecording && (
+      <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+    )}
+    <Video className="w-5 h-5" />
+  </Button>
+)}
 ```
 
 ---
 
-## Files Summary
+## Задача 3: Дополнительные улучшения
 
-| File | Changes |
-|------|---------|
-| `src/components/VirtualBackgroundSelector.tsx` | Fix two-click issue for Apollo background |
-| `src/components/LiveKitRoom.tsx` | Mobile control bar, touch panels, MobileTooltip, header optimization |
-| `src/components/InCallChat.tsx` | Fullscreen bottom sheet on mobile |
-| `src/components/CallTimer.tsx` | Add tooltip to trigger button |
-| `src/components/CollaborativeWhiteboard.tsx` | Mobile toolbar, landscape hint |
-| `src/components/DrawingOverlay.tsx` | Mobile toolbar, remove ESC hint, always-visible close |
+### 3.1 Добавить запись звука в видео-запись комнаты
+
+Текущая запись `toggleCallRecording` записывает только видео. Нужно добавить аудио:
+
+```typescript
+// В toggleCallRecording
+const audioContext = new AudioContext();
+const destination = audioContext.createMediaStreamDestination();
+
+// Получить аудио всех участников
+room?.remoteParticipants.forEach((participant) => {
+  participant.audioTrackPublications.forEach((publication) => {
+    if (publication.track?.mediaStream) {
+      const source = audioContext.createMediaStreamSource(publication.track.mediaStream);
+      source.connect(destination);
+    }
+  });
+});
+
+// Добавить локальный микрофон
+const localMic = await navigator.mediaDevices.getUserMedia({ audio: true });
+const localSource = audioContext.createMediaStreamSource(localMic);
+localSource.connect(destination);
+
+// Объединить видео + аудио
+const combinedStream = new MediaStream([
+  ...canvas.captureStream(30).getVideoTracks(),
+  ...destination.stream.getAudioTracks(),
+]);
+```
+
+### 3.2 Улучшить мобильную панель записи с индикатором времени
+
+Добавить отображение длительности записи:
+
+```tsx
+// Состояние
+const [recordingDuration, setRecordingDuration] = useState(0);
+const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+// При старте записи
+recordingIntervalRef.current = setInterval(() => {
+  setRecordingDuration(prev => prev + 1);
+}, 1000);
+
+// UI индикатор
+{isCallRecording && (
+  <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-3 py-1.5 bg-red-500/20 border border-red-500/50 rounded-full">
+    <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+    <span className="text-sm font-medium text-red-400">REC</span>
+    <span className="text-sm text-white/80">{formatDuration(recordingDuration)}</span>
+  </div>
+)}
+```
+
+### 3.3 Добавить кнопку быстрого скриншота в DrawingOverlay
+
+Полезно для создания обучающих материалов:
+
+```tsx
+<Button
+  variant="ghost"
+  size="icon"
+  onClick={() => {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const link = document.createElement('a');
+      link.download = `aplink-drawing-${Date.now()}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      toast.success('Скриншот сохранён');
+    }
+  }}
+  className="w-10 h-10 rounded-full"
+>
+  <Download className="w-5 h-5" />
+</Button>
+```
+
+### 3.4 Предварительный просмотр перед сохранением записи
+
+Показать превью записи с кнопками "Сохранить" / "Отменить":
+
+```tsx
+const [recordingPreview, setRecordingPreview] = useState<string | null>(null);
+
+// В onstop recorder
+recorder.onstop = () => {
+  const blob = new Blob(chunks, { type: 'video/webm' });
+  const url = URL.createObjectURL(blob);
+  setRecordingPreview(url); // Показать превью вместо автосохранения
+};
+
+// UI превью
+{recordingPreview && (
+  <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+    <div className="bg-background rounded-2xl p-4 max-w-2xl w-full">
+      <video src={recordingPreview} controls className="w-full rounded-xl" />
+      <div className="flex gap-2 mt-4 justify-end">
+        <Button variant="ghost" onClick={() => { 
+          URL.revokeObjectURL(recordingPreview);
+          setRecordingPreview(null);
+        }}>
+          Отменить
+        </Button>
+        <Button onClick={() => {
+          const link = document.createElement('a');
+          link.download = `aplink-recording-${Date.now()}.webm`;
+          link.href = recordingPreview;
+          link.click();
+          setRecordingPreview(null);
+          toast.success('Запись сохранена');
+        }}>
+          Сохранить
+        </Button>
+      </div>
+    </div>
+  </div>
+)}
+```
 
 ---
 
-## Implementation Order
+## Техническая архитектура
 
-1. **Task 1** - Fix Apollo background (quick fix)
-2. **Task 2** - Add tooltips to header (quick)
-3. **Task 5** - Create MobileTooltip wrapper (foundation for others)
-4. **Task 8** - Mobile control bar redesign
-5. **Task 9** - Header mobile optimization
-6. **Task 4** - Touch-to-show panels
-7. **Task 3** - Mobile chat fullscreen
-8. **Task 6** - Whiteboard mobile fix
-9. **Task 7** - DrawingOverlay mobile fix
+### Поток данных записи
+
+```text
++-------------------+     +-------------------+     +-------------------+
+|   Video Tracks    | --> |   Recording       | --> |   Combined        |
+|   (participants)  |     |   Canvas (2D)     |     |   MediaStream     |
++-------------------+     +-------------------+     +-------------------+
+                                  ^                         |
+                                  |                         v
++-------------------+     +-------------------+     +-------------------+
+|   DrawingOverlay  | --> |   Drawing Layer   |     |   MediaRecorder   |
+|   Canvas          |     |   (overlay)       |     |   (.webm output)  |
++-------------------+     +-------------------+     +-------------------+
+                                  ^
+                                  |
++-------------------+     +-------------------+
+|   Audio Tracks    | --> |   AudioContext    |
+|   (all sources)   |     |   Destination     |
++-------------------+     +-------------------+
+```
+
+### Формат выходного файла
+- Контейнер: WebM
+- Видеокодек: VP9 (высокое качество, хорошее сжатие)
+- Аудиокодек: Opus
+- Разрешение: 1920x1080 @ 30fps
+- Битрейт аудио: 128kbps
 
 ---
 
-## Visual Behavior Summary
+## Сводка изменений по файлам
 
-### Mobile Call Interface
-- Tap anywhere on video to show/hide top and bottom panels
-- Panels auto-hide after 4 seconds
-- No tooltip descriptions (prevents overflow)
-- Smaller button sizes throughout
-- Chat opens as fullscreen bottom sheet
-- Whiteboard shows landscape orientation hint
-- Drawing overlay has simplified, always-visible close button
+| Файл | Изменения |
+|------|-----------|
+| `src/components/LiveKitRoom.tsx` | Интеграция drawingCanvas, добавление аудио в запись, индикатор времени, превью записи |
+| `src/components/DrawingOverlay.tsx` | Добавить prop `onCanvasReady` для передачи ref, кнопка скриншота |
+
+---
+
+## Порядок реализации
+
+1. **Шаг 1** - Добавить `onCanvasReady` callback в DrawingOverlay
+2. **Шаг 2** - Обновить toggleCallRecording для наложения рисунков
+3. **Шаг 3** - Добавить захват аудио в запись
+4. **Шаг 4** - Добавить индикатор времени записи
+5. **Шаг 5** - Добавить превью перед сохранением (опционально)
+
+---
+
+## Ожидаемый результат
+
+После реализации пользователи смогут:
+1. Нажать кнопку "Запись" в панели инструментов
+2. Открыть DrawingOverlay и рисовать поверх видео
+3. Все рисунки будут записаны вместе с видео и аудио участников
+4. После остановки записи - получить файл `.webm` с полным обучающим видео
+5. Использовать записи для создания туториалов, презентаций, вебинаров
