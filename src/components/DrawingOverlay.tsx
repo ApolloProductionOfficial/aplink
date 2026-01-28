@@ -882,29 +882,234 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
 
   if (!isOpen) return null;
 
+  // Touch handlers for mobile drawing
+  const getTouchPosition = useCallback((e: React.TouchEvent<HTMLCanvasElement>): { x: number; y: number } => {
+    const canvas = canvasRef.current;
+    if (!canvas || e.touches.length === 0) return { x: 0, y: 0 };
+    
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0];
+    return {
+      x: touch.clientX - rect.left,
+      y: touch.clientY - rect.top,
+    };
+  }, []);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    setIsDrawing(true);
+    resetHideTimer();
+    const pos = getTouchPosition(e);
+    
+    if (tool === 'pen' || tool === 'eraser') {
+      lastPointRef.current = pos;
+    } else if (tool === 'laser') {
+      const point = { x: pos.x, y: pos.y, timestamp: Date.now() };
+      laserPointsRef.current.push(point);
+      broadcastLaserPoint(point);
+    } else {
+      shapeStartRef.current = pos;
+      const canvas = canvasRef.current;
+      const ctx = contextRef.current;
+      if (canvas && ctx) {
+        savedImageDataRef.current = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      }
+    }
+  }, [getTouchPosition, tool, resetHideTimer, broadcastLaserPoint]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    if (e.touches.length === 0) return;
+    
+    const currentPoint = getTouchPosition(e);
+
+    if (tool === 'laser') {
+      const point = { x: currentPoint.x, y: currentPoint.y, timestamp: Date.now() };
+      laserPointsRef.current.push(point);
+      broadcastLaserPoint(point);
+      return;
+    }
+
+    if (!isDrawing) return;
+
+    if (tool === 'pen' || tool === 'eraser') {
+      if (!lastPointRef.current) return;
+      
+      const stroke: Stroke = {
+        from: lastPointRef.current,
+        to: currentPoint,
+        color,
+        size: brushSize,
+        tool: tool as 'pen' | 'eraser',
+      };
+
+      drawStroke(stroke);
+      broadcastStroke(stroke);
+      lastPointRef.current = currentPoint;
+    } else if (shapeStartRef.current) {
+      const shape: Shape = {
+        type: tool as 'line' | 'arrow' | 'rectangle',
+        start: shapeStartRef.current,
+        end: currentPoint,
+        color,
+        size: brushSize,
+      };
+      drawShape(shape, true);
+    }
+  }, [isDrawing, color, brushSize, tool, getTouchPosition, drawStroke, drawShape, broadcastStroke, broadcastLaserPoint]);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (!isDrawing) return;
+    
+    if (tool === 'laser') {
+      setIsDrawing(false);
+      return;
+    }
+    
+    // For shapes, we need last touch position - use changedTouches
+    if ((tool === 'line' || tool === 'arrow' || tool === 'rectangle') && shapeStartRef.current && e.changedTouches.length > 0) {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      const touch = e.changedTouches[0];
+      const currentPoint = {
+        x: touch.clientX - rect.left,
+        y: touch.clientY - rect.top,
+      };
+      
+      const shape: Shape = {
+        type: tool,
+        start: shapeStartRef.current,
+        end: currentPoint,
+        color,
+        size: brushSize,
+      };
+      
+      if (savedImageDataRef.current) {
+        const ctx = contextRef.current;
+        if (ctx) {
+          ctx.putImageData(savedImageDataRef.current, 0, 0);
+        }
+      }
+      drawShape(shape);
+      broadcastShape(shape);
+    }
+    
+    saveToHistory();
+    setIsDrawing(false);
+    lastPointRef.current = null;
+    shapeStartRef.current = null;
+    savedImageDataRef.current = null;
+  }, [isDrawing, tool, color, brushSize, drawShape, broadcastShape, saveToHistory]);
+
+  // Mobile-only essential tools (subset)
+  const MOBILE_TOOLS: { id: Tool; icon: React.ComponentType<any>; label: string }[] = [
+    { id: 'pen', icon: Pencil, label: 'Карандаш' },
+    { id: 'eraser', icon: Eraser, label: 'Ластик' },
+    { id: 'laser', icon: Crosshair, label: 'Указка' },
+  ];
+
   return createPortal(
     <div className="fixed inset-0 z-[99995] pointer-events-auto" data-preserve-cursor>
       {/* Transparent canvas overlay */}
       <canvas 
         ref={canvasRef}
         data-preserve-cursor
-        className="absolute inset-0 cursor-crosshair"
+        className="absolute inset-0 cursor-crosshair touch-none"
         style={{ cursor: 'crosshair' }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMoveWithPanel}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       />
 
-      {/* Floating controls - positioned below main header panel, toggleable with slide animation */}
-      <div 
-        className={cn(
-          "absolute left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 rounded-full bg-black/40 backdrop-blur-2xl border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.4),0_0_1px_rgba(255,255,255,0.1)] transition-all duration-300",
-          showControls 
-            ? "top-20 opacity-100" 
-            : "-top-20 opacity-0 pointer-events-none"
-        )}
+      {/* Fixed close button - always visible (all devices) */}
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={onClose}
+        className="fixed top-4 right-4 z-[99999] w-10 h-10 rounded-full bg-red-500/30 hover:bg-red-500/50 border border-red-500/50"
       >
+        <X className="w-5 h-5" />
+      </Button>
+
+      {/* Mobile compact toolbar */}
+      {isMobile ? (
+        <div 
+          className={cn(
+            "fixed bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 p-3 rounded-2xl bg-black/60 backdrop-blur-2xl border border-white/[0.08] shadow-lg transition-all duration-300",
+            showControls ? "opacity-100" : "opacity-0 pointer-events-none"
+          )}
+        >
+          {/* Color row - compact, 6 main colors */}
+          <div className="flex items-center gap-1.5">
+            {COLORS.slice(0, 6).map((c) => (
+              <button
+                key={c}
+                onClick={() => setColor(c)}
+                className={cn(
+                  "w-7 h-7 rounded-full transition-all active:scale-95",
+                  color === c && "ring-2 ring-white ring-offset-1 ring-offset-transparent"
+                )}
+                style={{ backgroundColor: c }}
+              />
+            ))}
+          </div>
+          
+          {/* Tools row */}
+          <div className="flex items-center gap-2">
+            {MOBILE_TOOLS.map((t) => {
+              const Icon = t.icon;
+              const isActive = tool === t.id;
+              return (
+                <Button
+                  key={t.id}
+                  variant={isActive ? 'default' : 'ghost'}
+                  size="icon"
+                  onClick={() => setTool(isActive && t.id !== 'pen' ? 'pen' : t.id)}
+                  className="w-10 h-10 rounded-full"
+                >
+                  <Icon className="w-5 h-5" />
+                </Button>
+              );
+            })}
+            
+            <div className="w-px h-6 bg-white/20" />
+            
+            {/* Undo */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={undo}
+              className="w-10 h-10 rounded-full"
+            >
+              <Undo2 className="w-5 h-5" />
+            </Button>
+            
+            {/* Clear */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={clearCanvas}
+              className="w-10 h-10 rounded-full hover:bg-red-500/20"
+            >
+              <Trash2 className="w-5 h-5" />
+            </Button>
+          </div>
+        </div>
+      ) : (
+        /* Desktop floating controls */
+        <div 
+          className={cn(
+            "absolute left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 rounded-full bg-black/40 backdrop-blur-2xl border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.4),0_0_1px_rgba(255,255,255,0.1)] transition-all duration-300",
+            showControls 
+              ? "top-20 opacity-100" 
+              : "-top-20 opacity-0 pointer-events-none"
+          )}
+        >
           {/* Color picker */}
           <div className="flex items-center gap-1">
             {COLORS.map((c) => (
@@ -938,7 +1143,7 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
 
           <div className="w-px h-5 bg-white/20" />
 
-          {/* Tool buttons - toggle on repeated click */}
+          {/* Tool buttons */}
           {TOOLS.map((t) => {
             const Icon = t.icon;
             const isActive = tool === t.id;
@@ -948,7 +1153,6 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
                 variant={isActive ? 'default' : 'ghost'}
                 size="icon"
                 onClick={() => {
-                  // Toggle: if already selected, go back to pen; otherwise select
                   if (isActive && t.id !== 'pen') {
                     setTool('pen');
                   } else {
@@ -999,29 +1203,7 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
           >
             <Download className="w-4 h-4" />
           </Button>
-
-          {/* Close */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onClose}
-            className="w-8 h-8 rounded-full"
-            title="Закрыть (Esc)"
-          >
-            <X className="w-4 h-4" />
-          </Button>
         </div>
-
-      {/* Fixed close button - always visible on mobile */}
-      {isMobile && (
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onClose}
-          className="fixed top-4 right-4 z-[99999] w-10 h-10 rounded-full bg-red-500/30 hover:bg-red-500/50 border border-red-500/50"
-        >
-          <X className="w-5 h-5" />
-        </Button>
       )}
 
       {/* Instructions hint - HIDDEN on mobile */}
