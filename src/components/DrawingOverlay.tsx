@@ -30,6 +30,8 @@ interface DrawingOverlayProps {
   participantName: string;
   isOpen: boolean;
   onClose: () => void;
+  /** Callback to provide canvas reference for external recording integration */
+  onCanvasReady?: (canvas: HTMLCanvasElement | null) => void;
 }
 
 const COLORS = [
@@ -53,7 +55,7 @@ const TOOLS: { id: Tool; icon: React.ComponentType<any>; label: string }[] = [
   { id: 'laser', icon: Crosshair, label: 'Указка' },
 ];
 
-export function DrawingOverlay({ room, participantName, isOpen, onClose }: DrawingOverlayProps) {
+export function DrawingOverlay({ room, participantName, isOpen, onClose, onCanvasReady }: DrawingOverlayProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [color, setColor] = useState('#ff4444');
@@ -147,8 +149,18 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
     // Save initial empty state
     historyRef.current = [ctx.getImageData(0, 0, canvas.width, canvas.height)];
     
+    // Notify parent about canvas ready for recording integration
+    onCanvasReady?.(canvas);
+    
     console.log('[DrawingOverlay] Canvas initialized:', canvas.width, 'x', canvas.height);
-  }, [isOpen]);
+  }, [isOpen, onCanvasReady]);
+
+  // Notify parent when overlay closes
+  useEffect(() => {
+    if (!isOpen) {
+      onCanvasReady?.(null);
+    }
+  }, [isOpen, onCanvasReady]);
 
   // Handle window resize
   useEffect(() => {

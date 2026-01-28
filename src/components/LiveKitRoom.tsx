@@ -462,10 +462,15 @@ function LiveKitContent({
   
   // Call recording state (records participants directly without picker dialog)
   const [isCallRecording, setIsCallRecording] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const [recordingPreviewUrl, setRecordingPreviewUrl] = useState<string | null>(null);
+  const recordingDurationRef = useRef<NodeJS.Timeout | null>(null);
   const callRecorderRef = useRef<MediaRecorder | null>(null);
   const callRecordingChunksRef = useRef<Blob[]>([]);
   const callRecordingCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const callRecordingAnimationRef = useRef<number | null>(null);
+  const drawingCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const recordingAudioContextRef = useRef<AudioContext | null>(null);
   
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -923,8 +928,15 @@ function LiveKitContent({
     }
   }, [localParticipant]);
 
-  // Toggle call recording - records participants directly via canvas (no screen picker dialog)
-  const toggleCallRecording = useCallback(() => {
+  // Format recording duration
+  const formatRecordingDuration = useCallback((seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  }, []);
+
+  // Toggle call recording - records participants + drawings via canvas
+  const toggleCallRecording = useCallback(async () => {
     if (isCallRecording) {
       // Stop recording
       if (callRecorderRef.current) {
@@ -938,6 +950,14 @@ function LiveKitContent({
       if (callRecordingCanvasRef.current) {
         callRecordingCanvasRef.current = null;
       }
+      if (recordingDurationRef.current) {
+        clearInterval(recordingDurationRef.current);
+        recordingDurationRef.current = null;
+      }
+      if (recordingAudioContextRef.current) {
+        recordingAudioContextRef.current.close().catch(() => {});
+        recordingAudioContextRef.current = null;
+      }
       setIsCallRecording(false);
       return;
     }
@@ -950,19 +970,19 @@ function LiveKitContent({
         return;
       }
       
-      // Create canvas to composite all videos
+      // Create canvas to composite all videos + drawings
       const canvas = document.createElement('canvas');
       canvas.width = 1920;
       canvas.height = 1080;
       const ctx = canvas.getContext('2d')!;
       callRecordingCanvasRef.current = canvas;
       
-      // Animation loop to draw all videos on canvas
+      // Animation loop to draw all videos + drawing overlay on canvas
       let isActive = true;
       const drawFrame = () => {
         if (!isActive) return;
         
-        // Clear canvas
+        // Clear canvas with black background
         ctx.fillStyle = '#000';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
@@ -998,16 +1018,22 @@ function LiveKitContent({
           });
         }
         
+        // OVERLAY: Draw the DrawingOverlay canvas if active
+        if (drawingCanvasRef.current && showDrawingOverlay) {
+          ctx.drawImage(drawingCanvasRef.current, 0, 0, canvas.width, canvas.height);
+        }
+        
         callRecordingAnimationRef.current = requestAnimationFrame(drawFrame);
       };
       
       drawFrame();
       
-      // Capture canvas stream
+      // Capture canvas stream at 30fps
       const stream = canvas.captureStream(30);
       
-      // Try to get audio from participants
+      // Create AudioContext to mix all audio sources
       const audioContext = new AudioContext();
+      recordingAudioContextRef.current = audioContext;
       const destination = audioContext.createMediaStreamDestination();
       
       // Collect audio from all video elements
@@ -1026,10 +1052,19 @@ function LiveKitContent({
         }
       });
       
+      // Try to add local microphone audio
+      try {
+        const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const micSource = audioContext.createMediaStreamSource(micStream);
+        micSource.connect(destination);
+      } catch {
+        console.log('[LiveKitRoom] Could not access local mic for recording');
+      }
+      
       // Merge audio into stream if available
       destination.stream.getAudioTracks().forEach(track => stream.addTrack(track));
       
-      // Create recorder
+      // Create recorder with best available codec
       const recorder = new MediaRecorder(stream, {
         mimeType: MediaRecorder.isTypeSupported('video/webm;codecs=vp9') 
           ? 'video/webm;codecs=vp9' 
@@ -1049,26 +1084,57 @@ function LiveKitContent({
         
         const blob = new Blob(callRecordingChunksRef.current, { type: 'video/webm' });
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `aplink-call-${Date.now()}.webm`;
-        a.click();
-        URL.revokeObjectURL(url);
         
-        audioContext.close().catch(() => {});
-        toast.success('Запись сохранена!');
+        // Show preview instead of auto-download
+        setRecordingPreviewUrl(url);
+        
+        toast.success('Запись готова!', {
+          description: 'Просмотрите и сохраните видео',
+        });
       };
       
       recorder.start(100);
       callRecorderRef.current = recorder;
       setIsCallRecording(true);
+      setRecordingDuration(0);
+      
+      // Start duration timer
+      recordingDurationRef.current = setInterval(() => {
+        setRecordingDuration(prev => prev + 1);
+      }, 1000);
+      
       toast.success('Запись началась');
       
     } catch (err) {
       console.error('Failed to start call recording:', err);
       toast.error('Не удалось начать запись');
     }
-  }, [isCallRecording]);
+  }, [isCallRecording, showDrawingOverlay]);
+
+  // Save recording from preview
+  const saveRecording = useCallback(() => {
+    if (!recordingPreviewUrl) return;
+    
+    const a = document.createElement('a');
+    a.href = recordingPreviewUrl;
+    a.download = `aplink-call-${Date.now()}.webm`;
+    a.click();
+    
+    URL.revokeObjectURL(recordingPreviewUrl);
+    setRecordingPreviewUrl(null);
+    setRecordingDuration(0);
+    toast.success('Запись сохранена!');
+  }, [recordingPreviewUrl]);
+
+  // Discard recording preview
+  const discardRecording = useCallback(() => {
+    if (recordingPreviewUrl) {
+      URL.revokeObjectURL(recordingPreviewUrl);
+      setRecordingPreviewUrl(null);
+      setRecordingDuration(0);
+      toast.info('Запись отменена');
+    }
+  }, [recordingPreviewUrl]);
 
   // Fullscreen toggle
   const toggleFullscreen = useCallback(() => {
@@ -1369,6 +1435,48 @@ function LiveKitContent({
       {/* Screenshot flash overlay */}
       {showScreenshotFlash && <div className="screenshot-flash" />}
 
+      {/* Recording indicator with timer - fixed position */}
+      {isCallRecording && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[99997] flex items-center gap-2 px-4 py-2 bg-red-500/20 backdrop-blur-xl border border-red-500/50 rounded-full shadow-[0_0_20px_rgba(239,68,68,0.3)]">
+          <span className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" />
+          <span className="text-sm font-bold text-red-400">REC</span>
+          <span className="text-sm text-white/90 font-mono">{formatRecordingDuration(recordingDuration)}</span>
+        </div>
+      )}
+
+      {/* Recording preview dialog */}
+      {recordingPreviewUrl && (
+        <div className="fixed inset-0 z-[99999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-background rounded-2xl p-4 max-w-2xl w-full border border-white/10 shadow-2xl">
+            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+              <Video className="w-5 h-5 text-primary" />
+              Предпросмотр записи
+            </h3>
+            <video 
+              src={recordingPreviewUrl} 
+              controls 
+              className="w-full rounded-xl bg-black/50"
+              autoPlay={false}
+            />
+            <div className="flex gap-2 mt-4 justify-end">
+              <Button 
+                variant="ghost" 
+                onClick={discardRecording}
+                className="hover:bg-red-500/20 hover:text-red-400"
+              >
+                Отменить
+              </Button>
+              <Button 
+                onClick={saveRecording}
+                className="bg-primary hover:bg-primary/90"
+              >
+                Сохранить .webm
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Audio blocked warning - prominent button to enable audio */}
       {showAudioPrompt && (
         <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -1430,6 +1538,36 @@ function LiveKitContent({
               <p>{isCameraEnabled ? "Выключить камеру (V)" : "Включить камеру (V)"}</p>
             </TooltipContent>
           </Tooltip>
+
+          {/* Mobile Recording Button - quick access */}
+          {isMobile && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={toggleCallRecording}
+                  variant={isCallRecording ? "destructive" : "outline"}
+                  size="icon"
+                  className={cn(
+                    "w-10 h-10 rounded-full transition-all hover:scale-105 hover:shadow-lg border-white/20 relative",
+                    isCallRecording 
+                      ? "bg-red-500/40 border-red-500/60" 
+                      : "bg-white/15 hover:bg-white/25"
+                  )}
+                >
+                  {isCallRecording && (
+                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+                  )}
+                  <Video className={cn(
+                    "w-5 h-5 stroke-[1.8]",
+                    isCallRecording ? "text-red-400" : "drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]"
+                  )} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="bg-black/80 border-white/10">
+                <p>{isCallRecording ? "Остановить запись" : "Начать запись"}</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
 
           {/* Mic toggle with popup menu */}
           <Popover>
@@ -1888,6 +2026,7 @@ function LiveKitContent({
         participantName={participantName}
         isOpen={showDrawingOverlay}
         onClose={() => setShowDrawingOverlay(false)}
+        onCanvasReady={(canvas) => { drawingCanvasRef.current = canvas; }}
       />
 
       <RoomAudioRenderer />
