@@ -439,8 +439,8 @@ function LiveKitContent({
   const [showScreenshotFlash, setShowScreenshotFlash] = useState(false);
   
   // Layout mode: 'focus' (1-on-1), 'gallery' (grid), or 'webinar' (speaker + strip)
-  // Default to gallery mode for best experience with multiple participants
-  const [layoutMode, setLayoutMode] = useState<'focus' | 'gallery' | 'webinar'>('gallery');
+  // Default to focus to avoid split-screen in 1-on-1 calls on desktop
+  const [layoutMode, setLayoutMode] = useState<'focus' | 'gallery' | 'webinar'>('focus');
   
   // Pinned participant identity
   const [pinnedParticipant, setPinnedParticipant] = useState<string | null>(null);
@@ -479,6 +479,28 @@ function LiveKitContent({
   const remoteParticipants = participants.filter(p => p.identity !== localParticipant?.identity);
   const hasRemoteParticipants = remoteParticipants.length > 0;
   const remoteParticipantCount = remoteParticipants.length;
+
+  // Force Focus layout for 1-on-1 (prevents desktop split-screen when a single participant joins)
+  useEffect(() => {
+    if (remoteParticipantCount <= 1 && layoutMode !== 'focus') {
+      setLayoutMode('focus');
+    }
+  }, [remoteParticipantCount, layoutMode]);
+
+  // Suggest gallery mode only for real group calls (3+ total participants)
+  useEffect(() => {
+    // remoteParticipantCount >= 2 => total participants >= 3
+    if (remoteParticipantCount >= 2 && !galleryModeSuggestedRef.current) {
+      galleryModeSuggestedRef.current = true;
+      toast.info('Групповой звонок', {
+        description: 'Для 3+ участников удобнее «Галерея» или «Вебинар» (можно переключить в меню раскладки)',
+        duration: 3500,
+      });
+    }
+    if (remoteParticipantCount < 2) {
+      galleryModeSuggestedRef.current = false;
+    }
+  }, [remoteParticipantCount]);
   
   // Toggle layout mode (cycle through all 3)
   const toggleLayoutMode = useCallback(() => {
@@ -676,23 +698,10 @@ function LiveKitContent({
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     // Skip mouse handling on mobile - use touch instead
     if (isMobile) return;
-    
-    const container = containerRef.current;
-    if (!container) return;
 
-    const rect = container.getBoundingClientRect();
-    const y = e.clientY - rect.top;
-    const height = rect.height;
-
-    // Show top panel when mouse is in top 100px
-    if (y < 100) {
-      setShowTopPanel(true);
-    }
-    
-    // Show bottom panel when mouse is in bottom 100px
-    if (y > height - 100) {
-      setShowBottomPanel(true);
-    }
+    // Behave like a finger tap: any activity shows both panels
+    setShowTopPanel(true);
+    setShowBottomPanel(true);
 
     // Reset hide timer on any movement
     if (hideTimeoutRef.current) {
@@ -702,6 +711,13 @@ function LiveKitContent({
       setShowTopPanel(false);
       setShowBottomPanel(false);
     }, 3000);
+  }, [isMobile]);
+
+  // Show panels immediately when cursor enters the call area (desktop)
+  const handleMouseEnter = useCallback(() => {
+    if (isMobile) return;
+    setShowTopPanel(true);
+    setShowBottomPanel(true);
   }, [isMobile]);
 
   // Handle click to show panels (works like finger tap on desktop too)
@@ -1156,6 +1172,7 @@ function LiveKitContent({
       ref={containerRef}
       className="flex flex-col h-full livekit-room-container bg-background relative cursor-default"
       onMouseMove={handleMouseMove}
+      onMouseEnter={handleMouseEnter}
       onTouchStart={handleTouchStart}
       onClick={handleClick}
     >
