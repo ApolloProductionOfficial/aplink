@@ -1111,6 +1111,9 @@ function LiveKitContent({
     }
   }, [isCallRecording, showDrawingOverlay]);
 
+  // Convert to MP4 state
+  const [isConvertingToMp4, setIsConvertingToMp4] = useState(false);
+
   // Save recording from preview
   const saveRecording = useCallback(() => {
     if (!recordingPreviewUrl) return;
@@ -1124,6 +1127,75 @@ function LiveKitContent({
     setRecordingPreviewUrl(null);
     setRecordingDuration(0);
     toast.success('Запись сохранена!');
+  }, [recordingPreviewUrl]);
+
+  // Convert and save as MP4
+  const saveRecordingAsMp4 = useCallback(async () => {
+    if (!recordingPreviewUrl) return;
+    
+    setIsConvertingToMp4(true);
+    
+    try {
+      // Fetch the blob from the preview URL
+      const response = await fetch(recordingPreviewUrl);
+      const blob = await response.blob();
+      
+      // Create form data for upload
+      const formData = new FormData();
+      formData.append('file', blob, 'recording.webm');
+      
+      toast.loading('Конвертация в MP4...', { id: 'mp4-convert' });
+      
+      const { data, error } = await supabase.functions.invoke('convert-to-mp4', {
+        body: formData,
+      });
+      
+      if (error) {
+        // Check if it's a configuration issue
+        if (error.message?.includes('not configured') || error.message?.includes('503')) {
+          toast.error('Конвертация MP4 недоступна', {
+            id: 'mp4-convert',
+            description: 'Сервис не настроен. Сохраните в WebM формате.',
+          });
+          return;
+        }
+        throw error;
+      }
+      
+      // If we got back JSON with error, handle it
+      if (data && typeof data === 'object' && 'error' in data) {
+        toast.error('Ошибка конвертации', {
+          id: 'mp4-convert',
+          description: data.message || data.error,
+        });
+        return;
+      }
+      
+      // Success - download the MP4
+      const mp4Blob = new Blob([data], { type: 'video/mp4' });
+      const mp4Url = URL.createObjectURL(mp4Blob);
+      
+      const a = document.createElement('a');
+      a.href = mp4Url;
+      a.download = `aplink-call-${Date.now()}.mp4`;
+      a.click();
+      
+      URL.revokeObjectURL(mp4Url);
+      URL.revokeObjectURL(recordingPreviewUrl);
+      setRecordingPreviewUrl(null);
+      setRecordingDuration(0);
+      
+      toast.success('MP4 сохранён!', { id: 'mp4-convert' });
+      
+    } catch (err) {
+      console.error('MP4 conversion failed:', err);
+      toast.error('Не удалось конвертировать в MP4', {
+        id: 'mp4-convert',
+        description: 'Попробуйте сохранить в WebM формате',
+      });
+    } finally {
+      setIsConvertingToMp4(false);
+    }
   }, [recordingPreviewUrl]);
 
   // Discard recording preview
@@ -1447,7 +1519,7 @@ function LiveKitContent({
       {/* Recording preview dialog */}
       {recordingPreviewUrl && (
         <div className="fixed inset-0 z-[99999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-background rounded-2xl p-4 max-w-2xl w-full border border-white/10 shadow-2xl">
+          <div className="bg-background rounded-2xl p-4 sm:p-6 max-w-2xl w-full border border-white/10 shadow-2xl">
             <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
               <Video className="w-5 h-5 text-primary" />
               Предпросмотр записи
@@ -1458,17 +1530,37 @@ function LiveKitContent({
               className="w-full rounded-xl bg-black/50"
               autoPlay={false}
             />
-            <div className="flex gap-2 mt-4 justify-end">
+            <p className="text-xs text-muted-foreground mt-3 text-center">
+              WebM — универсальный формат. MP4 — для совместимости с iPhone/iPad.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-2 mt-4 justify-end">
               <Button 
                 variant="ghost" 
                 onClick={discardRecording}
-                className="hover:bg-red-500/20 hover:text-red-400"
+                className="hover:bg-red-500/20 hover:text-red-400 order-3 sm:order-1"
+                disabled={isConvertingToMp4}
               >
                 Отменить
               </Button>
               <Button 
+                variant="outline"
+                onClick={saveRecordingAsMp4}
+                disabled={isConvertingToMp4}
+                className="order-2 sm:order-2"
+              >
+                {isConvertingToMp4 ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    Конвертация...
+                  </>
+                ) : (
+                  'Экспорт .mp4'
+                )}
+              </Button>
+              <Button 
                 onClick={saveRecording}
-                className="bg-primary hover:bg-primary/90"
+                className="bg-primary hover:bg-primary/90 order-1 sm:order-3"
+                disabled={isConvertingToMp4}
               >
                 Сохранить .webm
               </Button>

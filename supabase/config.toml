@@ -101,3 +101,6 @@ verify_jwt = false
 
 [functions.generate-background]
 verify_jwt = false
+
+[functions.convert-to-mp4]
+verify_jwt = false
