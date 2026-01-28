@@ -437,7 +437,8 @@ function LiveKitContent({
   const [showScreenshotFlash, setShowScreenshotFlash] = useState(false);
   
   // Layout mode: 'focus' (1-on-1), 'gallery' (grid), or 'webinar' (speaker + strip)
-  const [layoutMode, setLayoutMode] = useState<'focus' | 'gallery' | 'webinar'>('focus');
+  // Default to gallery mode for best experience with multiple participants
+  const [layoutMode, setLayoutMode] = useState<'focus' | 'gallery' | 'webinar'>('gallery');
   
   // Pinned participant identity
   const [pinnedParticipant, setPinnedParticipant] = useState<string | null>(null);
@@ -507,20 +508,22 @@ function LiveKitContent({
     });
   }, []);
   
-  // Suggest gallery/webinar mode when 3+ participants join
+  // Auto-switch to focus mode when screen sharing starts (for better screen visibility)
   useEffect(() => {
-    if (remoteParticipantCount >= 2 && layoutMode === 'focus' && !galleryModeSuggestedRef.current) {
-      galleryModeSuggestedRef.current = true;
-      toast.info('Много участников', {
-        description: 'Переключитесь на галерейный или вебинар режим',
-        action: {
-          label: 'Галерея',
-          onClick: () => setLayoutMode('gallery'),
-        },
-        duration: 6000,
+    // Check if anyone is screen sharing
+    const someoneScreenSharing = participants.some(p => {
+      const tracks = p.getTrackPublications();
+      return Array.from(tracks.values()).some(t => t.source === Track.Source.ScreenShare && t.isSubscribed);
+    });
+    
+    if (someoneScreenSharing && layoutMode !== 'focus') {
+      setLayoutMode('focus');
+      toast.info('Демонстрация экрана', {
+        description: 'Автоматически включён режим фокуса',
+        duration: 3000,
       });
     }
-  }, [remoteParticipantCount, layoutMode]);
+  }, [participants, layoutMode]);
   
   // Clear pinned participant if they leave
   useEffect(() => {
@@ -561,6 +564,56 @@ function LiveKitContent({
       room.off(RoomEvent.ActiveSpeakersChanged, handleActiveSpeakerChange);
     };
   }, [room]);
+  
+  // Listen for whiteboard/drawing overlay open events from other participants
+  useEffect(() => {
+    if (!room) return;
+    
+    const handleRemoteWhiteboardEvents = (payload: Uint8Array) => {
+      try {
+        const message = JSON.parse(new TextDecoder().decode(payload));
+        
+        // Auto-open whiteboard when another participant opens it
+        if (message.type === 'WHITEBOARD_OPEN' && message.sender !== participantName) {
+          if (!showWhiteboard) {
+            setShowWhiteboard(true);
+            toast.info(`${message.sender} открыл доску`, {
+              description: 'Нажмите, чтобы рисовать вместе',
+              duration: 3000,
+            });
+          }
+        }
+        
+        // Auto-open drawing overlay when another participant opens it
+        if (message.type === 'DRAWING_OVERLAY_OPEN' && message.sender !== participantName) {
+          if (!showDrawingOverlay) {
+            setShowDrawingOverlay(true);
+            toast.info(`${message.sender} включил рисование на экране`, {
+              description: 'Все видят его рисунки',
+              duration: 3000,
+            });
+          }
+        }
+        
+        // Close whiteboard when all participants close it
+        if (message.type === 'WHITEBOARD_CLOSE' && message.sender !== participantName) {
+          // Keep whiteboard open for user to decide
+          console.log('[LiveKitRoom] Remote participant closed whiteboard:', message.sender);
+        }
+        
+        if (message.type === 'DRAWING_OVERLAY_CLOSE' && message.sender !== participantName) {
+          console.log('[LiveKitRoom] Remote participant closed drawing overlay:', message.sender);
+        }
+      } catch {
+        // Not a whiteboard/overlay message
+      }
+    };
+    
+    room.on(RoomEvent.DataReceived, handleRemoteWhiteboardEvents);
+    return () => {
+      room.off(RoomEvent.DataReceived, handleRemoteWhiteboardEvents);
+    };
+  }, [room, participantName, showWhiteboard, showDrawingOverlay]);
 
   // Notify parent when room is ready and try to enable audio proactively
   useEffect(() => {
@@ -1206,10 +1259,10 @@ function LiveKitContent({
         </div>
       )}
 
-      {/* Bottom Control Bar - ПРОЗРАЧНАЯ панель, контраст только на иконках */}
+      {/* Bottom Control Bar - Responsive: smaller on mobile */}
       <div 
         className={cn(
-          "absolute bottom-4 left-1/2 -translate-x-1/2 z-50",
+          "absolute bottom-2 sm:bottom-4 left-1/2 -translate-x-1/2 z-50 w-full px-2 sm:px-0 sm:w-auto",
           "transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
           showBottomPanel 
             ? "translate-y-0 opacity-100 scale-100" 
@@ -1218,7 +1271,7 @@ function LiveKitContent({
               : "translate-y-12 opacity-0 scale-90 pointer-events-none"
         )}
       >
-        <div className="flex items-center gap-2.5 px-5 py-3.5 rounded-[2.5rem] bg-transparent backdrop-blur-[2px] border border-white/[0.1] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)]">
+        <div className="flex items-center justify-center gap-1.5 sm:gap-2.5 px-3 sm:px-5 py-2.5 sm:py-3.5 rounded-2xl sm:rounded-[2.5rem] bg-transparent backdrop-blur-[2px] border border-white/[0.1] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)] flex-wrap sm:flex-nowrap max-w-full overflow-x-auto">{/* Camera toggle */}
           {/* Camera toggle */}
           <Tooltip>
             <TooltipTrigger asChild>
@@ -1227,7 +1280,7 @@ function LiveKitContent({
                 variant={isCameraEnabled ? "outline" : "secondary"}
                 size="icon"
                 className={cn(
-                  "w-12 h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg border-white/20",
+                  "w-10 h-10 sm:w-12 sm:h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg border-white/20",
                   isCameraEnabled 
                     ? "bg-white/15 hover:bg-white/25" 
                     : "bg-destructive/40 border-destructive/60 hover:bg-destructive/50"
@@ -1254,7 +1307,7 @@ function LiveKitContent({
                     variant={isMicrophoneEnabled ? "outline" : "secondary"}
                     size="icon"
                     className={cn(
-                      "w-12 h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg border-white/20",
+                      "w-10 h-10 sm:w-12 sm:h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg border-white/20",
                       isMicrophoneEnabled 
                         ? "bg-white/15 hover:bg-white/25" 
                         : "bg-destructive/40 border-destructive/60 hover:bg-destructive/50"

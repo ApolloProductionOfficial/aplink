@@ -85,6 +85,35 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
   // Auto-hide panel timer
   const hideTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastActivityRef = useRef<number>(Date.now());
+  
+  // Track if we broadcasted open state
+  const hasAnnounceOpenRef = useRef(false);
+
+  // Broadcast drawing overlay open/close state to other participants
+  const broadcastOpenState = useCallback((opened: boolean) => {
+    if (!room) return;
+    const data = JSON.stringify({ 
+      type: opened ? 'DRAWING_OVERLAY_OPEN' : 'DRAWING_OVERLAY_CLOSE', 
+      sender: participantName,
+      timestamp: Date.now()
+    });
+    room.localParticipant.publishData(
+      new TextEncoder().encode(data), 
+      { reliable: true }
+    );
+    console.log('[DrawingOverlay] Broadcast open state:', opened);
+  }, [room, participantName]);
+
+  // Broadcast when overlay opens
+  useEffect(() => {
+    if (isOpen && !hasAnnounceOpenRef.current) {
+      hasAnnounceOpenRef.current = true;
+      broadcastOpenState(true);
+    } else if (!isOpen && hasAnnounceOpenRef.current) {
+      hasAnnounceOpenRef.current = false;
+      broadcastOpenState(false);
+    }
+  }, [isOpen, broadcastOpenState]);
   // Initialize canvas - CRITICAL: Re-acquire context on every isOpen change
   // This fixes the issue where Clear/Undo buttons stop working after minimize/maximize
   useEffect(() => {

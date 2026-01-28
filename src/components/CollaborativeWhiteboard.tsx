@@ -68,6 +68,34 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
   const processedClearsRef = useRef<Set<string>>(new Set());
   // Debounce ref to prevent multiple clears
   const clearDebounceRef = useRef<boolean>(false);
+  // Track if we broadcasted open state
+  const hasAnnounceOpenRef = useRef(false);
+
+  // Broadcast whiteboard open/close state to other participants
+  const broadcastOpenState = useCallback((opened: boolean) => {
+    if (!room) return;
+    const data = JSON.stringify({ 
+      type: opened ? 'WHITEBOARD_OPEN' : 'WHITEBOARD_CLOSE', 
+      sender: participantName,
+      timestamp: Date.now()
+    });
+    room.localParticipant.publishData(
+      new TextEncoder().encode(data), 
+      { reliable: true }
+    );
+    console.log('[Whiteboard] Broadcast open state:', opened);
+  }, [room, participantName]);
+
+  // Broadcast when whiteboard opens
+  useEffect(() => {
+    if (isOpen && !hasAnnounceOpenRef.current) {
+      hasAnnounceOpenRef.current = true;
+      broadcastOpenState(true);
+    } else if (!isOpen && hasAnnounceOpenRef.current) {
+      hasAnnounceOpenRef.current = false;
+      broadcastOpenState(false);
+    }
+  }, [isOpen, broadcastOpenState]);
 
   // Initialize canvas
   useEffect(() => {
