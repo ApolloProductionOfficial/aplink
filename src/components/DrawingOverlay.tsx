@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 type Tool = 'pen' | 'eraser' | 'line' | 'arrow' | 'rectangle' | 'laser';
 
@@ -59,6 +60,9 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
   const [brushSize, setBrushSize] = useState(3);
   const [tool, setTool] = useState<Tool>('pen');
   const [showControls, setShowControls] = useState(true);
+  
+  // Mobile detection
+  const isMobile = useIsMobile();
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
   const shapeStartRef = useRef<{ x: number; y: number } | null>(null);
   const contextRef = useRef<CanvasRenderingContext2D | null>(null);
@@ -1008,21 +1012,35 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose }: Drawi
           </Button>
         </div>
 
-      {/* Instructions hint - positioned above bottom panel, synced visibility */}
-      <div className={cn(
-        "absolute left-1/2 -translate-x-1/2 px-4 py-2 bg-black/40 backdrop-blur-2xl border border-white/[0.08] rounded-full transition-all duration-300 shadow-[0_8px_32px_rgba(0,0,0,0.4)]",
-        showControls 
-          ? "bottom-24 opacity-100"
-          : "bottom-4 opacity-0 pointer-events-none"
-      )}>
-        <span className="text-xs font-normal text-white/90">
-          <kbd className="px-2.5 py-1 bg-white/15 rounded-full text-white font-normal">ESC</kbd> выйти 
-          <span className="mx-3 text-white/30">•</span>
-          <kbd className="px-2.5 py-1 bg-white/15 rounded-full text-white font-normal">Ctrl+Z</kbd> отменить
-          <span className="mx-3 text-white/30">•</span>
-          <span className="text-primary/90 font-normal">Рисунки видны всем</span>
-        </span>
-      </div>
+      {/* Fixed close button - always visible on mobile */}
+      {isMobile && (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onClose}
+          className="fixed top-4 right-4 z-[99999] w-10 h-10 rounded-full bg-red-500/30 hover:bg-red-500/50 border border-red-500/50"
+        >
+          <X className="w-5 h-5" />
+        </Button>
+      )}
+
+      {/* Instructions hint - HIDDEN on mobile */}
+      {!isMobile && (
+        <div className={cn(
+          "absolute left-1/2 -translate-x-1/2 px-4 py-2 bg-black/40 backdrop-blur-2xl border border-white/[0.08] rounded-full transition-all duration-300 shadow-[0_8px_32px_rgba(0,0,0,0.4)]",
+          showControls 
+            ? "bottom-24 opacity-100"
+            : "bottom-4 opacity-0 pointer-events-none"
+        )}>
+          <span className="text-xs font-normal text-white/90">
+            <kbd className="px-2.5 py-1 bg-white/15 rounded-full text-white font-normal">ESC</kbd> выйти 
+            <span className="mx-3 text-white/30">•</span>
+            <kbd className="px-2.5 py-1 bg-white/15 rounded-full text-white font-normal">Ctrl+Z</kbd> отменить
+            <span className="mx-3 text-white/30">•</span>
+            <span className="text-primary/90 font-normal">Рисунки видны всем</span>
+          </span>
+        </div>
+      )}
     </div>,
     document.body
   );

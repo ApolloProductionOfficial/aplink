@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { useConnectionSounds } from "@/hooks/useConnectionSounds";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const CHAT_EMOJIS = ['😀', '😂', '❤️', '🔥', '👍', '💰', '🍑', '🍆', '💎', '💋', '🥵', '💸', '👑', '🎬', '🚀'];
 
@@ -35,6 +36,8 @@ interface InCallChatProps {
 }
 
 export function InCallChat({ room, participantName, isOpen, onToggle, buttonOnly = false }: InCallChatProps) {
+  const isMobile = useIsMobile();
+  
   // Use ref for initial messages to preserve across remounts
   const roomId = room?.name || 'default';
   const storageKey = `aplink-chat-${roomId}`;
@@ -510,24 +513,37 @@ export function InCallChat({ room, participantName, isOpen, onToggle, buttonOnly
   }
 
   // Draggable chat panel (when open)
+  // Mobile: fullscreen bottom sheet | Desktop: draggable panel
   return (
     <div
       className={cn(
-        "fixed z-[60] w-80 h-[420px] bg-black/40 backdrop-blur-2xl rounded-[1.5rem] border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.5),0_0_1px_rgba(255,255,255,0.1)] flex flex-col overflow-hidden",
-        isDragging && "cursor-grabbing select-none"
+        "fixed z-[60] bg-black/40 backdrop-blur-2xl border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.5),0_0_1px_rgba(255,255,255,0.1)] flex flex-col overflow-hidden",
+        // Mobile: full-width bottom sheet
+        isMobile 
+          ? "inset-x-0 bottom-0 h-[70vh] rounded-t-[1.5rem] animate-slide-up" 
+          : "w-80 h-[420px] rounded-[1.5rem]",
+        isDragging && !isMobile && "cursor-grabbing select-none"
       )}
-      style={{
+      style={isMobile ? {} : {
         right: `calc(1rem - ${position.x}px)`,
         bottom: `calc(6rem - ${position.y}px)`,
       }}
     >
-      {/* Header - drag handle */}
+      {/* Header - drag handle (desktop only) */}
       <div
-        className="flex items-center justify-between p-3 border-b border-white/[0.08] cursor-grab active:cursor-grabbing bg-black/30"
-        onMouseDown={handleDragStart}
+        className={cn(
+          "flex items-center justify-between p-3 sm:p-3 border-b border-white/[0.08] bg-black/30",
+          !isMobile && "cursor-grab active:cursor-grabbing"
+        )}
+        onMouseDown={isMobile ? undefined : handleDragStart}
       >
         <div className="flex items-center gap-2">
-          <GripHorizontal className="w-4 h-4 text-white/30" />
+          {/* Mobile: drag indicator bar, Desktop: grip icon */}
+          {isMobile ? (
+            <div className="w-10 h-1 bg-white/30 rounded-full mx-auto" />
+          ) : (
+            <GripHorizontal className="w-4 h-4 text-white/30" />
+          )}
           <MessageCircle className="w-4 h-4 text-primary" />
           <span className="font-medium text-sm">Чат</span>
           <span className="text-xs text-muted-foreground">({messages.length})</span>
@@ -535,7 +551,7 @@ export function InCallChat({ room, participantName, isOpen, onToggle, buttonOnly
         <Button
           variant="ghost"
           size="icon"
-          className="h-7 w-7 rounded-full hover:bg-white/10"
+          className="h-8 w-8 sm:h-7 sm:w-7 rounded-full hover:bg-white/10"
           onClick={onToggle}
         >
           <X className="w-4 h-4" />

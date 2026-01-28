@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Room, RoomEvent } from 'livekit-client';
-import { Pencil, Eraser, Trash2, X, Circle, Download, FileText, Minus, MoveRight, Square, Film, Loader2 } from 'lucide-react';
+import { Pencil, Eraser, Trash2, X, Circle, Download, FileText, Minus, MoveRight, Square, Film, Loader2, RotateCcw } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 import jsPDF from 'jspdf';
 
 type Tool = 'pen' | 'eraser' | 'line' | 'arrow' | 'rectangle';
@@ -70,6 +72,26 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
   const clearDebounceRef = useRef<boolean>(false);
   // Track if we broadcasted open state
   const hasAnnounceOpenRef = useRef(false);
+  
+  // Mobile detection
+  const isMobile = useIsMobile();
+  
+  // Orientation detection for mobile landscape hint
+  const [isPortrait, setIsPortrait] = useState(
+    typeof window !== 'undefined' ? window.innerHeight > window.innerWidth : false
+  );
+  
+  useEffect(() => {
+    const handleOrientationChange = () => {
+      setIsPortrait(window.innerHeight > window.innerWidth);
+    };
+    window.addEventListener('resize', handleOrientationChange);
+    window.addEventListener('orientationchange', handleOrientationChange);
+    return () => {
+      window.removeEventListener('resize', handleOrientationChange);
+      window.removeEventListener('orientationchange', handleOrientationChange);
+    };
+  }, []);
 
   // Broadcast whiteboard open/close state to other participants
   const broadcastOpenState = useCallback((opened: boolean) => {
@@ -536,135 +558,225 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
 
   if (!isOpen) return null;
 
+  // Essential tools for mobile (subset)
+  const essentialTools = TOOLS.filter(t => ['pen', 'eraser'].includes(t.id));
+  const mobileToolsToShow = isMobile ? essentialTools : TOOLS;
+
   return createPortal(
     <>
-      <div className="fixed inset-0 z-[99990] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 md:p-8" data-preserve-cursor>
-        <div className="bg-black/70 rounded-3xl border border-white/10 p-4 w-full max-w-5xl flex flex-col gap-4" data-preserve-cursor>
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Pencil className="w-5 h-5 text-primary" />
-              <h3 className="text-lg font-medium">Доска для рисования</h3>
+      <div className="fixed inset-0 z-[99990] bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 md:p-8" data-preserve-cursor>
+        {/* Mobile landscape hint */}
+        {isMobile && isPortrait && (
+          <div className="absolute inset-0 z-[99999] bg-black/90 flex flex-col items-center justify-center gap-4 p-6">
+            <RotateCcw className="w-16 h-16 text-primary animate-spin" style={{ animationDuration: '3s' }} />
+            <h3 className="text-lg font-semibold text-white text-center">Поверните телефон</h3>
+            <p className="text-sm text-muted-foreground text-center max-w-[280px]">
+              Для лучшей работы с доской переверните устройство в альбомную ориентацию
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsPortrait(false)} // Dismiss hint
+              className="mt-4"
+            >
+              Продолжить в портретном режиме
+            </Button>
+          </div>
+        )}
+        
+        <div className="bg-black/70 rounded-2xl sm:rounded-3xl border border-white/10 p-2 sm:p-4 w-full max-w-5xl flex flex-col gap-2 sm:gap-4" data-preserve-cursor>
+          {/* Header - Mobile: simplified, Desktop: full toolbar */}
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Pencil className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+              <h3 className="text-sm sm:text-lg font-medium">Доска</h3>
             </div>
             
-            {/* Tools */}
-            <div className="flex items-center gap-2">
-              {/* Color picker */}
-              <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-white/5 border border-white/10">
-                {COLORS.map((c) => (
-                  <button
-                    key={c}
-                    onClick={() => setColor(c)}
-                    className={cn(
-                      "w-6 h-6 rounded-full transition-all hover:scale-110",
-                      color === c && "ring-2 ring-white ring-offset-2 ring-offset-black"
-                    )}
-                    style={{ backgroundColor: c }}
-                  />
-                ))}
-              </div>
-
-              {/* Brush size */}
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
-                <Circle className="w-3 h-3" />
-                <Slider
-                  value={[brushSize]}
-                  onValueChange={([v]) => setBrushSize(v)}
-                  min={1}
-                  max={20}
-                  step={1}
-                  className="w-20"
-                />
-                <Circle className="w-5 h-5" />
-              </div>
-
-              {/* Tool buttons */}
-              {TOOLS.map((t) => {
-                const Icon = t.icon;
-                return (
-                  <Button
-                    key={t.id}
-                    variant={tool === t.id ? 'default' : 'outline'}
-                    size="icon"
-                    onClick={() => setTool(t.id)}
-                    className="w-10 h-10 rounded-full"
-                    title={t.label}
-                  >
-                    <Icon className="w-4 h-4" />
-                  </Button>
-                );
-              })}
-
-              {/* Clear button */}
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handleClear}
-                disabled={isClearing}
-                className="w-10 h-10 rounded-full hover:bg-red-500/20 hover:border-red-500/50 disabled:opacity-50"
-                title="Очистить всё"
-              >
-                {isClearing ? (
-                  <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                ) : (
+            {/* Mobile: Compact toolbar */}
+            {isMobile ? (
+              <div className="flex items-center gap-1 flex-wrap justify-end">
+                {/* Color picker popover */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      className="w-8 h-8 rounded-full border-2 border-white/30"
+                      style={{ backgroundColor: color }}
+                    />
+                  </PopoverTrigger>
+                  <PopoverContent side="bottom" className="p-2 w-auto bg-black/80 border-white/10">
+                    <div className="flex flex-wrap gap-1 max-w-[180px]">
+                      {COLORS.map((c) => (
+                        <button
+                          key={c}
+                          onClick={() => setColor(c)}
+                          className={cn(
+                            "w-7 h-7 rounded-full transition-all",
+                            color === c && "ring-2 ring-white ring-offset-1 ring-offset-black"
+                          )}
+                          style={{ backgroundColor: c }}
+                        />
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+                
+                {/* Essential tools */}
+                {mobileToolsToShow.map((t) => {
+                  const Icon = t.icon;
+                  return (
+                    <Button
+                      key={t.id}
+                      variant={tool === t.id ? 'default' : 'outline'}
+                      size="icon"
+                      onClick={() => setTool(t.id)}
+                      className="w-9 h-9 rounded-full"
+                    >
+                      <Icon className="w-4 h-4" />
+                    </Button>
+                  );
+                })}
+                
+                {/* Clear */}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleClear}
+                  disabled={isClearing}
+                  className="w-9 h-9 rounded-full hover:bg-red-500/20"
+                >
                   <Trash2 className="w-4 h-4" />
-                )}
-              </Button>
+                </Button>
+                
+                {/* Close - always visible */}
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={onClose}
+                  className="w-9 h-9 rounded-full bg-red-500/20 hover:bg-red-500/30"
+                >
+                  <X className="w-5 h-5" />
+                </Button>
+              </div>
+            ) : (
+              /* Desktop: Full toolbar */
+              <div className="flex items-center gap-2">
+                {/* Color picker */}
+                <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-white/5 border border-white/10">
+                  {COLORS.map((c) => (
+                    <button
+                      key={c}
+                      onClick={() => setColor(c)}
+                      className={cn(
+                        "w-6 h-6 rounded-full transition-all hover:scale-110",
+                        color === c && "ring-2 ring-white ring-offset-2 ring-offset-black"
+                      )}
+                      style={{ backgroundColor: c }}
+                    />
+                  ))}
+                </div>
 
-              {/* Divider */}
-              <div className="w-px h-6 bg-white/20" />
+                {/* Brush size */}
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
+                  <Circle className="w-3 h-3" />
+                  <Slider
+                    value={[brushSize]}
+                    onValueChange={([v]) => setBrushSize(v)}
+                    min={1}
+                    max={20}
+                    step={1}
+                    className="w-20"
+                  />
+                  <Circle className="w-5 h-5" />
+                </div>
 
-              {/* Export PNG */}
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={exportAsImage}
-                className="w-10 h-10 rounded-full hover:bg-green-500/20 hover:border-green-500/50"
-                title="Скачать PNG"
-              >
-                <Download className="w-4 h-4 text-green-400" />
-              </Button>
+                {/* Tool buttons */}
+                {TOOLS.map((t) => {
+                  const Icon = t.icon;
+                  return (
+                    <Button
+                      key={t.id}
+                      variant={tool === t.id ? 'default' : 'outline'}
+                      size="icon"
+                      onClick={() => setTool(t.id)}
+                      className="w-10 h-10 rounded-full"
+                      title={t.label}
+                    >
+                      <Icon className="w-4 h-4" />
+                    </Button>
+                  );
+                })}
 
-              {/* Export PDF */}
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={exportAsPDF}
-                className="w-10 h-10 rounded-full hover:bg-blue-500/20 hover:border-blue-500/50"
-                title="Скачать PDF"
-              >
-                <FileText className="w-4 h-4 text-blue-400" />
-              </Button>
+                {/* Clear button */}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleClear}
+                  disabled={isClearing}
+                  className="w-10 h-10 rounded-full hover:bg-red-500/20 hover:border-red-500/50 disabled:opacity-50"
+                  title="Очистить всё"
+                >
+                  {isClearing ? (
+                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Trash2 className="w-4 h-4" />
+                  )}
+                </Button>
 
-              {/* Export GIF */}
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={exportAsGif}
-                disabled={isExportingGif}
-                className="w-10 h-10 rounded-full hover:bg-purple-500/20 hover:border-purple-500/50"
-                title="Скачать GIF"
-              >
-                {isExportingGif ? (
-                  <Loader2 className="w-4 h-4 text-purple-400 animate-spin" />
-                ) : (
-                  <Film className="w-4 h-4 text-purple-400" />
-                )}
-              </Button>
+                {/* Divider */}
+                <div className="w-px h-6 bg-white/20" />
 
-              {/* Divider */}
-              <div className="w-px h-6 bg-white/20" />
+                {/* Export PNG */}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={exportAsImage}
+                  className="w-10 h-10 rounded-full hover:bg-green-500/20 hover:border-green-500/50"
+                  title="Скачать PNG"
+                >
+                  <Download className="w-4 h-4 text-green-400" />
+                </Button>
 
-              {/* Close button */}
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={onClose}
-                className="w-10 h-10 rounded-full"
-              >
-                <X className="w-5 h-5" />
-              </Button>
-            </div>
+                {/* Export PDF */}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={exportAsPDF}
+                  className="w-10 h-10 rounded-full hover:bg-blue-500/20 hover:border-blue-500/50"
+                  title="Скачать PDF"
+                >
+                  <FileText className="w-4 h-4 text-blue-400" />
+                </Button>
+
+                {/* Export GIF */}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={exportAsGif}
+                  disabled={isExportingGif}
+                  className="w-10 h-10 rounded-full hover:bg-purple-500/20 hover:border-purple-500/50"
+                  title="Скачать GIF"
+                >
+                  {isExportingGif ? (
+                    <Loader2 className="w-4 h-4 text-purple-400 animate-spin" />
+                  ) : (
+                    <Film className="w-4 h-4 text-purple-400" />
+                  )}
+                </Button>
+
+                {/* Divider */}
+                <div className="w-px h-6 bg-white/20" />
+
+                {/* Close button */}
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={onClose}
+                  className="w-10 h-10 rounded-full"
+                >
+                  <X className="w-5 h-5" />
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Canvas */}
@@ -673,7 +785,7 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
             width={1280} 
             height={720}
             data-preserve-cursor
-            className="w-full rounded-2xl border border-white/10 cursor-crosshair"
+            className="w-full rounded-xl sm:rounded-2xl border border-white/10 cursor-crosshair touch-none"
             style={{ 
               aspectRatio: '16/9', 
               background: 'rgba(26, 26, 26, 0.8)',
@@ -683,12 +795,27 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
+            onTouchStart={(e) => {
+              const touch = e.touches[0];
+              const mouseEvent = { clientX: touch.clientX, clientY: touch.clientY } as React.MouseEvent<HTMLCanvasElement>;
+              handleMouseDown(mouseEvent);
+            }}
+            onTouchMove={(e) => {
+              const touch = e.touches[0];
+              const mouseEvent = { clientX: touch.clientX, clientY: touch.clientY } as React.MouseEvent<HTMLCanvasElement>;
+              handleMouseMove(mouseEvent);
+            }}
+            onTouchEnd={() => {
+              handleMouseUp({} as React.MouseEvent<HTMLCanvasElement>);
+            }}
           />
 
-          {/* Instructions */}
-          <p className="text-xs text-muted-foreground text-center">
-            Рисуйте вместе с другими участниками • Изменения видны всем в реальном времени
-          </p>
+          {/* Instructions - hidden on mobile */}
+          {!isMobile && (
+            <p className="text-xs text-muted-foreground text-center">
+              Рисуйте вместе с другими участниками • Изменения видны всем в реальном времени
+            </p>
+          )}
         </div>
       </div>
 

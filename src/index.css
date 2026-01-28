@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Slide-up animation for mobile chat */
+@keyframes slide-up {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.animate-slide-up { animation: slide-up 0.3s ease-out forwards; }
+
 /* ============================================
    RADIX UI POPOVER Z-INDEX FIX
    Ensure popovers appear above call overlay (z-60)
