@@ -67,7 +67,7 @@ export function initGlobalErrorHandlers() {
     const errorMessage =
       reason?.message || (typeof reason === 'string' ? reason : 'Unhandled Promise Rejection');
 
-    // Filter out noise (network, extensions, non-app errors, expected disconnects)
+    // Filter out noise (network, extensions, non-app errors, expected disconnects, WebRTC internals)
     if (
       errorMessage.includes('FunctionsFetchError') ||
       errorMessage.includes('AbortError') ||
@@ -87,7 +87,12 @@ export function initGlobalErrorHandlers() {
       // Filter out expected LiveKit disconnection reasons
       errorMessage.includes('"reason":3') ||
       errorMessage.includes('"reasonName":"Cancelled"') ||
-      errorMessage.includes('Cancelled')
+      errorMessage.includes('Cancelled') ||
+      // Filter out internal WebRTC errors (removeTrack sender mismatch)
+      errorMessage.includes("removeTrack") ||
+      errorMessage.includes("sender was not created by this peer connection") ||
+      // Filter out NegotiationError - these are handled by app-level recovery
+      (errorMessage.includes('NegotiationError') && !errorMessage.includes('critical'))
     ) {
       return;
     }
@@ -124,7 +129,7 @@ export function initGlobalErrorHandlers() {
       return;
     }
 
-    // Filter out noise (extensions, devtools, non-app errors)
+    // Filter out noise (extensions, devtools, non-app errors, handled LiveKit issues)
     if (
       fullMessage.includes('DevTools') ||
       fullMessage.includes('favicon') ||
@@ -146,7 +151,15 @@ export function initGlobalErrorHandlers() {
       fullMessage.includes('__REACT_DEVTOOLS') ||
       fullMessage.includes('postMessage') ||
       fullMessage.includes('Loading chunk') ||
-      fullMessage.includes('dynamically imported module')
+      fullMessage.includes('dynamically imported module') ||
+      // Filter out internal WebRTC errors
+      fullMessage.includes("removeTrack") ||
+      fullMessage.includes("sender was not created by this peer connection") ||
+      // Filter out expected/handled LiveKit logs
+      fullMessage.includes('[LiveKitRoom] NegotiationError') ||
+      fullMessage.includes('[LiveKitRoom] Reconnecting') ||
+      fullMessage.includes('"reasonName":"Cancelled"') ||
+      fullMessage.includes('"reason":3')
     ) {
       return;
     }

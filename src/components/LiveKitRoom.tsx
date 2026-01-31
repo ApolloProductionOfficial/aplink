@@ -39,6 +39,7 @@ import {
   User,
   Presentation,
   PictureInPicture,
+  RefreshCw,
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
@@ -62,7 +63,49 @@ import { WebinarVideoLayout } from "@/components/WebinarVideoLayout";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useNativePiP } from "@/hooks/useNativePiP";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useActiveCall } from "@/contexts/ActiveCallContext";
 import { toast } from "sonner";
+
+// ====== TOKEN UTILITIES ======
+
+/** Decode JWT payload without external libraries */
+function decodeJwtPayload(token: string): Record<string, any> | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const decoded = atob(payload);
+    return JSON.parse(decoded);
+  } catch {
+    return null;
+  }
+}
+
+/** Get token expiration timestamp in seconds */
+function getTokenExp(token: string): number | null {
+  const payload = decodeJwtPayload(token);
+  return payload?.exp || null;
+}
+
+/** Check if error is token-related (expired/invalid) */
+function isTokenError(error: any): boolean {
+  const msg = String(error?.message || error || '').toLowerCase();
+  const reasonName = String(error?.reasonName || '').toLowerCase();
+  const status = error?.status;
+  return (
+    status === 401 ||
+    reasonName === 'notallowed' ||
+    msg.includes('token is expired') ||
+    msg.includes('invalid token') ||
+    msg.includes('expired') ||
+    msg.includes('401')
+  );
+}
+
+/** Check if error is NegotiationError */
+function isNegotiationError(error: any): boolean {
+  return error?.name === 'NegotiationError' || error?.code === 13;
+}
 
 interface LiveKitRoomProps {
   roomName: string;
@@ -108,6 +151,18 @@ export function LiveKitRoom({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
+  // Get context for reconnect state, guest identity, fallback profile
+  const { 
+    setIsRoomReconnecting, 
+    isRoomReconnecting,
+    guestIdentity, 
+    setGuestIdentity, 
+    useFallbackVideoProfile, 
+    setUseFallbackVideoProfile,
+    forceReconnectKey,
+    triggerForceReconnect,
+  } = useActiveCall();
+  
   // Prevent re-fetching token on component updates
   const hasInitializedRef = useRef(false);
   const currentRoomRef = useRef<string | null>(null);
@@ -115,12 +170,109 @@ export function LiveKitRoom({
   
   // Stable token ref to prevent re-renders from triggering reconnection
   const tokenRef = useRef<string | null>(null);
+  const tokenExpRef = useRef<number | null>(null);
+  const refreshTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // NegotiationError tracking for auto-fallback
+  const negotiationErrorsRef = useRef<number[]>([]);
+  const NEGOTIATION_ERROR_WINDOW_MS = 60000; // 60 seconds
+  const NEGOTIATION_ERROR_THRESHOLD = 2;
+  
+  // Force reconnect counter - when incremented, we refresh token and remount LKRoom
+  const [lkInstanceKey, setLkInstanceKey] = useState(0);
+  const forceReconnectCooldownRef = useRef<number>(0);
+  const forceReconnectAttemptsRef = useRef<number>(0);
+  const MAX_FORCE_RECONNECT_ATTEMPTS = 3;
+  const FORCE_RECONNECT_COOLDOWN_MS = 15000;
   
   // Memoize token to prevent LKRoom from seeing "new" token on re-renders
   const memoizedToken = useMemo(() => tokenRef.current, [tokenRef.current]);
 
+  // Fetch token function - can be called for initial fetch or refresh
+  const fetchToken = useCallback(async (isRefresh = false): Promise<boolean> => {
+    if (isFetchingRef.current) {
+      console.log("[LiveKitRoom] Token fetch already in progress");
+      return false;
+    }
+    
+    isFetchingRef.current = true;
+    try {
+      if (!isRefresh) {
+        setLoading(true);
+        setError(null);
+      }
+
+      // Use saved guest identity for token refresh to maintain same participant
+      const identityToUse = participantIdentity || guestIdentity || undefined;
+      
+      console.log("[LiveKitRoom] Requesting token for room:", roomName, isRefresh ? "(refresh)" : "(initial)", "identity:", identityToUse);
+
+      const { data, error: fnError } = await supabase.functions.invoke(
+        "livekit-token",
+        {
+          body: {
+            roomName,
+            participantName,
+            participantIdentity: identityToUse,
+          },
+        }
+      );
+
+      if (fnError) {
+        throw new Error(fnError.message || "Failed to get token");
+      }
+
+      if (!data?.token || !data?.url) {
+        throw new Error("Invalid token response");
+      }
+
+      // Save guest identity from response for future reconnects
+      if (!participantIdentity && data.identity) {
+        setGuestIdentity(data.identity);
+        console.log("[LiveKitRoom] Saved guest identity:", data.identity);
+      }
+
+      // Extract and store token expiration
+      const exp = getTokenExp(data.token);
+      tokenExpRef.current = exp;
+      console.log("[LiveKitRoom] Token received, exp:", exp ? new Date(exp * 1000).toISOString() : 'unknown');
+
+      hasInitializedRef.current = true;
+      currentRoomRef.current = roomName;
+      tokenRef.current = data.token;
+      setToken(data.token);
+      setServerUrl(data.url);
+      
+      // Schedule token refresh 2 minutes before expiration
+      if (exp && refreshTimerRef.current === null) {
+        const now = Math.floor(Date.now() / 1000);
+        const refreshIn = Math.max((exp - now - 120) * 1000, 60000); // At least 1 minute
+        console.log("[LiveKitRoom] Scheduling token refresh in", Math.round(refreshIn / 1000), "seconds");
+        
+        refreshTimerRef.current = setTimeout(() => {
+          refreshTimerRef.current = null;
+          console.log("[LiveKitRoom] Token refresh timer fired");
+          fetchToken(true);
+        }, refreshIn);
+      }
+      
+      return true;
+    } catch (err) {
+      console.error("[LiveKitRoom] Error getting token:", err);
+      const errorMessage = err instanceof Error ? err.message : "Failed to connect";
+      if (!isRefresh) {
+        setError(errorMessage);
+      }
+      onError?.(err instanceof Error ? err : new Error(errorMessage));
+      return false;
+    } finally {
+      setLoading(false);
+      isFetchingRef.current = false;
+    }
+  }, [roomName, participantName, participantIdentity, guestIdentity, setGuestIdentity, onError]);
+
+  // Initial token fetch
   useEffect(() => {
-    // Skip if already initialized OR currently fetching
     if ((hasInitializedRef.current && currentRoomRef.current === roomName && tokenRef.current) || isFetchingRef.current) {
       if (!isFetchingRef.current) {
         console.log("[LiveKitRoom] Already have token for room, skipping re-fetch");
@@ -128,53 +280,90 @@ export function LiveKitRoom({
       return;
     }
 
-    const getToken = async () => {
-      isFetchingRef.current = true;
-      try {
-        setLoading(true);
-        setError(null);
-
-        console.log("[LiveKitRoom] Requesting token for room:", roomName);
-
-        const { data, error: fnError } = await supabase.functions.invoke(
-          "livekit-token",
-          {
-            body: {
-              roomName,
-              participantName,
-              participantIdentity,
-            },
-          }
-        );
-
-        if (fnError) {
-          throw new Error(fnError.message || "Failed to get token");
-        }
-
-        if (!data?.token || !data?.url) {
-          throw new Error("Invalid token response");
-        }
-
-        console.log("[LiveKitRoom] Token received, connecting to:", data.url);
-        hasInitializedRef.current = true;
-        currentRoomRef.current = roomName;
-        // Store in ref BEFORE setState for memoization to work
-        tokenRef.current = data.token;
-        setToken(data.token);
-        setServerUrl(data.url);
-      } catch (err) {
-        console.error("[LiveKitRoom] Error getting token:", err);
-        const errorMessage = err instanceof Error ? err.message : "Failed to connect";
-        setError(errorMessage);
-        onError?.(err instanceof Error ? err : new Error(errorMessage));
-      } finally {
-        setLoading(false);
-        isFetchingRef.current = false;
+    fetchToken(false);
+    
+    return () => {
+      if (refreshTimerRef.current) {
+        clearTimeout(refreshTimerRef.current);
+        refreshTimerRef.current = null;
       }
     };
+  }, [roomName, fetchToken]);
 
-    getToken();
-  }, [roomName]); // Only depend on roomName to prevent unnecessary re-fetches
+  // Handle force reconnect from context
+  useEffect(() => {
+    if (forceReconnectKey > 0) {
+      console.log("[LiveKitRoom] Force reconnect triggered from context, key:", forceReconnectKey);
+      handleForceReconnect("context");
+    }
+  }, [forceReconnectKey]);
+
+  // Force reconnect handler with cooldown and retry limit
+  const handleForceReconnect = useCallback(async (reason: string) => {
+    const now = Date.now();
+    
+    // Check cooldown
+    if (now - forceReconnectCooldownRef.current < FORCE_RECONNECT_COOLDOWN_MS) {
+      console.log("[LiveKitRoom] Force reconnect in cooldown, skipping");
+      return;
+    }
+    
+    // Check max attempts
+    if (forceReconnectAttemptsRef.current >= MAX_FORCE_RECONNECT_ATTEMPTS) {
+      console.warn("[LiveKitRoom] Max force reconnect attempts reached");
+      toast.error("Не удалось восстановить соединение", {
+        description: "Попробуйте перезагрузить страницу",
+      });
+      return;
+    }
+    
+    forceReconnectCooldownRef.current = now;
+    forceReconnectAttemptsRef.current++;
+    
+    console.log("[LiveKitRoom] Executing force reconnect, reason:", reason, "attempt:", forceReconnectAttemptsRef.current);
+    
+    // Clear old token to force fresh fetch
+    tokenRef.current = null;
+    hasInitializedRef.current = false;
+    
+    // Fetch new token
+    const success = await fetchToken(false);
+    
+    if (success) {
+      // Increment instance key to remount LKRoom with new token
+      setLkInstanceKey(prev => prev + 1);
+      toast.info("Переподключение...", {
+        description: "Восстанавливаем соединение",
+        duration: 3000,
+      });
+    }
+  }, [fetchToken]);
+
+  // Handle NegotiationError and trigger fallback if repeated
+  const handleNegotiationError = useCallback((error: any) => {
+    const now = Date.now();
+    
+    // Clean old errors outside window
+    negotiationErrorsRef.current = negotiationErrorsRef.current.filter(
+      ts => now - ts < NEGOTIATION_ERROR_WINDOW_MS
+    );
+    
+    // Add this error
+    negotiationErrorsRef.current.push(now);
+    
+    console.warn("[LiveKitRoom] NegotiationError count in window:", negotiationErrorsRef.current.length);
+    
+    // If threshold exceeded, enable fallback and reconnect
+    if (negotiationErrorsRef.current.length >= NEGOTIATION_ERROR_THRESHOLD && !useFallbackVideoProfile) {
+      console.log("[LiveKitRoom] Enabling fallback video profile due to repeated NegotiationErrors");
+      setUseFallbackVideoProfile(true);
+      toast.info("Включён стабильный режим видео", {
+        description: "Качество снижено для стабильности соединения",
+        duration: 5000,
+      });
+      handleForceReconnect("negotiation-fallback");
+    }
+  }, [useFallbackVideoProfile, setUseFallbackVideoProfile, handleForceReconnect]);
 
   const handleConnected = useCallback(() => {
     console.log("[LiveKitRoom] Connected to room");
@@ -283,31 +472,21 @@ export function LiveKitRoom({
     return null;
   }
 
-  return (
-    <LKRoom
-      serverUrl={serverUrl}
-      token={memoizedToken}
-      connect={true}
-      audio={true}
-      video={true}
-      onConnected={handleConnected}
-      onDisconnected={handleDisconnected}
-      onError={(err) => {
-        console.error("[LiveKitRoom] Room error:", err);
-        onError?.(err);
-      }}
-      options={{
+  // Dynamic room options based on fallback mode
+  const roomOptions = useMemo(() => {
+    if (useFallbackVideoProfile) {
+      // Stable fallback profile - VP8, no simulcast, lower resolution
+      console.log("[LiveKitRoom] Using FALLBACK video profile (VP8, 720p, no simulcast)");
+      return {
         adaptiveStream: true,
         dynacast: true,
-        // Maximum HD video quality: 1080p @ 30fps
         videoCaptureDefaults: {
           resolution: {
-            width: 1920,
-            height: 1080,
+            width: 1280,
+            height: 720,
             frameRate: 30,
           },
         },
-        // High-quality stereo audio with noise suppression
         audioCaptureDefaults: {
           autoGainControl: true,
           echoCancellation: true,
@@ -316,19 +495,81 @@ export function LiveKitRoom({
           channelCount: 2,
         },
         publishDefaults: {
-          simulcast: true,
-          videoCodec: 'vp9', // Best compression quality
-          backupCodec: { codec: 'vp8' }, // Fallback for older browsers
-          dtx: true, // Discontinuous transmission - saves bandwidth during silence
-          red: true, // Audio redundancy for better reliability
-          videoSimulcastLayers: [
-            // Use VideoPresets for simulcast layers
-            VideoPresets.h360,
-            VideoPresets.h540,
-            VideoPresets.h1080,
-          ],
+          simulcast: false, // Disable simulcast for stability
+          videoCodec: 'vp8' as const, // More compatible codec
+          dtx: true,
+          red: true,
         },
-      }}
+      };
+    }
+    
+    // Default HD profile
+    return {
+      adaptiveStream: true,
+      dynacast: true,
+      videoCaptureDefaults: {
+        resolution: {
+          width: 1920,
+          height: 1080,
+          frameRate: 30,
+        },
+      },
+      audioCaptureDefaults: {
+        autoGainControl: true,
+        echoCancellation: true,
+        noiseSuppression: true,
+        sampleRate: 48000,
+        channelCount: 2,
+      },
+      publishDefaults: {
+        simulcast: true,
+        videoCodec: 'vp9' as const,
+        backupCodec: { codec: 'vp8' as const },
+        dtx: true,
+        red: true,
+        videoSimulcastLayers: [
+          VideoPresets.h360,
+          VideoPresets.h540,
+          VideoPresets.h1080,
+        ],
+      },
+    };
+  }, [useFallbackVideoProfile]);
+
+  // Handle room error with smart recovery
+  const handleRoomError = useCallback((err: Error) => {
+    // Check if it's a token error
+    if (isTokenError(err)) {
+      console.warn("[LiveKitRoom] Token error detected, triggering force reconnect");
+      handleForceReconnect("token");
+      return;
+    }
+    
+    // Check if it's a NegotiationError
+    if (isNegotiationError(err)) {
+      // Use console.warn instead of error to avoid triggering error notifications
+      console.warn("[LiveKitRoom] NegotiationError:", err);
+      handleNegotiationError(err);
+      return;
+    }
+    
+    // For other errors, log and notify
+    console.error("[LiveKitRoom] Room error:", err);
+    onError?.(err);
+  }, [handleForceReconnect, handleNegotiationError, onError]);
+
+  return (
+    <LKRoom
+      key={`lk-instance-${lkInstanceKey}`}
+      serverUrl={serverUrl}
+      token={memoizedToken}
+      connect={true}
+      audio={true}
+      video={true}
+      onConnected={handleConnected}
+      onDisconnected={handleDisconnected}
+      onError={handleRoomError}
+      options={roomOptions}
       style={{ height: "100%" }}
     >
       <LayoutContextProvider>
@@ -342,6 +583,7 @@ export function LiveKitRoom({
           participantName={participantName}
           connectionIndicator={connectionIndicator}
           isMaximizing={isMaximizing}
+          onNegotiationError={handleNegotiationError}
         />
       </LayoutContextProvider>
     </LKRoom>
@@ -358,6 +600,7 @@ interface LiveKitContentProps {
   participantName: string;
   connectionIndicator?: React.ReactNode;
   isMaximizing?: boolean;
+  onNegotiationError?: (error: any) => void;
 }
 
 function LiveKitContent({ 
@@ -370,12 +613,16 @@ function LiveKitContent({
   participantName,
   connectionIndicator,
   isMaximizing = false,
+  onNegotiationError,
 }: LiveKitContentProps) {
   const room = useRoomContext();
   const participants = useParticipants();
   const { localParticipant } = useLocalParticipant();
   const [newParticipants, setNewParticipants] = useState<Set<string>>(new Set());
   const roomReadyCalledRef = useRef(false);
+  
+  // Get reconnection state from context
+  const { isRoomReconnecting, setIsRoomReconnecting } = useActiveCall();
   
   // Audio playback permission - handles browser autoplay blocking
   const { mergedProps: startAudioProps, canPlayAudio } = useStartAudio({ room, props: {} });
@@ -474,6 +721,45 @@ function LiveKitContent({
   
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Subscribe to room reconnection events
+  useEffect(() => {
+    if (!room) return;
+    
+    const handleReconnecting = () => {
+      console.log('[LiveKitRoom] Reconnecting...');
+      setIsRoomReconnecting(true);
+      toast.info("Переподключение...", {
+        id: 'reconnecting',
+        duration: 60000,
+        icon: <RefreshCw className="w-4 h-4 animate-spin" />,
+      });
+    };
+    
+    const handleReconnected = () => {
+      console.log('[LiveKitRoom] Reconnected successfully');
+      setIsRoomReconnecting(false);
+      toast.success("Связь восстановлена", {
+        id: 'reconnecting',
+        duration: 3000,
+      });
+    };
+    
+    const handleDisconnected = () => {
+      console.log('[LiveKitRoom] Disconnected');
+      setIsRoomReconnecting(false);
+    };
+    
+    room.on(RoomEvent.Reconnecting, handleReconnecting);
+    room.on(RoomEvent.Reconnected, handleReconnected);
+    room.on(RoomEvent.Disconnected, handleDisconnected);
+    
+    return () => {
+      room.off(RoomEvent.Reconnecting, handleReconnecting);
+      room.off(RoomEvent.Reconnected, handleReconnected);
+      room.off(RoomEvent.Disconnected, handleDisconnected);
+    };
+  }, [room, setIsRoomReconnecting]);
 
   // Local track states
   const isCameraEnabled = localParticipant?.isCameraEnabled ?? false;
@@ -765,23 +1051,34 @@ function LiveKitContent({
 
   // Track media toggle lock to prevent NegotiationError on iOS
   const isTogglingMediaRef = useRef(false);
+  const TOGGLE_LOCK_DURATION_MS = 800; // Longer lock to ensure negotiation completes
 
   // Toggle camera with lock to prevent concurrent negotiations
   const toggleCamera = useCallback(async () => {
+    // Block if reconnecting
+    if (isRoomReconnecting) {
+      console.log('[LiveKitRoom] Reconnecting, skipping camera toggle');
+      toast.info("Подождите завершения переподключения");
+      return;
+    }
     if (isTogglingMediaRef.current) {
       console.log('[LiveKitRoom] Media toggle in progress, skipping camera toggle');
       return;
     }
     try {
       isTogglingMediaRef.current = true;
-      await localParticipant?.setCameraEnabled(!isCameraEnabled);
+      // Use actual state from localParticipant to avoid stale closure
+      const currentState = localParticipant?.isCameraEnabled ?? false;
+      await localParticipant?.setCameraEnabled(!currentState);
     } catch (err: any) {
-      // NegotiationError (code 13) - retry once after delay
-      if (err?.code === 13 || err?.name === 'NegotiationError') {
-        console.log('[LiveKitRoom] NegotiationError on camera toggle, retrying...');
-        await new Promise(r => setTimeout(r, 500));
+      // NegotiationError (code 13) - retry once after delay, but only if not reconnecting
+      if ((err?.code === 13 || err?.name === 'NegotiationError') && !isRoomReconnecting) {
+        console.warn('[LiveKitRoom] NegotiationError on camera toggle, retrying...');
+        onNegotiationError?.(err);
+        await new Promise(r => setTimeout(r, 600));
         try {
-          await localParticipant?.setCameraEnabled(!isCameraEnabled);
+          const currentState = localParticipant?.isCameraEnabled ?? false;
+          await localParticipant?.setCameraEnabled(!currentState);
         } catch (retryErr) {
           console.error('Failed to toggle camera after retry:', retryErr);
           toast.error('Не удалось переключить камеру', { description: 'Попробуйте ещё раз' });
@@ -791,27 +1088,36 @@ function LiveKitContent({
         toast.error('Ошибка камеры');
       }
     } finally {
-      // Release lock after a brief delay to allow negotiation to complete
-      setTimeout(() => { isTogglingMediaRef.current = false; }, 300);
+      // Release lock after a longer delay to allow negotiation to complete
+      setTimeout(() => { isTogglingMediaRef.current = false; }, TOGGLE_LOCK_DURATION_MS);
     }
-  }, [localParticipant, isCameraEnabled]);
+  }, [localParticipant, isRoomReconnecting, onNegotiationError]);
 
   // Toggle microphone with lock to prevent concurrent negotiations
   const toggleMicrophone = useCallback(async () => {
+    // Block if reconnecting
+    if (isRoomReconnecting) {
+      console.log('[LiveKitRoom] Reconnecting, skipping mic toggle');
+      toast.info("Подождите завершения переподключения");
+      return;
+    }
     if (isTogglingMediaRef.current) {
       console.log('[LiveKitRoom] Media toggle in progress, skipping mic toggle');
       return;
     }
     try {
       isTogglingMediaRef.current = true;
-      await localParticipant?.setMicrophoneEnabled(!isMicrophoneEnabled);
+      const currentState = localParticipant?.isMicrophoneEnabled ?? false;
+      await localParticipant?.setMicrophoneEnabled(!currentState);
     } catch (err: any) {
       // NegotiationError (code 13) - retry once after delay
-      if (err?.code === 13 || err?.name === 'NegotiationError') {
-        console.log('[LiveKitRoom] NegotiationError on mic toggle, retrying...');
-        await new Promise(r => setTimeout(r, 500));
+      if ((err?.code === 13 || err?.name === 'NegotiationError') && !isRoomReconnecting) {
+        console.warn('[LiveKitRoom] NegotiationError on mic toggle, retrying...');
+        onNegotiationError?.(err);
+        await new Promise(r => setTimeout(r, 600));
         try {
-          await localParticipant?.setMicrophoneEnabled(!isMicrophoneEnabled);
+          const currentState = localParticipant?.isMicrophoneEnabled ?? false;
+          await localParticipant?.setMicrophoneEnabled(!currentState);
         } catch (retryErr) {
           console.error('Failed to toggle microphone after retry:', retryErr);
           toast.error('Не удалось переключить микрофон', { description: 'Попробуйте ещё раз' });
@@ -821,25 +1127,34 @@ function LiveKitContent({
         toast.error('Ошибка микрофона');
       }
     } finally {
-      setTimeout(() => { isTogglingMediaRef.current = false; }, 300);
+      setTimeout(() => { isTogglingMediaRef.current = false; }, TOGGLE_LOCK_DURATION_MS);
     }
-  }, [localParticipant, isMicrophoneEnabled]);
+  }, [localParticipant, isRoomReconnecting, onNegotiationError]);
 
   // Toggle screen share with lock
   const toggleScreenShare = useCallback(async () => {
+    // Block if reconnecting
+    if (isRoomReconnecting) {
+      console.log('[LiveKitRoom] Reconnecting, skipping screen share toggle');
+      toast.info("Подождите завершения переподключения");
+      return;
+    }
     if (isTogglingMediaRef.current) {
       console.log('[LiveKitRoom] Media toggle in progress, skipping screen share toggle');
       return;
     }
     try {
       isTogglingMediaRef.current = true;
-      await localParticipant?.setScreenShareEnabled(!isScreenShareEnabled);
+      const currentState = localParticipant?.isScreenShareEnabled ?? false;
+      await localParticipant?.setScreenShareEnabled(!currentState);
     } catch (err: any) {
-      if (err?.code === 13 || err?.name === 'NegotiationError') {
-        console.log('[LiveKitRoom] NegotiationError on screen share, retrying...');
-        await new Promise(r => setTimeout(r, 500));
+      if ((err?.code === 13 || err?.name === 'NegotiationError') && !isRoomReconnecting) {
+        console.warn('[LiveKitRoom] NegotiationError on screen share, retrying...');
+        onNegotiationError?.(err);
+        await new Promise(r => setTimeout(r, 600));
         try {
-          await localParticipant?.setScreenShareEnabled(!isScreenShareEnabled);
+          const currentState = localParticipant?.isScreenShareEnabled ?? false;
+          await localParticipant?.setScreenShareEnabled(!currentState);
         } catch (retryErr) {
           console.error('Failed to toggle screen share after retry:', retryErr);
           toast.error('Не удалось включить демонстрацию экрана');
@@ -848,9 +1163,9 @@ function LiveKitContent({
         console.error('Failed to toggle screen share:', err);
       }
     } finally {
-      setTimeout(() => { isTogglingMediaRef.current = false; }, 300);
+      setTimeout(() => { isTogglingMediaRef.current = false; }, TOGGLE_LOCK_DURATION_MS);
     }
-  }, [localParticipant, isScreenShareEnabled]);
+  }, [localParticipant, isRoomReconnecting, onNegotiationError]);
 
   // Voice commands hook - must be after toggle functions are defined
   const { isListening: isVoiceCommandsActive, toggleListening: toggleVoiceCommands, isSupported: voiceCommandsSupported } = useVoiceCommands({

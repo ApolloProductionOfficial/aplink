@@ -321,18 +321,40 @@ export function GlobalActiveCall() {
     navigate('/', { replace: true });
   }, [minimize, navigate]);
 
-  // Handle error with auto-reconnect for ConnectionError
+  // Handle error with auto-reconnect for ConnectionError and token errors
   const handleError = useCallback((error: Error) => {
-    console.error('[GlobalActiveCall] Error:', error);
+    const errorMsg = String(error?.message || error || '').toLowerCase();
+    const errorName = (error as any)?.name || '';
+    const reasonName = (error as any)?.reasonName || '';
+    const status = (error as any)?.status;
+    
+    // Check if this is a "Cancelled" error - user-initiated, don't report as error
+    if (reasonName === 'Cancelled' || errorMsg.includes('cancelled')) {
+      console.info('[GlobalActiveCall] User-initiated disconnect (Cancelled)');
+      return;
+    }
+    
+    // Check if this is a token error (expired/invalid)
+    const isTokenError = 
+      status === 401 ||
+      reasonName.toLowerCase() === 'notallowed' ||
+      errorMsg.includes('token is expired') ||
+      errorMsg.includes('invalid token') ||
+      errorMsg.includes('expired');
+    
+    if (isTokenError) {
+      console.warn('[GlobalActiveCall] Token error detected - LiveKitRoom will handle reconnect');
+      // Token errors are now handled by LiveKitRoom's internal force reconnect mechanism
+      return;
+    }
     
     // Check if this is a ConnectionError and we haven't exceeded max attempts
-    const isConnectionError = error.name === 'ConnectionError' || 
-      error.message?.toLowerCase().includes('connection') ||
-      error.message?.toLowerCase().includes('cancelled');
+    const isConnectionError = errorName === 'ConnectionError' || 
+      errorMsg.includes('connection');
     
     if (isConnectionError && reconnectAttempt < MAX_RECONNECT_ATTEMPTS) {
       setIsReconnecting(true);
-      const delay = Math.min(1000 * Math.pow(2, reconnectAttempt), 30000); // Exponential backoff: 1s, 2s, 4s, 8s, 16s
+      const delay = Math.min(1000 * Math.pow(2, reconnectAttempt), 30000);
       
       toast.info(
         <div className="flex items-center gap-3">
@@ -353,40 +375,19 @@ export function GlobalActiveCall() {
         { duration: delay + 2000 }
       );
       
-      // Schedule reconnect attempt
       reconnectTimeoutRef.current = setTimeout(() => {
         console.log(`[GlobalActiveCall] Reconnect attempt ${reconnectAttempt + 1}`);
         setReconnectAttempt(prev => prev + 1);
         setIsReconnecting(false);
-        // The LiveKitRoom component will auto-reconnect when it detects disconnection
       }, delay);
     } else if (reconnectAttempt >= MAX_RECONNECT_ATTEMPTS) {
-      // Max attempts exceeded
       setIsReconnecting(false);
-      toast.error(
-        <div className="flex items-center gap-3">
-          <svg viewBox="0 0 24 24" className="w-5 h-5 flex-shrink-0">
-            <defs>
-              <linearGradient id="error-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#ef4444"/>
-                <stop offset="100%" stopColor="#f97316"/>
-              </linearGradient>
-            </defs>
-            <circle cx="12" cy="12" r="10" stroke="url(#error-gradient)" strokeWidth="2" fill="none"/>
-            <path d="M15 9l-6 6M9 9l6 6" stroke="url(#error-gradient)" strokeWidth="2" strokeLinecap="round"/>
-          </svg>
-          <div>
-            <div className="font-medium">Не удалось подключиться</div>
-            <div className="text-xs text-muted-foreground">Попробуйте перезагрузить страницу</div>
-          </div>
-        </div>,
-        { duration: 10000 }
-      );
-    } else {
-      // Other error types
-      toast.error('Ошибка подключения', {
-        description: error.message || 'Не удалось подключиться к комнате',
+      toast.error('Не удалось подключиться', {
+        description: 'Попробуйте перезагрузить страницу',
       });
+    } else if (errorName !== 'NegotiationError') {
+      // Don't show toast for NegotiationError - handled by LiveKitRoom
+      console.warn('[GlobalActiveCall] Error:', error);
     }
     
     eventHandlers.onError?.(error);
