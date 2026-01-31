@@ -26,6 +26,12 @@ interface ActiveCallState {
   showCaptions: boolean;
   showIPPanel: boolean;
   isAdmin: boolean;
+  // Reconnection state - managed globally to block UI during reconnect
+  isRoomReconnecting: boolean;
+  // Guest identity preservation - prevents identity change on reconnect
+  guestIdentity: string | null;
+  // Fallback mode flag - when true, use stable video settings
+  useFallbackVideoProfile: boolean;
 }
 
 interface ActiveCallContextType extends ActiveCallState {
@@ -48,6 +54,13 @@ interface ActiveCallContextType extends ActiveCallState {
   setShowCaptions: (show: boolean) => void;
   setShowIPPanel: (show: boolean) => void;
   setIsAdmin: (isAdmin: boolean) => void;
+  // Reconnection state setters
+  setIsRoomReconnecting: (isReconnecting: boolean) => void;
+  setGuestIdentity: (identity: string | null) => void;
+  setUseFallbackVideoProfile: (useFallback: boolean) => void;
+  // Force reconnect trigger (incremented to trigger controlled reconnect)
+  forceReconnectKey: number;
+  triggerForceReconnect: () => void;
 }
 
 const defaultState: ActiveCallState = {
@@ -67,12 +80,17 @@ const defaultState: ActiveCallState = {
   showCaptions: false,
   showIPPanel: false,
   isAdmin: false,
+  // Reconnection defaults
+  isRoomReconnecting: false,
+  guestIdentity: null,
+  useFallbackVideoProfile: false,
 };
 
 const ActiveCallContext = createContext<ActiveCallContextType | null>(null);
 
 export function ActiveCallProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<ActiveCallState>(defaultState);
+  const [forceReconnectKey, setForceReconnectKey] = useState(0);
   const roomRef = useRef<Room | null>(null);
   const handlersRef = useRef<CallEventHandlers>({});
 
@@ -106,6 +124,11 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
         eventHandlers: handlersRef.current,
         // Preserve admin status
         isAdmin: prev.isAdmin,
+        // Preserve guest identity if already set
+        guestIdentity: prev.guestIdentity,
+        // Reset fallback profile on new call
+        useFallbackVideoProfile: false,
+        isRoomReconnecting: false,
       };
     });
   }, []);
@@ -114,6 +137,7 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
     roomRef.current = null;
     handlersRef.current = {};
     setState(defaultState);
+    setForceReconnectKey(0);
   }, []);
 
   const minimize = useCallback(() => {
@@ -159,6 +183,25 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
     setState(prev => ({ ...prev, isAdmin }));
   }, []);
 
+  // Reconnection state setters
+  const setIsRoomReconnecting = useCallback((isReconnecting: boolean) => {
+    setState(prev => ({ ...prev, isRoomReconnecting: isReconnecting }));
+  }, []);
+
+  const setGuestIdentity = useCallback((identity: string | null) => {
+    setState(prev => ({ ...prev, guestIdentity: identity }));
+  }, []);
+
+  const setUseFallbackVideoProfile = useCallback((useFallback: boolean) => {
+    setState(prev => ({ ...prev, useFallbackVideoProfile: useFallback }));
+  }, []);
+
+  // Force reconnect trigger
+  const triggerForceReconnect = useCallback(() => {
+    console.log('[ActiveCallContext] Triggering force reconnect');
+    setForceReconnectKey(prev => prev + 1);
+  }, []);
+
   return (
     <ActiveCallContext.Provider
       value={{
@@ -175,6 +218,11 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
         setShowCaptions,
         setShowIPPanel,
         setIsAdmin,
+        setIsRoomReconnecting,
+        setGuestIdentity,
+        setUseFallbackVideoProfile,
+        forceReconnectKey,
+        triggerForceReconnect,
       }}
     >
       {children}
