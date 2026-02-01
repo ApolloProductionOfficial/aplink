@@ -561,6 +561,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          auto_record_enabled: boolean
           avatar_url: string | null
           bot_language: string | null
           created_at: string
@@ -579,6 +580,7 @@ export type Database = {
           voice_speed: number | null
         }
         Insert: {
+          auto_record_enabled?: boolean
           avatar_url?: string | null
           bot_language?: string | null
           created_at?: string
@@ -597,6 +599,7 @@ export type Database = {
           voice_speed?: number | null
         }
         Update: {
+          auto_record_enabled?: boolean
           avatar_url?: string | null
           bot_language?: string | null
           created_at?: string

@@ -1,0 +1,117 @@
+import { useState, useEffect } from 'react';
+import { Disc, Loader2 } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
+
+const AutoRecordSettings = () => {
+  const { user } = useAuth();
+  const [autoRecordEnabled, setAutoRecordEnabled] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('auto_record_enabled')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error loading auto-record setting:', error);
+      } else if (data) {
+        setAutoRecordEnabled(data.auto_record_enabled ?? true);
+      }
+
+      setLoading(false);
+    };
+
+    loadSettings();
+  }, [user]);
+
+  const handleToggle = async (checked: boolean) => {
+    if (!user || saving) return;
+
+    setSaving(true);
+    setAutoRecordEnabled(checked);
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ auto_record_enabled: checked })
+      .eq('user_id', user.id);
+
+    if (error) {
+      console.error('Error saving auto-record setting:', error);
+      setAutoRecordEnabled(!checked);
+      toast.error('Не удалось сохранить настройку');
+    } else {
+      toast.success(checked ? 'Автозапись включена' : 'Автозапись отключена');
+    }
+
+    setSaving(false);
+  };
+
+  if (loading) {
+    return (
+      <Card className="glass border-border/50">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Disc className="w-4 h-4 text-red-500" />
+            Автозапись
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center py-4">
+            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="glass border-border/50">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Disc className="w-4 h-4 text-red-500" />
+          Автозапись
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="space-y-0.5">
+            <Label htmlFor="auto-record" className="text-sm font-medium">
+              Автоматическая запись звонков
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              При входе в комнату запись начнётся автоматически
+            </p>
+          </div>
+          <Switch
+            id="auto-record"
+            checked={autoRecordEnabled}
+            onCheckedChange={handleToggle}
+            disabled={saving}
+          />
+        </div>
+
+        <div className="text-xs text-muted-foreground bg-muted/30 rounded-lg p-3">
+          <p className="flex items-center gap-2">
+            <Disc className="w-3 h-3 text-red-500" />
+            {autoRecordEnabled
+              ? 'Записи сохраняются автоматически в «Мои созвоны»'
+              : 'Вы сможете вручную начать запись во время звонка'}
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+export default AutoRecordSettings;
