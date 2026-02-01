@@ -22,6 +22,7 @@ import TelegramActivityChart from '@/components/TelegramActivityChart';
 import GroupCallHistory from '@/components/GroupCallHistory';
 import CallScheduler from '@/components/CallScheduler';
 import TelegramMiniAppAnalytics from '@/components/TelegramMiniAppAnalytics';
+import AutoRecordSettings from '@/components/AutoRecordSettings';
 import { useAdminPushNotifications } from '@/hooks/useAdminPushNotifications';
 import ErrorStatsExport from '@/components/ErrorStatsExport';
 import SystemStatusDashboard from '@/components/SystemStatusDashboard';
@@ -1752,6 +1753,11 @@ const AdminPanel = () => {
                   <Save className="w-4 h-4" />
                   {savingProfile ? 'Сохранение...' : 'Сохранить'}
                 </Button>
+                
+                {/* Auto Record Settings */}
+                <div className="pt-4 border-t border-border/50">
+                  <AutoRecordSettings />
+                </div>
                 
                 {/* 2FA Section */}
                 <div className="pt-4 border-t border-border/50 space-y-3">
