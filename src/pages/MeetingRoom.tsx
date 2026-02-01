@@ -201,10 +201,24 @@ const MeetingRoomContent = ({ roomId, userName }: MeetingRoomContentProps) => {
     }
   }, [user, navigate]);
 
-  // Auto-start recording for authenticated users
+  // Auto-start recording for authenticated users (if enabled in settings)
   const autoStartRecording = useCallback(async () => {
     if (user && !isRecordingRef.current && !hasStartedRecordingRef.current) {
       try {
+        // Check if auto-record is enabled in user's profile
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('auto_record_enabled')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        const autoRecordEnabled = profileData?.auto_record_enabled ?? true;
+        
+        if (!autoRecordEnabled) {
+          console.log('[MeetingRoom] Auto-recording disabled in profile settings');
+          return;
+        }
+
         console.log('[MeetingRoom] Auto-starting recording for authenticated user');
         hasStartedRecordingRef.current = true;
         await startRecording();

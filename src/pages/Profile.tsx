@@ -12,6 +12,7 @@ import CustomCursor from '@/components/CustomCursor';
 import VoiceSettings from '@/components/VoiceSettings';
 import DoNotDisturbSettings from '@/components/DoNotDisturbSettings';
 import BotLanguageSettings from '@/components/BotLanguageSettings';
+import AutoRecordSettings from '@/components/AutoRecordSettings';
 import { AvatarCropDialog } from '@/components/AvatarCropDialog';
 
 const Profile = () => {
@@ -479,6 +480,11 @@ const Profile = () => {
         {/* Bot Language Settings */}
         <div className="mt-6">
           <BotLanguageSettings />
+        </div>
+
+        {/* Auto Record Settings */}
+        <div className="mt-6">
+          <AutoRecordSettings />
         </div>
 
         {/* Voice Settings */}
