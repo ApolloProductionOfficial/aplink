@@ -201,12 +201,36 @@ const MeetingRoomContent = ({ roomId, userName }: MeetingRoomContentProps) => {
     }
   }, [user, navigate]);
 
+  // Auto-start recording for authenticated users
+  const autoStartRecording = useCallback(async () => {
+    if (user && !isRecordingRef.current && !hasStartedRecordingRef.current) {
+      try {
+        console.log('[MeetingRoom] Auto-starting recording for authenticated user');
+        hasStartedRecordingRef.current = true;
+        await startRecording();
+        setRecordingDuration(0);
+        recordingTimerRef.current = setInterval(() => {
+          setRecordingDuration(prev => prev + 1);
+        }, 1000);
+        toast.success('Автозапись включена', {
+          description: 'Запись будет автоматически сохранена при выходе',
+          duration: 3000,
+        });
+      } catch (error) {
+        console.error('[MeetingRoom] Failed to auto-start recording:', error);
+        hasStartedRecordingRef.current = false;
+      }
+    }
+  }, [user, startRecording]);
+
   // Register event handlers with context
   useEffect(() => {
     setEventHandlers({
       onConnected: () => {
         console.log('[MeetingRoom] onConnected via context');
         setConnectionStatus('connected');
+        // Auto-start recording after connection for authenticated users
+        autoStartRecording();
       },
       onDisconnected: () => {
         console.log('[MeetingRoom] onDisconnected via context');
@@ -230,7 +254,7 @@ const MeetingRoomContent = ({ roomId, userName }: MeetingRoomContentProps) => {
         console.error('[MeetingRoom] Error via context:', error);
       },
     });
-  }, [setEventHandlers, roomDisplayName, sendNotification, handleDisconnectedLogic]);
+  }, [setEventHandlers, roomDisplayName, sendNotification, handleDisconnectedLogic, autoStartRecording]);
 
   // Block navigation when in a call + warn about recording
   useEffect(() => {
