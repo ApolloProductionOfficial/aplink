@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { useParams, useSearchParams, useNavigate } from "react-router-dom";
+import { useParams, useSearchParams, useNavigate, Navigate } from "react-router-dom";
 import {
   Copy,
   Check,
@@ -37,18 +37,46 @@ import { cn } from "@/lib/utils";
 import { useActiveCall } from "@/contexts/ActiveCallContext";
 
 /**
- * MeetingRoom is now a UI wrapper that:
- * 1. Registers the call with ActiveCallContext
- * 2. Provides headerButtons and connectionIndicator via context
- * 3. Renders overlays (translator, captions, IP panel, dialogs)
+ * MeetingRoomGuard validates URL params BEFORE rendering MeetingRoomContent.
+ * This ensures all hooks in MeetingRoomContent are called consistently.
  * 
- * The actual LiveKitRoom is rendered by GlobalActiveCall
+ * REACT HOOK SAFETY: Early returns here are SAFE because this component
+ * only uses useParams, useSearchParams, useNavigate - no conditional hooks.
  */
-const MeetingRoom = () => {
+const MeetingRoomGuard = () => {
   const { roomId } = useParams();
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
   const userName = searchParams.get("name");
+
+  // If no roomId, redirect to home
+  if (!roomId) {
+    console.warn('[MeetingRoomGuard] No roomId, redirecting to /');
+    return <Navigate to="/" replace />;
+  }
+
+  // If no userName, redirect to home with room param so user can enter name
+  if (!userName) {
+    console.warn('[MeetingRoomGuard] No userName, redirecting to /?room=...');
+    return <Navigate to={`/?room=${encodeURIComponent(roomId)}`} replace />;
+  }
+
+  // Both params are valid - render the actual meeting room
+  return <MeetingRoomContent roomId={roomId} userName={userName} />;
+};
+
+interface MeetingRoomContentProps {
+  roomId: string;
+  userName: string;
+}
+
+/**
+ * MeetingRoomContent is the main meeting room UI.
+ * 
+ * IMPORTANT: This component receives validated props (roomId, userName are guaranteed strings).
+ * ALL hooks are called unconditionally at the top - NO early returns between hooks!
+ */
+const MeetingRoomContent = ({ roomId, userName }: MeetingRoomContentProps) => {
+  const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
   const [showRegistrationHint, setShowRegistrationHint] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'reconnecting'>('connecting');
@@ -82,14 +110,6 @@ const MeetingRoom = () => {
   const { isRecording, startRecording, stopRecording, getAudioBlob, getRecoveredRecording, clearRecoveredRecording } = useAudioRecorder();
   const isRecordingRef = useRef(false);
   
-  useEffect(() => {
-    isRecordingRef.current = isRecording;
-  }, [isRecording]);
-  
-  useEffect(() => {
-    connectionStatusRef.current = connectionStatus;
-  }, [connectionStatus]);
-  
   const { playConnectedSound, playDisconnectedSound, playReconnectingSound } = useConnectionSounds();
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [connectionQuality, setConnectionQuality] = useState<number>(100);
@@ -117,18 +137,28 @@ const MeetingRoom = () => {
     setShowIPPanel,
     setIsAdmin,
   } = useActiveCall();
+
+  // Derived values - safe to compute, no hooks
+  const roomDisplayName = decodeURIComponent(roomId).replace(/-/g, ' ') || 'Meeting';
+  const roomSlug = roomId;
+  const safeUserName = userName || user?.email?.split('@')[0] || 'Guest';
+
+  // =========================================
+  // ALL useEffect hooks MUST be here - before any conditional logic
+  // =========================================
+
+  useEffect(() => {
+    isRecordingRef.current = isRecording;
+  }, [isRecording]);
   
-  // Translation handling moved to GlobalActiveCall.tsx
+  useEffect(() => {
+    connectionStatusRef.current = connectionStatus;
+  }, [connectionStatus]);
 
-  // Prevent crashes on invalid / missing URL param
-  if (!roomId) return null;
-
-  const roomDisplayName = decodeURIComponent(roomId ?? '').replace(/-/g, ' ') || 'Meeting';
-  const roomSlug = roomId ?? '';
-  const safeUserName = userName ?? user?.email?.split('@')[0] ?? 'Guest';
+  // Track presence in this room
+  usePresence(roomDisplayName);
 
   // Register active call in global context
-  // Skip if call is already active for this room (prevents re-initialization on maximize)
   useEffect(() => {
     if (isActive && activeRoomSlug === roomSlug) {
       console.log('[MeetingRoom] Call already active for room:', roomSlug, '- skipping startCall');
@@ -145,6 +175,30 @@ const MeetingRoom = () => {
       roomDisplayName,
     });
   }, [isActive, activeRoomSlug, startCall, roomDisplayName, roomSlug, safeUserName, user?.id]);
+
+  // Handle disconnected logic
+  const handleDisconnectedLogic = useCallback(() => {
+    if (userInitiatedEndRef.current || hasRedirectedRef.current) {
+      return;
+    }
+
+    if (!hasRedirectedRef.current && hasStartedRecordingRef.current) {
+      hasRedirectedRef.current = true;
+      
+      if (user) {
+        navigate('/dashboard?saving=true', { replace: true });
+        runMeetingSaveBackground();
+      } else {
+        setEndSaveDialogOpen(true);
+        setEndSaveStatus("saving");
+        runMeetingSave();
+      }
+    } else if (!hasRedirectedRef.current) {
+      hasRedirectedRef.current = true;
+      window.open('https://apolloproduction.studio', '_blank');
+      navigate(user ? '/dashboard' : '/', { replace: true });
+    }
+  }, [user, navigate]);
 
   // Register event handlers with context
   useEffect(() => {
@@ -175,34 +229,7 @@ const MeetingRoom = () => {
         console.error('[MeetingRoom] Error via context:', error);
       },
     });
-  }, [setEventHandlers, roomDisplayName, sendNotification]);
-
-  // Track presence in this room
-  usePresence(roomDisplayName);
-
-  // Handle disconnected logic
-  const handleDisconnectedLogic = useCallback(() => {
-    if (userInitiatedEndRef.current || hasRedirectedRef.current) {
-      return;
-    }
-
-    if (!hasRedirectedRef.current && hasStartedRecordingRef.current) {
-      hasRedirectedRef.current = true;
-      
-      if (user) {
-        navigate('/dashboard?saving=true', { replace: true });
-        runMeetingSaveBackground();
-      } else {
-        setEndSaveDialogOpen(true);
-        setEndSaveStatus("saving");
-        runMeetingSave();
-      }
-    } else if (!hasRedirectedRef.current) {
-      hasRedirectedRef.current = true;
-      window.open('https://apolloproduction.studio', '_blank');
-      navigate(user ? '/dashboard' : '/', { replace: true });
-    }
-  }, [user, navigate]);
+  }, [setEventHandlers, roomDisplayName, sendNotification, handleDisconnectedLogic]);
 
   // Block navigation when in a call + warn about recording
   useEffect(() => {
@@ -242,29 +269,6 @@ const MeetingRoom = () => {
     return () => window.removeEventListener('popstate', handlePopState);
   }, [connectionStatus]);
 
-  const handleStayInCall = () => {
-    setShowLeaveConfirm(false);
-  };
-
-  const handleLeaveCall = async () => {
-    setShowLeaveConfirm(false);
-    userInitiatedEndRef.current = true;
-    
-    // If recording was started and user is authenticated - auto-save in background
-    if (hasStartedRecordingRef.current && user) {
-      navigate('/dashboard?saving=true', { replace: true });
-      await runMeetingSaveBackground();
-    } else if (hasStartedRecordingRef.current && !user) {
-      // Guest with recording - show save dialog  
-      setEndSaveDialogOpen(true);
-      setEndSaveStatus("saving");
-      await runMeetingSave();
-    } else {
-      // No recording - just exit
-      navigate(user ? '/dashboard' : '/', { replace: true });
-    }
-  };
-
   // Check if user is admin and update context
   useEffect(() => {
     const checkAdmin = async () => {
@@ -288,7 +292,104 @@ const MeetingRoom = () => {
     checkAdmin();
   }, [user, setIsAdmin]);
 
-  // Save recovered recording to personal cabinet with custom SVG icons
+  // Check for recovered recording from crash - auto-save silently
+  useEffect(() => {
+    const recovered = getRecoveredRecording();
+    if (recovered && user) {
+      toast.info(
+        <div className="flex items-center gap-3">
+          <svg viewBox="0 0 24 24" className="w-6 h-6 animate-pulse flex-shrink-0">
+            <defs>
+              <linearGradient id="recover-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#06b6e4"/>
+                <stop offset="100%" stopColor="#8b5cf6"/>
+              </linearGradient>
+              <filter id="recover-glow">
+                <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
+                <feMerge>
+                  <feMergeNode in="coloredBlur"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+            </defs>
+            <circle cx="12" cy="12" r="10" stroke="url(#recover-gradient)" strokeWidth="2" fill="none" filter="url(#recover-glow)"/>
+            <path d="M12 8v8M8 12h8" stroke="url(#recover-gradient)" strokeWidth="2" strokeLinecap="round" filter="url(#recover-glow)"/>
+          </svg>
+          <div>
+            <div className="font-medium">Восстанавливаем запись...</div>
+            <div className="text-xs text-muted-foreground">Пожалуйста, подождите</div>
+          </div>
+        </div>,
+        { duration: 15000 }
+      );
+      saveRecoveredToProfile(recovered);
+    }
+  }, [user, getRecoveredRecording, clearRecoveredRecording]);
+
+  // Show registration hint for non-authenticated users
+  useEffect(() => {
+    if (!authLoading && !user) {
+      const timer = setTimeout(() => {
+        setShowRegistrationHint(true);
+        setTimeout(() => setShowRegistrationHint(false), 8000);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [authLoading, user]);
+
+  // Track participant join
+  useEffect(() => {
+    const trackJoin = async () => {
+      try {
+        await supabase.functions.invoke('track-participant', {
+          body: { roomId: roomSlug, userName, action: 'join', userId: user?.id || null }
+        });
+        console.log('Participant tracked:', userName);
+      } catch (error) {
+        console.error('Failed to track participant:', error);
+      }
+    };
+    
+    trackJoin();
+    
+    return () => {
+      supabase.functions.invoke('track-participant', {
+        body: { roomId: roomSlug, userName, action: 'leave', userId: user?.id || null }
+      }).catch(console.error);
+    };
+  }, [userName, roomSlug, user?.id]);
+
+  // Update context with header buttons and connection indicator
+  useEffect(() => {
+    setHeaderButtons(headerButtonsElement);
+    setConnectionIndicator(connectionIndicatorElement);
+  }, [isRecording, recordingDuration, isTranscribing, showCaptions, showTranslator, copied, showIPPanel, isAdmin, connectionStatus, connectionQuality, liveKitRoom, setHeaderButtons, setConnectionIndicator]);
+
+  // =========================================
+  // Helper functions - defined after all hooks
+  // =========================================
+
+  const handleStayInCall = () => {
+    setShowLeaveConfirm(false);
+  };
+
+  const handleLeaveCall = async () => {
+    setShowLeaveConfirm(false);
+    userInitiatedEndRef.current = true;
+    
+    if (hasStartedRecordingRef.current && user) {
+      navigate('/dashboard?saving=true', { replace: true });
+      await runMeetingSaveBackground();
+    } else if (hasStartedRecordingRef.current && !user) {
+      setEndSaveDialogOpen(true);
+      setEndSaveStatus("saving");
+      await runMeetingSave();
+    } else {
+      navigate(user ? '/dashboard' : '/', { replace: true });
+    }
+  };
+
+  // Save recovered recording to personal cabinet
   const saveRecoveredToProfile = async (audioBlob: Blob) => {
     if (!user) return;
 
@@ -342,90 +443,6 @@ const MeetingRoom = () => {
       });
     }
   };
-
-  // Check for recovered recording from crash - auto-save silently
-  useEffect(() => {
-    const recovered = getRecoveredRecording();
-    if (recovered && user) {
-      // Auto-save silently without asking
-      toast.info(
-        <div className="flex items-center gap-3">
-          <svg viewBox="0 0 24 24" className="w-6 h-6 animate-pulse flex-shrink-0">
-            <defs>
-              <linearGradient id="recover-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#06b6e4"/>
-                <stop offset="100%" stopColor="#8b5cf6"/>
-              </linearGradient>
-              <filter id="recover-glow">
-                <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
-                <feMerge>
-                  <feMergeNode in="coloredBlur"/>
-                  <feMergeNode in="SourceGraphic"/>
-                </feMerge>
-              </filter>
-            </defs>
-            <circle cx="12" cy="12" r="10" stroke="url(#recover-gradient)" strokeWidth="2" fill="none" filter="url(#recover-glow)"/>
-            <path d="M12 8v8M8 12h8" stroke="url(#recover-gradient)" strokeWidth="2" strokeLinecap="round" filter="url(#recover-glow)"/>
-          </svg>
-          <div>
-            <div className="font-medium">Восстанавливаем запись...</div>
-            <div className="text-xs text-muted-foreground">Пожалуйста, подождите</div>
-          </div>
-        </div>,
-        { duration: 15000 }
-      );
-      saveRecoveredToProfile(recovered);
-    }
-  }, [user, getRecoveredRecording, clearRecoveredRecording]);
-
-  // Show registration hint for non-authenticated users
-  useEffect(() => {
-    if (!authLoading && !user) {
-      const timer = setTimeout(() => {
-        setShowRegistrationHint(true);
-        setTimeout(() => setShowRegistrationHint(false), 8000);
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [authLoading, user]);
-
-  // Track participant join
-  useEffect(() => {
-    if (!userName || !roomSlug) return;
-    
-    const trackJoin = async () => {
-      try {
-        await supabase.functions.invoke('track-participant', {
-          body: { roomId: roomSlug, userName, action: 'join', userId: user?.id || null }
-        });
-        console.log('Participant tracked:', userName);
-      } catch (error) {
-        console.error('Failed to track participant:', error);
-      }
-    };
-    
-    trackJoin();
-    
-    return () => {
-      supabase.functions.invoke('track-participant', {
-        body: { roomId: roomSlug, userName, action: 'leave', userId: user?.id || null }
-      }).catch(console.error);
-    };
-  }, [userName, roomSlug, user?.id]);
-
-  // Redirect to home page immediately if no name provided
-  // Show nothing while redirecting to prevent flash
-  if (!userName) {
-    navigate(`/?room=${encodeURIComponent(roomSlug)}`, { replace: true });
-    return (
-      <div className="flex items-center justify-center h-screen bg-background">
-        <div className="text-center space-y-4">
-          <div className="w-12 h-12 mx-auto rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
-          <p className="text-muted-foreground">Перенаправление...</p>
-        </div>
-      </div>
-    );
-  }
 
   // Use production URL for sharing, not preview URL
   const productionUrl = 'https://aplink.live';
@@ -708,11 +725,6 @@ const MeetingRoom = () => {
     navigate('/', { replace: true });
   }, [minimize, navigate]);
 
-  // Don't render if no username - redirecting
-  if (!userName) {
-    return null;
-  }
-
   // Get connection quality icon
   const getQualityIndicator = () => {
     if (connectionQuality >= 80) {
@@ -727,7 +739,7 @@ const MeetingRoom = () => {
   };
 
   // Header buttons - passed to GlobalActiveCall via context
-  const headerButtons = (
+  const headerButtonsElement = (
     <>
       {/* Recording button */}
       <Tooltip>
@@ -864,7 +876,7 @@ const MeetingRoom = () => {
   );
 
   // Connection indicator element
-  const connectionIndicator = connectionStatus === 'connected' ? (
+  const connectionIndicatorElement = connectionStatus === 'connected' ? (
     <div className="flex items-center gap-1.5">
       <span 
         className={cn(
@@ -888,12 +900,6 @@ const MeetingRoom = () => {
       <span className="text-xs text-yellow-400">Переподключение...</span>
     </div>
   ) : null;
-
-  // Update context with header buttons and connection indicator
-  useEffect(() => {
-    setHeaderButtons(headerButtons);
-    setConnectionIndicator(connectionIndicator);
-  }, [isRecording, recordingDuration, isTranscribing, showCaptions, showTranslator, copied, showIPPanel, isAdmin, connectionStatus, connectionQuality, liveKitRoom]);
 
   return (
     <>
@@ -969,4 +975,4 @@ const MeetingRoom = () => {
   );
 };
 
-export default MeetingRoom;
+export default MeetingRoomGuard;
