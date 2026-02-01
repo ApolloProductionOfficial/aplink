@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 
 const AutoRecordSettings = () => {
   const { user } = useAuth();
-  const [autoRecordEnabled, setAutoRecordEnabled] = useState(true);
+  const [autoRecordEnabled, setAutoRecordEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -26,7 +26,7 @@ const AutoRecordSettings = () => {
       if (error) {
         console.error('Error loading auto-record setting:', error);
       } else if (data) {
-        setAutoRecordEnabled(data.auto_record_enabled ?? true);
+        setAutoRecordEnabled(data.auto_record_enabled ?? false);
       }
 
       setLoading(false);
@@ -106,7 +106,7 @@ const AutoRecordSettings = () => {
             <Disc className="w-3 h-3 text-red-500" />
             {autoRecordEnabled
               ? 'Записи сохраняются автоматически в «Мои созвоны»'
-              : 'Вы сможете вручную начать запись во время звонка'}
+              : 'По умолчанию выключено. Вы сможете вручную начать запись во время звонка'}
           </p>
         </div>
       </CardContent>

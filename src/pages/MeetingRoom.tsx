@@ -33,6 +33,7 @@ import { MeetingEndSaveDialog, type MeetingSaveStatus } from "@/components/Meeti
 import { invokeBackendFunctionKeepalive } from "@/utils/invokeBackendFunctionKeepalive";
 import LeaveCallDialog from "@/components/LeaveCallDialog";
 import CallQualityWidget from "@/components/CallQualityWidget";
+import RecordingSaveIndicator, { type SaveStatus } from "@/components/RecordingSaveIndicator";
 import { cn } from "@/lib/utils";
 import { useActiveCall } from "@/contexts/ActiveCallContext";
 
@@ -94,6 +95,11 @@ const MeetingRoomContent = ({ roomId, userName }: MeetingRoomContentProps) => {
   const [endSaveError, setEndSaveError] = useState<string | null>(null);
   const [endSaveNeedsLogin, setEndSaveNeedsLogin] = useState(false);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  
+  // Recording save indicator state
+  const [recordingSaveStatus, setRecordingSaveStatus] = useState<SaveStatus>('idle');
+  const [recordingSaveProgress, setRecordingSaveProgress] = useState(0);
+  const [recordingSaveError, setRecordingSaveError] = useState<string | undefined>();
 
   type PendingMeetingSaveBase = {
     roomId: string;
@@ -215,7 +221,7 @@ const MeetingRoomContent = ({ roomId, userName }: MeetingRoomContentProps) => {
           .eq('user_id', user.id)
           .maybeSingle();
 
-        const autoRecordEnabled = profileData?.auto_record_enabled ?? true;
+        const autoRecordEnabled = profileData?.auto_record_enabled ?? false;
         
         if (!autoRecordEnabled) {
           console.log('[MeetingRoom] Auto-recording disabled in profile settings');
@@ -660,27 +666,54 @@ const MeetingRoomContent = ({ roomId, userName }: MeetingRoomContentProps) => {
     } catch { /* ignore */ }
   };
 
-  // For authenticated users - save in background without dialog
+  // For authenticated users - save in background with progress indicator
   const runMeetingSaveBackground = async () => {
     if (!hasStartedRecordingRef.current || !user) return;
 
+    setRecordingSaveStatus('preparing');
+    setRecordingSaveProgress(10);
+
     const base = await buildMeetingSaveBasePayload();
-    if (!base) return;
+    if (!base) {
+      setRecordingSaveStatus('error');
+      setRecordingSaveError('Не удалось подготовить данные');
+      return;
+    }
+
+    setRecordingSaveStatus('uploading');
+    setRecordingSaveProgress(30);
 
     try {
+      // Simulate progress during API call
+      const progressInterval = setInterval(() => {
+        setRecordingSaveProgress(prev => Math.min(prev + 10, 90));
+      }, 500);
+
+      setRecordingSaveStatus('saving');
+      setRecordingSaveProgress(50);
+
       const response = await invokeBackendFunctionKeepalive<{ success: boolean; meeting?: { id: string } }>(
         "summarize-meeting",
         { ...base, userId: user.id },
       );
 
+      clearInterval(progressInterval);
+
       if (response?.success && response?.meeting?.id) {
         console.log("Meeting saved in background with ID:", response.meeting.id);
         clearPendingBaseFromStorage();
+        setRecordingSaveProgress(100);
+        setRecordingSaveStatus('success');
+        setRecordingSaveError(undefined);
       } else {
         console.error("Background save failed - server did not confirm");
+        setRecordingSaveStatus('error');
+        setRecordingSaveError('Сервер не подтвердил сохранение');
       }
     } catch (e: any) {
       console.error("Background meeting save error:", e);
+      setRecordingSaveStatus('error');
+      setRecordingSaveError(e?.message || 'Ошибка при сохранении');
     }
   };
 
@@ -1081,6 +1114,14 @@ const MeetingRoomContent = ({ roomId, userName }: MeetingRoomContentProps) => {
           </div>
         </div>
       )}
+
+      {/* Recording Save Progress Indicator */}
+      <RecordingSaveIndicator
+        status={recordingSaveStatus}
+        progress={recordingSaveProgress}
+        error={recordingSaveError}
+        onClose={() => setRecordingSaveStatus('idle')}
+      />
     </>
   );
 };
