@@ -186,7 +186,8 @@ export function LiveKitRoom({
   const FORCE_RECONNECT_COOLDOWN_MS = 15000;
   
   // Memoize token to prevent LKRoom from seeing "new" token on re-renders
-  const memoizedToken = useMemo(() => tokenRef.current, [tokenRef.current]);
+  // IMPORTANT: use state token here; refs don't trigger renders and shouldn't be hook deps
+  const memoizedToken = useMemo(() => token, [token]);
 
   // Fetch token function - can be called for initial fetch or refresh
   const fetchToken = useCallback(async (isRefresh = false): Promise<boolean> => {
@@ -394,84 +395,6 @@ export function LiveKitRoom({
     return () => clearInterval(interval);
   }, [loading]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full bg-background overflow-hidden">
-        {/* Cosmic background effect */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5" />
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[100px] animate-pulse" style={{ animationDuration: '3s' }} />
-          <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-primary/15 rounded-full blur-[80px] animate-pulse" style={{ animationDuration: '4s', animationDelay: '1s' }} />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] border border-primary/10 rounded-full animate-[spin_20s_linear_infinite]" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] border border-primary/5 rounded-full animate-[spin_15s_linear_infinite_reverse]" />
-        </div>
-        
-        <div className="relative z-10 glass-dark rounded-3xl p-10 flex flex-col items-center gap-6 border border-white/10">
-          {/* Animated portal rings */}
-          <div className="relative w-24 h-24">
-            <div className="absolute inset-0 rounded-full border-2 border-primary/30 animate-[ping_2s_ease-out_infinite]" />
-            <div className="absolute inset-2 rounded-full border-2 border-primary/40 animate-[ping_2s_ease-out_infinite_0.5s]" />
-            <div className="absolute inset-4 rounded-full border-2 border-primary/50 animate-[ping_2s_ease-out_infinite_1s]" />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Loader2 className="w-10 h-10 animate-spin text-primary" />
-            </div>
-          </div>
-          
-          <div className="text-center space-y-2">
-            <p className="text-foreground text-xl font-medium bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text text-transparent animate-[pulse_3s_ease-in-out_infinite] min-w-[280px] transition-all duration-500">
-              {loadingPhrases[phraseIndex]}
-            </p>
-            <p className="text-muted-foreground text-sm flex items-center gap-2">
-              Готовьтесь к погружению
-              {/* Single neon star */}
-              <svg viewBox="0 0 24 24" className="w-6 h-6 animate-pulse animate-[spin_8s_linear_infinite]">
-                <defs>
-                  <linearGradient id="star-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#06b6e4"/>
-                    <stop offset="50%" stopColor="#fff"/>
-                    <stop offset="100%" stopColor="#06b6e4"/>
-                  </linearGradient>
-                  <filter id="star-glow">
-                    <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-                    <feMerge>
-                      <feMergeNode in="coloredBlur"/>
-                      <feMergeNode in="coloredBlur"/>
-                      <feMergeNode in="SourceGraphic"/>
-                    </feMerge>
-                  </filter>
-                </defs>
-                <path 
-                  d="M12 2L14.5 9.5L22 10L16 15L18 22L12 18L6 22L8 15L2 10L9.5 9.5L12 2Z" 
-                  fill="url(#star-gradient)" 
-                  filter="url(#star-glow)"
-                  className="drop-shadow-[0_0_12px_rgba(6,182,228,0.9)]"
-                />
-              </svg>
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-full bg-background">
-        <div className="glass-dark rounded-2xl p-8 flex flex-col items-center gap-4 max-w-md text-center">
-          <div className="w-12 h-12 rounded-full bg-destructive/20 flex items-center justify-center">
-            <VideoOff className="w-6 h-6 text-destructive" />
-          </div>
-          <p className="text-destructive font-medium text-lg">Ошибка подключения</p>
-          <p className="text-muted-foreground text-sm">{error}</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!memoizedToken || !serverUrl) {
-    return null;
-  }
-
   // Dynamic room options based on fallback mode
   const roomOptions = useMemo(() => {
     if (useFallbackVideoProfile) {
@@ -557,6 +480,88 @@ export function LiveKitRoom({
     console.error("[LiveKitRoom] Room error:", err);
     onError?.(err);
   }, [handleForceReconnect, handleNegotiationError, onError]);
+
+  // =========================================
+  // EARLY RETURNS - SAFE AFTER ALL HOOKS ABOVE
+  // =========================================
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full bg-background overflow-hidden">
+        {/* Cosmic background effect */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5" />
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[100px] animate-pulse" style={{ animationDuration: '3s' }} />
+          <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-primary/15 rounded-full blur-[80px] animate-pulse" style={{ animationDuration: '4s', animationDelay: '1s' }} />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] border border-primary/10 rounded-full animate-[spin_20s_linear_infinite]" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] border border-primary/5 rounded-full animate-[spin_15s_linear_infinite_reverse]" />
+        </div>
+        
+        <div className="relative z-10 glass-dark rounded-3xl p-10 flex flex-col items-center gap-6 border border-white/10">
+          {/* Animated portal rings */}
+          <div className="relative w-24 h-24">
+            <div className="absolute inset-0 rounded-full border-2 border-primary/30 animate-[ping_2s_ease-out_infinite]" />
+            <div className="absolute inset-2 rounded-full border-2 border-primary/40 animate-[ping_2s_ease-out_infinite_0.5s]" />
+            <div className="absolute inset-4 rounded-full border-2 border-primary/50 animate-[ping_2s_ease-out_infinite_1s]" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Loader2 className="w-10 h-10 animate-spin text-primary" />
+            </div>
+          </div>
+          
+          <div className="text-center space-y-2">
+            <p className="text-foreground text-xl font-medium bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text text-transparent animate-[pulse_3s_ease-in-out_infinite] min-w-[280px] transition-all duration-500">
+              {loadingPhrases[phraseIndex]}
+            </p>
+            <p className="text-muted-foreground text-sm flex items-center gap-2">
+              Готовьтесь к погружению
+              {/* Single neon star */}
+              <svg viewBox="0 0 24 24" className="w-6 h-6 animate-pulse animate-[spin_8s_linear_infinite]">
+                <defs>
+                  <linearGradient id="star-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#06b6e4"/>
+                    <stop offset="50%" stopColor="#fff"/>
+                    <stop offset="100%" stopColor="#06b6e4"/>
+                  </linearGradient>
+                  <filter id="star-glow">
+                    <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                    <feMerge>
+                      <feMergeNode in="coloredBlur"/>
+                      <feMergeNode in="coloredBlur"/>
+                      <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                  </filter>
+                </defs>
+                <path 
+                  d="M12 2L14.5 9.5L22 10L16 15L18 22L12 18L6 22L8 15L2 10L9.5 9.5L12 2Z" 
+                  fill="url(#star-gradient)" 
+                  filter="url(#star-glow)"
+                  className="drop-shadow-[0_0_12px_rgba(6,182,228,0.9)]"
+                />
+              </svg>
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-full bg-background">
+        <div className="glass-dark rounded-2xl p-8 flex flex-col items-center gap-4 max-w-md text-center">
+          <div className="w-12 h-12 rounded-full bg-destructive/20 flex items-center justify-center">
+            <VideoOff className="w-6 h-6 text-destructive" />
+          </div>
+          <p className="text-destructive font-medium text-lg">Ошибка подключения</p>
+          <p className="text-muted-foreground text-sm">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!memoizedToken || !serverUrl) {
+    return null;
+  }
 
   return (
     <LKRoom

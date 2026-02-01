@@ -301,7 +301,8 @@ export function GlobalActiveCall() {
       liveKitRoom.disconnect();
     }
     endCall();
-    navigate('/', { replace: true });
+    // Route through /__refresh to force cache-busting after ending a call
+    navigate(`/__refresh?to=${encodeURIComponent('/')}&t=${Date.now()}`, { replace: true });
   }, [endCall, navigate, liveKitRoom]);
 
   // Handle maximize - just set state, useEffect handles navigation
