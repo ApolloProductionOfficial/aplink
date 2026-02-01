@@ -201,6 +201,9 @@ const MeetingRoomContent = ({ roomId, userName }: MeetingRoomContentProps) => {
     }
   }, [user, navigate]);
 
+  // State for manual recording prompt
+  const [showManualRecordPrompt, setShowManualRecordPrompt] = useState(false);
+
   // Auto-start recording for authenticated users (if enabled in settings)
   const autoStartRecording = useCallback(async () => {
     if (user && !isRecordingRef.current && !hasStartedRecordingRef.current) {
@@ -216,6 +219,10 @@ const MeetingRoomContent = ({ roomId, userName }: MeetingRoomContentProps) => {
         
         if (!autoRecordEnabled) {
           console.log('[MeetingRoom] Auto-recording disabled in profile settings');
+          // Show prompt for manual recording
+          setShowManualRecordPrompt(true);
+          // Auto-hide after 10 seconds
+          setTimeout(() => setShowManualRecordPrompt(false), 10000);
           return;
         }
 
@@ -236,6 +243,28 @@ const MeetingRoomContent = ({ roomId, userName }: MeetingRoomContentProps) => {
       }
     }
   }, [user, startRecording]);
+
+  // Handle manual recording start from prompt
+  const handleManualRecordStart = async () => {
+    setShowManualRecordPrompt(false);
+    if (!isRecordingRef.current && !hasStartedRecordingRef.current) {
+      try {
+        hasStartedRecordingRef.current = true;
+        await startRecording();
+        setRecordingDuration(0);
+        recordingTimerRef.current = setInterval(() => {
+          setRecordingDuration(prev => prev + 1);
+        }, 1000);
+        toast.success('Запись началась', {
+          description: 'Нажмите REC для остановки',
+        });
+      } catch (error) {
+        console.error('[MeetingRoom] Failed to start manual recording:', error);
+        hasStartedRecordingRef.current = false;
+        toast.error('Не удалось начать запись');
+      }
+    }
+  };
 
   // Register event handlers with context
   useEffect(() => {
@@ -982,6 +1011,45 @@ const MeetingRoomContent = ({ roomId, userName }: MeetingRoomContentProps) => {
       />
       
       {/* NOTE: Translator, IP Panel, and Captions are now rendered in GlobalActiveCall.tsx */}
+
+      {/* Manual Recording Prompt for users with auto-record disabled */}
+      {showManualRecordPrompt && user && !isRecording && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] glass rounded-xl px-4 py-3 border border-primary/30 animate-slide-up max-w-sm">
+          <div className="flex items-start gap-3">
+            <Mic className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium">Начать запись?</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Автозапись отключена. Нажмите чтобы записать созвон.
+              </p>
+              <div className="flex gap-2 mt-2">
+                <Button
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={handleManualRecordStart}
+                >
+                  <Mic className="w-3 h-3 mr-1" />
+                  Начать
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  onClick={() => setShowManualRecordPrompt(false)}
+                >
+                  Позже
+                </Button>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowManualRecordPrompt(false)}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Registration hint for non-authenticated users */}
       {showRegistrationHint && !user && (

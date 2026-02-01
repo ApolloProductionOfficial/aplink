@@ -19,6 +19,7 @@ import apolloLogo from '@/assets/apollo-logo.mp4';
 import { generateMeetingDocx } from '@/utils/generateMeetingDocx';
 import { invokeBackendFunctionKeepalive } from '@/utils/invokeBackendFunctionKeepalive';
 import { AvatarCropDialog } from '@/components/AvatarCropDialog';
+import RecordingPlayback from '@/components/RecordingPlayback';
 
 // Saving indicator component for header
 const SavingIndicator = () => (
@@ -51,6 +52,7 @@ interface MeetingTranscript {
     decisions?: string[];
   } | null;
   participants: string[] | null;
+  recording_url: string | null;
 }
 
 interface ParticipantWithIP {
@@ -991,6 +993,20 @@ const Dashboard = () => {
                       </div>
                     </CardHeader>
                     <CardContent>
+                      {/* Recording Playback */}
+                      {transcript.recording_url && (
+                        <div className="mb-4">
+                          <h4 className="font-medium mb-2 flex items-center gap-2">
+                            <span className="w-2 h-2 bg-red-500 rounded-full" />
+                            Аудиозапись созвона
+                          </h4>
+                          <RecordingPlayback 
+                            recordingUrl={transcript.recording_url} 
+                            roomName={transcript.room_name}
+                          />
+                        </div>
+                      )}
+                      
                       {transcript.summary && (
                         <div className="mb-4">
                           <h4 className="font-medium mb-2">Краткое содержание</h4>
