@@ -1,190 +1,173 @@
 
-## Цель
-Убрать/сильно сократить 3 группы ошибок в звонках LiveKit:
-1) `invalid token … token is expired (exp)` (401 NotAllowed)  
-2) `NegotiationError (code: 13)` (особенно “re-publish tracks after reconnection”)  
-3) `[UnhandledRejection] removeTrack … sender was not created by this peer connection`
 
-Сделаем так, чтобы приложение:
-- автоматически обновляло токен до истечения,
-- при 401/expired token делало “умный” ре-коннект с новым токеном,
-- при NegotiationError запускало восстановление (с возможным fallback на более стабильные медиа-настройки),
-- не спамило ошибками там, где это внутренние/ожидаемые гличи WebRTC.
+## Исправление критических багов в APLink
+
+Исправляем 4 взаимосвязанные проблемы:
+1. **"Rendered more hooks than during the previous render"** — React падает из-за нарушения правил хуков
+2. **"Что-то пошло не так" при создании звонка** — последствие вышеуказанной ошибки
+3. **Вылет в "старую версию" после завершения звонка** — браузерный кэш + crash recovery
+4. **Общая нестабильность мобильной версии** — следствие первых трёх проблем
 
 ---
 
-## Что я уже вижу по коду (диагноз)
-### A) “Token expired”
-В `src/components/LiveKitRoom.tsx` токен запрашивается 1 раз и затем кэшируется (`tokenRef`, `hasInitializedRef`), без:
-- контроля `exp`,
-- планового refresh,
-- стратегии обновления токена при 401.
+## Причина проблемы
 
-Из твоих логов видно, что “проблемный” токен имел TTL ~10 минут (`exp - nbf = 600`). Даже если сейчас на бэкенде уже 24 часа, любой короткий TTL или долгий звонок + реконнект приведут к 401, если мы не умеем обновлять токен.
+В `MeetingRoom.tsx` строка 124 содержит ранний return:
+```typescript
+if (!roomId) return null;  // ← ПРОБЛЕМА
+```
 
-Дополнительно: если пользователь “гость” (без `participantIdentity`), сервер возвращает сгенерированный `identity`, но фронт его не сохраняет надёжно для повторных запросов токена (это важно для корректного восстановления с тем же identity).
+Этот return находится **после** хуков на строках 85-119, но **перед** хуками на строках 132-178+. Когда пользователь переходит в комнату или выходит из неё, React может увидеть разное количество хуков в разных рендерах, что вызывает критическую ошибку.
 
-### B) NegotiationError (13) после реконнекта / переключений
-Сейчас нет обработки состояний `Reconnecting/Reconnected` — UI может разрешать переключать камеру/микрофон во время реконнекта, а LiveKit параллельно пытается “re-publish tracks”, что часто заканчивается NegotiationError.
-
-Также у нас очень “тяжёлый” профиль публикации:
-- VP9 + simulcast + 1080p
-Это круто по качеству, но повышает шанс negotiation проблем на части устройств/сетей. Нужен fallback.
-
-### C) removeTrack sender mismatch
-Эта ошибка обычно “внутренняя” в WebRTC/SDK и часто возникает как следствие гонок при переподключении/перепубликации треков. Мы постараемся уменьшить вероятность (через правильную блокировку действий во время реконнекта), и дополнительно уберём её из “алертинга” (чтобы не засорять Telegram/лог-репорты).
+Дополнительно, при crash приложение показывает ErrorBoundary с сообщением "Что-то пошло не так", а после reload браузер может загрузить закэшированную старую версию.
 
 ---
 
-## План работ (что именно поменяем)
+## Что исправим
 
-### 1) Умное управление LiveKit токеном (refresh + reuse identity)
-**Файлы:**  
-- `src/components/LiveKitRoom.tsx`  
-- `src/contexts/ActiveCallContext.tsx` (минимально, чтобы сохранять guest identity)  
-- `src/components/GlobalActiveCall.tsx` (чтобы уметь “форсить” реконнект)
+### 1. Перемещение раннего return в начало компонента MeetingRoom
 
-**Изменения:**
-1. Добавить декодирование JWT payload (без библиотек):
-   - извлекать `exp` из токена
-   - хранить `exp` в `ref`
-2. Добавить таймер refresh:
-   - планировать обновление токена за N секунд до `exp` (например 90–180 секунд)
-   - обновление должно быть “тихим” (не реконнектить комнату, просто держать свежий токен на случай будущего reconnect)
-3. Если `participantIdentity` не передан (гость):
-   - сохранять `identity` из ответа `livekit-token` в `ref`
-   - опционально: записать его в ActiveCallContext (чтобы даже при принудительном remount мы не “переименовались” в нового участника)
-4. При ошибках 401 / “token expired”:
-   - принудительно запросить новый токен **и выполнить controlled reconnect** (см. пункт 2)
+Ранний return `if (!roomId) return null` должен быть **ДО всех хуков**, либо все хуки должны быть вызваны **ДО** этой проверки.
 
-Ожидаемый эффект: “invalid token … expired” исчезает даже при долгих звонках/переподключениях.
+Оптимальное решение: переместить проверку `roomId` в самое начало, до любых useState/useRef/useEffect, и сделать "безопасный" компонент-обёртку.
+
+### 2. Добавление агрессивного cache-busting при критических ошибках
+
+При падении компонента (ErrorBoundary) и при выходе из звонка добавим принудительную очистку кэша и перезагрузку свежей версии.
+
+### 3. Улучшение ErrorBoundary для более корректного восстановления
+
+После ошибки "Rendered more hooks" добавим автоматический редирект на `/__refresh` для полной перезагрузки.
+
+### 4. Защита от кэширования старых версий
+
+Добавим Service Worker unregistration и cache invalidation при критических ошибках.
 
 ---
 
-### 2) Controlled reconnect при “фатальных” ошибках (401/expired/повторяющийся NegotiationError)
-**Файлы:**  
-- `src/components/LiveKitRoom.tsx`  
-- `src/components/GlobalActiveCall.tsx`
+## Детали изменений
 
-**Изменения:**
-1. В `LiveKitRoom.tsx` добавить `lkInstanceKey` (state counter), и использовать его как `key` на `<LKRoom …>`:
-   - когда нужно выполнить “жёсткий” реконнект, мы увеличиваем `lkInstanceKey`, тем самым LiveKitRoom из `@livekit/components-react` пересоздаст `Room` и подключится с новым токеном.
-2. Сделать в `LiveKitRoom.tsx` функцию `forceReconnect(reason)`:
-   - защищённую от спама (cooldown 10–20 секунд, max попыток)
-   - последовательность: refresh token → bump `lkInstanceKey`
-3. В `GlobalActiveCall.handleError` распознавать типы:
-   - если ошибка содержит `status: 401` / `NotAllowed` / `token is expired` / `invalid token` → вызвать `forceReconnect("token")`
-   - если `NegotiationError` повторяется → вызвать `forceReconnect("negotiation")`
+### Файл: `src/pages/MeetingRoom.tsx`
 
-Ожидаемый эффект: вместо “развала” звонка — аккуратное восстановление.
+**Проблема:** Ранний return на строке 124 нарушает правила React hooks.
 
----
+**Решение:** Создаём безопасную обёртку-компонент, которая проверяет `roomId` ДО рендеринга основного компонента с хуками:
 
-### 3) Реальное управление состоянием реконнекта (чтобы не ловить гонки)
-**Файлы:**  
-- `src/components/LiveKitRoom.tsx` (внутри `LiveKitContent`)  
-- `src/pages/MeetingRoom.tsx` (UI статус “reconnecting”)
+```typescript
+// Внешний компонент-обёртка без хуков (кроме useParams)
+function MeetingRoomGuard() {
+  const { roomId } = useParams();
+  const navigate = useNavigate();
+  
+  // Безопасная проверка ДО любых других хуков
+  if (!roomId) {
+    // Редирект на главную вместо return null
+    useEffect(() => {
+      navigate('/', { replace: true });
+    }, []);
+    return <LoadingScreen />;
+  }
+  
+  // Передаём roomId как prop, гарантируя его существование
+  return <MeetingRoomContent roomId={roomId} />;
+}
 
-**Изменения:**
-1. Подписаться на события комнаты:
-   - `RoomEvent.Reconnecting`
-   - `RoomEvent.Reconnected`
-   - `RoomEvent.Disconnected`
-2. Держать флаг `isRoomReconnecting` в state/ref.
-3. Пока `isRoomReconnecting === true`:
-   - блокировать кнопки toggle camera/mic/screen (или делать “очередь” действий)
-   - показывать пользователю мягкий статус (например “Переподключение…”)
-4. На `Reconnected`:
-   - по необходимости “мягко” пере-применить желаемые состояния треков (камера/микрофон), но строго последовательно (с задержкой 200–400ms), чтобы снизить NegotiationError.
+// Основной компонент с хуками — roomId гарантированно string
+function MeetingRoomContent({ roomId }: { roomId: string }) {
+  // Все хуки теперь безопасны — roomId всегда определён
+  // ...existing code...
+}
+```
 
-Ожидаемый эффект: значительно меньше NegotiationError и removeTrack после реконнекта.
+### Файл: `src/components/ErrorBoundary.tsx`
 
----
+**Улучшения:**
+1. Обнаружение ошибки "Rendered more hooks" и автоматический редирект на `/__refresh`
+2. Добавление cache-busting query параметра при перезагрузке
+3. Очистка Service Worker кэша при критических ошибках
 
-### 4) Улучшение логики переключения камеры/микрофона (устранение мелких гонок)
-**Файлы:**  
-- `src/components/LiveKitRoom.tsx`
+### Файл: `src/main.tsx`
 
-**Изменения:**
-1. В `toggleCamera/toggleMicrophone/toggleScreenShare`:
-   - вычислять “следующее состояние” не из замкнутого `isCameraEnabled` из render, а из актуального `localParticipant?.isCameraEnabled` в момент клика
-2. Увеличить/улучшить lock:
-   - lock держать не “setTimeout 300ms”, а до завершения операции + небольшой debounce (например 600–800ms)
-3. Если ловим `NegotiationError`:
-   - делать retry (уже есть), но также:
-   - не делать повторный retry если в этот момент `isRoomReconnecting === true`
+**Улучшения:**
+1. При старте приложения — проверка и очистка устаревших Service Workers
+2. Добавление версионного тега для отслеживания билдов
 
-Ожидаемый эффект: меньше NegotiationError при быстром клике/плохой сети.
+### Файл: `src/pages/Refresh.tsx`
+
+**Улучшения:**
+1. Принудительная очистка всех кэшей (localStorage partial, sessionStorage, caches API)
+2. Unregister Service Workers перед редиректом
 
 ---
 
-### 5) Авто-fallback на “стабильный” профиль видео при повторяющихся NegotiationError
-**Файлы:**  
-- `src/components/LiveKitRoom.tsx`
+## Техническая часть
 
-**Идея:**
-Если NegotiationError повторился, например, 2 раза за 60 секунд — переключаемся на более стабильные параметры публикации и делаем reconnect:
-- `videoCodec: 'vp8'`
-- возможно `simulcast: false`
-- возможно `resolution: 1280x720` (или оставить 1080p, но чаще стабилизирует именно снижение)
+### Исправление hook ordering в MeetingRoom.tsx
 
-Сделаем это адаптивно:
-- по умолчанию остаётся текущий “HD/VP9/simulcast”
-- fallback включается только при проблемах
+```text
+БЫЛО:
+┌──────────────────────────────┐
+│ useParams, useState (×10)    │ ← хуки
+│ useRef (×7)                  │ ← хуки  
+│ useAuth, usePushNotifications│ ← хуки
+│ useEffect (×2)               │ ← хуки
+│ useConnectionSounds, etc.    │ ← хуки
+│ useActiveCall                │ ← хук
+├──────────────────────────────┤
+│ if (!roomId) return null;    │ ← CRASH POINT
+├──────────────────────────────┤
+│ useEffect (×5+)              │ ← эти хуки не вызываются
+│                              │   если roomId = undefined
+└──────────────────────────────┘
 
-Ожидаемый эффект: “самовосстановление” на проблемных устройствах/сетях без ручных действий.
+СТАНЕТ:
+┌──────────────────────────────┐
+│ MeetingRoomGuard()           │
+│   └─ useParams               │
+│   └─ if (!roomId) → redirect │ ← безопасный early exit
+└──────────────────────────────┘
+              ↓
+┌──────────────────────────────┐
+│ MeetingRoomContent(roomId)   │
+│   └─ все хуки (×20+)         │ ← гарантированно вызываются
+│   └─ вся логика              │   в одном порядке
+└──────────────────────────────┘
+```
 
----
+### Cache-busting стратегия
 
-### 6) Убрать мусорные ошибки из уведомлений (но не скрывать реальные)
-**Файлы:**  
-- `src/utils/globalErrorHandler.ts`  
-- `src/components/LiveKitRoom.tsx`  
-- `src/pages/MeetingRoom.tsx`
-
-**Изменения:**
-1. В `window.onunhandledrejection` добавить фильтр для:
-   - `"Failed to execute 'removeTrack' on 'RTCPeerConnection': The sender was not created by this peer connection."`
-   (Чтобы не отправлять это как критический инцидент.)
-2. В местах, где мы сами пишем `console.error("[LiveKitRoom] Room error:", err)`:
-   - для ожидаемых/обрабатываемых сценариев (Cancelled, временный reconnect, negotiation recoverable) писать `console.warn` или `console.info`, чтобы не триггерить наш перехват `console.error` → уведомления.
-3. В `GlobalActiveCall`:
-   - не считать `"Cancelled"` ошибкой для авто-reconnect, если это реально user-initiated/наша очистка.
-
-Ожидаемый эффект: меньше спама и “ложных тревог”, при этом реальные проблемы останутся видимыми.
-
----
-
-## Проверка (как протестируем, что стало лучше)
-1. **Долгий звонок / токен**
-   - зайти в комнату, оставить звонок активным > 15 минут
-   - имитировать сеть: выключить/включить интернет (или сменить Wi‑Fi)
-   - убедиться, что нет `token is expired`, звонок восстанавливается
-2. **NegotiationError**
-   - во время звонка: несколько раз переключить камеру/микрофон
-   - во время реконнекта: убедиться, что кнопки корректно блокируются
-3. **removeTrack**
-   - повторить сценарии реконнекта/переключений
-   - убедиться, что ошибка либо исчезла, либо хотя бы больше не улетает в репорты/алерты
-4. **MP4 конвертация (не связано напрямую, но важно)**
-   - записать короткий фрагмент
-   - убедиться, что конвертация WebM→MP4 проходит успешно после записи
+При обнаружении критической ошибки или при завершении звонка:
+1. Очищаем sessionStorage ключи, связанные с call state
+2. Вызываем `caches.delete()` для Service Worker кэшей
+3. Unregister все Service Workers
+4. Редирект через `/__refresh?to=/&__cb=timestamp`
 
 ---
 
-## Затрагиваемые файлы (итоговый список)
-- `src/components/LiveKitRoom.tsx` (token refresh, reconnect key, reconnect events, toggle hardening, fallback profile)
-- `src/components/GlobalActiveCall.tsx` (распознавание 401/NegotiationError и вызов controlled reconnect)
-- `src/contexts/ActiveCallContext.tsx` (сохранение guest identity, если нужно)
-- `src/pages/MeetingRoom.tsx` (UI статус reconnecting + более корректная обработка ошибок)
-- `src/utils/globalErrorHandler.ts` (фильтр removeTrack sender mismatch + возможно ещё 1–2 “шумных” строк)
+## Ожидаемый результат
+
+1. **Ошибка "Rendered more hooks"** — полностью устранена
+2. **"Создать звонок" работает** — комната открывается без crash
+3. **После завершения звонка** — редирект на актуальную версию без отката
+4. **Мобильная версия** — стабильная работа без crash/reload циклов
 
 ---
 
-## Риски и как их снизим
-- **Риск:** “жёсткий reconnect” может на секунду “моргнуть” видео.
-  - **Снижение:** делать его только при 401/expired или повторяющемся NegotiationError; не трогать обычный happy-path.
-- **Риск:** fallback на VP8/720p снизит качество.
-  - **Снижение:** включать fallback только при реальных проблемах; добавить toast “включен стабильный режим видео” (прозрачность для пользователя).
+## Затронутые файлы
+
+1. `src/pages/MeetingRoom.tsx` — разделение на Guard + Content
+2. `src/components/ErrorBoundary.tsx` — улучшенное восстановление
+3. `src/main.tsx` — cache cleanup при старте
+4. `src/pages/Refresh.tsx` — полная очистка кэшей
+5. `src/utils/globalErrorHandler.ts` — фильтрация hook errors
 
 ---
+
+## Риски и митигация
+
+- **Риск:** Разделение MeetingRoom на 2 компонента может затронуть state management
+  - **Митигация:** Все props передаются явно, context остаётся доступным
+  
+- **Риск:** Агрессивная очистка кэша может замедлить загрузку
+  - **Митигация:** Очистка только при критических ошибках, не при каждом визите
+
