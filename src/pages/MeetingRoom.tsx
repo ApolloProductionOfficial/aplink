@@ -196,7 +196,8 @@ const MeetingRoomContent = ({ roomId, userName }: MeetingRoomContentProps) => {
     } else if (!hasRedirectedRef.current) {
       hasRedirectedRef.current = true;
       window.open('https://apolloproduction.studio', '_blank');
-      navigate(user ? '/dashboard' : '/', { replace: true });
+      // Route through /__refresh to force cache-busting after call end
+      navigate(`/__refresh?to=${encodeURIComponent(user ? '/dashboard' : '/')}&t=${Date.now()}`, { replace: true });
     }
   }, [user, navigate]);
 
@@ -385,7 +386,8 @@ const MeetingRoomContent = ({ roomId, userName }: MeetingRoomContentProps) => {
       setEndSaveStatus("saving");
       await runMeetingSave();
     } else {
-      navigate(user ? '/dashboard' : '/', { replace: true });
+      // Route through /__refresh to force cache-busting after call end
+      navigate(`/__refresh?to=${encodeURIComponent(user ? '/dashboard' : '/')}&t=${Date.now()}`, { replace: true });
     }
   };
 
@@ -709,14 +711,16 @@ const MeetingRoomContent = ({ roomId, userName }: MeetingRoomContentProps) => {
   const goToCallsAfterSave = () => {
     setEndSaveDialogOpen(false);
     window.open('https://apolloproduction.studio', '_blank');
-    navigate(user ? '/dashboard' : '/', { replace: true });
+    // Route through /__refresh to force cache-busting after call end
+    navigate(`/__refresh?to=${encodeURIComponent(user ? '/dashboard' : '/')}&t=${Date.now()}`, { replace: true });
   };
 
   const exitWithoutSaving = () => {
     clearPendingBaseFromStorage();
     setEndSaveDialogOpen(false);
     window.open('https://apolloproduction.studio', '_blank');
-    navigate(user ? '/dashboard' : '/', { replace: true });
+    // Route through /__refresh to force cache-busting after call end
+    navigate(`/__refresh?to=${encodeURIComponent(user ? '/dashboard' : '/')}&t=${Date.now()}`, { replace: true });
   };
 
   // Handle minimize - go to home page
