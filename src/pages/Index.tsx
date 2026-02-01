@@ -260,24 +260,31 @@ const Index = () => {
       >
         <CustomCursor />
       
-        {/* Video Background - optimized */}
-        <div className="fixed inset-0 z-0 overflow-hidden bg-background">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-primary/5" />
+        {/* Video Background - optimized with enhanced glassmorphism */}
+        <div className="fixed inset-0 z-0 overflow-hidden bg-black">
+          {/* Base gradient */}
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-black/90 to-primary/10" />
+          {/* Video layer */}
           <video
             autoPlay
             muted
             loop
             playsInline
             preload="none"
-            className="absolute inset-0 w-full h-full object-cover opacity-30"
+            className="absolute inset-0 w-full h-full object-cover opacity-40"
           >
             <source src={backgroundVideo} type="video/mp4" />
           </video>
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-background/60" />
+          {/* Frosted glass overlay with mirror effect */}
+          <div className="absolute inset-0 backdrop-blur-sm bg-black/40" />
+          {/* Gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
+          {/* Subtle reflection effect */}
+          <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-primary/10 mix-blend-overlay" />
         </div>
 
-        {/* Header */}
-        <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/50">
+        {/* Header - glassmorphism style */}
+        <header className="fixed top-0 left-0 right-0 z-50 bg-black/60 backdrop-blur-2xl border-b border-primary/20 shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
           <div className="container mx-auto px-4 py-3 md:py-4 flex items-center justify-between">
             <div className="flex items-center gap-2 md:gap-3">
               <div className="relative w-10 h-10 md:w-12 md:h-12">
@@ -425,15 +432,15 @@ const Index = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.1 }}
               >
-                <span className="px-3 md:px-4 py-1.5 md:py-2 rounded-full bg-primary/10 border border-primary/20 text-xs md:text-sm text-muted-foreground flex items-center gap-1.5 md:gap-2">
+                <span className="px-3 md:px-4 py-1.5 md:py-2 rounded-full bg-black/40 backdrop-blur-xl border border-primary/30 text-xs md:text-sm text-foreground/90 flex items-center gap-1.5 md:gap-2 shadow-lg">
                   <Languages className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary" />
                   {(t.aplink as any)?.realtimeTranslator || 'Real-time Translator'}
                 </span>
-                <span className="px-3 md:px-4 py-1.5 md:py-2 rounded-full bg-primary/10 border border-primary/20 text-xs md:text-sm text-muted-foreground flex items-center gap-1.5 md:gap-2">
+                <span className="px-3 md:px-4 py-1.5 md:py-2 rounded-full bg-black/40 backdrop-blur-xl border border-primary/30 text-xs md:text-sm text-foreground/90 flex items-center gap-1.5 md:gap-2 shadow-lg">
                   <Video className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary" />
                   {(t.aplink as any)?.aiMeetingSummaries || 'AI Meeting Summaries'}
                 </span>
-                <span className="px-3 md:px-4 py-1.5 md:py-2 rounded-full bg-primary/10 border border-primary/20 text-xs md:text-sm text-muted-foreground flex items-center gap-1.5 md:gap-2">
+                <span className="px-3 md:px-4 py-1.5 md:py-2 rounded-full bg-black/40 backdrop-blur-xl border border-primary/30 text-xs md:text-sm text-foreground/90 flex items-center gap-1.5 md:gap-2 shadow-lg">
                   <Globe className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary" />
                   {(t.aplink as any)?.noIPRestrictions || 'No IP Restrictions'}
                 </span>
@@ -447,12 +454,16 @@ const Index = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
               >
-                <div className={`glass rounded-2xl p-5 md:p-6 space-y-4 relative overflow-hidden transition-all duration-1000 ease-in-out ${
+                <div className={`bg-black/60 backdrop-blur-2xl rounded-2xl p-5 md:p-6 space-y-4 relative overflow-hidden border border-primary/20 shadow-[0_8px_32px_rgba(0,0,0,0.6)] transition-all duration-1000 ease-in-out ${
                   formHighlight 
-                    ? 'ring-2 ring-primary/80 shadow-[0_0_40px_rgba(6,182,212,0.5)]' 
-                    : 'ring-0 ring-transparent shadow-none'
+                    ? 'ring-2 ring-primary/80 shadow-[0_0_60px_rgba(6,182,212,0.4)]' 
+                    : 'ring-0 ring-transparent'
                 }`}>
-                  {/* Animated gradient border */}
+                  {/* Subtle inner glow */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10 pointer-events-none rounded-2xl" />
+                  {/* Mirror reflection effect */}
+                  <div className="absolute inset-0 bg-gradient-to-b from-white/5 via-transparent to-transparent pointer-events-none rounded-2xl" />
+                  {/* Animated border on highlight */}
                   <div className={`absolute inset-0 pointer-events-none transition-opacity duration-1000 ease-in-out ${
                     formHighlight ? 'opacity-100' : 'opacity-0'
                   }`}>
@@ -471,14 +482,14 @@ const Index = () => {
                     placeholder={t.aplink?.yourName || 'Ваше имя'}
                     value={userName}
                     onChange={(e) => setUserName(e.target.value)}
-                    className="bg-background/50 border-border/50 h-11 md:h-12 text-base md:text-lg relative z-10"
+                    className="bg-black/40 border-primary/30 h-11 md:h-12 text-base md:text-lg relative z-10 placeholder:text-muted-foreground/50 focus:border-primary/60 focus:ring-primary/30"
                   />
                   <Input
                     type="text"
                     placeholder={t.aplink?.roomName || 'Название комнаты (или оставьте пустым)'}
                     value={roomName}
                     onChange={(e) => setRoomName(e.target.value)}
-                    className="bg-background/50 border-border/50 h-11 md:h-12 text-base md:text-lg relative z-10"
+                    className="bg-black/40 border-primary/30 h-11 md:h-12 text-base md:text-lg relative z-10 placeholder:text-muted-foreground/50 focus:border-primary/60 focus:ring-primary/30"
                     onKeyDown={(e) => e.key === 'Enter' && (roomName ? handleJoinRoom() : handleCreateRoom())}
                   />
                   <div className="flex gap-2 md:gap-3 relative z-10">

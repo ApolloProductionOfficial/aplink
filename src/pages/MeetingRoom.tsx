@@ -300,7 +300,14 @@ const MeetingRoomContent = ({ roomId, userName }: MeetingRoomContentProps) => {
         console.log('Participant left:', identity);
       },
       onError: (error: Error) => {
-        console.error('[MeetingRoom] Error via context:', error);
+        // Serialize error properly for logging (Error objects serialize to {} by default)
+        const errorDetails = {
+          message: error?.message || 'Unknown error',
+          name: error?.name || 'Error',
+          ...(error as any)?.code && { code: (error as any).code },
+          ...(error as any)?.reason && { reason: (error as any).reason },
+        };
+        console.warn('[MeetingRoom] Error via context:', JSON.stringify(errorDetails));
       },
     });
   }, [setEventHandlers, roomDisplayName, sendNotification, handleDisconnectedLogic, autoStartRecording]);

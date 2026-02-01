@@ -456,6 +456,22 @@ export function LiveKitRoom({
     };
   }, [useFallbackVideoProfile]);
 
+  // Serialize error properly for logging (Error objects serialize to {} by default)
+  const serializeError = useCallback((err: any): string => {
+    if (!err) return 'Unknown error';
+    if (typeof err === 'string') return err;
+    const obj: Record<string, any> = {
+      message: err.message || 'No message',
+      name: err.name || 'Error',
+    };
+    if (err.code) obj.code = err.code;
+    if (err.reason) obj.reason = err.reason;
+    if (err.reasonName) obj.reasonName = err.reasonName;
+    if (err.status) obj.status = err.status;
+    if (err.stack) obj.stack = err.stack.substring(0, 300);
+    return JSON.stringify(obj);
+  }, []);
+
   // Handle room error with smart recovery
   const handleRoomError = useCallback((err: Error) => {
     // Check if it's a token error
@@ -468,15 +484,15 @@ export function LiveKitRoom({
     // Check if it's a NegotiationError
     if (isNegotiationError(err)) {
       // Use console.warn instead of error to avoid triggering error notifications
-      console.warn("[LiveKitRoom] NegotiationError:", err);
+      console.warn("[LiveKitRoom] NegotiationError:", serializeError(err));
       handleNegotiationError(err);
       return;
     }
     
-    // For other errors, log and notify
-    console.error("[LiveKitRoom] Room error:", err);
+    // For other errors, log with proper serialization and notify
+    console.warn("[LiveKitRoom] Room error:", serializeError(err));
     onError?.(err);
-  }, [handleForceReconnect, handleNegotiationError, onError]);
+  }, [handleForceReconnect, handleNegotiationError, onError, serializeError]);
 
   // =========================================
   // EARLY RETURNS - SAFE AFTER ALL HOOKS ABOVE
