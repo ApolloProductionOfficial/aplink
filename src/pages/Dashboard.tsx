@@ -717,13 +717,21 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative overflow-hidden">
       <CustomCursor />
+      
+      {/* Glassmorphism background effects */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        {/* Gradient orbs */}
+        <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-[120px] animate-pulse" />
+        <div className="absolute bottom-40 right-20 w-96 h-96 bg-primary/5 rounded-full blur-[150px]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/3 rounded-full blur-[200px]" />
+      </div>
       
       {/* Background saving indicator */}
       {showSavingIndicator && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] animate-fade-in">
-          <div className="flex items-center gap-3 bg-primary/20 backdrop-blur-2xl border border-primary/30 rounded-full px-5 py-3 shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
+          <div className="flex items-center gap-3 bg-black/60 backdrop-blur-2xl border border-primary/30 rounded-full px-5 py-3 shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
             <div className="relative">
               <Loader2 className="w-5 h-5 text-primary animate-spin" />
               <div className="absolute inset-0 w-5 h-5 rounded-full bg-primary/30 animate-ping" />
@@ -745,8 +753,8 @@ const Dashboard = () => {
       {/* Saving indicator in header area */}
       {showSavingIndicator && <SavingIndicator />}
       
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-xl border-b border-border/50">
+      {/* Header - Glassmorphism style */}
+      <header className="sticky top-0 z-50 bg-black/60 backdrop-blur-2xl border-b border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.3)]">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             {/* Back button */}
@@ -899,7 +907,7 @@ const Dashboard = () => {
                 <div className="w-12 h-12 rounded-full border-4 border-primary/30 border-t-primary animate-spin" />
               </div>
             ) : transcripts.length === 0 ? (
-              <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+              <Card className="bg-black/40 backdrop-blur-2xl border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
                 <CardContent className="py-12 text-center text-muted-foreground">
                   <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
                   <p>Пока нет записей созвонов</p>
@@ -913,7 +921,7 @@ const Dashboard = () => {
                 </CardContent>
               </Card>
             ) : filteredTranscripts.length === 0 ? (
-              <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+              <Card className="bg-black/40 backdrop-blur-2xl border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
                 <CardContent className="py-12 text-center text-muted-foreground">
                   <Search className="w-12 h-12 mx-auto mb-4 opacity-50" />
                   <p>Ничего не найдено</p>
@@ -930,7 +938,7 @@ const Dashboard = () => {
             ) : (
               <div className="grid gap-4">
                 {filteredTranscripts.map((transcript) => (
-                  <Card key={transcript.id} className="bg-card/50 backdrop-blur-sm border-border/50">
+                  <Card key={transcript.id} className="bg-black/40 backdrop-blur-2xl border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.4)] hover:border-primary/30 transition-all duration-300">
                     <CardHeader>
                       <div className="flex items-start justify-between">
                         <div>
@@ -1077,8 +1085,8 @@ const Dashboard = () => {
             
             {/* Share Link Modal */}
             {sharingMeetingId && (
-              <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={closeShareDialog}>
-                <Card className="max-w-md w-full bg-card border-border" onClick={(e) => e.stopPropagation()}>
+              <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={closeShareDialog}>
+                <Card className="max-w-md w-full bg-black/60 backdrop-blur-2xl border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)]" onClick={(e) => e.stopPropagation()}>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Link2 className="w-5 h-5 text-primary" />
@@ -1149,8 +1157,8 @@ const Dashboard = () => {
 
             {/* Delete Confirmation Modal */}
             {deletingMeetingId && (
-              <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setDeletingMeetingId(null)}>
-                <Card className="max-w-md w-full bg-card border-border" onClick={(e) => e.stopPropagation()}>
+              <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setDeletingMeetingId(null)}>
+                <Card className="max-w-md w-full bg-black/60 backdrop-blur-2xl border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)]" onClick={(e) => e.stopPropagation()}>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-destructive">
                       <AlertTriangle className="w-5 h-5" />
@@ -1188,7 +1196,7 @@ const Dashboard = () => {
               Мой профиль
             </h1>
 
-            <Card className="bg-card/50 backdrop-blur-sm border-border/50 max-w-md mx-auto">
+            <Card className="bg-black/40 backdrop-blur-2xl border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.4)] max-w-md mx-auto">
               <CardContent className="pt-6 space-y-6">
                 {/* Avatar */}
                 <div className="flex flex-col items-center">
@@ -1353,7 +1361,7 @@ const Dashboard = () => {
                 IP-чекер участников
               </h1>
 
-              <Card className="bg-card/50 backdrop-blur-sm border-border/50 overflow-hidden">
+              <Card className="bg-black/40 backdrop-blur-2xl border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.4)] overflow-hidden">
                 <CardHeader>
                   <CardTitle className="text-lg">Данные участников ({participants.length})</CardTitle>
                 </CardHeader>
