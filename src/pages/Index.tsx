@@ -63,6 +63,12 @@ const Index = () => {
   useEffect(() => {
     if (roomFromUrl) {
       setRoomName(roomFromUrl);
+      // Show toast to guide user
+      toast({
+        title: '🎯 Введите своё имя',
+        description: `Чтобы присоединиться к комнате "${roomFromUrl}"`,
+        duration: 5000,
+      });
       // Scroll to form and highlight it
       setFormHighlight(true);
       setTimeout(() => {
@@ -79,7 +85,7 @@ const Index = () => {
       // Remove highlight after 5 seconds
       setTimeout(() => setFormHighlight(false), 5000);
     }
-  }, [roomFromUrl]);
+  }, [roomFromUrl, toast]);
 
   useEffect(() => {
     const loadUserName = async () => {

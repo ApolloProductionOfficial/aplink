@@ -60,6 +60,7 @@ import { AudioProblemDetector } from "@/components/AudioProblemDetector";
 import { FocusVideoLayout } from "@/components/FocusVideoLayout";
 import { GalleryVideoLayout } from "@/components/GalleryVideoLayout";
 import { WebinarVideoLayout } from "@/components/WebinarVideoLayout";
+import { ConnectionLoadingScreen } from "@/components/ConnectionLoadingScreen";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useNativePiP } from "@/hooks/useNativePiP";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -151,6 +152,9 @@ export function LiveKitRoom({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
+  // Connection step tracking for loading UI (0-3: token, connect, media, audio)
+  const [connectionStep, setConnectionStep] = useState(0);
+  
   // Get context for reconnect state, guest identity, fallback profile
   const { 
     setIsRoomReconnecting, 
@@ -201,6 +205,7 @@ export function LiveKitRoom({
       if (!isRefresh) {
         setLoading(true);
         setError(null);
+        setConnectionStep(0); // Step 0: Getting token
       }
 
       // Use saved guest identity for token refresh to maintain same participant
@@ -227,6 +232,9 @@ export function LiveKitRoom({
         throw new Error("Invalid token response");
       }
 
+      // Step 1: Token received, now connecting
+      setConnectionStep(1);
+
       // Save guest identity from response for future reconnects
       if (!participantIdentity && data.identity) {
         setGuestIdentity(data.identity);
@@ -244,6 +252,9 @@ export function LiveKitRoom({
       setToken(data.token);
       setServerUrl(data.url);
       
+      // Step 2: Server URL received, setting up media
+      setConnectionStep(2);
+      
       // Schedule token refresh 2 minutes before expiration
       if (exp && refreshTimerRef.current === null) {
         const now = Math.floor(Date.now() / 1000);
@@ -256,6 +267,9 @@ export function LiveKitRoom({
           fetchToken(true);
         }, refreshIn);
       }
+      
+      // Step 3: Ready to connect audio
+      setTimeout(() => setConnectionStep(3), 300);
       
       return true;
     } catch (err) {
@@ -376,24 +390,7 @@ export function LiveKitRoom({
     onDisconnected?.();
   }, [onDisconnected]);
 
-  // Rotating loading phrases
-  const [phraseIndex, setPhraseIndex] = useState(0);
-  const loadingPhrases = [
-    "Инициализация портала связи...",
-    "Открываем врата в новое измерение...",
-    "Синхронизация квантовых частот...",
-    "Настраиваем межпространственную связь...",
-    "Готовьтесь к телепортации...",
-    "Калибровка голографического канала...",
-  ];
-
-  useEffect(() => {
-    if (!loading) return;
-    const interval = setInterval(() => {
-      setPhraseIndex((prev) => (prev + 1) % loadingPhrases.length);
-    }, 2500);
-    return () => clearInterval(interval);
-  }, [loading]);
+  // Loading phrases are now in ConnectionLoadingScreen component
 
   // Dynamic room options based on fallback mode
   const roomOptions = useMemo(() => {
@@ -487,61 +484,10 @@ export function LiveKitRoom({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full bg-background overflow-hidden">
-        {/* Cosmic background effect */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5" />
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[100px] animate-pulse" style={{ animationDuration: '3s' }} />
-          <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-primary/15 rounded-full blur-[80px] animate-pulse" style={{ animationDuration: '4s', animationDelay: '1s' }} />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] border border-primary/10 rounded-full animate-[spin_20s_linear_infinite]" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] border border-primary/5 rounded-full animate-[spin_15s_linear_infinite_reverse]" />
-        </div>
-        
-        <div className="relative z-10 glass-dark rounded-3xl p-10 flex flex-col items-center gap-6 border border-white/10">
-          {/* Animated portal rings */}
-          <div className="relative w-24 h-24">
-            <div className="absolute inset-0 rounded-full border-2 border-primary/30 animate-[ping_2s_ease-out_infinite]" />
-            <div className="absolute inset-2 rounded-full border-2 border-primary/40 animate-[ping_2s_ease-out_infinite_0.5s]" />
-            <div className="absolute inset-4 rounded-full border-2 border-primary/50 animate-[ping_2s_ease-out_infinite_1s]" />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Loader2 className="w-10 h-10 animate-spin text-primary" />
-            </div>
-          </div>
-          
-          <div className="text-center space-y-2">
-            <p className="text-foreground text-xl font-medium bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text text-transparent animate-[pulse_3s_ease-in-out_infinite] min-w-[280px] transition-all duration-500">
-              {loadingPhrases[phraseIndex]}
-            </p>
-            <p className="text-muted-foreground text-sm flex items-center gap-2">
-              Готовьтесь к погружению
-              {/* Single neon star */}
-              <svg viewBox="0 0 24 24" className="w-6 h-6 animate-pulse animate-[spin_8s_linear_infinite]">
-                <defs>
-                  <linearGradient id="star-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#06b6e4"/>
-                    <stop offset="50%" stopColor="#fff"/>
-                    <stop offset="100%" stopColor="#06b6e4"/>
-                  </linearGradient>
-                  <filter id="star-glow">
-                    <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-                    <feMerge>
-                      <feMergeNode in="coloredBlur"/>
-                      <feMergeNode in="coloredBlur"/>
-                      <feMergeNode in="SourceGraphic"/>
-                    </feMerge>
-                  </filter>
-                </defs>
-                <path 
-                  d="M12 2L14.5 9.5L22 10L16 15L18 22L12 18L6 22L8 15L2 10L9.5 9.5L12 2Z" 
-                  fill="url(#star-gradient)" 
-                  filter="url(#star-glow)"
-                  className="drop-shadow-[0_0_12px_rgba(6,182,228,0.9)]"
-                />
-              </svg>
-            </p>
-          </div>
-        </div>
-      </div>
+      <ConnectionLoadingScreen 
+        currentStep={connectionStep} 
+        roomName={roomDisplayName || roomName} 
+      />
     );
   }
 
