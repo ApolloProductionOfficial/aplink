@@ -243,31 +243,22 @@ const ProfileCard = ({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
     >
-      {/* Glassmorphism gradient overlay - brighter */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-primary/15 pointer-events-none" />
+      {/* Glassmorphism gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-primary/15 pointer-events-none rounded-2xl" />
       
-      {/* Animated shimmer border top */}
-      <div 
-        className="absolute top-0 left-0 right-0 h-[2px] animate-shimmer"
-        style={{
-          background: 'linear-gradient(90deg, transparent, rgba(6,182,212,0.6), transparent, rgba(6,182,212,0.4), transparent)',
-          backgroundSize: '200% 100%',
-        }}
-      />
-      
-      {/* Animated shimmer border bottom */}
-      <div 
-        className="absolute bottom-0 left-0 right-0 h-[1px] animate-shimmer"
-        style={{
-          background: 'linear-gradient(90deg, transparent, rgba(6,182,212,0.4), transparent)',
-          backgroundSize: '200% 100%',
-          animationDelay: '1.5s',
-        }}
-      />
-      
-      {/* Subtle side glow */}
-      <div className="absolute inset-y-0 left-0 w-[1px] bg-gradient-to-b from-transparent via-primary/30 to-transparent" />
-      <div className="absolute inset-y-0 right-0 w-[1px] bg-gradient-to-b from-transparent via-primary/30 to-transparent" />
+      {/* Animated glass shine effect */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none rounded-2xl">
+        <div 
+          className="absolute inset-0 animate-glass-shine"
+          style={{
+            background: 'linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 45%, rgba(6,182,212,0.15) 50%, rgba(255,255,255,0.1) 55%, transparent 70%)',
+            width: '200%',
+            height: '200%',
+            top: '-50%',
+            left: '-50%',
+          }}
+        />
+      </div>
       
       {/* Profile Header */}
       <div className="p-4 border-b border-primary/20 relative z-10">

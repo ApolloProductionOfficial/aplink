@@ -93,12 +93,29 @@ export default {
             opacity: "0.8",
           },
         },
+        "glass-shine": {
+          "0%, 100%": {
+            transform: "translateX(-100%) rotate(-45deg)",
+            opacity: "0",
+          },
+          "15%, 85%": {
+            opacity: "0",
+          },
+          "40%": {
+            opacity: "0.7",
+          },
+          "50%": {
+            transform: "translateX(100%) rotate(-45deg)",
+            opacity: "0.7",
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "shimmer": "shimmer 12s linear infinite",
         "pulse-glow": "pulse-glow 4s ease-in-out infinite",
+        "glass-shine": "glass-shine 15s ease-in-out infinite",
       },
     },
   },
