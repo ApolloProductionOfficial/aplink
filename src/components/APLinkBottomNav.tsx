@@ -76,9 +76,9 @@ const APLinkBottomNav = ({ onFavoritesClick, onCreateClick }: APLinkBottomNavPro
       <nav 
         className="md:hidden fixed bottom-0 left-0 right-0 z-50 pb-safe"
         style={{
-          transform: isVisible ? 'translateY(0)' : 'translateY(100%)',
+          transform: isVisible ? 'translateY(0)' : 'translateY(110%)',
           opacity: isVisible ? 1 : 0,
-          transition: 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-out',
+          transition: 'transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease-out',
           willChange: 'transform, opacity',
         }}
       >

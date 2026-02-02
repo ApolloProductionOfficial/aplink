@@ -699,8 +699,8 @@ function LiveKitContent({
   const [showScreenshotFlash, setShowScreenshotFlash] = useState(false);
   
   // Layout mode: 'focus' (1-on-1), 'gallery' (grid), or 'webinar' (speaker + strip)
-  // Default to focus to avoid split-screen in 1-on-1 calls on desktop
-  const [layoutMode, setLayoutMode] = useState<'focus' | 'gallery' | 'webinar'>('focus');
+  // Default to gallery for grid view with connection quality indicators
+  const [layoutMode, setLayoutMode] = useState<'focus' | 'gallery' | 'webinar'>('gallery');
   
   // Pinned participant identity
   const [pinnedParticipant, setPinnedParticipant] = useState<string | null>(null);
@@ -784,10 +784,11 @@ function LiveKitContent({
   const hasRemoteParticipants = remoteParticipants.length > 0;
   const remoteParticipantCount = remoteParticipants.length;
 
-  // Force Focus layout for 1-on-1 (prevents desktop split-screen when a single participant joins)
+  // Auto-switch to gallery for group calls (3+ participants)
   useEffect(() => {
-    if (remoteParticipantCount <= 1 && layoutMode !== 'focus') {
-      setLayoutMode('focus');
+    // Keep gallery mode for group calls
+    if (remoteParticipantCount >= 2 && layoutMode === 'focus') {
+      setLayoutMode('gallery');
     }
   }, [remoteParticipantCount, layoutMode]);
 
@@ -2207,7 +2208,7 @@ function LiveKitContent({
           {/* Divider */}
           <div className="w-px h-8 bg-white/10 mx-0.5" />
 
-          {/* Layout mode toggle with Popover for 3 modes */}
+          {/* More menu - secondary functions */}
           <Popover>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -2215,232 +2216,165 @@ function LiveKitContent({
                   <Button
                     variant="outline"
                     size="icon"
-                    className={cn(
-                      "w-12 h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg border-white/20",
-                      layoutMode !== 'focus' 
-                        ? "bg-primary/30 border-primary/50" 
-                        : "bg-white/15 hover:bg-white/25"
-                    )}
+                    className="w-12 h-12 rounded-full bg-white/15 hover:bg-white/25 border-white/20 transition-all hover:scale-105 hover:shadow-lg"
                   >
-                    {layoutMode === 'focus' ? (
-                      <User className="w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]" />
-                    ) : layoutMode === 'gallery' ? (
-                      <LayoutGrid className="w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]" />
-                    ) : (
-                      <Presentation className="w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]" />
-                    )}
+                    <MoreHorizontal className="w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]" />
                   </Button>
                 </PopoverTrigger>
               </TooltipTrigger>
               <TooltipContent side="top" className="bg-black/80 border-white/10">
-                <p>Режим отображения (G)</p>
+                <p>Ещё (M)</p>
               </TooltipContent>
             </Tooltip>
             <PopoverContent 
               side="top" 
               align="center" 
               sideOffset={12}
-              className="w-auto p-3 bg-black/40 backdrop-blur-2xl border border-white/[0.08] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4),0_0_1px_rgba(255,255,255,0.1)]"
+              className="w-auto p-4 bg-black/60 backdrop-blur-2xl border border-white/[0.08] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4),0_0_1px_rgba(255,255,255,0.1)]"
             >
-              <div className="flex flex-col gap-2">
-                <span className="text-[10px] text-muted-foreground font-medium text-center mb-1">Режим отображения</span>
-                <div className="flex items-center gap-3">
-                  {/* Focus mode */}
-                  <button
-                    onClick={() => {
-                      setLayoutMode('focus');
-                      toast.success('Фокус-режим');
-                    }}
-                    className={cn(
-                      "flex flex-col items-center gap-1.5 p-2 rounded-xl transition-all",
-                      layoutMode === 'focus' 
-                        ? "bg-primary/20 border border-primary/30" 
-                        : "bg-white/5 hover:bg-white/10"
-                    )}
-                  >
-                    <User className={cn("w-5 h-5", layoutMode === 'focus' && "text-primary")} />
-                    <span className="text-[10px] whitespace-nowrap">Фокус</span>
-                  </button>
-                  
-                  {/* Gallery mode */}
-                  <button
-                    onClick={() => {
-                      setLayoutMode('gallery');
-                      toast.success('Галерейный режим');
-                    }}
-                    className={cn(
-                      "flex flex-col items-center gap-1.5 p-2 rounded-xl transition-all",
-                      layoutMode === 'gallery' 
-                        ? "bg-primary/20 border border-primary/30" 
-                        : "bg-white/5 hover:bg-white/10"
-                    )}
-                  >
-                    <LayoutGrid className={cn("w-5 h-5", layoutMode === 'gallery' && "text-primary")} />
-                    <span className="text-[10px] whitespace-nowrap">Галерея</span>
-                  </button>
-                  
-                  {/* Webinar mode */}
-                  <button
-                    onClick={() => {
-                      setLayoutMode('webinar');
-                      toast.success('Вебинар-режим');
-                    }}
-                    className={cn(
-                      "flex flex-col items-center gap-1.5 p-2 rounded-xl transition-all",
-                      layoutMode === 'webinar' 
-                        ? "bg-primary/20 border border-primary/30" 
-                        : "bg-white/5 hover:bg-white/10"
-                    )}
-                  >
-                    <Presentation className={cn("w-5 h-5", layoutMode === 'webinar' && "text-primary")} />
-                    <span className="text-[10px] whitespace-nowrap">Вебинар</span>
-                  </button>
+              <div className="flex flex-col gap-4">
+                {/* Layout modes section */}
+                <div className="flex flex-col gap-2">
+                  <span className="text-[10px] text-muted-foreground font-medium">Режим отображения</span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        setLayoutMode('focus');
+                        toast.success('Фокус-режим');
+                      }}
+                      className={cn(
+                        "flex flex-col items-center gap-1 p-2 rounded-xl transition-all min-w-[56px]",
+                        layoutMode === 'focus' 
+                          ? "bg-primary/20 border border-primary/30" 
+                          : "bg-white/5 hover:bg-white/10"
+                      )}
+                    >
+                      <User className={cn("w-4 h-4", layoutMode === 'focus' && "text-primary")} />
+                      <span className="text-[9px] whitespace-nowrap">Фокус</span>
+                    </button>
+                    
+                    <button
+                      onClick={() => {
+                        setLayoutMode('gallery');
+                        toast.success('Галерейный режим');
+                      }}
+                      className={cn(
+                        "flex flex-col items-center gap-1 p-2 rounded-xl transition-all min-w-[56px]",
+                        layoutMode === 'gallery' 
+                          ? "bg-primary/20 border border-primary/30" 
+                          : "bg-white/5 hover:bg-white/10"
+                      )}
+                    >
+                      <LayoutGrid className={cn("w-4 h-4", layoutMode === 'gallery' && "text-primary")} />
+                      <span className="text-[9px] whitespace-nowrap">Галерея</span>
+                    </button>
+                    
+                    <button
+                      onClick={() => {
+                        setLayoutMode('webinar');
+                        toast.success('Вебинар-режим');
+                      }}
+                      className={cn(
+                        "flex flex-col items-center gap-1 p-2 rounded-xl transition-all min-w-[56px]",
+                        layoutMode === 'webinar' 
+                          ? "bg-primary/20 border border-primary/30" 
+                          : "bg-white/5 hover:bg-white/10"
+                      )}
+                    >
+                      <Presentation className={cn("w-4 h-4", layoutMode === 'webinar' && "text-primary")} />
+                      <span className="text-[9px] whitespace-nowrap">Вебинар</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </PopoverContent>
-          </Popover>
-          
-          {/* Native Picture-in-Picture button */}
-          {isPiPSupported && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  onClick={togglePiP}
-                  variant="outline"
-                  size="icon"
-                  className={cn(
-                    "w-12 h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg border-white/20",
-                    isPiPActive 
-                      ? "bg-green-500/30 border-green-500/50" 
-                      : "bg-white/15 hover:bg-white/25"
+                
+                {/* Tools grid */}
+                <div className="grid grid-cols-4 gap-2">
+                  {/* PiP */}
+                  {isPiPSupported && (
+                    <button
+                      onClick={togglePiP}
+                      className={cn(
+                        "flex flex-col items-center gap-1 p-2 rounded-xl transition-all",
+                        isPiPActive 
+                          ? "bg-green-500/20 border border-green-500/30" 
+                          : "bg-white/5 hover:bg-white/10"
+                      )}
+                    >
+                      <PictureInPicture className={cn("w-4 h-4", isPiPActive && "text-green-400")} />
+                      <span className="text-[9px] whitespace-nowrap">PiP</span>
+                    </button>
                   )}
-                >
-                  <PictureInPicture className={cn(
-                    "w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]",
-                    isPiPActive && "text-green-400"
-                  )} />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="top" className="bg-black/80 border-white/10">
-                <p>{isPiPActive ? "Выйти из PiP (I)" : "Picture-in-Picture (I)"}</p>
-              </TooltipContent>
-            </Tooltip>
-          )}
-
-          {/* Virtual Background selector (face filters removed) */}
-          <VirtualBackgroundSelector
-            onSelectBlur={applyBlurBackground}
-            onSelectImage={applyImageBackground}
-            onRemove={removeBackground}
-            currentBackground={currentBackground}
-            isProcessing={isProcessingBackground}
-            onResetAllEffects={() => {
-              if (isNoiseSuppressionEnabled) toggleNoiseSuppression();
-            }}
-          />
-
-          {/* Drawing mode selector (Whiteboard / Screen Overlay) */}
-          <Popover>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className={cn(
-                      "w-12 h-12 rounded-full bg-white/15 hover:bg-white/25 border-white/20 transition-all hover:scale-105 hover:shadow-lg",
-                      (showWhiteboard || showDrawingOverlay) && "bg-primary/20 border-primary/50"
-                    )}
-                  >
-                    <Pencil className="w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]" />
-                  </Button>
-                </PopoverTrigger>
-              </TooltipTrigger>
-              <TooltipContent side="top" className="bg-black/80 border-white/10">
-                <p>Рисование и доска</p>
-              </TooltipContent>
-            </Tooltip>
-            <PopoverContent 
-              side="top" 
-              align="center" 
-              sideOffset={12}
-              className="w-auto p-3 bg-black/40 backdrop-blur-2xl border border-white/[0.08] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4),0_0_1px_rgba(255,255,255,0.1)]"
-            >
-              <div className="flex flex-col gap-2">
-                <span className="text-[10px] text-muted-foreground font-medium text-center mb-1">Режим рисования</span>
-                <div className="flex items-center gap-3">
-                  {/* Whiteboard option */}
+                  
+                  {/* Whiteboard */}
                   <button
                     onClick={() => {
                       setShowWhiteboard(true);
                       setShowDrawingOverlay(false);
                     }}
-                    className="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-white/10 transition-all group"
-                  >
-                    <div className={cn(
-                      "w-12 h-12 rounded-xl flex items-center justify-center border transition-all",
+                    className={cn(
+                      "flex flex-col items-center gap-1 p-2 rounded-xl transition-all",
                       showWhiteboard 
-                        ? "bg-primary/30 border-primary/50" 
-                        : "bg-white/10 border-white/10 group-hover:border-white/20"
-                    )}>
-                      <LayoutGrid className="w-5 h-5" />
-                    </div>
-                    <span className="text-[10px] text-muted-foreground">Доска</span>
+                        ? "bg-primary/20 border border-primary/30" 
+                        : "bg-white/5 hover:bg-white/10"
+                    )}
+                  >
+                    <LayoutGrid className="w-4 h-4" />
+                    <span className="text-[9px] whitespace-nowrap">Доска</span>
                   </button>
                   
-                  {/* Screen overlay option */}
+                  {/* Drawing on screen */}
                   <button
                     onClick={() => {
                       setShowDrawingOverlay(true);
                       setShowWhiteboard(false);
                     }}
-                    className="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-white/10 transition-all group"
-                  >
-                    <div className={cn(
-                      "w-12 h-12 rounded-xl flex items-center justify-center border transition-all",
+                    className={cn(
+                      "flex flex-col items-center gap-1 p-2 rounded-xl transition-all",
                       showDrawingOverlay 
-                        ? "bg-primary/30 border-primary/50" 
-                        : "bg-white/10 border-white/10 group-hover:border-white/20"
-                    )}>
-                      <MonitorPlay className="w-5 h-5" />
-                    </div>
-                    <span className="text-[10px] text-muted-foreground">На экране</span>
+                        ? "bg-primary/20 border border-primary/30" 
+                        : "bg-white/5 hover:bg-white/10"
+                    )}
+                  >
+                    <Pencil className="w-4 h-4" />
+                    <span className="text-[9px] whitespace-nowrap">Рисовать</span>
                   </button>
+                  
+                  {/* Raise Hand */}
+                  <button
+                    onClick={toggleHand}
+                    className={cn(
+                      "flex flex-col items-center gap-1 p-2 rounded-xl transition-all",
+                      isHandRaised 
+                        ? "bg-yellow-500/20 border border-yellow-500/30 animate-pulse" 
+                        : "bg-white/5 hover:bg-white/10"
+                    )}
+                  >
+                    <Hand className={cn("w-4 h-4", isHandRaised && "text-yellow-400")} />
+                    <span className="text-[9px] whitespace-nowrap">Рука</span>
+                  </button>
+                </div>
+                
+                {/* Virtual Background & Reactions row */}
+                <div className="flex items-center justify-center gap-3 pt-2 border-t border-white/10">
+                  <VirtualBackgroundSelector
+                    onSelectBlur={applyBlurBackground}
+                    onSelectImage={applyImageBackground}
+                    onRemove={removeBackground}
+                    currentBackground={currentBackground}
+                    isProcessing={isProcessingBackground}
+                    onResetAllEffects={() => {
+                      if (isNoiseSuppressionEnabled) toggleNoiseSuppression();
+                    }}
+                  />
+                  
+                  <EmojiReactions
+                    room={room}
+                    participantName={participantName}
+                  />
                 </div>
               </div>
             </PopoverContent>
           </Popover>
-
-          {/* Emoji Reactions */}
-          <EmojiReactions
-            room={room}
-            participantName={participantName}
-          />
-
-          {/* Raise Hand button */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                onClick={toggleHand}
-                variant="outline"
-                size="icon"
-                className={cn(
-                  "w-12 h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg border-white/20",
-                  isHandRaised 
-                    ? "bg-yellow-500/40 border-yellow-500/60 hover:bg-yellow-500/50 animate-pulse" 
-                    : "bg-white/15 hover:bg-white/25"
-                )}
-              >
-                <Hand className={cn(
-                  "w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]", 
-                  isHandRaised && "text-yellow-400"
-                )} />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="top" className="bg-black/80 border-white/10">
-              <p>{isHandRaised ? "Опустить руку (H)" : "Поднять руку (H)"}</p>
-            </TooltipContent>
-          </Tooltip>
 
           {/* Chat toggle button - buttonOnly mode for bottom panel */}
           <InCallChat
