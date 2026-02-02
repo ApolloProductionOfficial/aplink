@@ -82,9 +82,9 @@ const APLinkBottomNav = ({ onFavoritesClick, onCreateClick }: APLinkBottomNavPro
           willChange: 'transform, opacity',
         }}
       >
-        {/* Gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-t from-card via-card/98 to-card/90 backdrop-blur-xl" />
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/3 via-primary/8 to-primary/3" />
+        {/* Glassmorphism background - matching header style */}
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-2xl" />
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5" />
         
         {/* Top border with glow */}
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
