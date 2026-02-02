@@ -238,11 +238,14 @@ const ProfileCard = ({
 
   return (
     <motion.div 
-      className="glass rounded-2xl border border-primary/20 overflow-hidden"
+      className="relative rounded-2xl border border-primary/30 overflow-hidden bg-black/60 backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)]"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
     >
+      {/* Glassmorphism gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10 pointer-events-none" />
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
       {/* Profile Header */}
       <div className="p-4 border-b border-border/30">
         <div className="flex items-center gap-4">
