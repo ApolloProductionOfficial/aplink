@@ -458,26 +458,42 @@ const Index = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
               >
-                <div className={`bg-black/60 backdrop-blur-2xl rounded-2xl p-5 md:p-6 space-y-4 relative overflow-hidden border border-primary/20 shadow-[0_8px_32px_rgba(0,0,0,0.6)] transition-all duration-1000 ease-in-out ${
+                <div className={`bg-black/40 backdrop-blur-2xl rounded-2xl p-5 md:p-6 space-y-4 relative overflow-hidden border border-primary/40 shadow-[0_8px_32px_rgba(6,182,212,0.15)] transition-all duration-1000 ease-in-out ${
                   formHighlight 
                     ? 'ring-2 ring-primary/80 shadow-[0_0_60px_rgba(6,182,212,0.4)]' 
                     : 'ring-0 ring-transparent'
                 }`}>
-                  {/* Subtle inner glow */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10 pointer-events-none rounded-2xl" />
-                  {/* Animated border on highlight */}
-                  <div className={`absolute inset-0 pointer-events-none transition-opacity duration-1000 ease-in-out ${
+                  {/* Glassmorphism gradient overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-primary/15 pointer-events-none rounded-2xl" />
+                  
+                  {/* Animated shimmer border top - always visible */}
+                  <div 
+                    className="absolute top-0 left-0 right-0 h-[2px] animate-shimmer rounded-t-2xl"
+                    style={{
+                      background: 'linear-gradient(90deg, transparent, rgba(6,182,212,0.6), transparent, rgba(6,182,212,0.4), transparent)',
+                      backgroundSize: '200% 100%',
+                    }}
+                  />
+                  
+                  {/* Animated shimmer border bottom */}
+                  <div 
+                    className="absolute bottom-0 left-0 right-0 h-[1px] animate-shimmer rounded-b-2xl"
+                    style={{
+                      background: 'linear-gradient(90deg, transparent, rgba(6,182,212,0.4), transparent)',
+                      backgroundSize: '200% 100%',
+                      animationDelay: '4s',
+                    }}
+                  />
+                  
+                  {/* Subtle side glow */}
+                  <div className="absolute inset-y-0 left-0 w-[1px] bg-gradient-to-b from-transparent via-primary/30 to-transparent rounded-l-2xl" />
+                  <div className="absolute inset-y-0 right-0 w-[1px] bg-gradient-to-b from-transparent via-primary/30 to-transparent rounded-r-2xl" />
+                  
+                  {/* Enhanced highlight effect */}
+                  <div className={`absolute inset-0 pointer-events-none transition-opacity duration-1000 ease-in-out rounded-2xl ${
                     formHighlight ? 'opacity-100' : 'opacity-0'
                   }`}>
                     <div className="absolute inset-0 rounded-2xl border border-primary/50" />
-                    <div 
-                      className="absolute inset-0 rounded-2xl"
-                      style={{
-                        background: 'linear-gradient(90deg, transparent, rgba(6,182,212,0.3), transparent)',
-                        backgroundSize: '200% 100%',
-                        animation: formHighlight ? 'shimmer 4s ease-in-out infinite' : 'none'
-                      }}
-                    />
                   </div>
                   <Input
                     type="text"
