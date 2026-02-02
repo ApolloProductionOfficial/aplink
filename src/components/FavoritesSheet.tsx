@@ -191,10 +191,13 @@ const FavoritesSheet = ({ open, onOpenChange }: FavoritesSheetProps) => {
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent 
         side="bottom" 
-        className="h-[70vh] rounded-t-3xl bg-card/95 backdrop-blur-xl border-t border-primary/30"
+        className="h-[70vh] rounded-t-3xl bg-black/60 backdrop-blur-2xl border-t border-primary/30 overflow-hidden"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
+        {/* Glassmorphism gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-primary/5 pointer-events-none" />
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
         {/* Swipe indicator */}
         <div className="absolute top-2 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-muted-foreground/30 rounded-full" />
         
