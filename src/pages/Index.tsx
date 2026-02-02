@@ -466,16 +466,19 @@ const Index = () => {
                   {/* Glassmorphism gradient overlay */}
                   <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-primary/15 pointer-events-none rounded-2xl" />
                   
-                  {/* Slow pulsing border glow - all sides */}
-                  <div 
-                    className="absolute inset-0 rounded-2xl border border-primary/50 animate-pulse-glow pointer-events-none"
-                  />
-                  
-                  {/* Corner accents with slow pulse */}
-                  <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-primary/60 rounded-tl-2xl animate-pulse-glow" />
-                  <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-primary/60 rounded-tr-2xl animate-pulse-glow" style={{ animationDelay: '1s' }} />
-                  <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-primary/60 rounded-bl-2xl animate-pulse-glow" style={{ animationDelay: '2s' }} />
-                  <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-primary/60 rounded-br-2xl animate-pulse-glow" style={{ animationDelay: '3s' }} />
+                  {/* Animated glass shine effect */}
+                  <div className="absolute inset-0 overflow-hidden pointer-events-none rounded-2xl">
+                    <div 
+                      className="absolute inset-0 animate-glass-shine"
+                      style={{
+                        background: 'linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 45%, rgba(6,182,212,0.15) 50%, rgba(255,255,255,0.1) 55%, transparent 70%)',
+                        width: '200%',
+                        height: '200%',
+                        top: '-50%',
+                        left: '-50%',
+                      }}
+                    />
+                  </div>
                   
                   {/* Enhanced highlight effect */}
                   <div className={`absolute inset-0 pointer-events-none transition-opacity duration-1000 ease-in-out rounded-2xl ${
