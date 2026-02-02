@@ -1,11 +1,26 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useMemo } from 'react';
+
+/** Detect iOS devices where autoplay is restricted */
+function detectIsIOS(): boolean {
+  const ua = navigator.userAgent;
+  return /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
 
 export const useVoiceNotifications = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const lastPlayedRef = useRef<number>(0);
   const minInterval = 4000; // 4 seconds between voice notifications
+  
+  // Cache iOS detection
+  const isIOS = useMemo(() => detectIsIOS(), []);
 
   const playNotification = useCallback(async (text: string) => {
+    // Skip voice notifications on iOS due to autoplay restrictions
+    if (isIOS) {
+      console.log('[VoiceNotifications] Skipping on iOS - autoplay restricted');
+      return;
+    }
+    
     const now = Date.now();
     if (now - lastPlayedRef.current < minInterval) {
       console.log('[VoiceNotifications] Skipping - too soon since last notification');
