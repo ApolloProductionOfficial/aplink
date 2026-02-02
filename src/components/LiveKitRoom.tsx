@@ -415,16 +415,29 @@ export function LiveKitRoom({
   // Dynamic room options based on fallback mode or iOS Safe Mode
   const roomOptions = useMemo(() => {
     if (isIOSSafeMode) {
-      // iOS Safe Mode: VP8, no simulcast, 720p, mono audio for stability
-      console.log("[LiveKitRoom] Using iOS SAFE MODE (VP8, 720p, no simulcast, mono audio)");
+      // iOS Safe Mode: VP8, no simulcast, 540p, mono audio, keep tracks alive for stability
+      console.log("[LiveKitRoom] Using iOS SAFE MODE (VP8, 540p, no simulcast, mono audio, stopLocalTrackOnUnpublish: false)");
       return {
         adaptiveStream: true,
         dynacast: true,
+        // KEY FIX: Don't stop tracks on unpublish — helps with reconnection
+        stopLocalTrackOnUnpublish: false,
+        // Custom reconnect policy with longer delays for iOS
+        reconnectPolicy: {
+          nextRetryDelayInMs: (context: { retryCount: number; elapsedMs: number }) => {
+            const baseDelay = 1500;
+            const maxDelay = 15000;
+            const delay = Math.min(baseDelay * Math.pow(1.5, context.retryCount), maxDelay);
+            // Give up after 30 seconds
+            if (context.elapsedMs > 30000) return null;
+            return delay;
+          }
+        },
         videoCaptureDefaults: {
           resolution: {
-            width: 1280,
-            height: 720,
-            frameRate: 24, // Lower framerate for iOS stability
+            width: 960,
+            height: 540,
+            frameRate: 20, // Lower framerate for iOS stability
           },
         },
         audioCaptureDefaults: {
@@ -1051,7 +1064,9 @@ function LiveKitContent({
 
   // Track media toggle lock to prevent NegotiationError on iOS
   const isTogglingMediaRef = useRef(false);
-  const TOGGLE_LOCK_DURATION_MS = 1000; // Longer lock for iOS stability
+  // iOS needs longer lock duration to prevent race conditions during SDP negotiation
+  const isIOSSafeModeLocal = useMemo(() => detectIsIOSOrMobileSafari(), []);
+  const TOGGLE_LOCK_DURATION_MS = isIOSSafeModeLocal ? 2000 : 1000;
 
   // iOS Safe Mode detection for this component
   const isIOSSafeModeLive = useMemo(() => detectIsIOSOrMobileSafari(), []);
@@ -1094,19 +1109,30 @@ function LiveKitContent({
     } catch (err: any) {
       diagnostics.logMediaToggle('camera', false, err?.message);
       
-      // NegotiationError (code 13) - retry once after delay
-      if ((err?.code === 13 || err?.name === 'NegotiationError') && !isRoomReconnecting) {
-        console.warn('[LiveKitRoom] NegotiationError on camera toggle, retrying...');
+      // NegotiationError (code 13)
+      if (err?.code === 13 || err?.name === 'NegotiationError') {
+        console.warn('[LiveKitRoom] NegotiationError on camera toggle');
         onNegotiationError?.(err);
-        await new Promise(r => setTimeout(r, 800));
-        try {
-          const currentState = localParticipant?.isCameraEnabled ?? false;
-          await localParticipant?.setCameraEnabled(!currentState);
-          diagnostics.logMediaToggle('camera', true, 'retry');
-        } catch (retryErr: any) {
-          console.error('Failed to toggle camera after retry:', retryErr);
-          diagnostics.logMediaToggle('camera', false, `retry failed: ${retryErr?.message}`);
-          toast.error('Не удалось переключить камеру', { description: 'Попробуйте ещё раз' });
+        
+        // On iOS: DON'T retry automatically - let the connection stabilize
+        if (isIOSSafeModeLive) {
+          console.warn('[LiveKitRoom] iOS: Skipping camera retry, waiting for stable connection');
+          toast.warning('Подождите несколько секунд и попробуйте снова', {
+            description: 'Соединение стабилизируется',
+            duration: 4000,
+          });
+        } else if (!isRoomReconnecting) {
+          // On other platforms: retry once after delay
+          await new Promise(r => setTimeout(r, 800));
+          try {
+            const currentState = localParticipant?.isCameraEnabled ?? false;
+            await localParticipant?.setCameraEnabled(!currentState);
+            diagnostics.logMediaToggle('camera', true, 'retry');
+          } catch (retryErr: any) {
+            console.error('Failed to toggle camera after retry:', retryErr);
+            diagnostics.logMediaToggle('camera', false, `retry failed: ${retryErr?.message}`);
+            toast.error('Не удалось переключить камеру', { description: 'Попробуйте ещё раз' });
+          }
         }
       } else {
         console.error('Failed to toggle camera:', err);
@@ -1155,19 +1181,30 @@ function LiveKitContent({
     } catch (err: any) {
       diagnostics.logMediaToggle('microphone', false, err?.message);
       
-      // NegotiationError (code 13) - retry once after delay
-      if ((err?.code === 13 || err?.name === 'NegotiationError') && !isRoomReconnecting) {
-        console.warn('[LiveKitRoom] NegotiationError on mic toggle, retrying...');
+      // NegotiationError (code 13)
+      if (err?.code === 13 || err?.name === 'NegotiationError') {
+        console.warn('[LiveKitRoom] NegotiationError on mic toggle');
         onNegotiationError?.(err);
-        await new Promise(r => setTimeout(r, 800));
-        try {
-          const currentState = localParticipant?.isMicrophoneEnabled ?? false;
-          await localParticipant?.setMicrophoneEnabled(!currentState);
-          diagnostics.logMediaToggle('microphone', true, 'retry');
-        } catch (retryErr: any) {
-          console.error('Failed to toggle microphone after retry:', retryErr);
-          diagnostics.logMediaToggle('microphone', false, `retry failed: ${retryErr?.message}`);
-          toast.error('Не удалось переключить микрофон', { description: 'Попробуйте ещё раз' });
+        
+        // On iOS: DON'T retry automatically - let the connection stabilize
+        if (isIOSSafeModeLive) {
+          console.warn('[LiveKitRoom] iOS: Skipping mic retry, waiting for stable connection');
+          toast.warning('Подождите несколько секунд и попробуйте снова', {
+            description: 'Соединение стабилизируется',
+            duration: 4000,
+          });
+        } else if (!isRoomReconnecting) {
+          // On other platforms: retry once after delay
+          await new Promise(r => setTimeout(r, 800));
+          try {
+            const currentState = localParticipant?.isMicrophoneEnabled ?? false;
+            await localParticipant?.setMicrophoneEnabled(!currentState);
+            diagnostics.logMediaToggle('microphone', true, 'retry');
+          } catch (retryErr: any) {
+            console.error('Failed to toggle microphone after retry:', retryErr);
+            diagnostics.logMediaToggle('microphone', false, `retry failed: ${retryErr?.message}`);
+            toast.error('Не удалось переключить микрофон', { description: 'Попробуйте ещё раз' });
+          }
         }
       } else {
         console.error('Failed to toggle microphone:', err);
