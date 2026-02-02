@@ -238,16 +238,39 @@ const ProfileCard = ({
 
   return (
     <motion.div 
-      className="relative rounded-2xl border border-primary/30 overflow-hidden bg-black/60 backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)]"
+      className="relative rounded-2xl border border-primary/40 overflow-hidden bg-black/40 backdrop-blur-2xl shadow-[0_8px_32px_rgba(6,182,212,0.15)]"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
     >
-      {/* Glassmorphism gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10 pointer-events-none" />
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+      {/* Glassmorphism gradient overlay - brighter */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-primary/15 pointer-events-none" />
+      
+      {/* Animated shimmer border top */}
+      <div 
+        className="absolute top-0 left-0 right-0 h-[2px] animate-shimmer"
+        style={{
+          background: 'linear-gradient(90deg, transparent, rgba(6,182,212,0.6), transparent, rgba(6,182,212,0.4), transparent)',
+          backgroundSize: '200% 100%',
+        }}
+      />
+      
+      {/* Animated shimmer border bottom */}
+      <div 
+        className="absolute bottom-0 left-0 right-0 h-[1px] animate-shimmer"
+        style={{
+          background: 'linear-gradient(90deg, transparent, rgba(6,182,212,0.4), transparent)',
+          backgroundSize: '200% 100%',
+          animationDelay: '1.5s',
+        }}
+      />
+      
+      {/* Subtle side glow */}
+      <div className="absolute inset-y-0 left-0 w-[1px] bg-gradient-to-b from-transparent via-primary/30 to-transparent" />
+      <div className="absolute inset-y-0 right-0 w-[1px] bg-gradient-to-b from-transparent via-primary/30 to-transparent" />
+      
       {/* Profile Header */}
-      <div className="p-4 border-b border-border/30">
+      <div className="p-4 border-b border-primary/20 relative z-10">
         <div className="flex items-center gap-4">
           <div className="relative">
             <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center ring-2 ring-primary/30 overflow-hidden">
@@ -319,7 +342,7 @@ const ProfileCard = ({
       </div>
       
       {/* Contacts Section */}
-      <div className="p-4">
+      <div className="p-4 relative z-10">
         <div 
           className="flex items-center justify-between mb-3 cursor-pointer"
           onClick={() => setContactsExpanded(!contactsExpanded)}
