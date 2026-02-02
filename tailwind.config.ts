@@ -85,11 +85,20 @@ export default {
             backgroundPosition: "-200% 0",
           },
         },
+        "pulse-glow": {
+          "0%, 100%": {
+            opacity: "0.4",
+          },
+          "50%": {
+            opacity: "0.8",
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        "shimmer": "shimmer 8s linear infinite",
+        "shimmer": "shimmer 12s linear infinite",
+        "pulse-glow": "pulse-glow 4s ease-in-out infinite",
       },
     },
   },

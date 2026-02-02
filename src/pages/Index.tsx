@@ -466,34 +466,22 @@ const Index = () => {
                   {/* Glassmorphism gradient overlay */}
                   <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-primary/15 pointer-events-none rounded-2xl" />
                   
-                  {/* Animated shimmer border top - always visible */}
+                  {/* Slow pulsing border glow - all sides */}
                   <div 
-                    className="absolute top-0 left-0 right-0 h-[2px] animate-shimmer rounded-t-2xl"
-                    style={{
-                      background: 'linear-gradient(90deg, transparent, rgba(6,182,212,0.6), transparent, rgba(6,182,212,0.4), transparent)',
-                      backgroundSize: '200% 100%',
-                    }}
+                    className="absolute inset-0 rounded-2xl border border-primary/50 animate-pulse-glow pointer-events-none"
                   />
                   
-                  {/* Animated shimmer border bottom */}
-                  <div 
-                    className="absolute bottom-0 left-0 right-0 h-[1px] animate-shimmer rounded-b-2xl"
-                    style={{
-                      background: 'linear-gradient(90deg, transparent, rgba(6,182,212,0.4), transparent)',
-                      backgroundSize: '200% 100%',
-                      animationDelay: '4s',
-                    }}
-                  />
-                  
-                  {/* Subtle side glow */}
-                  <div className="absolute inset-y-0 left-0 w-[1px] bg-gradient-to-b from-transparent via-primary/30 to-transparent rounded-l-2xl" />
-                  <div className="absolute inset-y-0 right-0 w-[1px] bg-gradient-to-b from-transparent via-primary/30 to-transparent rounded-r-2xl" />
+                  {/* Corner accents with slow pulse */}
+                  <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-primary/60 rounded-tl-2xl animate-pulse-glow" />
+                  <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-primary/60 rounded-tr-2xl animate-pulse-glow" style={{ animationDelay: '1s' }} />
+                  <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-primary/60 rounded-bl-2xl animate-pulse-glow" style={{ animationDelay: '2s' }} />
+                  <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-primary/60 rounded-br-2xl animate-pulse-glow" style={{ animationDelay: '3s' }} />
                   
                   {/* Enhanced highlight effect */}
                   <div className={`absolute inset-0 pointer-events-none transition-opacity duration-1000 ease-in-out rounded-2xl ${
                     formHighlight ? 'opacity-100' : 'opacity-0'
                   }`}>
-                    <div className="absolute inset-0 rounded-2xl border border-primary/50" />
+                    <div className="absolute inset-0 rounded-2xl border-2 border-primary/70" />
                   </div>
                   <Input
                     type="text"
@@ -514,8 +502,8 @@ const Index = () => {
                     <Button
                       onClick={handleCreateRoom}
                       disabled={!userName.trim()}
-                      className={`flex-1 h-11 md:h-12 text-base md:text-lg bg-primary hover:bg-primary/90 transition-all duration-500 hover:scale-[1.02] active:scale-[0.98] ${
-                        formHighlight ? 'shadow-lg shadow-primary/40' : ''
+                      className={`flex-1 h-11 md:h-12 text-base md:text-lg font-semibold bg-gradient-to-r from-primary via-primary/90 to-cyan-400 hover:from-primary/90 hover:via-primary/80 hover:to-cyan-400/90 text-primary-foreground border border-primary/30 shadow-[0_4px_20px_rgba(6,182,212,0.3)] transition-all duration-500 hover:scale-[1.02] hover:shadow-[0_6px_30px_rgba(6,182,212,0.4)] active:scale-[0.98] ${
+                        formHighlight ? 'shadow-[0_8px_40px_rgba(6,182,212,0.5)]' : ''
                       }`}
                     >
                       <Video className="w-4 h-4 md:w-5 md:h-5 mr-2" />
