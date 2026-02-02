@@ -461,8 +461,6 @@ const Index = () => {
                 }`}>
                   {/* Subtle inner glow */}
                   <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10 pointer-events-none rounded-2xl" />
-                  {/* Mirror reflection effect */}
-                  <div className="absolute inset-0 bg-gradient-to-b from-white/5 via-transparent to-transparent pointer-events-none rounded-2xl" />
                   {/* Animated border on highlight */}
                   <div className={`absolute inset-0 pointer-events-none transition-opacity duration-1000 ease-in-out ${
                     formHighlight ? 'opacity-100' : 'opacity-0'
