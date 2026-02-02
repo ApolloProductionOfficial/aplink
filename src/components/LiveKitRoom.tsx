@@ -40,6 +40,8 @@ import {
   Presentation,
   PictureInPicture,
   RefreshCw,
+  Circle,
+  MoreHorizontal,
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
@@ -50,10 +52,12 @@ import { InCallChat } from "@/components/InCallChat";
 import { VirtualBackgroundSelector } from "@/components/VirtualBackgroundSelector";
 import { EmojiReactions } from "@/components/EmojiReactions";
 import { CallTimer } from "@/components/CallTimer";
+import { CallDiagnosticsPanel } from "@/components/CallDiagnosticsPanel";
 import { useRaiseHand } from "@/hooks/useRaiseHand";
 import { useNoiseSuppression } from "@/hooks/useNoiseSuppression";
 import { useVoiceNotifications } from "@/hooks/useVoiceNotifications";
 import { useVoiceCommands } from "@/hooks/useVoiceCommands";
+import { useCallDiagnostics } from "@/hooks/useCallDiagnostics";
 import { CollaborativeWhiteboard } from "@/components/CollaborativeWhiteboard";
 import { DrawingOverlay } from "@/components/DrawingOverlay";
 import { AudioProblemDetector } from "@/components/AudioProblemDetector";
@@ -66,6 +70,17 @@ import { useNativePiP } from "@/hooks/useNativePiP";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useActiveCall } from "@/contexts/ActiveCallContext";
 import { toast } from "sonner";
+
+// ====== iOS DETECTION ======
+
+/** Detect if current device is iOS (iPhone/iPad) or Safari on mobile */
+function detectIsIOSOrMobileSafari(): boolean {
+  const ua = navigator.userAgent;
+  const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
+  const isMobileDevice = /Mobi|Android/i.test(ua) || isIOS;
+  return isIOS || (isSafari && isMobileDevice);
+}
 
 // ====== TOKEN UTILITIES ======
 
@@ -392,11 +407,16 @@ export function LiveKitRoom({
 
   // Loading phrases are now in ConnectionLoadingScreen component
 
-  // Dynamic room options based on fallback mode
+  // iOS Safe Mode detection - enable automatically for iOS/Safari mobile
+  const isIOSSafeMode = useMemo(() => {
+    return useFallbackVideoProfile || detectIsIOSOrMobileSafari();
+  }, [useFallbackVideoProfile]);
+
+  // Dynamic room options based on fallback mode or iOS Safe Mode
   const roomOptions = useMemo(() => {
-    if (useFallbackVideoProfile) {
-      // Stable fallback profile - VP8, no simulcast, lower resolution
-      console.log("[LiveKitRoom] Using FALLBACK video profile (VP8, 720p, no simulcast)");
+    if (isIOSSafeMode) {
+      // iOS Safe Mode: VP8, no simulcast, 720p, mono audio for stability
+      console.log("[LiveKitRoom] Using iOS SAFE MODE (VP8, 720p, no simulcast, mono audio)");
       return {
         adaptiveStream: true,
         dynacast: true,
@@ -404,7 +424,7 @@ export function LiveKitRoom({
           resolution: {
             width: 1280,
             height: 720,
-            frameRate: 30,
+            frameRate: 24, // Lower framerate for iOS stability
           },
         },
         audioCaptureDefaults: {
@@ -412,18 +432,18 @@ export function LiveKitRoom({
           echoCancellation: true,
           noiseSuppression: true,
           sampleRate: 48000,
-          channelCount: 2,
+          channelCount: 1, // Mono for iOS stability
         },
         publishDefaults: {
-          simulcast: false, // Disable simulcast for stability
-          videoCodec: 'vp8' as const, // More compatible codec
+          simulcast: false, // Disable simulcast to reduce renegotiations
+          videoCodec: 'vp8' as const, // VP8 is more stable on iOS Safari
           dtx: true,
           red: true,
         },
       };
     }
     
-    // Default HD profile
+    // Default HD profile for desktop/modern browsers
     return {
       adaptiveStream: true,
       dynacast: true,
@@ -454,7 +474,7 @@ export function LiveKitRoom({
         ],
       },
     };
-  }, [useFallbackVideoProfile]);
+  }, [isIOSSafeMode]);
 
   // Serialize error properly for logging (Error objects serialize to {} by default)
   const serializeError = useCallback((err: any): string => {
@@ -551,6 +571,8 @@ export function LiveKitRoom({
           connectionIndicator={connectionIndicator}
           isMaximizing={isMaximizing}
           onNegotiationError={handleNegotiationError}
+          isIOSSafeMode={isIOSSafeMode}
+          roomName={roomName}
         />
       </LayoutContextProvider>
     </LKRoom>
@@ -568,6 +590,8 @@ interface LiveKitContentProps {
   connectionIndicator?: React.ReactNode;
   isMaximizing?: boolean;
   onNegotiationError?: (error: any) => void;
+  isIOSSafeMode: boolean;
+  roomName: string;
 }
 
 function LiveKitContent({ 
@@ -581,6 +605,8 @@ function LiveKitContent({
   connectionIndicator,
   isMaximizing = false,
   onNegotiationError,
+  isIOSSafeMode,
+  roomName,
 }: LiveKitContentProps) {
   const room = useRoomContext();
   const participants = useParticipants();
@@ -590,6 +616,13 @@ function LiveKitContent({
   
   // Get reconnection state from context
   const { isRoomReconnecting, setIsRoomReconnecting } = useActiveCall();
+  
+  // Initialize diagnostics hook
+  const diagnostics = useCallDiagnostics({
+    room,
+    roomName,
+    participantName,
+  });
   
   // Audio playback permission - handles browser autoplay blocking
   const { mergedProps: startAudioProps, canPlayAudio } = useStartAudio({ room, props: {} });
@@ -1018,9 +1051,12 @@ function LiveKitContent({
 
   // Track media toggle lock to prevent NegotiationError on iOS
   const isTogglingMediaRef = useRef(false);
-  const TOGGLE_LOCK_DURATION_MS = 800; // Longer lock to ensure negotiation completes
+  const TOGGLE_LOCK_DURATION_MS = 1000; // Longer lock for iOS stability
 
-  // Toggle camera with lock to prevent concurrent negotiations
+  // iOS Safe Mode detection for this component
+  const isIOSSafeModeLive = useMemo(() => detectIsIOSOrMobileSafari(), []);
+
+  // Toggle camera with iOS-safe mute/unmute approach
   const toggleCamera = useCallback(async () => {
     // Block if reconnecting
     if (isRoomReconnecting) {
@@ -1032,22 +1068,44 @@ function LiveKitContent({
       console.log('[LiveKitRoom] Media toggle in progress, skipping camera toggle');
       return;
     }
+    
     try {
       isTogglingMediaRef.current = true;
-      // Use actual state from localParticipant to avoid stale closure
+      diagnostics.addEvent('TOGGLE_CAMERA', 'start');
+      
+      const cameraPublication = localParticipant?.getTrackPublication(Track.Source.Camera);
       const currentState = localParticipant?.isCameraEnabled ?? false;
-      await localParticipant?.setCameraEnabled(!currentState);
+      
+      // iOS Safe Mode: use mute/unmute if track already exists to avoid renegotiation
+      if (isIOSSafeModeLive && cameraPublication?.track) {
+        if (cameraPublication.isMuted) {
+          await cameraPublication.unmute();
+          console.log('[LiveKitRoom] iOS: Camera unmuted');
+        } else {
+          await cameraPublication.mute();
+          console.log('[LiveKitRoom] iOS: Camera muted');
+        }
+        diagnostics.logMediaToggle('camera', true);
+      } else {
+        // Standard approach: enable/disable
+        await localParticipant?.setCameraEnabled(!currentState);
+        diagnostics.logMediaToggle('camera', true);
+      }
     } catch (err: any) {
-      // NegotiationError (code 13) - retry once after delay, but only if not reconnecting
+      diagnostics.logMediaToggle('camera', false, err?.message);
+      
+      // NegotiationError (code 13) - retry once after delay
       if ((err?.code === 13 || err?.name === 'NegotiationError') && !isRoomReconnecting) {
         console.warn('[LiveKitRoom] NegotiationError on camera toggle, retrying...');
         onNegotiationError?.(err);
-        await new Promise(r => setTimeout(r, 600));
+        await new Promise(r => setTimeout(r, 800));
         try {
           const currentState = localParticipant?.isCameraEnabled ?? false;
           await localParticipant?.setCameraEnabled(!currentState);
-        } catch (retryErr) {
+          diagnostics.logMediaToggle('camera', true, 'retry');
+        } catch (retryErr: any) {
           console.error('Failed to toggle camera after retry:', retryErr);
+          diagnostics.logMediaToggle('camera', false, `retry failed: ${retryErr?.message}`);
           toast.error('Не удалось переключить камеру', { description: 'Попробуйте ещё раз' });
         }
       } else {
@@ -1055,12 +1113,11 @@ function LiveKitContent({
         toast.error('Ошибка камеры');
       }
     } finally {
-      // Release lock after a longer delay to allow negotiation to complete
       setTimeout(() => { isTogglingMediaRef.current = false; }, TOGGLE_LOCK_DURATION_MS);
     }
-  }, [localParticipant, isRoomReconnecting, onNegotiationError]);
+  }, [localParticipant, isRoomReconnecting, onNegotiationError, isIOSSafeModeLive, diagnostics]);
 
-  // Toggle microphone with lock to prevent concurrent negotiations
+  // Toggle microphone with iOS-safe mute/unmute approach
   const toggleMicrophone = useCallback(async () => {
     // Block if reconnecting
     if (isRoomReconnecting) {
@@ -1072,21 +1129,44 @@ function LiveKitContent({
       console.log('[LiveKitRoom] Media toggle in progress, skipping mic toggle');
       return;
     }
+    
     try {
       isTogglingMediaRef.current = true;
+      diagnostics.addEvent('TOGGLE_MIC', 'start');
+      
+      const micPublication = localParticipant?.getTrackPublication(Track.Source.Microphone);
       const currentState = localParticipant?.isMicrophoneEnabled ?? false;
-      await localParticipant?.setMicrophoneEnabled(!currentState);
+      
+      // iOS Safe Mode: use mute/unmute if track already exists to avoid renegotiation
+      if (isIOSSafeModeLive && micPublication?.track) {
+        if (micPublication.isMuted) {
+          await micPublication.unmute();
+          console.log('[LiveKitRoom] iOS: Microphone unmuted');
+        } else {
+          await micPublication.mute();
+          console.log('[LiveKitRoom] iOS: Microphone muted');
+        }
+        diagnostics.logMediaToggle('microphone', true);
+      } else {
+        // Standard approach: enable/disable
+        await localParticipant?.setMicrophoneEnabled(!currentState);
+        diagnostics.logMediaToggle('microphone', true);
+      }
     } catch (err: any) {
+      diagnostics.logMediaToggle('microphone', false, err?.message);
+      
       // NegotiationError (code 13) - retry once after delay
       if ((err?.code === 13 || err?.name === 'NegotiationError') && !isRoomReconnecting) {
         console.warn('[LiveKitRoom] NegotiationError on mic toggle, retrying...');
         onNegotiationError?.(err);
-        await new Promise(r => setTimeout(r, 600));
+        await new Promise(r => setTimeout(r, 800));
         try {
           const currentState = localParticipant?.isMicrophoneEnabled ?? false;
           await localParticipant?.setMicrophoneEnabled(!currentState);
-        } catch (retryErr) {
+          diagnostics.logMediaToggle('microphone', true, 'retry');
+        } catch (retryErr: any) {
           console.error('Failed to toggle microphone after retry:', retryErr);
+          diagnostics.logMediaToggle('microphone', false, `retry failed: ${retryErr?.message}`);
           toast.error('Не удалось переключить микрофон', { description: 'Попробуйте ещё раз' });
         }
       } else {
@@ -1096,7 +1176,7 @@ function LiveKitContent({
     } finally {
       setTimeout(() => { isTogglingMediaRef.current = false; }, TOGGLE_LOCK_DURATION_MS);
     }
-  }, [localParticipant, isRoomReconnecting, onNegotiationError]);
+  }, [localParticipant, isRoomReconnecting, onNegotiationError, isIOSSafeModeLive, diagnostics]);
 
   // Toggle screen share with lock
   const toggleScreenShare = useCallback(async () => {
@@ -1673,7 +1753,7 @@ function LiveKitContent({
         </>
       )}
 
-      {/* Top Header Panel - soft ultra-rounded with slide animation */}
+      {/* Top Header Panel - glassmorphism style */}
       {headerButtons && (
         <div 
           className={cn(
@@ -1682,11 +1762,18 @@ function LiveKitContent({
             showTopPanel 
               ? "translate-y-0 opacity-100 scale-100" 
               : isMaximizing 
-                ? "opacity-0 scale-95" // No translate-y when maximizing to prevent "fly out"
+                ? "opacity-0 scale-95"
                 : "-translate-y-8 opacity-0 scale-90 pointer-events-none"
           )}
         >
-          <div className="flex items-center gap-1.5 sm:gap-2.5 px-2 sm:px-4 py-2 sm:py-2.5 rounded-[2rem] sm:rounded-[2.5rem] bg-transparent backdrop-blur-[2px] border border-white/[0.1] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)]">
+          <div className="flex items-center gap-1.5 sm:gap-2.5 px-2 sm:px-4 py-2 sm:py-2.5 rounded-[2rem] sm:rounded-[2.5rem] bg-black/40 backdrop-blur-2xl border border-white/[0.1] shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
+            {/* Diagnostics button */}
+            <CallDiagnosticsPanel
+              state={diagnostics.state}
+              onSendReport={diagnostics.sendReport}
+              isIOSSafeMode={isIOSSafeMode}
+            />
+
             {/* Native PiP button in header */}
             {isPiPSupported && (
               <MobileTooltip content={isPiPActive ? "Выйти из PiP" : "Picture-in-Picture"} side="bottom">
@@ -1724,7 +1811,7 @@ function LiveKitContent({
             {/* Divider */}
             <div className="w-px h-5 bg-white/10" />
 
-            {/* Connection indicator - styled more beautifully */}
+            {/* Connection indicator */}
             {connectionIndicator}
           </div>
         </div>
@@ -1874,7 +1961,7 @@ function LiveKitContent({
         </div>
       )}
 
-      {/* Bottom Control Bar - Responsive: smaller on mobile */}
+      {/* Bottom Control Bar - Responsive with glassmorphism */}
       <div 
         className={cn(
           "absolute bottom-2 sm:bottom-4 left-1/2 -translate-x-1/2 z-50 w-full px-2 sm:px-0 sm:w-auto",
@@ -1882,11 +1969,11 @@ function LiveKitContent({
           showBottomPanel 
             ? "translate-y-0 opacity-100 scale-100" 
             : isMaximizing
-              ? "opacity-0 scale-95" // No translate-y when maximizing to prevent "fly out"
+              ? "opacity-0 scale-95"
               : "translate-y-12 opacity-0 scale-90 pointer-events-none"
         )}
       >
-        <div className="flex items-center justify-center gap-1.5 sm:gap-2.5 px-3 sm:px-5 py-2.5 sm:py-3.5 rounded-2xl sm:rounded-[2.5rem] bg-transparent backdrop-blur-[2px] border border-white/[0.1] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)] flex-wrap sm:flex-nowrap max-w-full overflow-x-auto">{/* Camera toggle */}
+        <div className="flex items-center justify-center gap-1.5 sm:gap-2.5 px-3 sm:px-5 py-2.5 sm:py-3.5 rounded-2xl sm:rounded-[2.5rem] bg-black/40 backdrop-blur-2xl border border-white/[0.1] shadow-[0_8px_32px_rgba(0,0,0,0.4)] flex-wrap sm:flex-nowrap max-w-full overflow-x-auto">
           {/* Camera toggle */}
           <Tooltip>
             <TooltipTrigger asChild>
@@ -1912,36 +1999,6 @@ function LiveKitContent({
               <p>{isCameraEnabled ? "Выключить камеру (V)" : "Включить камеру (V)"}</p>
             </TooltipContent>
           </Tooltip>
-
-          {/* Mobile Recording Button - quick access */}
-          {isMobile && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  onClick={toggleCallRecording}
-                  variant={isCallRecording ? "destructive" : "outline"}
-                  size="icon"
-                  className={cn(
-                    "w-10 h-10 rounded-full transition-all hover:scale-105 hover:shadow-lg border-white/20 relative",
-                    isCallRecording 
-                      ? "bg-red-500/40 border-red-500/60" 
-                      : "bg-white/15 hover:bg-white/25"
-                  )}
-                >
-                  {isCallRecording && (
-                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
-                  )}
-                  <Video className={cn(
-                    "w-5 h-5 stroke-[1.8]",
-                    isCallRecording ? "text-red-400" : "drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]"
-                  )} />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="top" className="bg-black/80 border-white/10">
-                <p>{isCallRecording ? "Остановить запись" : "Начать запись"}</p>
-              </TooltipContent>
-            </Tooltip>
-          )}
 
           {/* Mic toggle with popup menu */}
           <Popover>
@@ -2085,7 +2142,7 @@ function LiveKitContent({
                     <span className="text-xs whitespace-nowrap">{isScreenShareEnabled ? "Остановить" : "Экран"}</span>
                   </button>
                   
-                  {/* Direct call recording - records participants without dialog */}
+                  {/* Direct call recording - use Circle icon to differentiate from camera */}
                   <button
                     onClick={toggleCallRecording}
                     className={cn(
@@ -2102,8 +2159,8 @@ function LiveKitContent({
                         <span className="text-[8px] font-bold text-white">REC</span>
                       </div>
                     )}
-                    <Video className={cn("w-5 h-5", isCallRecording ? "text-red-400" : "text-primary")} />
-                    <span className="text-xs whitespace-nowrap">{isCallRecording ? "Остановить" : "Запись"}</span>
+                    <Circle className={cn("w-5 h-5", isCallRecording ? "text-red-400 fill-red-400" : "text-red-500")} />
+                    <span className="text-xs whitespace-nowrap">{isCallRecording ? "Стоп" : "REC"}</span>
                   </button>
                 </div>
               </div>
