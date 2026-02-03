@@ -210,16 +210,18 @@ export function CaptionsOverlay({
             <GripHorizontal className="w-4 h-4 text-white/40" />
           </div>
 
-          {/* Language selector */}
-          <Select value={targetLang} onValueChange={handleLanguageChange}>
-            <SelectTrigger className="h-8 w-auto min-w-[100px] bg-black/50 border-white/20 rounded-full text-xs backdrop-blur-md">
-              <SelectValue>
-                <span className="flex items-center gap-1.5">
-                  <span>{selectedLang?.flag}</span>
-                  <span>{selectedLang?.code.toUpperCase()}</span>
-                </span>
-              </SelectValue>
-            </SelectTrigger>
+          {/* Language selector with label */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] text-white/50">Переводить на:</span>
+            <Select value={targetLang} onValueChange={handleLanguageChange}>
+              <SelectTrigger className="h-8 w-auto min-w-[100px] bg-black/50 border-white/20 rounded-full text-xs backdrop-blur-md">
+                <SelectValue>
+                  <span className="flex items-center gap-1.5">
+                    <span>{selectedLang?.flag}</span>
+                    <span>{selectedLang?.code.toUpperCase()}</span>
+                  </span>
+                </SelectValue>
+              </SelectTrigger>
             <SelectContent className="bg-black/90 border-white/20 backdrop-blur-xl rounded-xl">
               {LANGUAGES.map((lang) => (
                 <SelectItem 
@@ -235,6 +237,7 @@ export function CaptionsOverlay({
               ))}
             </SelectContent>
           </Select>
+          </div>
 
           {/* Close button */}
           <Button

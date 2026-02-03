@@ -2222,59 +2222,56 @@ function LiveKitContent({
                 <div className="flex flex-col gap-2">
                   <span className="text-[10px] text-muted-foreground font-medium">Режим отображения</span>
                   <div className="flex items-center gap-2">
-                    <MobileTooltip content="Один участник в фокусе, остальные мини" side="top">
-                      <button
-                        onClick={() => {
-                          setLayoutMode('focus');
-                          toast.success('Фокус-режим');
-                        }}
-                        className={cn(
-                          "flex flex-col items-center gap-1 p-2 rounded-xl transition-all min-w-[56px]",
-                          layoutMode === 'focus' 
-                            ? "bg-primary/20 border border-primary/30" 
-                            : "bg-white/5 hover:bg-white/10"
-                        )}
-                      >
-                        <User className={cn("w-4 h-4", layoutMode === 'focus' && "text-primary")} />
-                        <span className="text-[9px] whitespace-nowrap">Фокус</span>
-                      </button>
-                    </MobileTooltip>
+                    <button
+                      onClick={() => {
+                        setLayoutMode('focus');
+                        toast.success('Фокус-режим');
+                      }}
+                      title="Один участник в фокусе, остальные мини"
+                      className={cn(
+                        "flex flex-col items-center gap-1 p-2 rounded-xl transition-all min-w-[56px]",
+                        layoutMode === 'focus' 
+                          ? "bg-primary/20 border border-primary/30" 
+                          : "bg-white/5 hover:bg-white/10"
+                      )}
+                    >
+                      <User className={cn("w-4 h-4", layoutMode === 'focus' && "text-primary")} />
+                      <span className="text-[9px] whitespace-nowrap">Фокус</span>
+                    </button>
                     
-                    <MobileTooltip content="Все участники равномерно на экране" side="top">
-                      <button
-                        onClick={() => {
-                          setLayoutMode('gallery');
-                          toast.success('Галерейный режим');
-                        }}
-                        className={cn(
-                          "flex flex-col items-center gap-1 p-2 rounded-xl transition-all min-w-[56px]",
-                          layoutMode === 'gallery' 
-                            ? "bg-primary/20 border border-primary/30" 
-                            : "bg-white/5 hover:bg-white/10"
-                        )}
-                      >
-                        <LayoutGrid className={cn("w-4 h-4", layoutMode === 'gallery' && "text-primary")} />
-                        <span className="text-[9px] whitespace-nowrap">Галерея</span>
-                      </button>
-                    </MobileTooltip>
+                    <button
+                      onClick={() => {
+                        setLayoutMode('gallery');
+                        toast.success('Галерейный режим');
+                      }}
+                      title="Все участники равномерно на экране"
+                      className={cn(
+                        "flex flex-col items-center gap-1 p-2 rounded-xl transition-all min-w-[56px]",
+                        layoutMode === 'gallery' 
+                          ? "bg-primary/20 border border-primary/30" 
+                          : "bg-white/5 hover:bg-white/10"
+                      )}
+                    >
+                      <LayoutGrid className={cn("w-4 h-4", layoutMode === 'gallery' && "text-primary")} />
+                      <span className="text-[9px] whitespace-nowrap">Галерея</span>
+                    </button>
                     
-                    <MobileTooltip content="Спикер крупно, зрители списком" side="top">
-                      <button
-                        onClick={() => {
-                          setLayoutMode('webinar');
-                          toast.success('Вебинар-режим');
-                        }}
-                        className={cn(
-                          "flex flex-col items-center gap-1 p-2 rounded-xl transition-all min-w-[56px]",
-                          layoutMode === 'webinar' 
-                            ? "bg-primary/20 border border-primary/30" 
-                            : "bg-white/5 hover:bg-white/10"
-                        )}
-                      >
-                        <Presentation className={cn("w-4 h-4", layoutMode === 'webinar' && "text-primary")} />
-                        <span className="text-[9px] whitespace-nowrap">Вебинар</span>
-                      </button>
-                    </MobileTooltip>
+                    <button
+                      onClick={() => {
+                        setLayoutMode('webinar');
+                        toast.success('Вебинар-режим');
+                      }}
+                      title="Спикер крупно, зрители списком"
+                      className={cn(
+                        "flex flex-col items-center gap-1 p-2 rounded-xl transition-all min-w-[56px]",
+                        layoutMode === 'webinar' 
+                          ? "bg-primary/20 border border-primary/30" 
+                          : "bg-white/5 hover:bg-white/10"
+                      )}
+                    >
+                      <Presentation className={cn("w-4 h-4", layoutMode === 'webinar' && "text-primary")} />
+                      <span className="text-[9px] whitespace-nowrap">Вебинар</span>
+                    </button>
                   </div>
                 </div>
                 
@@ -2282,59 +2279,56 @@ function LiveKitContent({
                 <div className="grid grid-cols-3 gap-2">
                   {/* PiP */}
                   {isPiPSupported && (
-                    <MobileTooltip content="Видео в отдельном мини-окне" side="top">
-                      <button
-                        onClick={togglePiP}
-                        className={cn(
-                          "flex flex-col items-center gap-1 p-2 rounded-xl transition-all",
-                          isPiPActive 
-                            ? "bg-green-500/20 border border-green-500/30" 
-                            : "bg-white/5 hover:bg-white/10"
-                        )}
-                      >
-                        <PictureInPicture className={cn("w-4 h-4", isPiPActive && "text-green-400")} />
-                        <span className="text-[9px] whitespace-nowrap">PiP</span>
-                      </button>
-                    </MobileTooltip>
+                    <button
+                      onClick={togglePiP}
+                      title="Видео в отдельном мини-окне"
+                      className={cn(
+                        "flex flex-col items-center gap-1 p-2 rounded-xl transition-all",
+                        isPiPActive 
+                          ? "bg-green-500/20 border border-green-500/30" 
+                          : "bg-white/5 hover:bg-white/10"
+                      )}
+                    >
+                      <PictureInPicture className={cn("w-4 h-4", isPiPActive && "text-green-400")} />
+                      <span className="text-[9px] whitespace-nowrap">PiP</span>
+                    </button>
                   )}
                   
                   {/* Whiteboard */}
-                  <MobileTooltip content="Совместная доска для рисования" side="top">
-                    <button
-                      onClick={() => {
-                        setShowWhiteboard(true);
-                        setShowDrawingOverlay(false);
-                      }}
-                      className={cn(
-                        "flex flex-col items-center gap-1 p-2 rounded-xl transition-all",
-                        showWhiteboard 
-                          ? "bg-primary/20 border border-primary/30" 
-                          : "bg-white/5 hover:bg-white/10"
-                      )}
-                    >
-                      <LayoutGrid className="w-4 h-4" />
-                      <span className="text-[9px] whitespace-nowrap">Доска</span>
-                    </button>
-                  </MobileTooltip>
+                  <button
+                    onClick={() => {
+                      setShowWhiteboard(true);
+                      setShowDrawingOverlay(false);
+                    }}
+                    title="Совместная доска для рисования"
+                    className={cn(
+                      "flex flex-col items-center gap-1 p-2 rounded-xl transition-all",
+                      showWhiteboard 
+                        ? "bg-primary/20 border border-primary/30" 
+                        : "bg-white/5 hover:bg-white/10"
+                    )}
+                  >
+                    <LayoutGrid className="w-4 h-4" />
+                    <span className="text-[9px] whitespace-nowrap">Доска</span>
+                  </button>
                   
                   {/* Drawing on screen */}
-                  <MobileTooltip content="Рисовать поверх экрана" side="top">
-                    <button
-                      onClick={() => {
-                        setShowDrawingOverlay(true);
-                        setShowWhiteboard(false);
-                      }}
-                      className={cn(
-                        "flex flex-col items-center gap-1 p-2 rounded-xl transition-all",
-                        showDrawingOverlay 
-                          ? "bg-primary/20 border border-primary/30" 
-                          : "bg-white/5 hover:bg-white/10"
-                      )}
-                    >
-                      <Pencil className="w-4 h-4" />
-                      <span className="text-[9px] whitespace-nowrap">Рисовать</span>
-                    </button>
-                  </MobileTooltip>
+                  <button
+                    onClick={() => {
+                      setShowDrawingOverlay(true);
+                      setShowWhiteboard(false);
+                    }}
+                    title="Рисовать поверх экрана"
+                    className={cn(
+                      "flex flex-col items-center gap-1 p-2 rounded-xl transition-all",
+                      showDrawingOverlay 
+                        ? "bg-primary/20 border border-primary/30" 
+                        : "bg-white/5 hover:bg-white/10"
+                    )}
+                  >
+                    <Pencil className="w-4 h-4" />
+                    <span className="text-[9px] whitespace-nowrap">Рисовать</span>
+                  </button>
                   
                 </div>
                 
@@ -2355,7 +2349,22 @@ function LiveKitContent({
             </PopoverContent>
           </Popover>
 
-          {/* Raise Hand - quick access */}
+          {/* Chat toggle button - FIRST */}
+          <InCallChat
+            room={room}
+            participantName={participantName}
+            isOpen={showChat}
+            onToggle={() => setShowChat(!showChat)}
+            buttonOnly
+          />
+
+          {/* Emoji Reactions - second */}
+          <EmojiReactions
+            room={room}
+            participantName={participantName}
+          />
+
+          {/* Raise Hand - third */}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -2376,21 +2385,6 @@ function LiveKitContent({
               <p>{isHandRaised ? "Опустить руку" : "Поднять руку"}</p>
             </TooltipContent>
           </Tooltip>
-
-          {/* Emoji Reactions - quick access */}
-          <EmojiReactions
-            room={room}
-            participantName={participantName}
-          />
-
-          {/* Chat toggle button - buttonOnly mode for bottom panel */}
-          <InCallChat
-            room={room}
-            participantName={participantName}
-            isOpen={showChat}
-            onToggle={() => setShowChat(!showChat)}
-            buttonOnly
-          />
 
           {/* Divider */}
           <div className="w-px h-8 bg-white/10 mx-0.5" />
