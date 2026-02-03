@@ -60,6 +60,7 @@ import { useVoiceCommands } from "@/hooks/useVoiceCommands";
 import { useCallDiagnostics } from "@/hooks/useCallDiagnostics";
 import { CollaborativeWhiteboard } from "@/components/CollaborativeWhiteboard";
 import { DrawingOverlay } from "@/components/DrawingOverlay";
+import { CallMenuHint } from "@/components/CallMenuHint";
 import { AudioProblemDetector } from "@/components/AudioProblemDetector";
 import { FocusVideoLayout } from "@/components/FocusVideoLayout";
 import { GalleryVideoLayout } from "@/components/GalleryVideoLayout";
@@ -2273,56 +2274,59 @@ function LiveKitContent({
                 <div className="grid grid-cols-3 gap-2">
                   {/* PiP */}
                   {isPiPSupported && (
-                    <button
-                      onClick={togglePiP}
-                      title="Видео в отдельном мини-окне"
-                      className={cn(
-                        "flex flex-col items-center gap-1 p-2 rounded-xl transition-all",
-                        isPiPActive 
-                          ? "bg-green-500/20 border border-green-500/30" 
-                          : "bg-white/5 hover:bg-white/10"
-                      )}
-                    >
-                      <PictureInPicture className={cn("w-4 h-4", isPiPActive && "text-green-400")} />
-                      <span className="text-[9px] whitespace-nowrap">PiP</span>
-                    </button>
+                    <CallMenuHint hint="Видео в отдельном мини-окне" side="top">
+                      <button
+                        onClick={togglePiP}
+                        className={cn(
+                          "flex flex-col items-center gap-1 p-2 rounded-xl transition-all",
+                          isPiPActive 
+                            ? "bg-green-500/20 border border-green-500/30" 
+                            : "bg-white/5 hover:bg-white/10"
+                        )}
+                      >
+                        <PictureInPicture className={cn("w-4 h-4", isPiPActive && "text-green-400")} />
+                        <span className="text-[9px] whitespace-nowrap">PiP</span>
+                      </button>
+                    </CallMenuHint>
                   )}
                   
                   {/* Whiteboard */}
-                  <button
-                    onClick={() => {
-                      setShowWhiteboard(true);
-                      setShowDrawingOverlay(false);
-                    }}
-                    title="Совместная доска для рисования"
-                    className={cn(
-                      "flex flex-col items-center gap-1 p-2 rounded-xl transition-all",
-                      showWhiteboard 
-                        ? "bg-primary/20 border border-primary/30" 
-                        : "bg-white/5 hover:bg-white/10"
-                    )}
-                  >
-                    <LayoutGrid className="w-4 h-4" />
-                    <span className="text-[9px] whitespace-nowrap">Доска</span>
-                  </button>
+                  <CallMenuHint hint="Совместная доска для рисования" side="top">
+                    <button
+                      onClick={() => {
+                        setShowWhiteboard(true);
+                        setShowDrawingOverlay(false);
+                      }}
+                      className={cn(
+                        "flex flex-col items-center gap-1 p-2 rounded-xl transition-all",
+                        showWhiteboard 
+                          ? "bg-primary/20 border border-primary/30" 
+                          : "bg-white/5 hover:bg-white/10"
+                      )}
+                    >
+                      <LayoutGrid className="w-4 h-4" />
+                      <span className="text-[9px] whitespace-nowrap">Доска</span>
+                    </button>
+                  </CallMenuHint>
                   
                   {/* Drawing on screen */}
-                  <button
-                    onClick={() => {
-                      setShowDrawingOverlay(true);
-                      setShowWhiteboard(false);
-                    }}
-                    title="Рисовать поверх экрана"
-                    className={cn(
-                      "flex flex-col items-center gap-1 p-2 rounded-xl transition-all",
-                      showDrawingOverlay 
-                        ? "bg-primary/20 border border-primary/30" 
-                        : "bg-white/5 hover:bg-white/10"
-                    )}
-                  >
-                    <Pencil className="w-4 h-4" />
-                    <span className="text-[9px] whitespace-nowrap">Рисовать</span>
-                  </button>
+                  <CallMenuHint hint="Рисовать поверх экрана" side="top">
+                    <button
+                      onClick={() => {
+                        setShowDrawingOverlay(true);
+                        setShowWhiteboard(false);
+                      }}
+                      className={cn(
+                        "flex flex-col items-center gap-1 p-2 rounded-xl transition-all",
+                        showDrawingOverlay 
+                          ? "bg-primary/20 border border-primary/30" 
+                          : "bg-white/5 hover:bg-white/10"
+                      )}
+                    >
+                      <Pencil className="w-4 h-4" />
+                      <span className="text-[9px] whitespace-nowrap">Рисовать</span>
+                    </button>
+                  </CallMenuHint>
                   
                 </div>
                 

@@ -9,6 +9,7 @@ import {
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { CallMenuHint } from "@/components/CallMenuHint";
 
 interface VirtualBackgroundSelectorProps {
   onSelectBlur: (intensity: number) => void;
@@ -241,26 +242,27 @@ export function VirtualBackgroundSelector({
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          size="icon"
-          title="Виртуальный фон"
-          className={cn(
-            "w-12 h-12 rounded-full border-white/[0.12] transition-all hover:scale-105 [&_svg]:drop-shadow-[0_0_2px_rgba(255,255,255,0.5)] [&_svg]:stroke-[2.5]",
-            hasAnyEffect 
-              ? "bg-primary/20 border-primary/50 hover:bg-primary/30" 
-              : "bg-white/15 hover:bg-white/25"
-          )}
-          disabled={isProcessing || isGenerating}
-        >
-          {isProcessing || isGenerating ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
-          ) : (
-            <Wand2 className="w-5 h-5" />
-          )}
-        </Button>
-      </PopoverTrigger>
+      <CallMenuHint hint="Виртуальный фон" side="top">
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            size="icon"
+            className={cn(
+              "w-12 h-12 rounded-full border-white/[0.12] transition-all hover:scale-105 [&_svg]:drop-shadow-[0_0_2px_rgba(255,255,255,0.5)] [&_svg]:stroke-[2.5]",
+              hasAnyEffect 
+                ? "bg-primary/20 border-primary/50 hover:bg-primary/30" 
+                : "bg-white/15 hover:bg-white/25"
+            )}
+            disabled={isProcessing || isGenerating}
+          >
+            {isProcessing || isGenerating ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <Wand2 className="w-5 h-5" />
+            )}
+          </Button>
+        </PopoverTrigger>
+      </CallMenuHint>
       <PopoverContent 
         className="w-[340px] p-4 bg-black/40 backdrop-blur-2xl border border-white/[0.08] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4),0_0_1px_rgba(255,255,255,0.1)]" 
         side="top"

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
-import { Track, LocalParticipant, RemoteParticipant, ConnectionQuality } from 'livekit-client';
+import { Track, LocalParticipant, RemoteParticipant } from 'livekit-client';
 import { VideoTrack, useParticipants, useTracks } from '@livekit/components-react';
-import { User, VideoOff, Mic, MicOff, Pin, Wifi, WifiOff } from 'lucide-react';
+import { User, VideoOff, Mic, MicOff, Pin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   ContextMenu,
@@ -9,39 +9,9 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 
-/** Get color class for connection quality indicator */
-const getConnectionColor = (quality: ConnectionQuality) => {
-  switch (quality) {
-    case ConnectionQuality.Excellent:
-      return 'bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.6)]';
-    case ConnectionQuality.Good:
-      return 'bg-yellow-500 shadow-[0_0_6px_rgba(234,179,8,0.6)]';
-    case ConnectionQuality.Poor:
-      return 'bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.6)] animate-pulse';
-    default:
-      return 'bg-gray-500';
-  }
-};
-
-/** Get text label for connection quality */
-const getConnectionLabel = (quality: ConnectionQuality) => {
-  switch (quality) {
-    case ConnectionQuality.Excellent:
-      return 'Отличная связь';
-    case ConnectionQuality.Good:
-      return 'Хорошая связь';
-    case ConnectionQuality.Poor:
-      return 'Плохая связь';
-    default:
-      return 'Проверка связи...';
-  }
-};
+// Connection quality indicator completely removed per user request
+// Quality info is available in CallDiagnosticsPanel
 
 interface GalleryVideoLayoutProps {
   localParticipant: LocalParticipant | null;
@@ -168,27 +138,7 @@ export function GalleryVideoLayout({
                     </div>
                   )}
 
-                  {/* Connection quality indicator - just a colored dot with tooltip */}
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div 
-                        className="absolute top-2 left-2 flex items-center justify-center w-5 h-5 rounded-full bg-black/50 backdrop-blur-sm z-10 cursor-help"
-                        title={getConnectionLabel(participant.connectionQuality)}
-                      >
-                        <div className={cn("w-2.5 h-2.5 rounded-full transition-all", getConnectionColor(participant.connectionQuality))} />
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="bg-black/80 border-white/10">
-                      <div className="flex items-center gap-2">
-                        {participant.connectionQuality === ConnectionQuality.Poor ? (
-                          <WifiOff className="w-4 h-4 text-red-400" />
-                        ) : (
-                          <Wifi className="w-4 h-4 text-green-400" />
-                        )}
-                        <span>{getConnectionLabel(participant.connectionQuality)}</span>
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
+                  {/* Connection quality indicator REMOVED per user request */}
 
                   {/* Pin indicator */}
                   {isPinned && (
