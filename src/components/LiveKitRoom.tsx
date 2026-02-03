@@ -1828,14 +1828,8 @@ function LiveKitContent({
             {/* Divider */}
             <div className="w-px h-5 bg-white/10" />
 
-            {/* Timer button */}
+            {/* Timer button with built-in connection quality indicator */}
             <CallTimer room={room} isHost={true} />
-
-            {/* Divider */}
-            <div className="w-px h-5 bg-white/10" />
-
-            {/* Connection indicator */}
-            {connectionIndicator}
           </div>
         </div>
       )}
