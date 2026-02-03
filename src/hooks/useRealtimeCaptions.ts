@@ -40,11 +40,13 @@ export const useRealtimeCaptions = ({
 
   // Process audio and get transcription with fallback and caching
   const processAudioChunk = useCallback(async (audioBlob: Blob) => {
-    // Lower threshold to 1KB for capturing shorter phrases
-    if (!enabled || audioBlob.size < 1000) {
-      console.log('[Captions] Audio too small:', audioBlob.size, 'bytes, skipping');
+    // Lower threshold to 500 bytes for capturing shorter phrases
+    if (!enabled || audioBlob.size < 500) {
+      console.log('[Captions] Audio too small:', audioBlob.size, 'bytes, skipping (min 500)');
       return;
     }
+
+    console.log('[Captions] 🎤 Processing audio chunk:', audioBlob.size, 'bytes, type:', audioBlob.type);
 
     try {
       setIsProcessing(true);
@@ -81,6 +83,7 @@ export const useRealtimeCaptions = ({
       }
 
       // Step 1: Transcribe with ElevenLabs (primary)
+      console.log('[Captions] 📡 Sending to ElevenLabs for transcription...');
       const formData = new FormData();
       formData.append('audio', audioBlob, 'chunk.webm');
 
@@ -91,6 +94,11 @@ export const useRealtimeCaptions = ({
         const result = await supabase.functions.invoke('elevenlabs-transcribe', { body: formData });
         transcribeData = result.data;
         transcribeError = result.error;
+        console.log('[Captions] ElevenLabs response:', { 
+          hasText: !!transcribeData?.text, 
+          textLength: transcribeData?.text?.length,
+          error: transcribeError?.message || transcribeData?.error 
+        });
       } catch (err) {
         console.log('[Captions] ElevenLabs invoke error:', err);
         transcribeError = err;
@@ -131,16 +139,22 @@ export const useRealtimeCaptions = ({
       }
 
       if (!transcribeData?.text) {
-        console.log('[Captions] No transcription from any provider');
+        console.log('[Captions] ⚠️ No transcription from any provider');
+        setIsProcessing(false);
         return;
       }
 
       const originalText = transcribeData.text.trim();
-      if (!originalText || originalText.length < 2) return;
+      if (!originalText || originalText.length < 2) {
+        console.log('[Captions] ⚠️ Transcription too short:', originalText);
+        setIsProcessing(false);
+        return;
+      }
 
-      console.log('[Captions] Transcribed:', originalText);
+      console.log('[Captions] ✅ Transcribed:', originalText);
 
       // Step 2: Correct and translate with AI
+      console.log('[Captions] 🌐 Sending to AI for correction/translation to', targetLang);
       const { data: correctedData, error: correctError } = await supabase.functions.invoke(
         'correct-caption',
         {
@@ -153,12 +167,25 @@ export const useRealtimeCaptions = ({
       );
 
       if (correctError) {
-        console.error('[Captions] Correction error:', correctError);
+        console.error('[Captions] ❌ Correction error:', correctError);
+        // Still show original text even if correction fails
+        const newCaption: Caption = {
+          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          speakerName: participantName,
+          originalText: originalText,
+          translatedText: originalText,
+          targetLang,
+          timestamp: Date.now(),
+        };
+        setCaptions(prev => [...prev.slice(-9), newCaption]);
+        setIsProcessing(false);
         return;
       }
 
       const corrected = correctedData?.corrected || originalText;
       const translated = correctedData?.translated || originalText;
+      
+      console.log('[Captions] ✅ Translated:', translated);
 
       // Save to cache for future use
       await setCachedTranscription(audioBlob, corrected, translated);
