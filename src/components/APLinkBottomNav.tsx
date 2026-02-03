@@ -103,9 +103,9 @@ const APLinkBottomNav = ({ onFavoritesClick, onCreateClick }: APLinkBottomNavPro
                     <button
                       className={`relative flex flex-col items-center justify-center flex-1 h-full transition-all duration-300 text-primary`}
                     >
-                      {/* Glow effect for highlight item */}
+                      {/* Glow effect for highlight item - muted on mobile */}
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-12 h-12 rounded-full blur-xl bg-primary/15 animate-pulse-glow" />
+                        <div className="w-10 h-10 rounded-full blur-lg bg-primary/8" />
                       </div>
                       
                       <div className="relative mb-1 scale-110 hover:scale-125 transition-transform">
@@ -190,15 +190,15 @@ const APLinkBottomNav = ({ onFavoritesClick, onCreateClick }: APLinkBottomNavPro
                   </div>
                 )}
                 
-                {/* Glow effect for highlight item */}
+                {/* Glow effect for highlight item - muted for less brightness */}
                 {isHighlight && (
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-12 h-12 rounded-full blur-xl bg-primary/15 animate-pulse-glow" />
+                    <div className="w-10 h-10 rounded-full blur-lg bg-primary/8" />
                   </div>
                 )}
                 {isAccent && (
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-10 h-10 rounded-full blur-lg bg-primary/8" />
+                    <div className="w-8 h-8 rounded-full blur-md bg-primary/5" />
                   </div>
                 )}
                 

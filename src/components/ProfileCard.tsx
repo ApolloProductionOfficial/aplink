@@ -238,16 +238,16 @@ const ProfileCard = ({
 
   return (
     <motion.div 
-      className="relative rounded-2xl border border-primary/40 overflow-hidden bg-black/40 backdrop-blur-2xl shadow-[0_8px_32px_rgba(6,182,212,0.15)]"
+      className="relative rounded-2xl border border-white/15 md:border-primary/40 overflow-hidden bg-black/40 backdrop-blur-2xl shadow-none md:shadow-[0_8px_32px_rgba(6,182,212,0.15)]"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
     >
-      {/* Glassmorphism gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-primary/15 pointer-events-none rounded-2xl" />
+      {/* Glassmorphism gradient overlay - muted on mobile */}
+      <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-white/5 md:from-primary/10 md:via-primary/5 md:to-primary/15 pointer-events-none rounded-2xl" />
       
-      {/* Animated glass shine effect */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none rounded-2xl">
+      {/* Animated glass shine effect - disabled on mobile */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none rounded-2xl hidden md:block">
         <div 
           className="absolute inset-0 animate-glass-shine"
           style={{

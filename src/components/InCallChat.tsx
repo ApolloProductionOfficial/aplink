@@ -518,9 +518,9 @@ export function InCallChat({ room, participantName, isOpen, onToggle, buttonOnly
     <div
       className={cn(
         "fixed z-[60] bg-black/40 backdrop-blur-2xl border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.5),0_0_1px_rgba(255,255,255,0.1)] flex flex-col overflow-hidden",
-        // Mobile: full-width bottom sheet
+        // Mobile: full-width bottom sheet (reduced height for usability)
         isMobile 
-          ? "inset-x-0 bottom-0 h-[70vh] rounded-t-[1.5rem] animate-slide-up" 
+          ? "inset-x-0 bottom-0 h-[50vh] max-h-[400px] rounded-t-[1.5rem] animate-slide-up" 
           : "w-80 h-[420px] rounded-[1.5rem]",
         isDragging && !isMobile && "cursor-grabbing select-none"
       )}
