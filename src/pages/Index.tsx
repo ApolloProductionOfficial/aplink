@@ -285,11 +285,11 @@ const Index = () => {
 
         {/* Header - glassmorphism style */}
         <header className="fixed top-0 left-0 right-0 z-50 bg-black/60 backdrop-blur-2xl shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
-          {/* Gradient overlay for glass effect */}
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5" />
-          {/* Bottom glow border */}
-          <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
-          <div className="container mx-auto px-4 py-3 md:py-4 flex items-center justify-between">
+          {/* Gradient overlay for glass effect (decorative, must not block clicks) */}
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 pointer-events-none" />
+          {/* Bottom glow border (decorative, must not block clicks) */}
+          <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent pointer-events-none" />
+          <div className="container mx-auto px-4 py-3 md:py-4 flex items-center justify-between relative z-10">
             <div className="flex items-center gap-2 md:gap-3">
               <div className="relative w-10 h-10 md:w-12 md:h-12">
                 <div className="absolute inset-0 rounded-full bg-primary/40 blur-md animate-pulse" />
