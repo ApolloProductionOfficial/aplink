@@ -168,14 +168,14 @@ export function GalleryVideoLayout({
                     </div>
                   )}
 
-                  {/* Connection quality indicator - always visible */}
+                  {/* Connection quality indicator - just a colored dot with tooltip */}
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <div className="absolute top-2 left-2 flex items-center gap-1.5 px-2 py-1 rounded-full bg-black/50 backdrop-blur-sm z-10 cursor-help group/quality">
-                        <div className={cn("w-2 h-2 rounded-full transition-all", getConnectionColor(participant.connectionQuality))} />
-                        <span className="text-[10px] text-white/80 hidden group-hover/quality:inline transition-all">
-                          {getConnectionLabel(participant.connectionQuality)}
-                        </span>
+                      <div 
+                        className="absolute top-2 left-2 flex items-center justify-center w-5 h-5 rounded-full bg-black/50 backdrop-blur-sm z-10 cursor-help"
+                        title={getConnectionLabel(participant.connectionQuality)}
+                      >
+                        <div className={cn("w-2.5 h-2.5 rounded-full transition-all", getConnectionColor(participant.connectionQuality))} />
                       </div>
                     </TooltipTrigger>
                     <TooltipContent side="bottom" className="bg-black/80 border-white/10">

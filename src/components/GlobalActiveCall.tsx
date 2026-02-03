@@ -201,14 +201,13 @@ export function GlobalActiveCall() {
     setReconnectAttempt(0); // Reset reconnect counter on successful connection
     setIsReconnecting(false);
     
-    // Only play sound and show toast on FIRST connection
+    // Only play sound on FIRST connection
     // hasConnectedRef stays true during minimize/maximize to prevent re-triggering
+    // NOTE: Don't show toast on first connection - it interrupts recording prompts
     if (!hasConnectedRef.current) {
       hasConnectedRef.current = true;
       playConnectedSound();
-      toast.success('Подключено', {
-        description: 'Вы успешно подключились к комнате',
-      });
+      // Removed success toast - it was interrupting other important notifications
       // Only call onConnected on first connection
       eventHandlers.onConnected?.();
     } else if (wasReconnecting) {
