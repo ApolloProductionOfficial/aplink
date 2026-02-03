@@ -1,152 +1,136 @@
 
-# План: Исправление интерфейса звонка и субтитров
+# План: Удаление индикатора "Отличная связь" и исправление React Hooks ошибки
 
-## Обнаруженные проблемы
+## Проблема 1: Зелёная кнопка "Отличная связь" в левом верхнем углу
 
-### 1. Субтитры не отображаются (хотя перевод работает)
+### Анализ
+На скриншоте видно зелёную кнопку с Wi-Fi иконкой и текстом "Отличная связь" в верхнем левом углу интерфейса звонка. 
 
-**Анализ по логам:**
-- ElevenLabs успешно транскрибирует речь ✅
-- AI (correct-caption) успешно переводит текст ✅  
-- В консоли видно `[Captions] ✅ Translated: ...` ✅
-- **НО:** текст не появляется на экране — только "Голос обнаружен..."
+После анализа кода найдено несколько источников:
 
-**Причина:**
-AI возвращает JSON обёрнутый в markdown code block:
-```
-```json
-{"corrected":"...", "translated":"..."}
-```
-```
+1. **`src/components/GalleryVideoLayout.tsx`** (строки 171-191):
+   - На каждой плитке участника есть индикатор качества связи
+   - При наведении показывается tooltip с текстом "Отличная связь"
+   - Это **нужный функционал** на плитках участников
 
-Текущий regex в `correct-caption` (`content.match(/\{[\s\S]*\}/)`) должен это обрабатывать, но проблема в **синхронизации состояния**:
-- После `processAudioChunk` вызывается `setCaptions`, но к моменту рендера `captions` всё ещё пустой
-- VAD останавливается и состояние сбрасывается до того, как успевает отобразиться
+2. **`src/pages/MeetingRoom.tsx`** (строки 986-1022):
+   - `connectionIndicatorElement` рендерит только маленькую точку с tooltip
+   - Это то, что должно отображаться в хедере (уже упрощено)
 
-**Решение:**
-1. В `useRealtimeCaptions.ts` — добавить защиту от сброса captions при остановке VAD
-2. Убедиться, что `setIsProcessing(false)` вызывается только в `finally` блоке после успешного добавления caption
-3. Увеличить время жизни captions с 30 до 60 секунд
+3. **Потенциальный источник проблемы**:
+   - Возможно, старый код с кнопкой всё ещё где-то остался
+   - Либо tooltip открывается и остаётся "приклеенным" к экрану
+
+### Решение
+1. Полностью убрать `connectionIndicatorElement` из `MeetingRoom.tsx` (не передавать в context)
+2. Уже есть точка с tooltip рядом с таймером — этого достаточно
+3. Убедиться, что tooltip использует правильные side/align для предотвращения "залипания"
 
 ---
 
-### 2. Порядок кнопок снизу
+## Проблема 2: React Hooks Error "Rendered more hooks than during the previous render"
 
-**Текущий порядок:** [Camera] [Mic] [Screen] | [More] [Hand] [Emoji] [Chat] | [Exit]
+### Анализ
+Эта ошибка возникает когда:
+- Хуки вызываются условно (после `if/return`)
+- Количество хуков меняется между рендерами
+- Компоненты с хуками условно монтируются/размонтируются
 
-**Требуемый порядок:** [Camera] [Mic] [Screen] | [Chat] [Emoji] [Hand] [More] | [Exit]
+### Потенциальные источники в коде:
 
-**Файл:** `src/components/LiveKitRoom.tsx` (строки ~2356-2410)
+1. **`src/components/CaptionsOverlay.tsx`** (строки 54-123):
+   - Хук `useRealtimeCaptions` вызывается на строке 67
+   - Early return `if (!isEnabled) return null;` на строке 123
+   - ✅ Это **корректно** — хуки вызываются ДО return
 
----
+2. **`src/components/LiveKitRoom.tsx`**:
+   - Компонент `LiveKitContent` содержит 15+ хуков (строки 624-700)
+   - Все хуки вызываются безусловно в начале компонента
+   - ✅ Это **корректно**
 
-### 3. Tooltips в меню "Ещё" не показываются
+3. **Возможная проблема — условный рендеринг компонентов с хуками**:
+   - В `LiveKitRoom.tsx` есть early returns (строки 530-559)
+   - Но они происходят ПОСЛЕ всех хуков
+   - ✅ Это **корректно**
 
-**Проблема:** На скриншоте видно меню с кнопками Фокус, Галерея, Вебинар, PiP, Доска, Рисовать — но при наведении нет описания.
+4. **Реальная причина** (на основе паттерна ошибки):
+   - Ошибка происходит в `/room/TEST` — это MeetingRoom
+   - Проблема может быть в динамическом изменении `headerButtonsElement`
+   - Или в `useEffect` с несколькими зависимостями, вызывающими каскадные ререндеры
 
-**Текущее состояние:** Используется `MobileTooltip`, который работает только на десктопе. На мобильных просто рендерит children.
-
-**Проблема в том**, что на десктопе при открытом Popover фокус уходит на Popover и Tooltip не срабатывает внутри него.
-
-**Решение:** Добавить `title` атрибут на каждую кнопку как fallback.
+### Решение
+1. Проверить и исправить `headerButtonsElement` в MeetingRoom.tsx
+2. Убедиться, что все условные компоненты не содержат хуков на верхнем уровне
+3. Вынести любые условные хуки в отдельные компоненты-обёртки
 
 ---
 
 ## Файлы для изменения
 
-### 1. `supabase/functions/correct-caption/index.ts`
-- Улучшить парсинг JSON для обработки markdown code blocks
+### 1. `src/pages/MeetingRoom.tsx`
 
-### 2. `src/hooks/useRealtimeCaptions.ts`
-- Добавить защиту состояния captions
-- Увеличить TTL captions
-- Добавить лог для отладки отображения
+**Изменения:**
+- Удалить `connectionIndicatorElement` полностью (строки 986-1022)
+- Перестать вызывать `setConnectionIndicator()` в useEffect (строка 446)
+- Это устранит дублирование и уберёт потенциально "залипающий" tooltip
 
-### 3. `src/components/LiveKitRoom.tsx`
-- Изменить порядок кнопок: Chat → Emoji → Hand → More
-- Добавить `title` атрибуты как fallback для tooltips в меню
+### 2. `src/components/LiveKitRoom.tsx`
 
-### 4. `src/components/CaptionsOverlay.tsx`
-- Добавить уточняющий текст в UI: "Переводить на:" вместо просто выбора языка
+**Изменения:**
+- Убрать рендер `connectionIndicator` в хедере (строка 1838)
+- Проверить, что индикатор качества уже есть рядом с таймером в `CallTimer` или добавить его напрямую
+
+### 3. `src/contexts/ActiveCallContext.tsx`
+
+**Опционально:**
+- Можно удалить `connectionIndicator` из контекста, если он больше не нужен
 
 ---
 
-## Технические изменения
+## Проверка на hooks safety
 
-### correct-caption/index.ts
-```typescript
-// Улучшенный парсинг JSON
-let result = { corrected: originalText, translated: originalText };
-try {
-  // Remove markdown code block wrapper if present
-  let cleanContent = content.trim();
-  if (cleanContent.startsWith('```json')) {
-    cleanContent = cleanContent.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-  } else if (cleanContent.startsWith('```')) {
-    cleanContent = cleanContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
-  }
-  
-  const jsonMatch = cleanContent.match(/\{[\s\S]*\}/);
-  if (jsonMatch) {
-    result = JSON.parse(jsonMatch[0]);
-  }
-} catch (parseError) {
-  // fallback
-}
+После изменений необходимо убедиться:
+1. Все `useState`, `useRef`, `useEffect` вызываются в начале компонента
+2. Нет хуков после `if (...) return`
+3. Нет условных вызовов хуков типа `condition && useHook()`
+
+---
+
+## Техническая схема изменений
+
+```text
+До изменений (Header):
+┌────────────────────────────────────────────────────────────┐
+│  [Diagnostics]  Room  │  [Buttons]  │  Timer  [●tooltip]   │
+│                       │             │       connectionInd. │
+│  + отдельный connectionIndicatorElement где-то сбоку       │
+└────────────────────────────────────────────────────────────┘
+
+После изменений (Header):
+┌────────────────────────────────────────────────────────────┐
+│  [Diagnostics]  Room  │  [Buttons]  │  Timer  [●]          │
+│                       │             │   ↑ tooltip на hover │
+│                       │             │   с качеством связи  │
+└────────────────────────────────────────────────────────────┘
 ```
 
-### useRealtimeCaptions.ts
-```typescript
-// В onstop не сбрасывать captions
-mediaRecorderRef.current.onstop = () => {
-  // Не трогаем captions здесь - они управляются отдельно
-  if (recordingChunksRef.current.length > 0) {
-    const blob = new Blob(recordingChunksRef.current, { type: recordingMimeTypeRef.current });
-    recordingChunksRef.current = [];
-    if (blob.size >= 2000) {
-      console.log('[Captions] Processing blob, captions count before:', captions.length);
-      processAudioChunk(blob);
-    }
-  }
-};
-```
+---
 
-### LiveKitRoom.tsx (порядок кнопок)
-```tsx
-{/* Новый порядок: Chat → Emoji → Hand → More */}
+## Порядок реализации
 
-{/* Chat toggle button - FIRST */}
-<InCallChat ... />
-
-{/* Emoji Reactions */}
-<EmojiReactions ... />
-
-{/* Raise Hand */}
-<Tooltip>...</Tooltip>
-
-{/* More menu - LAST before divider */}
-<Popover>...</Popover>
-
-{/* Divider */}
-<div className="w-px h-8 bg-white/10 mx-0.5" />
-
-{/* Leave button */}
-```
-
-### Добавить title атрибуты для fallback
-```tsx
-<button
-  onClick={() => setLayoutMode('focus')}
-  title="Один участник в фокусе, остальные мини"
-  className={...}
->
-```
+1. Удалить `connectionIndicatorElement` из MeetingRoom.tsx
+2. Убрать `setConnectionIndicator()` вызов из useEffect
+3. Убрать рендер `{connectionIndicator}` из LiveKitRoom.tsx хедера
+4. Добавить tooltip с качеством связи на точку рядом с таймером (если ещё нет)
+5. Протестировать отсутствие hooks ошибки
+6. Очистить `connectionIndicator` из ActiveCallContext (опционально)
 
 ---
 
 ## Ожидаемый результат
 
-1. **Субтитры будут отображаться** — текст появится сразу после транскрипции
-2. **Правильный порядок кнопок:** Chat (первый) → Emoji → Hand → More (последний перед выходом)
-3. **Tooltips в меню** — описания будут показываться через нативный `title` атрибут
-4. **Понятный UI субтитров** — пользователь увидит "Переводить на: RU" вместо просто "RU"
+- ✅ Зелёная кнопка "Отличная связь" больше не появляется отдельно
+- ✅ Качество связи показывается через точку с tooltip рядом с таймером
+- ✅ На плитках участников в Gallery mode остаётся индикатор качества (как и было)
+- ✅ React hooks ошибка устранена за счёт упрощения структуры компонентов
+- ✅ Интерфейс становится чище и менее нагружен дублирующими элементами
