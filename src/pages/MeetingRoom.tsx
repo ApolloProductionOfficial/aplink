@@ -131,7 +131,6 @@ const MeetingRoomContent = ({ roomId, userName }: MeetingRoomContentProps) => {
     minimize, 
     liveKitRoom, 
     setHeaderButtons, 
-    setConnectionIndicator,
     setEventHandlers,
     // Panel visibility from context
     showTranslator,
@@ -440,11 +439,10 @@ const MeetingRoomContent = ({ roomId, userName }: MeetingRoomContentProps) => {
     };
   }, [userName, roomSlug, user?.id]);
 
-  // Update context with header buttons and connection indicator
+  // Update context with header buttons (connection indicator removed - quality shown elsewhere)
   useEffect(() => {
     setHeaderButtons(headerButtonsElement);
-    setConnectionIndicator(connectionIndicatorElement);
-  }, [isRecording, recordingDuration, isTranscribing, showCaptions, showTranslator, copied, showIPPanel, isAdmin, connectionStatus, connectionQuality, liveKitRoom, setHeaderButtons, setConnectionIndicator]);
+  }, [isRecording, recordingDuration, isTranscribing, showCaptions, showTranslator, copied, showIPPanel, isAdmin, liveKitRoom, setHeaderButtons]);
 
   // =========================================
   // Helper functions - defined after all hooks
@@ -983,43 +981,8 @@ const MeetingRoomContent = ({ roomId, userName }: MeetingRoomContentProps) => {
     </>
   );
 
-  // Connection indicator element - simplified, just a dot with tooltip (quality info in diagnostics panel)
-  const connectionIndicatorElement = connectionStatus === 'connected' ? (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <div className="flex items-center gap-1.5 cursor-help">
-          <span 
-            className={cn(
-              "w-2.5 h-2.5 rounded-full transition-colors duration-700",
-              connectionQuality >= 80 && "bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]",
-              connectionQuality >= 50 && connectionQuality < 80 && "bg-yellow-500 animate-pulse shadow-[0_0_8px_rgba(234,179,8,0.6)]",
-              connectionQuality >= 20 && connectionQuality < 50 && "bg-orange-500 animate-pulse shadow-[0_0_8px_rgba(249,115,22,0.6)]",
-              connectionQuality < 20 && "bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.6)]"
-            )}
-            style={{ animationDuration: '2s' }}
-          />
-        </div>
-      </TooltipTrigger>
-      <TooltipContent side="bottom" className="bg-black/80 border-white/10">
-        <p className="text-xs">
-          {connectionQuality >= 80 && "Отличная связь"}
-          {connectionQuality >= 50 && connectionQuality < 80 && "Хорошая связь"}
-          {connectionQuality >= 20 && connectionQuality < 50 && "Слабая связь"}
-          {connectionQuality < 20 && "Плохая связь"}
-        </p>
-      </TooltipContent>
-    </Tooltip>
-  ) : connectionStatus === 'disconnected' ? (
-    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-red-500/15 via-red-400/10 to-transparent border border-red-500/25 backdrop-blur-sm">
-      <WifiOff className="w-3.5 h-3.5 text-red-400" />
-      <span className="text-xs text-red-400">Отключено</span>
-    </div>
-  ) : connectionStatus === 'reconnecting' ? (
-    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-yellow-500/15 via-yellow-400/10 to-transparent border border-yellow-500/25 backdrop-blur-sm">
-      <RefreshCw className="w-3.5 h-3.5 text-yellow-400 animate-spin" />
-      <span className="text-xs text-yellow-400">Переподключение...</span>
-    </div>
-  ) : null;
+  // Connection indicator element removed - quality is shown on participant tiles in Gallery mode
+  // and in the CallTimer component via the colored dot
 
   return (
     <>
