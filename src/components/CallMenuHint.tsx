@@ -1,4 +1,3 @@
-import { useState, useRef, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 
 interface CallMenuHintProps {
@@ -9,9 +8,9 @@ interface CallMenuHintProps {
 }
 
 /**
- * Lightweight hover-hint component for call menu buttons.
- * Works in all environments (including Telegram WebView) where 
- * native title attributes and Radix tooltips may fail.
+ * CSS-only hover-hint component for call menu buttons.
+ * NO HOOKS - safe for conditional rendering.
+ * Works in all environments (including Telegram WebView).
  */
 export function CallMenuHint({ 
   children, 
@@ -19,20 +18,6 @@ export function CallMenuHint({
   side = 'top',
   className 
 }: CallMenuHintProps) {
-  const [isVisible, setIsVisible] = useState(false);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const showHint = useCallback(() => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    // Small delay to prevent flickering
-    timeoutRef.current = setTimeout(() => setIsVisible(true), 150);
-  }, []);
-
-  const hideHint = useCallback(() => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    setIsVisible(false);
-  }, []);
-
   const positionClasses = {
     top: 'bottom-full left-1/2 -translate-x-1/2 mb-2',
     bottom: 'top-full left-1/2 -translate-x-1/2 mt-2',
@@ -40,38 +25,37 @@ export function CallMenuHint({
     right: 'left-full top-1/2 -translate-y-1/2 ml-2',
   };
 
+  const arrowClasses = {
+    top: 'top-full left-1/2 -translate-x-1/2 -mt-1',
+    bottom: 'bottom-full left-1/2 -translate-x-1/2 -mb-1',
+    left: 'left-full top-1/2 -translate-y-1/2 -ml-1',
+    right: 'right-full top-1/2 -translate-y-1/2 -mr-1',
+  };
+
   return (
-    <div 
-      className={cn("relative inline-flex", className)}
-      onMouseEnter={showHint}
-      onMouseLeave={hideHint}
-      onFocus={showHint}
-      onBlur={hideHint}
-    >
+    <div className={cn("relative inline-flex group", className)}>
       {children}
       
-      {isVisible && (
+      {/* CSS-only tooltip - uses group-hover for visibility */}
+      <div 
+        className={cn(
+          "absolute z-[100] px-2.5 py-1.5 text-xs font-medium text-white bg-black/90 rounded-md shadow-lg whitespace-nowrap pointer-events-none",
+          "opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100",
+          "group-focus-within:opacity-100 group-focus-within:scale-100",
+          "transition-all duration-150",
+          positionClasses[side]
+        )}
+        role="tooltip"
+      >
+        {hint}
+        {/* Arrow */}
         <div 
           className={cn(
-            "absolute z-[100] px-2.5 py-1.5 text-xs font-medium text-white bg-black/90 rounded-md shadow-lg whitespace-nowrap pointer-events-none",
-            "animate-in fade-in-0 zoom-in-95 duration-150",
-            positionClasses[side]
+            "absolute w-2 h-2 bg-black/90 rotate-45",
+            arrowClasses[side]
           )}
-          role="tooltip"
-        >
-          {hint}
-          {/* Arrow */}
-          <div 
-            className={cn(
-              "absolute w-2 h-2 bg-black/90 rotate-45",
-              side === 'top' && "top-full left-1/2 -translate-x-1/2 -mt-1",
-              side === 'bottom' && "bottom-full left-1/2 -translate-x-1/2 -mb-1",
-              side === 'left' && "left-full top-1/2 -translate-y-1/2 -ml-1",
-              side === 'right' && "right-full top-1/2 -translate-y-1/2 -mr-1"
-            )}
-          />
-        </div>
-      )}
+        />
+      </div>
     </div>
   );
 }
