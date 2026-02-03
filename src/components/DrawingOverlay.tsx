@@ -98,23 +98,41 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose, onCanva
   // Broadcast drawing overlay open/close state to other participants
   const broadcastOpenState = useCallback((opened: boolean) => {
     if (!room) return;
-    const data = JSON.stringify({ 
-      type: opened ? 'DRAWING_OVERLAY_OPEN' : 'DRAWING_OVERLAY_CLOSE', 
-      sender: participantName,
-      timestamp: Date.now()
-    });
-    room.localParticipant.publishData(
-      new TextEncoder().encode(data), 
-      { reliable: true }
-    );
-    console.log('[DrawingOverlay] Broadcast open state:', opened);
+    
+    try {
+      const data = JSON.stringify({ 
+        type: opened ? 'DRAWING_OVERLAY_OPEN' : 'DRAWING_OVERLAY_CLOSE', 
+        sender: participantName,
+        timestamp: Date.now()
+      });
+      
+      // Use setTimeout to avoid blocking the UI thread and potential conflicts
+      // with other room operations that might cause reconnection
+      setTimeout(() => {
+        try {
+          room.localParticipant.publishData(
+            new TextEncoder().encode(data), 
+            { reliable: true }
+          );
+          console.log('[DrawingOverlay] Broadcast open state:', opened);
+        } catch (publishErr) {
+          console.warn('[DrawingOverlay] Failed to broadcast open state:', publishErr);
+        }
+      }, 50);
+    } catch (err) {
+      console.warn('[DrawingOverlay] Error preparing broadcast:', err);
+    }
   }, [room, participantName]);
 
-  // Broadcast when overlay opens
+  // Broadcast when overlay opens - with delay to prevent reconnect issues
   useEffect(() => {
     if (isOpen && !hasAnnounceOpenRef.current) {
       hasAnnounceOpenRef.current = true;
-      broadcastOpenState(true);
+      // Delay broadcast to avoid race condition with room state changes
+      const timer = setTimeout(() => {
+        broadcastOpenState(true);
+      }, 100);
+      return () => clearTimeout(timer);
     } else if (!isOpen && hasAnnounceOpenRef.current) {
       hasAnnounceOpenRef.current = false;
       broadcastOpenState(false);

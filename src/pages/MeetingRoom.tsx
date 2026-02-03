@@ -979,27 +979,36 @@ const MeetingRoomContent = ({ roomId, userName }: MeetingRoomContentProps) => {
         </Tooltip>
       )}
       
-      {/* Call Quality Widget */}
-      {liveKitRoom && (
-        <CallQualityWidget room={liveKitRoom} />
-      )}
+      {/* Call Quality Widget - removed, integrated into CallDiagnosticsPanel */}
     </>
   );
 
-  // Connection indicator element
+  // Connection indicator element - simplified, just a dot with tooltip (quality info in diagnostics panel)
   const connectionIndicatorElement = connectionStatus === 'connected' ? (
-    <div className="flex items-center gap-1.5">
-      <span 
-        className={cn(
-          "w-2 h-2 rounded-full transition-colors duration-700",
-          connectionQuality >= 80 && "bg-green-500 animate-pulse",
-          connectionQuality >= 50 && connectionQuality < 80 && "bg-yellow-500 animate-pulse",
-          connectionQuality >= 20 && connectionQuality < 50 && "bg-orange-500 animate-pulse",
-          connectionQuality < 20 && "bg-red-500 animate-pulse"
-        )}
-        style={{ animationDuration: '2s' }}
-      />
-    </div>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div className="flex items-center gap-1.5 cursor-help">
+          <span 
+            className={cn(
+              "w-2.5 h-2.5 rounded-full transition-colors duration-700",
+              connectionQuality >= 80 && "bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]",
+              connectionQuality >= 50 && connectionQuality < 80 && "bg-yellow-500 animate-pulse shadow-[0_0_8px_rgba(234,179,8,0.6)]",
+              connectionQuality >= 20 && connectionQuality < 50 && "bg-orange-500 animate-pulse shadow-[0_0_8px_rgba(249,115,22,0.6)]",
+              connectionQuality < 20 && "bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.6)]"
+            )}
+            style={{ animationDuration: '2s' }}
+          />
+        </div>
+      </TooltipTrigger>
+      <TooltipContent side="bottom" className="bg-black/80 border-white/10">
+        <p className="text-xs">
+          {connectionQuality >= 80 && "Отличная связь"}
+          {connectionQuality >= 50 && connectionQuality < 80 && "Хорошая связь"}
+          {connectionQuality >= 20 && connectionQuality < 50 && "Слабая связь"}
+          {connectionQuality < 20 && "Плохая связь"}
+        </p>
+      </TooltipContent>
+    </Tooltip>
   ) : connectionStatus === 'disconnected' ? (
     <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-red-500/15 via-red-400/10 to-transparent border border-red-500/25 backdrop-blur-sm">
       <WifiOff className="w-3.5 h-3.5 text-red-400" />
@@ -1052,9 +1061,9 @@ const MeetingRoomContent = ({ roomId, userName }: MeetingRoomContentProps) => {
       
       {/* NOTE: Translator, IP Panel, and Captions are now rendered in GlobalActiveCall.tsx */}
 
-      {/* Manual Recording Prompt for users with auto-record disabled */}
+      {/* Manual Recording Prompt - positioned top-right to not obstruct */}
       {showManualRecordPrompt && user && !isRecording && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] glass rounded-xl px-4 py-3 border border-primary/30 animate-slide-up max-w-sm">
+        <div className="fixed top-4 right-4 z-[60] glass rounded-xl px-4 py-3 border border-primary/30 animate-slide-up max-w-sm">
           <div className="flex items-start gap-3">
             <Mic className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
             <div>
