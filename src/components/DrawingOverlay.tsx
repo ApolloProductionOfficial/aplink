@@ -96,8 +96,15 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose, onCanva
   const hasAnnounceOpenRef = useRef(false);
 
   // Broadcast drawing overlay open/close state to other participants
+  // CRITICAL: Uses significant delay to prevent room reconnection issues
   const broadcastOpenState = useCallback((opened: boolean) => {
     if (!room) return;
+    
+    // Check if room is in a valid state to publish data
+    if (room.state !== 'connected') {
+      console.warn('[DrawingOverlay] Room not connected, skipping broadcast');
+      return;
+    }
     
     try {
       const data = JSON.stringify({ 
@@ -106,36 +113,43 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose, onCanva
         timestamp: Date.now()
       });
       
-      // Use setTimeout to avoid blocking the UI thread and potential conflicts
-      // with other room operations that might cause reconnection
+      // Use longer delay to ensure room state is fully stable
+      // This prevents race conditions that cause reconnection
       setTimeout(() => {
         try {
+          // Double-check room state before publishing
+          if (room.state !== 'connected') {
+            console.warn('[DrawingOverlay] Room disconnected before broadcast');
+            return;
+          }
           room.localParticipant.publishData(
             new TextEncoder().encode(data), 
-            { reliable: true }
+            { reliable: false } // Use unreliable to avoid blocking
           );
           console.log('[DrawingOverlay] Broadcast open state:', opened);
         } catch (publishErr) {
+          // Silently ignore broadcast errors - they're not critical
           console.warn('[DrawingOverlay] Failed to broadcast open state:', publishErr);
         }
-      }, 50);
+      }, 150);
     } catch (err) {
       console.warn('[DrawingOverlay] Error preparing broadcast:', err);
     }
   }, [room, participantName]);
 
-  // Broadcast when overlay opens - with delay to prevent reconnect issues
+  // Broadcast when overlay opens - with significant delay to prevent reconnect issues
   useEffect(() => {
     if (isOpen && !hasAnnounceOpenRef.current) {
       hasAnnounceOpenRef.current = true;
-      // Delay broadcast to avoid race condition with room state changes
+      // Use longer delay (300ms) to avoid race condition with room state changes
       const timer = setTimeout(() => {
         broadcastOpenState(true);
-      }, 100);
+      }, 300);
       return () => clearTimeout(timer);
     } else if (!isOpen && hasAnnounceOpenRef.current) {
       hasAnnounceOpenRef.current = false;
-      broadcastOpenState(false);
+      // Use delay for close too
+      setTimeout(() => broadcastOpenState(false), 150);
     }
   }, [isOpen, broadcastOpenState]);
   // Initialize canvas - CRITICAL: Re-acquire context on every isOpen change
