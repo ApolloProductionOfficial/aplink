@@ -35,7 +35,21 @@ const RegistrationBanner = ({ className = '' }: RegistrationBannerProps) => {
   };
 
   return (
-    <div className={`relative glass rounded-2xl p-5 border border-primary/30 ${className}`}>
+    <div className={`relative glass rounded-2xl p-5 border border-primary/30 overflow-hidden ${className}`}>
+      {/* Animated glass shine effect */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none rounded-2xl">
+        <div 
+          className="absolute inset-0 animate-glass-shine"
+          style={{
+            background: 'linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 45%, rgba(6,182,212,0.15) 50%, rgba(255,255,255,0.1) 55%, transparent 70%)',
+            width: '200%',
+            height: '200%',
+            top: '-50%',
+            left: '-50%',
+          }}
+        />
+      </div>
+      
       <button
         onClick={() => setIsVisible(false)}
         className="absolute top-2 right-2 text-muted-foreground hover:text-foreground transition-colors"
