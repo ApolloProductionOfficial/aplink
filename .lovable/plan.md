@@ -1,236 +1,152 @@
 
-# План: Улучшения интерфейса звонка и исправление функций
+# План: Исправление интерфейса звонка и субтитров
 
-## Обзор запросов
+## Обнаруженные проблемы
 
-Пользователь запросил множество улучшений и исправлений для интерфейса видеозвонка. Ниже представлен полный план реализации.
+### 1. Субтитры не отображаются (хотя перевод работает)
 
----
+**Анализ по логам:**
+- ElevenLabs успешно транскрибирует речь ✅
+- AI (correct-caption) успешно переводит текст ✅  
+- В консоли видно `[Captions] ✅ Translated: ...` ✅
+- **НО:** текст не появляется на экране — только "Голос обнаружен..."
 
-## 1. Переместить уведомление "Начать запись" вправо
+**Причина:**
+AI возвращает JSON обёрнутый в markdown code block:
+```
+```json
+{"corrected":"...", "translated":"..."}
+```
+```
 
-**Текущее состояние:** Уведомление появляется в центре сверху (`left-1/2 -translate-x-1/2`)
-
-**Решение:**
-- Файл: `src/pages/MeetingRoom.tsx` (строки ~1054-1086)
-- Изменить позиционирование с `left-1/2 -translate-x-1/2` на `right-4` для правого угла
-
----
-
-## 2. Объединить "Диагностика" и "Качество звонка" в одну кнопку
-
-**Текущее состояние:** 
-- `CallDiagnosticsPanel` - кнопка с иконкой Activity
-- `CallQualityWidget` - отдельная кнопка в хедере (передаётся через `headerButtons`)
-
-**Решение:**
-- Интегрировать данные `CallQualityWidget` внутрь `CallDiagnosticsPanel`
-- Добавить вкладки/секции: "Статус" и "Аналитика качества" с графиками
-- Удалить отдельный `CallQualityWidget` из `headerButtons` в `MeetingRoom.tsx`
-
----
-
-## 3. Убрать кнопку PiP из верхней панели
-
-**Текущее состояние:** Кнопка PiP находится в хедере (строки ~1815-1830 в LiveKitRoom.tsx)
+Текущий regex в `correct-caption` (`content.match(/\{[\s\S]*\}/)`) должен это обрабатывать, но проблема в **синхронизации состояния**:
+- После `processAudioChunk` вызывается `setCaptions`, но к моменту рендера `captions` всё ещё пустой
+- VAD останавливается и состояние сбрасывается до того, как успевает отобразиться
 
 **Решение:**
-- Удалить блок с кнопкой PiP из верхней панели
-- PiP уже есть в меню "Ещё" (строки 2292-2306)
+1. В `useRealtimeCaptions.ts` — добавить защиту от сброса captions при остановке VAD
+2. Убедиться, что `setIsProcessing(false)` вызывается только в `finally` блоке после успешного добавления caption
+3. Увеличить время жизни captions с 30 до 60 секунд
 
 ---
 
-## 4. Убрать индикатор "Отличная связь" слева сверху
+### 2. Порядок кнопок снизу
 
-**Текущее состояние:** Зелёный индикатор связи отображается через `connectionIndicator` из MeetingRoom
+**Текущий порядок:** [Camera] [Mic] [Screen] | [More] [Hand] [Emoji] [Chat] | [Exit]
 
-**Решение:**
-- Убрать отдельный `connectionIndicator` из хедера
-- Использовать существующий индикатор рядом с таймером (зелёная точка)
-- Добавить Tooltip при наведении на эту точку с информацией о качестве связи
+**Требуемый порядок:** [Camera] [Mic] [Screen] | [Chat] [Emoji] [Hand] [More] | [Exit]
 
----
-
-## 5. Исправить субтитры (голос обнаружен, но текст не появляется)
-
-**Анализ:** 
-- Хук `useRealtimeCaptions` использует VAD для обнаружения голоса
-- После обнаружения голоса идёт запись, транскрипция и перевод
-- Возможные проблемы: API ключи, размер аудио, ошибки транскрипции
-
-**Решение:**
-- Добавить улучшенное логирование в `useRealtimeCaptions`
-- Проверить, что ElevenLabs/Whisper функции возвращают текст
-- Уменьшить минимальный порог размера аудио
-- Добавить визуальную индикацию статуса обработки
-- Проверить edge functions `elevenlabs-transcribe` и `whisper-transcribe`
+**Файл:** `src/components/LiveKitRoom.tsx` (строки ~2356-2410)
 
 ---
 
-## 6. Проверить переводчик (трансляция перевода другим участникам)
+### 3. Tooltips в меню "Ещё" не показываются
 
-**Текущая архитектура:**
-- `RealtimeTranslator` записывает речь → транскрибирует → переводит → TTS
-- `useLiveKitTranslationBroadcast` отправляет через LiveKit Data Channel
-- `GlobalActiveCall` слушает входящие переводы и воспроизводит
+**Проблема:** На скриншоте видно меню с кнопками Фокус, Галерея, Вебинар, PiP, Доска, Рисовать — но при наведении нет описания.
 
-**План проверки:**
-- Проверить, что `sendTranslationToParticipants` вызывается после TTS
-- Убедиться, что `RoomEvent.DataReceived` обрабатывает `translation_audio`
-- Добавить логирование для отладки
+**Текущее состояние:** Используется `MobileTooltip`, который работает только на десктопе. На мобильных просто рендерит children.
 
----
+**Проблема в том**, что на десктопе при открытом Popover фокус уходит на Popover и Tooltip не срабатывает внутри него.
 
-## 7. Улучшить перетаскивание панели "IP участника"
-
-**Текущее состояние:** `ParticipantsIPPanel` использует `setPos` через `useState`
-
-**Решение:**
-- Заменить `useState` на `useRef` + прямое обновление DOM через `style.transform`
-- Использовать `requestAnimationFrame` для плавности
-- Позиционировать панель под кнопкой при открытии
-
----
-
-## 8. Исправить Tooltip на нижней панели (обрезается)
-
-**Текущее состояние:** 
-- Нижняя панель имеет `overflow-x-auto` 
-- Tooltip обрезается внутри контейнера
-
-**Решение:**
-- Файл: `src/components/LiveKitRoom.tsx`
-- Удалить `overflow-x-auto` или добавить `overflow-visible`
-- Tooltip использует порталы, поэтому нужно проверить z-index
-- Добавить `sideOffset` для отступа
-
----
-
-## 9. Добавить описания в меню "Ещё"
-
-**Решение:**
-- Для каждой кнопки в меню добавить Tooltip с описанием функции
-- Добавить атрибут `title` или обернуть в `MobileTooltip`
-
----
-
-## 10. Переместить "Поднятая рука" и "Эмодзи" рядом с чатом
-
-**Текущее состояние:**
-- "Поднятая рука" в меню "Ещё" (строки 2342-2354)
-- "Эмодзи" в меню "Ещё" (строки 2370-2373)
-- Чат на нижней панели
-
-**Решение:**
-- Вынести кнопки Hand и EmojiReactions из меню "Ещё"
-- Разместить перед кнопкой чата на основной панели
-
----
-
-## 11. Проверить причину reconnect при нажатии "Рисовать"
-
-**Возможные причины:**
-- DrawingOverlay создаёт новый AudioContext или MediaRecorder
-- Конфликт с активными WebRTC треками
-- Race condition при broadcast open state
-
-**План отладки:**
-- Добавить try-catch вокруг `broadcastOpenState`
-- Проверить, что нет конфликтов с recording state
-- Логировать все события до/после открытия overlay
-
----
-
-## 12. Убедиться, что доска синхронизирована для всех
-
-**Текущее состояние:**
-- `CollaborativeWhiteboard` использует Data Channel для синхронизации
-- При открытии отправляется `WHITEBOARD_OPEN`
-
-**Проверка:**
-- Убедиться, что все участники получают broadcast
-- Проверить обработчик `handleRemoteWhiteboardEvents` в LiveKitRoom (строки 905-953)
-
----
-
-## 13. Проверить мобильную версию
-
-**План:**
-- Проверить чат (bottom sheet открытие)
-- Проверить доску (landscape hint)
-- Проверить что tooltips не ломают layout
-- Убедиться в отсутствии overflow
+**Решение:** Добавить `title` атрибут на каждую кнопку как fallback.
 
 ---
 
 ## Файлы для изменения
 
-### Основные файлы:
-1. **`src/pages/MeetingRoom.tsx`**
-   - Переместить prompt записи вправо
-   - Убрать `connectionIndicator` из headerButtons
-   - Убрать `CallQualityWidget` из headerButtons
+### 1. `supabase/functions/correct-caption/index.ts`
+- Улучшить парсинг JSON для обработки markdown code blocks
 
-2. **`src/components/LiveKitRoom.tsx`**
-   - Убрать PiP кнопку из хедера
-   - Вынести Hand и Emoji из меню "Ещё" на основную панель
-   - Исправить overflow для tooltips
-   - Добавить tooltips в меню "Ещё"
-   - Добавить tooltip с качеством связи на индикатор
+### 2. `src/hooks/useRealtimeCaptions.ts`
+- Добавить защиту состояния captions
+- Увеличить TTL captions
+- Добавить лог для отладки отображения
 
-3. **`src/components/CallDiagnosticsPanel.tsx`**
-   - Интегрировать данные из CallQualityWidget
-   - Добавить секцию с графиками
+### 3. `src/components/LiveKitRoom.tsx`
+- Изменить порядок кнопок: Chat → Emoji → Hand → More
+- Добавить `title` атрибуты как fallback для tooltips в меню
 
-4. **`src/components/ParticipantsIPPanel.tsx`**
-   - Улучшить dragging через ref + RAF
-   - Позиционировать под кнопкой
-
-5. **`src/hooks/useRealtimeCaptions.ts`**
-   - Добавить логирование
-   - Проверить обработку ошибок
-
-6. **`src/components/DrawingOverlay.tsx`**
-   - Добавить try-catch для broadcast
-   - Проверить конфликты с медиа
+### 4. `src/components/CaptionsOverlay.tsx`
+- Добавить уточняющий текст в UI: "Переводить на:" вместо просто выбора языка
 
 ---
 
-## Техническая схема изменений
+## Технические изменения
 
-```text
-Bottom Control Bar (после изменений):
-┌────────────────────────────────────────────────────────────────────────┐
-│  [Camera] [Mic] [Screen]  |  [More]  [Hand] [Emoji] [Chat]  |  [Exit]  │
-└────────────────────────────────────────────────────────────────────────┘
+### correct-caption/index.ts
+```typescript
+// Улучшенный парсинг JSON
+let result = { corrected: originalText, translated: originalText };
+try {
+  // Remove markdown code block wrapper if present
+  let cleanContent = content.trim();
+  if (cleanContent.startsWith('```json')) {
+    cleanContent = cleanContent.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+  } else if (cleanContent.startsWith('```')) {
+    cleanContent = cleanContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
+  }
+  
+  const jsonMatch = cleanContent.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    result = JSON.parse(jsonMatch[0]);
+  }
+} catch (parseError) {
+  // fallback
+}
+```
 
-Top Header (после изменений):
-┌────────────────────────────────────────────────────────────────────────┐
-│  [Diagnostics+Quality]  Room Name  |  [Buttons]  |  [Timer]  [●]       │
-└────────────────────────────────────────────────────────────────────────┘
-                                                         ↑ Tooltip с качеством
+### useRealtimeCaptions.ts
+```typescript
+// В onstop не сбрасывать captions
+mediaRecorderRef.current.onstop = () => {
+  // Не трогаем captions здесь - они управляются отдельно
+  if (recordingChunksRef.current.length > 0) {
+    const blob = new Blob(recordingChunksRef.current, { type: recordingMimeTypeRef.current });
+    recordingChunksRef.current = [];
+    if (blob.size >= 2000) {
+      console.log('[Captions] Processing blob, captions count before:', captions.length);
+      processAudioChunk(blob);
+    }
+  }
+};
+```
+
+### LiveKitRoom.tsx (порядок кнопок)
+```tsx
+{/* Новый порядок: Chat → Emoji → Hand → More */}
+
+{/* Chat toggle button - FIRST */}
+<InCallChat ... />
+
+{/* Emoji Reactions */}
+<EmojiReactions ... />
+
+{/* Raise Hand */}
+<Tooltip>...</Tooltip>
+
+{/* More menu - LAST before divider */}
+<Popover>...</Popover>
+
+{/* Divider */}
+<div className="w-px h-8 bg-white/10 mx-0.5" />
+
+{/* Leave button */}
+```
+
+### Добавить title атрибуты для fallback
+```tsx
+<button
+  onClick={() => setLayoutMode('focus')}
+  title="Один участник в фокусе, остальные мини"
+  className={...}
+>
 ```
 
 ---
 
-## Порядок реализации
+## Ожидаемый результат
 
-1. UI изменения в LiveKitRoom (панели, кнопки, tooltips)
-2. Объединение Diagnostics и Quality 
-3. Исправление позиции prompt записи
-4. Улучшение dragging IP панели
-5. Отладка субтитров и переводчика
-6. Проверка доски и рисования
-7. Тестирование мобильной версии
-
----
-
-## Ожидаемые результаты
-
-- Более чистый интерфейс без дублирования функций
-- Уведомление о записи справа, не мешает
-- Работающие субтитры с визуальным feedback
-- Плавное перетаскивание панелей
-- Tooltips видны полностью
-- Hand и Emoji доступны в один клик
-- Единая кнопка диагностики с полной информацией
+1. **Субтитры будут отображаться** — текст появится сразу после транскрипции
+2. **Правильный порядок кнопок:** Chat (первый) → Emoji → Hand → More (последний перед выходом)
+3. **Tooltips в меню** — описания будут показываться через нативный `title` атрибут
+4. **Понятный UI субтитров** — пользователь увидит "Переводить на: RU" вместо просто "RU"
