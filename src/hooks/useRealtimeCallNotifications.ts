@@ -89,14 +89,14 @@ export const useRealtimeCallNotifications = () => {
     });
 
     // Show notification for participant status changes
-    if (participant.user_id === user?.id) {
+    // REMOVED: "Вы присоединились к звонку" toast per user request
+    // It was overlapping important notifications like recording prompts
+    if (participant.user_id !== user?.id) {
       if (participant.status === 'joined') {
-        toast.success('Вы присоединились к звонку');
+        toast.info('Участник присоединился к звонку');
+      } else if (participant.status === 'declined') {
+        toast.warning('Участник отклонил приглашение');
       }
-    } else if (participant.status === 'joined') {
-      toast.info('Участник присоединился к звонку');
-    } else if (participant.status === 'declined') {
-      toast.warning('Участник отклонил приглашение');
     }
   }, [user?.id]);
 

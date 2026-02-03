@@ -73,6 +73,8 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose, onCanva
   
   // Laser pointer refs
   const laserPointsRef = useRef<Array<{ x: number; y: number; timestamp: number }>>([]);
+  // CRITICAL: baseImageDataRef MUST be declared BEFORE any useEffect that uses it
+  const baseImageDataRef = useRef<ImageData | null>(null);
   const laserAnimationRef = useRef<number | null>(null);
   
   // Recording state
@@ -394,7 +396,7 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose, onCanva
   }, []);
 
   // Clear laser points AND cached image when color changes to prevent old color trails
-  const baseImageDataRef = useRef<ImageData | null>(null);
+  // NOTE: baseImageDataRef is now declared at the top of the component with other refs
   
   // Clear laser state when switching away from laser tool
   useEffect(() => {

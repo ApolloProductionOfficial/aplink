@@ -236,7 +236,8 @@ const ParticipantsIPPanel = ({ roomId, isOpen, onClose, anchorPosition }: Partic
       style={{ 
         left: 0, 
         top: 0, 
-        transform: `translate(${initialPos.x}px, ${initialPos.y}px)` 
+        transform: `translate(${initialPos.x}px, ${initialPos.y}px)`,
+        transition: 'none',
       }}
     >
       {/* Drag handle */}
