@@ -232,7 +232,7 @@ const ParticipantsIPPanel = ({ roomId, isOpen, onClose, anchorPosition }: Partic
   return (
     <div 
       ref={panelRef}
-      className="fixed z-[80] w-80 max-h-96 bg-black/40 backdrop-blur-2xl border border-white/[0.08] rounded-2xl shadow-[0_0_1px_rgba(255,255,255,0.1)] overflow-hidden animate-in fade-in duration-200 will-change-transform"
+      className="fixed z-[80] w-80 max-h-96 bg-black/40 backdrop-blur-2xl border border-white/[0.08] rounded-2xl shadow-[0_0_1px_rgba(255,255,255,0.1)] overflow-hidden will-change-transform"
       style={{ 
         left: 0, 
         top: 0, 

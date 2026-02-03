@@ -245,6 +245,7 @@ export function VirtualBackgroundSelector({
         <Button
           variant="outline"
           size="icon"
+          title="Виртуальный фон"
           className={cn(
             "w-12 h-12 rounded-full border-white/[0.12] transition-all hover:scale-105 [&_svg]:drop-shadow-[0_0_2px_rgba(255,255,255,0.5)] [&_svg]:stroke-[2.5]",
             hasAnyEffect 
