@@ -199,8 +199,14 @@ export const useRealtimeCaptions = ({
         timestamp: Date.now(),
       };
 
-      // Add to local captions
-      setCaptions(prev => [...prev.slice(-9), newCaption]);
+      console.log('[Captions] 📝 Adding new caption to display:', newCaption.translatedText);
+      
+      // Add to local captions - ensure state update happens
+      setCaptions(prev => {
+        const updated = [...prev.slice(-9), newCaption];
+        console.log('[Captions] Captions array now has', updated.length, 'items');
+        return updated;
+      });
 
       // Broadcast to other participants via Data Channel
       if (room) {
@@ -488,11 +494,11 @@ export const useRealtimeCaptions = ({
     };
   }, [enabled, room, startVAD, stopVAD]);
 
-  // Clear old captions
+  // Clear old captions - increased TTL to 60 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       const now = Date.now();
-      setCaptions(prev => prev.filter(c => now - c.timestamp < 30000)); // Keep 30 seconds
+      setCaptions(prev => prev.filter(c => now - c.timestamp < 60000)); // Keep 60 seconds
     }, 5000);
 
     return () => clearInterval(interval);

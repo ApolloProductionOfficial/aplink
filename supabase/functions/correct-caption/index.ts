@@ -92,10 +92,19 @@ Reply ONLY JSON: {"corrected":"fixed text","translated":"${targetLangName} trans
     // Parse JSON from response
     let result = { corrected: originalText, translated: originalText };
     try {
+      // Remove markdown code block wrapper if present
+      let cleanContent = content.trim();
+      if (cleanContent.startsWith('```json')) {
+        cleanContent = cleanContent.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+      } else if (cleanContent.startsWith('```')) {
+        cleanContent = cleanContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
+      }
+      
       // Try to extract JSON from the response
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      const jsonMatch = cleanContent.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         result = JSON.parse(jsonMatch[0]);
+        console.log("Successfully parsed caption result:", result);
       }
     } catch (parseError) {
       console.error("Failed to parse AI response as JSON:", parseError);
