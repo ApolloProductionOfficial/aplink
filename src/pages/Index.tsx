@@ -261,7 +261,7 @@ const Index = () => {
         <CustomCursor />
       
         {/* Video Background - optimized with enhanced glassmorphism */}
-        <div className="fixed inset-0 z-0 overflow-hidden bg-black">
+        <div className="fixed inset-0 z-0 overflow-hidden bg-black pointer-events-none">
           {/* Base gradient */}
           <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-black/90 to-primary/10" />
           {/* Video layer */}
