@@ -224,10 +224,10 @@ const MeetingRoomContent = ({ roomId, userName }: MeetingRoomContentProps) => {
         
         if (!autoRecordEnabled) {
           console.log('[MeetingRoom] Auto-recording disabled in profile settings');
-          // Show prompt for manual recording
+          // Show prompt for manual recording - longer on mobile for better visibility
           setShowManualRecordPrompt(true);
-          // Auto-hide after 10 seconds
-          setTimeout(() => setShowManualRecordPrompt(false), 10000);
+          // Auto-hide after 15 seconds (longer for mobile users)
+          setTimeout(() => setShowManualRecordPrompt(false), 15000);
           return;
         }
 
