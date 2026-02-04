@@ -279,6 +279,10 @@ All colors MUST be HSL.
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
 
+    /* Warning colors - yellow/amber for alerts, raised hand, etc. */
+    --warning: 48 96% 53%;
+    --warning-foreground: 0 0% 10%;
+
     --border: 0 0% 18%;
     --input: 0 0% 15%;
     --ring: 190 70% 50%;
