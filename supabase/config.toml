@@ -104,3 +104,6 @@ verify_jwt = false
 
 [functions.convert-to-mp4]
 verify_jwt = false
+
+[functions.elevenlabs-scribe-token]
+verify_jwt = false

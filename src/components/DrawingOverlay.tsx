@@ -9,6 +9,10 @@ import { useIsMobile } from '@/hooks/use-mobile';
 
 type Tool = 'pen' | 'eraser' | 'line' | 'arrow' | 'rectangle' | 'laser';
 
+// CRITICAL: toolRef is used to prevent closure bugs in the laser animation loop
+// The animation uses requestAnimationFrame which captures stale 'tool' values
+// Using a ref ensures we always check the current tool value
+
 interface Stroke {
   from: { x: number; y: number };
   to: { x: number; y: number };
@@ -62,6 +66,10 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose, onCanva
   const [brushSize, setBrushSize] = useState(3);
   const [tool, setTool] = useState<Tool>('pen');
   const [showControls, setShowControls] = useState(true);
+  
+  // CRITICAL: Ref to track current tool for laser animation loop
+  // This prevents closure bugs where animate() captures stale 'tool' value
+  const toolRef = useRef<Tool>('pen');
   
   // Mobile detection
   const isMobile = useIsMobile();
@@ -398,8 +406,12 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose, onCanva
   // Clear laser points AND cached image when color changes to prevent old color trails
   // NOTE: baseImageDataRef is now declared at the top of the component with other refs
   
-  // Clear laser state when switching away from laser tool
+  // CRITICAL: Keep toolRef in sync with tool state
+  // This enables the laser animation loop to check the CURRENT tool value
   useEffect(() => {
+    toolRef.current = tool;
+    
+    // Clear laser state when switching away from laser tool
     if (tool !== 'laser') {
       laserPointsRef.current = [];
       baseImageDataRef.current = null;
@@ -731,6 +743,7 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose, onCanva
   }, [room, isOpen, drawStroke, drawShape, participantName]);
 
   // Laser animation loop - ONLY runs when tool is 'laser' to prevent overwriting drawings
+  // CRITICAL FIX: Uses toolRef.current to check real-time tool value, not stale closure
   useEffect(() => {
     // Guard: only run when open AND using laser tool
     if (!isOpen || tool !== 'laser') return;
@@ -740,11 +753,16 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose, onCanva
     if (!canvas || !ctx) return;
     
     const animate = () => {
-      // Double-check tool hasn't changed during animation
-      if (tool !== 'laser') {
-        // Tool changed - clear base and stop
+      // CRITICAL: Use toolRef.current instead of 'tool' closure variable
+      // This ensures we check the CURRENT tool value, not the stale one from effect creation
+      if (toolRef.current !== 'laser') {
+        // Tool changed - immediately stop animation and clear cache
         baseImageDataRef.current = null;
-        return;
+        if (laserAnimationRef.current) {
+          cancelAnimationFrame(laserAnimationRef.current);
+          laserAnimationRef.current = null;
+        }
+        return; // STOP - don't schedule next frame!
       }
       
       // Only run animation if there are laser points
@@ -770,6 +788,7 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose, onCanva
     return () => {
       if (laserAnimationRef.current) {
         cancelAnimationFrame(laserAnimationRef.current);
+        laserAnimationRef.current = null;
       }
       // Clear base when switching away from laser to preserve drawings
       baseImageDataRef.current = null;
