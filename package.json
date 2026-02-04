@@ -11,6 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@elevenlabs/react": "^0.14.0",
     "@hookform/resolvers": "^3.10.0",
     "@huggingface/transformers": "^3.7.6",
     "@livekit/components-react": "^2.9.19",

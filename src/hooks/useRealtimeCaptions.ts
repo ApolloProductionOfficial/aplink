@@ -10,6 +10,7 @@ export interface Caption {
   translatedText: string;
   targetLang: string;
   timestamp: number;
+  isPartial?: boolean; // NEW: Indicates this is a partial/interim transcript
 }
 
 interface UseRealtimeCaptionsProps {
@@ -19,6 +20,9 @@ interface UseRealtimeCaptionsProps {
   enabled: boolean;
 }
 
+// WebSocket URL for ElevenLabs Scribe Realtime
+const SCRIBE_WS_URL = "wss://api.elevenlabs.io/v1/speech-to-text/streaming";
+
 export const useRealtimeCaptions = ({
   room,
   targetLang,
@@ -27,26 +31,389 @@ export const useRealtimeCaptions = ({
 }: UseRealtimeCaptionsProps) => {
   const [captions, setCaptions] = useState<Caption[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [vadActive, setVadActive] = useState(false);
+  const [partialText, setPartialText] = useState<string>(""); // Live partial transcript
+  
+  // WebSocket and audio refs
+  const wsRef = useRef<WebSocket | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
+  const workletNodeRef = useRef<AudioWorkletNode | null>(null);
+  const tokenRef = useRef<string | null>(null);
+  const isConnectedRef = useRef(false);
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // For fallback to batch API if WebSocket fails
+  const useFallbackRef = useRef(false);
+  const analyserRef = useRef<AnalyserNode | null>(null);
   const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const recordingChunksRef = useRef<Blob[]>([]);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const isRecordingRef = useRef(false);
   const vadActiveRef = useRef(false);
   const recordingMimeTypeRef = useRef<string>('audio/webm');
-  const [vadActive, setVadActive] = useState(false);
 
-  // Process audio and get transcription with fallback and caching
-  const processAudioChunk = useCallback(async (audioBlob: Blob) => {
-    // Lower threshold to 500 bytes for capturing shorter phrases
-    if (!enabled || audioBlob.size < 500) {
-      console.log('[Captions] Audio too small:', audioBlob.size, 'bytes, skipping (min 500)');
-      return;
+  // Get single-use token for WebSocket connection
+  const getScribeToken = useCallback(async (): Promise<string | null> => {
+    try {
+      const { data, error } = await supabase.functions.invoke('elevenlabs-scribe-token');
+      
+      if (error || !data?.token) {
+        console.error('[Captions] Failed to get scribe token:', error || 'No token in response');
+        return null;
+      }
+      
+      console.log('[Captions] Got realtime scribe token');
+      return data.token;
+    } catch (err) {
+      console.error('[Captions] Error getting scribe token:', err);
+      return null;
+    }
+  }, []);
+
+  // Translate committed transcript
+  const translateText = useCallback(async (text: string): Promise<{ corrected: string; translated: string }> => {
+    if (!text || text.length < 2) {
+      return { corrected: text, translated: text };
     }
 
-    console.log('[Captions] 🎤 Processing audio chunk:', audioBlob.size, 'bytes, type:', audioBlob.type);
+    try {
+      const { data, error } = await supabase.functions.invoke('correct-caption', {
+        body: { originalText: text, targetLang, sourceLang: null }
+      });
+
+      if (error) {
+        console.error('[Captions] Translation error:', error);
+        return { corrected: text, translated: text };
+      }
+
+      return {
+        corrected: data?.corrected || text,
+        translated: data?.translated || text
+      };
+    } catch (err) {
+      console.error('[Captions] Translation failed:', err);
+      return { corrected: text, translated: text };
+    }
+  }, [targetLang]);
+
+  // Add caption to list and broadcast
+  const addCaption = useCallback((originalText: string, translatedText: string, isPartial: boolean = false) => {
+    const newCaption: Caption = {
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      speakerName: participantName,
+      originalText,
+      translatedText,
+      targetLang,
+      timestamp: Date.now(),
+      isPartial,
+    };
+
+    // For partial, replace the last partial caption; for committed, add new
+    if (isPartial) {
+      setCaptions(prev => {
+        const withoutLastPartial = prev.filter(c => !c.isPartial);
+        return [...withoutLastPartial.slice(-9), newCaption];
+      });
+    } else {
+      setCaptions(prev => [...prev.filter(c => !c.isPartial).slice(-9), newCaption]);
+    }
+
+    // Broadcast to other participants (only committed transcripts)
+    if (room && !isPartial) {
+      const captionData = { type: 'realtime_caption', caption: newCaption };
+      const encoder = new TextEncoder();
+      const data = encoder.encode(JSON.stringify(captionData));
+      try {
+        room.localParticipant.publishData(data, { reliable: true });
+      } catch (err) {
+        console.error('[Captions] Failed to broadcast caption:', err);
+      }
+    }
+  }, [participantName, targetLang, room]);
+
+  // Process WebSocket message
+  const handleWebSocketMessage = useCallback(async (event: MessageEvent) => {
+    try {
+      const message = JSON.parse(event.data);
+      
+      if (message.type === 'partial_transcript' && message.text) {
+        // Show partial immediately (no translation yet)
+        setPartialText(message.text);
+        setVadActive(true);
+        addCaption(message.text, message.text + '...', true);
+        console.log('[Captions] Partial:', message.text);
+      } 
+      else if (message.type === 'committed_transcript' && message.text) {
+        setPartialText("");
+        setVadActive(false);
+        setIsProcessing(true);
+        
+        // Translate the committed transcript
+        const { corrected, translated } = await translateText(message.text);
+        addCaption(corrected, translated, false);
+        
+        console.log('[Captions] Committed:', message.text, '→', translated);
+        setIsProcessing(false);
+      }
+      else if (message.type === 'error') {
+        console.error('[Captions] WebSocket error:', message.error);
+      }
+    } catch (err) {
+      console.error('[Captions] Failed to parse WebSocket message:', err);
+    }
+  }, [addCaption, translateText]);
+
+  // Connect WebSocket to ElevenLabs Scribe Realtime
+  const connectWebSocket = useCallback(async () => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      console.log('[Captions] WebSocket already connected');
+      return true;
+    }
+
+    // Get token
+    const token = await getScribeToken();
+    if (!token) {
+      console.log('[Captions] No token, falling back to batch API');
+      useFallbackRef.current = true;
+      return false;
+    }
+    tokenRef.current = token;
+
+    try {
+      // Connect with token
+      const wsUrl = `${SCRIBE_WS_URL}?token=${encodeURIComponent(token)}`;
+      const ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
+
+      return new Promise<boolean>((resolve) => {
+        ws.onopen = () => {
+          console.log('[Captions] WebSocket connected');
+          isConnectedRef.current = true;
+          
+          // Send config message
+          ws.send(JSON.stringify({
+            type: 'configure',
+            model_id: 'scribe_v2_realtime',
+            audio_format: 'pcm_16000',
+            sample_rate: 16000,
+            channels: 1,
+            commit_strategy: 'vad',
+            vad_silence_threshold_secs: 0.5,
+          }));
+          
+          resolve(true);
+        };
+
+        ws.onmessage = handleWebSocketMessage;
+
+        ws.onerror = (error) => {
+          console.error('[Captions] WebSocket error:', error);
+          isConnectedRef.current = false;
+          useFallbackRef.current = true;
+          resolve(false);
+        };
+
+        ws.onclose = (event) => {
+          console.log('[Captions] WebSocket closed:', event.code, event.reason);
+          isConnectedRef.current = false;
+          wsRef.current = null;
+          
+          // Try to reconnect if enabled
+          if (enabled && !useFallbackRef.current) {
+            reconnectTimeoutRef.current = setTimeout(() => {
+              console.log('[Captions] Attempting reconnect...');
+              connectWebSocket();
+            }, 3000);
+          }
+        };
+
+        // Timeout if connection doesn't establish
+        setTimeout(() => {
+          if (!isConnectedRef.current) {
+            console.log('[Captions] WebSocket connection timeout');
+            ws.close();
+            useFallbackRef.current = true;
+            resolve(false);
+          }
+        }, 10000);
+      });
+    } catch (err) {
+      console.error('[Captions] WebSocket connection failed:', err);
+      useFallbackRef.current = true;
+      return false;
+    }
+  }, [enabled, getScribeToken, handleWebSocketMessage]);
+
+  // Start audio capture and streaming
+  const startRealtimeCapture = useCallback(async () => {
+    if (!enabled) return;
+
+    try {
+      // Get microphone access
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleRate: 16000,
+        }
+      });
+      mediaStreamRef.current = stream;
+
+      // Try WebSocket first
+      const wsConnected = await connectWebSocket();
+      
+      if (wsConnected && wsRef.current?.readyState === WebSocket.OPEN) {
+        console.log('[Captions] Using realtime WebSocket streaming');
+        
+        // Create AudioContext for PCM extraction
+        audioContextRef.current = new AudioContext({ sampleRate: 16000 });
+        const source = audioContextRef.current.createMediaStreamSource(stream);
+        
+        // Use ScriptProcessorNode for PCM extraction (AudioWorklet not available in all browsers)
+        const processor = audioContextRef.current.createScriptProcessor(4096, 1, 1);
+        
+        processor.onaudioprocess = (e) => {
+          if (wsRef.current?.readyState === WebSocket.OPEN) {
+            const inputData = e.inputBuffer.getChannelData(0);
+            
+            // Convert Float32 to Int16 PCM
+            const pcmData = new Int16Array(inputData.length);
+            for (let i = 0; i < inputData.length; i++) {
+              const s = Math.max(-1, Math.min(1, inputData[i]));
+              pcmData[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+            }
+            
+            // Send as base64
+            const base64 = btoa(String.fromCharCode(...new Uint8Array(pcmData.buffer)));
+            wsRef.current.send(JSON.stringify({
+              type: 'audio',
+              data: base64
+            }));
+          }
+        };
+        
+        source.connect(processor);
+        processor.connect(audioContextRef.current.destination);
+        
+      } else {
+        // Fall back to batch API with VAD
+        console.log('[Captions] Falling back to batch API');
+        useFallbackRef.current = true;
+        startFallbackVAD(stream);
+      }
+
+    } catch (error) {
+      console.error('[Captions] Failed to start capture:', error);
+    }
+  }, [enabled, connectWebSocket]);
+
+  // Fallback VAD-based recording (original implementation)
+  const startFallbackVAD = useCallback((stream: MediaStream) => {
+    audioContextRef.current = new AudioContext();
+    analyserRef.current = audioContextRef.current.createAnalyser();
+    analyserRef.current.fftSize = 512;
+    analyserRef.current.smoothingTimeConstant = 0.8;
+
+    const source = audioContextRef.current.createMediaStreamSource(stream);
+    source.connect(analyserRef.current);
+
+    const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+
+    const checkVoiceActivity = () => {
+      if (!analyserRef.current || !enabled) return;
+
+      analyserRef.current.getByteFrequencyData(dataArray);
+      
+      let sum = 0;
+      for (let i = 0; i < dataArray.length; i++) {
+        sum += dataArray[i] * dataArray[i];
+      }
+      const rms = Math.sqrt(sum / dataArray.length) / 255;
+      const isSpeaking = rms > 0.01;
+
+      if (isSpeaking && !vadActiveRef.current) {
+        vadActiveRef.current = true;
+        setVadActive(true);
+        recordingChunksRef.current = [];
+
+        if (silenceTimeoutRef.current) {
+          clearTimeout(silenceTimeoutRef.current);
+          silenceTimeoutRef.current = null;
+        }
+
+        try {
+          let mimeType = 'audio/webm';
+          if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+            mimeType = 'audio/webm;codecs=opus';
+          }
+          recordingMimeTypeRef.current = mimeType;
+            
+          mediaRecorderRef.current = new MediaRecorder(stream, {
+            mimeType,
+            audioBitsPerSecond: 128000,
+          });
+
+          mediaRecorderRef.current.ondataavailable = (e) => {
+            if (e.data.size > 0) {
+              recordingChunksRef.current.push(e.data);
+            }
+          };
+
+          mediaRecorderRef.current.onstop = () => {
+            if (recordingChunksRef.current.length > 0) {
+              const blob = new Blob(recordingChunksRef.current, { 
+                type: recordingMimeTypeRef.current 
+              });
+              recordingChunksRef.current = [];
+              
+              if (blob.size >= 2000) {
+                processAudioChunkFallback(blob);
+              }
+            }
+          };
+
+          mediaRecorderRef.current.start();
+          isRecordingRef.current = true;
+        } catch (err) {
+          console.error('[Captions] Failed to start recording:', err);
+        }
+
+      } else if (!isSpeaking && vadActiveRef.current) {
+        if (!silenceTimeoutRef.current) {
+          silenceTimeoutRef.current = setTimeout(() => {
+            vadActiveRef.current = false;
+            setVadActive(false);
+            silenceTimeoutRef.current = null;
+
+            if (mediaRecorderRef.current && isRecordingRef.current) {
+              try {
+                mediaRecorderRef.current.requestData();
+              } catch {
+                // Ignore
+              }
+              mediaRecorderRef.current.stop();
+              isRecordingRef.current = false;
+            }
+          }, 800); // 0.8s silence threshold
+        }
+      } else if (isSpeaking && silenceTimeoutRef.current) {
+        clearTimeout(silenceTimeoutRef.current);
+        silenceTimeoutRef.current = null;
+      }
+
+      if (enabled) {
+        requestAnimationFrame(checkVoiceActivity);
+      }
+    };
+
+    checkVoiceActivity();
+  }, [enabled]);
+
+  // Process audio chunk with batch API (fallback)
+  const processAudioChunkFallback = useCallback(async (audioBlob: Blob) => {
+    if (!enabled || audioBlob.size < 500) return;
 
     try {
       setIsProcessing(true);
@@ -54,373 +421,69 @@ export const useRealtimeCaptions = ({
       // Check cache first
       const cached = await getCachedTranscription(audioBlob);
       if (cached) {
-        console.log('[Captions] Using cached transcription');
-        
-        const newCaption: Caption = {
-          id: `${Date.now()}-cached`,
-          speakerName: participantName,
-          originalText: cached.originalText,
-          translatedText: cached.translatedText,
-          targetLang,
-          timestamp: Date.now(),
-        };
-
-        setCaptions(prev => [...prev.slice(-9), newCaption]);
-        
-        // Broadcast cached caption
-        if (room) {
-          const captionData = { type: 'realtime_caption', caption: newCaption };
-          const encoder = new TextEncoder();
-          const data = encoder.encode(JSON.stringify(captionData));
-          try {
-            await room.localParticipant.publishData(data, { reliable: true });
-          } catch (err) {
-            console.error('[Captions] Failed to broadcast cached caption:', err);
-          }
-        }
-        
+        addCaption(cached.originalText, cached.translatedText, false);
+        setIsProcessing(false);
         return;
       }
 
-      // Step 1: Transcribe with ElevenLabs (primary)
-      console.log('[Captions] 📡 Sending to ElevenLabs for transcription...');
+      // Transcribe with ElevenLabs
       const formData = new FormData();
       formData.append('audio', audioBlob, 'chunk.webm');
 
       let transcribeData: any = null;
-      let transcribeError: any = null;
 
       try {
         const result = await supabase.functions.invoke('elevenlabs-transcribe', { body: formData });
         transcribeData = result.data;
-        transcribeError = result.error;
-        console.log('[Captions] ElevenLabs response:', { 
-          hasText: !!transcribeData?.text, 
-          textLength: transcribeData?.text?.length,
-          error: transcribeError?.message || transcribeData?.error 
-        });
       } catch (err) {
-        console.log('[Captions] ElevenLabs invoke error:', err);
-        transcribeError = err;
+        console.error('[Captions] Transcription failed:', err);
       }
 
-      // Fallback to Whisper if ElevenLabs fails (including "audio_too_short" errors)
-      const isAudioTooShort = transcribeError?.message?.includes('audio_too_short') || 
-        (typeof transcribeData?.error === 'string' && transcribeData.error.includes('audio_too_short'));
-      
-      if (transcribeError || !transcribeData?.text || isAudioTooShort) {
-        if (isAudioTooShort) {
-          console.log('[Captions] Audio too short for ElevenLabs, trying Whisper...');
-        } else {
-          console.log('[Captions] ElevenLabs failed, trying Whisper fallback...');
-        }
-        
+      // Fallback to Whisper
+      if (!transcribeData?.text) {
         try {
           const whisperFormData = new FormData();
           whisperFormData.append('audio', audioBlob, 'chunk.webm');
-          
-          const { data: whisperData, error: whisperError } = await supabase.functions.invoke(
-            'whisper-transcribe',
-            { body: whisperFormData }
-          );
-
-          if (!whisperError && whisperData?.text) {
-            transcribeData = whisperData;
-            transcribeError = null;
-            console.log('[Captions] Whisper transcription successful');
-          } else {
-            console.error('[Captions] Whisper also failed:', whisperError);
-            return;
-          }
-        } catch (whisperErr) {
-          console.error('[Captions] Whisper invoke error:', whisperErr);
-          return;
+          const { data } = await supabase.functions.invoke('whisper-transcribe', { body: whisperFormData });
+          transcribeData = data;
+        } catch {
+          // Ignore
         }
       }
 
-      if (!transcribeData?.text) {
-        console.log('[Captions] ⚠️ No transcription from any provider');
+      if (!transcribeData?.text || transcribeData.text.length < 2) {
         setIsProcessing(false);
         return;
       }
 
-      const originalText = transcribeData.text.trim();
-      if (!originalText || originalText.length < 2) {
-        console.log('[Captions] ⚠️ Transcription too short:', originalText);
-        setIsProcessing(false);
-        return;
-      }
-
-      console.log('[Captions] ✅ Transcribed:', originalText);
-
-      // Step 2: Correct and translate with AI
-      console.log('[Captions] 🌐 Sending to AI for correction/translation to', targetLang);
-      const { data: correctedData, error: correctError } = await supabase.functions.invoke(
-        'correct-caption',
-        {
-          body: {
-            originalText,
-            targetLang,
-            sourceLang: null, // auto-detect
-          }
-        }
-      );
-
-      if (correctError) {
-        console.error('[Captions] ❌ Correction error:', correctError);
-        // Still show original text even if correction fails
-        const newCaption: Caption = {
-          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          speakerName: participantName,
-          originalText: originalText,
-          translatedText: originalText,
-          targetLang,
-          timestamp: Date.now(),
-        };
-        setCaptions(prev => [...prev.slice(-9), newCaption]);
-        setIsProcessing(false);
-        return;
-      }
-
-      const corrected = correctedData?.corrected || originalText;
-      const translated = correctedData?.translated || originalText;
-      
-      console.log('[Captions] ✅ Translated:', translated);
-
-      // Save to cache for future use
+      const { corrected, translated } = await translateText(transcribeData.text);
       await setCachedTranscription(audioBlob, corrected, translated);
-
-      const newCaption: Caption = {
-        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        speakerName: participantName,
-        originalText: corrected,
-        translatedText: translated,
-        targetLang,
-        timestamp: Date.now(),
-      };
-
-      console.log('[Captions] 📝 Adding new caption to display:', newCaption.translatedText);
-      
-      // Add to local captions - ensure state update happens
-      setCaptions(prev => {
-        const updated = [...prev.slice(-9), newCaption];
-        console.log('[Captions] Captions array now has', updated.length, 'items');
-        return updated;
-      });
-
-      // Broadcast to other participants via Data Channel
-      if (room) {
-        const captionData = {
-          type: 'realtime_caption',
-          caption: newCaption,
-        };
-
-        const encoder = new TextEncoder();
-        const data = encoder.encode(JSON.stringify(captionData));
-
-        try {
-          await room.localParticipant.publishData(data, { reliable: true });
-        } catch (err) {
-          console.error('[Captions] Failed to broadcast caption:', err);
-        }
-      }
+      addCaption(corrected, translated, false);
 
     } catch (error) {
       console.error('[Captions] Processing error:', error);
     } finally {
       setIsProcessing(false);
     }
-  }, [enabled, room, targetLang, participantName]);
+  }, [enabled, addCaption, translateText]);
 
-  // Listen for incoming captions from other participants
-  useEffect(() => {
-    if (!room || !enabled) return;
-
-    const handleDataReceived = (payload: Uint8Array) => {
-      try {
-        const decoder = new TextDecoder();
-        const message = JSON.parse(decoder.decode(payload));
-
-        if (message.type === 'realtime_caption' && message.caption) {
-          const caption = message.caption as Caption;
-          
-          // Don't add our own captions again
-          if (caption.speakerName === participantName) return;
-
-          // Re-translate if needed
-          if (caption.targetLang !== targetLang) {
-            // For now, just show the translated text they sent
-            // In production, you might want to re-translate
-          }
-
-          setCaptions(prev => [...prev.slice(-9), {
-            ...caption,
-            id: `received-${caption.id}`,
-          }]);
-        }
-      } catch {
-        // Not a caption message
-      }
-    };
-
-    room.on(RoomEvent.DataReceived, handleDataReceived);
-
-    return () => {
-      room.off(RoomEvent.DataReceived, handleDataReceived);
-    };
-  }, [room, enabled, participantName, targetLang]);
-
-  // VAD-based recording
-  const startVAD = useCallback(async () => {
-    if (!enabled) return;
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-        }
-      });
-
-      mediaStreamRef.current = stream;
-
-      audioContextRef.current = new AudioContext();
-      analyserRef.current = audioContextRef.current.createAnalyser();
-      analyserRef.current.fftSize = 512;
-      analyserRef.current.smoothingTimeConstant = 0.8;
-
-      const source = audioContextRef.current.createMediaStreamSource(stream);
-      source.connect(analyserRef.current);
-
-      const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
-
-      const checkVoiceActivity = () => {
-        if (!analyserRef.current || !enabled) return;
-
-        analyserRef.current.getByteFrequencyData(dataArray);
-        
-        // Calculate RMS
-        let sum = 0;
-        for (let i = 0; i < dataArray.length; i++) {
-          sum += dataArray[i] * dataArray[i];
-        }
-        const rms = Math.sqrt(sum / dataArray.length) / 255;
-
-        // Even more sensitive threshold for better detection
-        const isSpeaking = rms > 0.01;
-        
-        // Debug logging every 60 frames (~1 second)
-        if (Math.random() < 0.017) {
-          console.log(`[Captions VAD] rms=${rms.toFixed(4)}, speaking=${isSpeaking}, active=${vadActiveRef.current}`);
-        }
-
-        if (isSpeaking && !vadActiveRef.current) {
-          // Start recording
-          vadActiveRef.current = true;
-          setVadActive(true);
-          recordingChunksRef.current = [];
-
-          if (silenceTimeoutRef.current) {
-            clearTimeout(silenceTimeoutRef.current);
-            silenceTimeoutRef.current = null;
-          }
-
-          try {
-            // Determine best supported mimeType and save it
-            let mimeType = 'audio/webm';
-            if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
-              mimeType = 'audio/webm;codecs=opus';
-            } else if (MediaRecorder.isTypeSupported('audio/webm;codecs=vp8,opus')) {
-              mimeType = 'audio/webm;codecs=vp8,opus';
-            }
-            
-            recordingMimeTypeRef.current = mimeType;
-            console.log('[Captions] Using MIME type:', mimeType);
-              
-            mediaRecorderRef.current = new MediaRecorder(stream, {
-              mimeType,
-              audioBitsPerSecond: 128000,
-            });
-
-            mediaRecorderRef.current.ondataavailable = (e) => {
-              if (e.data.size > 0) {
-                recordingChunksRef.current.push(e.data);
-              }
-            };
-
-            mediaRecorderRef.current.onstop = () => {
-              if (recordingChunksRef.current.length > 0) {
-                // CRITICAL: Use the SAME mimeType as MediaRecorder to preserve WebM container
-                const blob = new Blob(recordingChunksRef.current, { 
-                  type: recordingMimeTypeRef.current 
-                });
-                const chunksCount = recordingChunksRef.current.length;
-                recordingChunksRef.current = []; // Clear immediately
-                
-                if (blob.size >= 2000) {
-                  console.log('[Captions] Created valid blob:', chunksCount, 'chunks →', blob.size, 'bytes, type:', blob.type);
-                  processAudioChunk(blob);
-                } else {
-                  console.log('[Captions] Recording too short, discarded:', blob.size, 'bytes');
-                }
-              } else {
-                console.log('[Captions] No chunks to process');
-              }
-            };
-
-            // Start without timeslice - collect all data until stop()
-            // This creates a proper WebM container with headers
-            mediaRecorderRef.current.start();
-            isRecordingRef.current = true;
-          } catch (err) {
-            console.error('[Captions] Failed to start recording:', err);
-          }
-
-        } else if (!isSpeaking && vadActiveRef.current) {
-          // Silence detected - wait a bit before stopping
-          if (!silenceTimeoutRef.current) {
-            silenceTimeoutRef.current = setTimeout(() => {
-              vadActiveRef.current = false;
-              setVadActive(false);
-              silenceTimeoutRef.current = null;
-
-              if (mediaRecorderRef.current && isRecordingRef.current) {
-                // Request data before stopping to ensure we get all recorded content
-                try {
-                  mediaRecorderRef.current.requestData();
-                } catch {
-                  // Ignore if not supported
-                }
-                mediaRecorderRef.current.stop();
-                isRecordingRef.current = false;
-              }
-            }, 800); // Faster response (0.8s) for more responsive captions
-          }
-        } else if (isSpeaking && silenceTimeoutRef.current) {
-          // Voice resumed - cancel silence timeout
-          clearTimeout(silenceTimeoutRef.current);
-          silenceTimeoutRef.current = null;
-        }
-
-        if (enabled) {
-          requestAnimationFrame(checkVoiceActivity);
-        }
-      };
-
-      checkVoiceActivity();
-
-    } catch (error) {
-      console.error('[Captions] Failed to start VAD:', error);
-    }
-  }, [enabled, processAudioChunk]);
-
-  const stopVAD = useCallback(() => {
-    console.log('[Captions] Stopping VAD...');
+  // Stop all capture
+  const stopCapture = useCallback(() => {
+    console.log('[Captions] Stopping capture...');
     
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+
     if (silenceTimeoutRef.current) {
       clearTimeout(silenceTimeoutRef.current);
       silenceTimeoutRef.current = null;
+    }
+
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
     }
 
     if (mediaRecorderRef.current) {
@@ -428,8 +491,8 @@ export const useRealtimeCaptions = ({
         if (mediaRecorderRef.current.state !== 'inactive') {
           mediaRecorderRef.current.stop();
         }
-      } catch (e) {
-        console.log('[Captions] Error stopping MediaRecorder:', e);
+      } catch {
+        // Ignore
       }
       mediaRecorderRef.current = null;
     }
@@ -445,22 +508,50 @@ export const useRealtimeCaptions = ({
         if (audioContextRef.current.state !== 'closed') {
           audioContextRef.current.close();
         }
-      } catch (e) {
-        console.log('[Captions] Error closing AudioContext:', e);
+      } catch {
+        // Ignore
       }
       audioContextRef.current = null;
     }
     
     analyserRef.current = null;
+    isConnectedRef.current = false;
     vadActiveRef.current = false;
     setVadActive(false);
+    setPartialText("");
     recordingChunksRef.current = [];
     
-    console.log('[Captions] VAD stopped and cleaned up');
+    console.log('[Captions] Capture stopped');
   }, []);
 
-  // Start/stop VAD based on enabled state AND room availability
-  // Using a unique key to force restart when room changes
+  // Listen for incoming captions from other participants
+  useEffect(() => {
+    if (!room || !enabled) return;
+
+    const handleDataReceived = (payload: Uint8Array) => {
+      try {
+        const decoder = new TextDecoder();
+        const message = JSON.parse(decoder.decode(payload));
+
+        if (message.type === 'realtime_caption' && message.caption) {
+          const caption = message.caption as Caption;
+          if (caption.speakerName === participantName) return;
+
+          setCaptions(prev => [...prev.slice(-9), {
+            ...caption,
+            id: `received-${caption.id}`,
+          }]);
+        }
+      } catch {
+        // Not a caption message
+      }
+    };
+
+    room.on(RoomEvent.DataReceived, handleDataReceived);
+    return () => { room.off(RoomEvent.DataReceived, handleDataReceived); };
+  }, [room, enabled, participantName]);
+
+  // Start/stop based on enabled state
   const roomIdentityRef = useRef<string | null>(null);
   
   useEffect(() => {
@@ -468,37 +559,33 @@ export const useRealtimeCaptions = ({
     const roomChanged = roomIdentityRef.current !== currentRoomIdentity;
     
     if (roomChanged) {
-      console.log('[Captions] Room changed, resetting VAD. Was:', roomIdentityRef.current, 'Now:', currentRoomIdentity);
+      console.log('[Captions] Room changed, resetting');
       roomIdentityRef.current = currentRoomIdentity;
-      
-      // Force stop old VAD first
-      stopVAD();
+      stopCapture();
+      useFallbackRef.current = false; // Reset fallback flag
     }
     
     if (enabled && room) {
-      // Small delay to ensure clean state after stopVAD
       const timer = setTimeout(() => {
-        startVAD();
+        startRealtimeCapture();
       }, roomChanged ? 300 : 0);
       
       return () => {
         clearTimeout(timer);
-        stopVAD();
+        stopCapture();
       };
     } else {
-      stopVAD();
+      stopCapture();
     }
 
-    return () => {
-      stopVAD();
-    };
-  }, [enabled, room, startVAD, stopVAD]);
+    return () => { stopCapture(); };
+  }, [enabled, room, startRealtimeCapture, stopCapture]);
 
-  // Clear old captions - increased TTL to 60 seconds
+  // Clear old captions
   useEffect(() => {
     const interval = setInterval(() => {
       const now = Date.now();
-      setCaptions(prev => prev.filter(c => now - c.timestamp < 60000)); // Keep 60 seconds
+      setCaptions(prev => prev.filter(c => now - c.timestamp < 60000));
     }, 5000);
 
     return () => clearInterval(interval);
@@ -506,13 +593,15 @@ export const useRealtimeCaptions = ({
 
   const clearCaptions = useCallback(() => {
     setCaptions([]);
+    setPartialText("");
   }, []);
 
   return {
     captions,
     isProcessing,
     clearCaptions,
-    vadActive, // Expose VAD state for UI indicator
+    vadActive,
+    partialText, // NEW: Live partial transcript for UI
   };
 };
 

@@ -213,6 +213,13 @@ const MeetingRoomContent = ({ roomId, userName }: MeetingRoomContentProps) => {
 
   // Auto-start recording for authenticated users (if enabled in settings)
   const autoStartRecording = useCallback(async () => {
+    // CRITICAL: Prevent duplicate prompt on iOS reconnect
+    // If manual prompt was already shown this session, don't show again
+    if (hasShownManualPromptRef.current && !hasStartedRecordingRef.current) {
+      console.log('[MeetingRoom] Manual prompt already shown, skipping on reconnect');
+      return;
+    }
+    
     if (user && !isRecordingRef.current && !hasStartedRecordingRef.current) {
       try {
         // Check if auto-record is enabled in user's profile
