@@ -1819,12 +1819,12 @@ function LiveKitContent({
         <>
           {/* Top arrow - minimal */}
           <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[60]">
-            <ChevronUp className="w-5 h-5 text-white/40 animate-subtle-bounce-up" />
+            <ChevronUp className="w-5 h-5 text-foreground/40 animate-subtle-bounce-up" />
           </div>
           
           {/* Bottom arrow - minimal */}
           <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-[60]">
-            <ChevronDown className="w-5 h-5 text-white/40 animate-subtle-bounce-down" />
+            <ChevronDown className="w-5 h-5 text-foreground/40 animate-subtle-bounce-down" />
           </div>
         </>
       )}
@@ -1842,7 +1842,7 @@ function LiveKitContent({
                 : "-translate-y-8 opacity-0 scale-90 pointer-events-none"
           )}
         >
-          <div className="flex items-center gap-1.5 sm:gap-2.5 px-2 sm:px-4 py-2 sm:py-2.5 rounded-[2rem] sm:rounded-[2.5rem] bg-black/40 backdrop-blur-2xl border border-white/[0.1] shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
+          <div className="flex items-center gap-1.5 sm:gap-2.5 px-2 sm:px-4 py-2 sm:py-2.5 rounded-[2rem] sm:rounded-[2.5rem] bg-background/40 backdrop-blur-2xl border border-border/20 shadow-[0_8px_32px_hsl(var(--background)/0.4)]">
             {/* Diagnostics button */}
             <CallDiagnosticsPanel
               state={diagnostics.state}
@@ -1858,13 +1858,13 @@ function LiveKitContent({
             )}
 
             {/* Divider */}
-            <div className="w-px h-5 bg-white/10" />
+            <div className="w-px h-5 bg-border/20" />
 
             {/* Header buttons from parent */}
             {headerButtons}
 
             {/* Divider */}
-            <div className="w-px h-5 bg-white/10" />
+            <div className="w-px h-5 bg-border/20" />
 
             {/* Timer button with built-in connection quality indicator */}
             <CallTimer room={room} isHost={true} />
@@ -1910,11 +1910,11 @@ function LiveKitContent({
               {Array.from(raisedHands.entries()).map(([identity, hand]) => (
                 <div
                   key={identity}
-                  className="flex items-center gap-3 px-6 py-3.5 rounded-full bg-yellow-500/90 shadow-[0_0_40px_rgba(234,179,8,0.6),0_0_80px_rgba(234,179,8,0.3)] animate-bounce"
+                  className="flex items-center gap-3 px-6 py-3.5 rounded-full bg-warning/90 shadow-[0_0_40px_hsl(var(--warning)/0.6),0_0_80px_hsl(var(--warning)/0.3)] animate-bounce"
                 >
-                  <Hand className="w-7 h-7 text-white animate-pulse" />
-                  <span className="text-white text-lg font-bold">{hand.participantName}</span>
-                  <span className="text-yellow-100 text-sm">поднял руку</span>
+                  <Hand className="w-7 h-7 text-warning-foreground animate-pulse" />
+                  <span className="text-warning-foreground text-lg font-bold">{hand.participantName}</span>
+                  <span className="text-warning-foreground/80 text-sm">поднял руку</span>
                 </div>
               ))}
             </div>
@@ -1933,17 +1933,17 @@ function LiveKitContent({
 
       {/* Recording indicator with timer - fixed position */}
       {isCallRecording && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[99997] flex items-center gap-2 px-4 py-2 bg-red-500/20 backdrop-blur-xl border border-red-500/50 rounded-full shadow-[0_0_20px_rgba(239,68,68,0.3)]">
-          <span className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" />
-          <span className="text-sm font-bold text-red-400">REC</span>
-          <span className="text-sm text-white/90 font-mono">{formatRecordingDuration(recordingDuration)}</span>
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[99997] flex items-center gap-2 px-4 py-2 bg-destructive/20 backdrop-blur-xl border border-destructive/50 rounded-full shadow-[0_0_20px_hsl(var(--destructive)/0.3)]">
+          <span className="w-2.5 h-2.5 bg-destructive rounded-full animate-pulse" />
+          <span className="text-sm font-bold text-destructive">REC</span>
+          <span className="text-sm text-foreground/90 font-mono">{formatRecordingDuration(recordingDuration)}</span>
         </div>
       )}
 
       {/* Recording preview dialog */}
       {recordingPreviewUrl && (
-        <div className="fixed inset-0 z-[99999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-background rounded-2xl p-4 sm:p-6 max-w-2xl w-full border border-white/10 shadow-2xl">
+        <div className="fixed inset-0 z-[99999] bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-background rounded-2xl p-4 sm:p-6 max-w-2xl w-full border border-border/20 shadow-2xl">
             <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
               <Video className="w-5 h-5 text-primary" />
               Предпросмотр записи
@@ -1951,7 +1951,7 @@ function LiveKitContent({
             <video 
               src={recordingPreviewUrl} 
               controls 
-              className="w-full rounded-xl bg-black/50"
+              className="w-full rounded-xl bg-background/50"
               autoPlay={false}
             />
             <p className="text-xs text-muted-foreground mt-3 text-center">
@@ -1961,7 +1961,7 @@ function LiveKitContent({
               <Button 
                 variant="ghost" 
                 onClick={discardRecording}
-                className="hover:bg-red-500/20 hover:text-red-400 order-3 sm:order-1"
+                className="hover:bg-destructive/20 hover:text-destructive order-3 sm:order-1"
                 disabled={isConvertingToMp4}
               >
                 Отменить
@@ -1995,7 +1995,7 @@ function LiveKitContent({
 
       {/* Audio blocked warning - prominent button to enable audio */}
       {showAudioPrompt && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-background/60 backdrop-blur-sm">
           <button
             {...startAudioProps}
             onClick={async () => {
@@ -2028,7 +2028,7 @@ function LiveKitContent({
               : "translate-y-12 opacity-0 scale-90 pointer-events-none"
         )}
       >
-        <div className="flex items-center justify-center gap-1.5 sm:gap-2.5 px-3 sm:px-5 py-2.5 sm:py-3.5 rounded-2xl sm:rounded-[2.5rem] bg-black/40 backdrop-blur-2xl border border-white/[0.1] shadow-[0_8px_32px_rgba(0,0,0,0.4)] flex-wrap sm:flex-nowrap max-w-full overflow-visible">
+        <div className="flex items-center justify-center gap-1.5 sm:gap-2.5 px-3 sm:px-5 py-2.5 sm:py-3.5 rounded-2xl sm:rounded-[2.5rem] bg-background/40 backdrop-blur-2xl border border-border/20 shadow-[0_8px_32px_hsl(var(--background)/0.4)] flex-wrap sm:flex-nowrap max-w-full overflow-visible">
           {/* Camera toggle */}
           <Tooltip>
             <TooltipTrigger asChild>
@@ -2037,20 +2037,20 @@ function LiveKitContent({
                 variant={isCameraEnabled ? "outline" : "secondary"}
                 size="icon"
                 className={cn(
-                  "w-10 h-10 sm:w-12 sm:h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg border-white/20",
+                  "w-10 h-10 sm:w-12 sm:h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg border-border/40",
                   isCameraEnabled 
-                    ? "bg-white/15 hover:bg-white/25" 
+                    ? "bg-foreground/15 hover:bg-foreground/25" 
                     : "bg-destructive/40 border-destructive/60 hover:bg-destructive/50"
                 )}
               >
                 {isCameraEnabled ? (
-                  <Video className="w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]" />
+                  <Video className="w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_hsl(var(--foreground)/0.5)]" />
                 ) : (
-                  <VideoOff className="w-5 h-5 stroke-[1.8] text-destructive drop-shadow-[0_0_3px_rgba(255,255,255,0.4)]" />
+                  <VideoOff className="w-5 h-5 stroke-[1.8] text-destructive drop-shadow-[0_0_3px_hsl(var(--foreground)/0.4)]" />
                 )}
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="top" className="bg-black/80 border-white/10">
+            <TooltipContent side="top" className="bg-background/80 border-border/20">
               <p>{isCameraEnabled ? "Выключить камеру (V)" : "Включить камеру (V)"}</p>
             </TooltipContent>
           </Tooltip>
@@ -2064,21 +2064,21 @@ function LiveKitContent({
                     variant={isMicrophoneEnabled ? "outline" : "secondary"}
                     size="icon"
                     className={cn(
-                      "w-10 h-10 sm:w-12 sm:h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg border-white/20",
+                      "w-10 h-10 sm:w-12 sm:h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg border-border/40",
                       isMicrophoneEnabled 
-                        ? "bg-white/15 hover:bg-white/25" 
+                        ? "bg-foreground/15 hover:bg-foreground/25" 
                         : "bg-destructive/40 border-destructive/60 hover:bg-destructive/50"
                     )}
                   >
                     {isMicrophoneEnabled ? (
-                      <Mic className="w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]" />
+                      <Mic className="w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_hsl(var(--foreground)/0.5)]" />
                     ) : (
-                      <MicOff className="w-5 h-5 stroke-[1.8] text-destructive drop-shadow-[0_0_3px_rgba(255,255,255,0.4)]" />
+                      <MicOff className="w-5 h-5 stroke-[1.8] text-destructive drop-shadow-[0_0_3px_hsl(var(--foreground)/0.4)]" />
                     )}
                   </Button>
                 </PopoverTrigger>
               </TooltipTrigger>
-              <TooltipContent side="top" className="bg-black/80 border-white/10">
+              <TooltipContent side="top" className="bg-background/80 border-border/20">
                 <p>{isMicrophoneEnabled ? "Настройки микрофона (M)" : "Включить микрофон (M)"}</p>
               </TooltipContent>
             </Tooltip>
@@ -2086,7 +2086,7 @@ function LiveKitContent({
               side="top" 
               align="center" 
               sideOffset={12}
-              className="p-3 bg-black/40 backdrop-blur-2xl border border-white/[0.08] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4),0_0_1px_rgba(255,255,255,0.1)]"
+              className="p-3 bg-background/40 backdrop-blur-2xl border border-border/20 rounded-2xl shadow-[0_8px_32px_hsl(var(--background)/0.4)]"
             >
               <div className="flex flex-col items-center gap-3">
                 {/* Main: Toggle Mic (centered on top) */}
@@ -2094,9 +2094,9 @@ function LiveKitContent({
                   onClick={toggleMicrophone}
                   className={cn(
                     "w-12 h-12 rounded-full flex items-center justify-center",
-                    "bg-white/10 backdrop-blur-sm border border-white/[0.12]",
-                    "hover:bg-white/20 transition-all hover:scale-110 hover:shadow-lg",
-                    !isMicrophoneEnabled && "bg-destructive/30 border-destructive/50 shadow-[0_0_15px_rgba(220,50,50,0.2)]"
+                    "bg-foreground/10 backdrop-blur-sm border border-border/30",
+                    "hover:bg-foreground/20 transition-all hover:scale-110 hover:shadow-lg",
+                    !isMicrophoneEnabled && "bg-destructive/30 border-destructive/50 shadow-[0_0_15px_hsl(var(--destructive)/0.2)]"
                   )}
                   title={isMicrophoneEnabled ? "Выключить микрофон" : "Включить микрофон"}
                 >
@@ -2114,8 +2114,8 @@ function LiveKitContent({
                       onClick={toggleNoiseSuppression}
                       className={cn(
                         "w-10 h-10 rounded-full flex items-center justify-center",
-                        "bg-white/10 backdrop-blur-sm border border-white/[0.12]",
-                        "hover:bg-white/20 transition-all hover:scale-110 hover:shadow-lg",
+                        "bg-foreground/10 backdrop-blur-sm border border-border/30",
+                        "hover:bg-foreground/20 transition-all hover:scale-110 hover:shadow-lg",
                         isNoiseSuppressionEnabled && "bg-primary/30 border-primary/50 shadow-[0_0_15px_hsl(var(--primary)/0.3)]"
                       )}
                       title={isNoiseSuppressionEnabled ? "Выкл. шумоподавление" : "Вкл. шумоподавление"}
@@ -2132,13 +2132,13 @@ function LiveKitContent({
                         onClick={toggleVoiceCommands}
                         className={cn(
                           "w-10 h-10 rounded-full flex items-center justify-center",
-                          "bg-white/10 backdrop-blur-sm border border-white/[0.12]",
-                          "hover:bg-white/20 transition-all hover:scale-110 hover:shadow-lg",
-                          isVoiceCommandsActive && "bg-purple-500/30 border-purple-500/50 shadow-[0_0_15px_rgba(147,51,234,0.3)]"
+                          "bg-foreground/10 backdrop-blur-sm border border-border/30",
+                          "hover:bg-foreground/20 transition-all hover:scale-110 hover:shadow-lg",
+                          isVoiceCommandsActive && "bg-accent/30 border-accent/50 shadow-[0_0_15px_hsl(var(--accent)/0.3)]"
                         )}
                         title={isVoiceCommandsActive ? "Выкл. голосовые команды" : "Голосовые команды"}
                       >
-                        <Mic2 className={cn("w-4 h-4", isVoiceCommandsActive && "text-purple-400")} />
+                        <Mic2 className={cn("w-4 h-4", isVoiceCommandsActive && "text-accent-foreground")} />
                       </button>
                       <span className="text-[9px] text-muted-foreground whitespace-nowrap">Голос. команды</span>
                     </div>
@@ -2157,20 +2157,20 @@ function LiveKitContent({
                     variant={isScreenShareEnabled ? "default" : "outline"}
                     size="icon"
                     className={cn(
-                      "w-12 h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg border-white/20",
+                      "w-12 h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg border-border/40",
                       isScreenShareEnabled 
-                        ? "bg-green-500/40 border-green-500/60 hover:bg-green-500/50" 
-                        : "bg-white/15 hover:bg-white/25"
+                        ? "bg-primary/40 border-primary/60 hover:bg-primary/50" 
+                        : "bg-foreground/15 hover:bg-foreground/25"
                     )}
                   >
                     <MonitorUp className={cn(
-                      "w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]",
-                      isScreenShareEnabled && "text-green-400"
+                      "w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_hsl(var(--foreground)/0.5)]",
+                      isScreenShareEnabled && "text-primary"
                     )} />
                   </Button>
                 </PopoverTrigger>
               </TooltipTrigger>
-              <TooltipContent side="top" className="bg-black/80 border-white/10">
+              <TooltipContent side="top" className="bg-background/80 border-border/20">
                 <p>{isScreenShareEnabled ? "Остановить демонстрацию" : "Демонстрация экрана"}</p>
               </TooltipContent>
             </Tooltip>
@@ -2178,7 +2178,7 @@ function LiveKitContent({
               side="top" 
               align="center" 
               sideOffset={12}
-              className="w-auto p-3 bg-black/40 backdrop-blur-2xl border border-white/[0.08] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4),0_0_1px_rgba(255,255,255,0.1)]"
+              className="w-auto p-3 bg-background/40 backdrop-blur-2xl border border-border/20 rounded-2xl shadow-[0_8px_32px_hsl(var(--background)/0.4)]"
             >
               <div className="flex flex-col gap-2">
                 <span className="text-[10px] text-muted-foreground font-medium text-center mb-1">Демонстрация</span>
@@ -2190,7 +2190,7 @@ function LiveKitContent({
                       "flex flex-col items-center gap-1.5 p-3 rounded-xl transition-all",
                       isScreenShareEnabled 
                         ? "bg-primary/20 border border-primary/30" 
-                        : "bg-white/5 hover:bg-white/10"
+                        : "bg-foreground/5 hover:bg-foreground/10"
                     )}
                   >
                     <MonitorUp className={cn("w-5 h-5", isScreenShareEnabled ? "text-primary" : "text-primary")} />
@@ -2203,18 +2203,18 @@ function LiveKitContent({
                     className={cn(
                       "flex flex-col items-center gap-1.5 p-3 rounded-xl transition-all relative",
                       isCallRecording 
-                        ? "bg-red-500/20 border border-red-500/40" 
-                        : "bg-white/5 hover:bg-white/10"
+                        ? "bg-destructive/20 border border-destructive/40" 
+                        : "bg-foreground/5 hover:bg-foreground/10"
                     )}
                   >
                     {/* REC indicator when recording */}
                     {isCallRecording && (
-                      <div className="absolute -top-1 -right-1 flex items-center gap-1 px-1.5 py-0.5 bg-red-500 rounded-full animate-pulse">
-                        <div className="w-1.5 h-1.5 bg-white rounded-full" />
-                        <span className="text-[8px] font-bold text-white">REC</span>
+                      <div className="absolute -top-1 -right-1 flex items-center gap-1 px-1.5 py-0.5 bg-destructive rounded-full animate-pulse">
+                        <div className="w-1.5 h-1.5 bg-destructive-foreground rounded-full" />
+                        <span className="text-[8px] font-bold text-destructive-foreground">REC</span>
                       </div>
                     )}
-                    <Circle className={cn("w-5 h-5", isCallRecording ? "text-red-400 fill-red-400" : "text-red-500")} />
+                    <Circle className={cn("w-5 h-5", isCallRecording ? "text-destructive fill-destructive" : "text-destructive")} />
                     <span className="text-xs whitespace-nowrap">{isCallRecording ? "Стоп" : "REC"}</span>
                   </button>
                 </div>
@@ -2223,7 +2223,7 @@ function LiveKitContent({
           </Popover>
 
           {/* Divider */}
-          <div className="w-px h-8 bg-white/10 mx-0.5" />
+          <div className="w-px h-8 bg-border/20 mx-0.5" />
 
           {/* More menu - secondary functions */}
           <Popover>
@@ -2233,13 +2233,13 @@ function LiveKitContent({
                   <Button
                     variant="outline"
                     size="icon"
-                    className="w-12 h-12 rounded-full bg-white/15 hover:bg-white/25 border-white/20 transition-all hover:scale-105 hover:shadow-lg"
+                    className="w-12 h-12 rounded-full bg-foreground/15 hover:bg-foreground/25 border-border/40 transition-all hover:scale-105 hover:shadow-lg"
                   >
-                    <MoreHorizontal className="w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]" />
+                    <MoreHorizontal className="w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_hsl(var(--foreground)/0.5)]" />
                   </Button>
                 </PopoverTrigger>
               </TooltipTrigger>
-              <TooltipContent side="top" className="bg-black/80 border-white/10">
+              <TooltipContent side="top" className="bg-background/80 border-border/20">
                 <p>Ещё (M)</p>
               </TooltipContent>
             </Tooltip>
@@ -2247,7 +2247,7 @@ function LiveKitContent({
               side="top" 
               align="center" 
               sideOffset={12}
-              className="w-auto p-4 bg-black/60 backdrop-blur-2xl border border-white/[0.08] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4),0_0_1px_rgba(255,255,255,0.1)]"
+              className="w-auto p-4 bg-background/60 backdrop-blur-2xl border border-border/20 rounded-2xl shadow-[0_8px_32px_hsl(var(--background)/0.4)]"
             >
               <div className="flex flex-col gap-4">
                 {/* Layout modes section */}
@@ -2264,7 +2264,7 @@ function LiveKitContent({
                         "flex flex-col items-center gap-1 p-2 rounded-xl transition-all min-w-[56px]",
                         layoutMode === 'focus' 
                           ? "bg-primary/20 border border-primary/30" 
-                          : "bg-white/5 hover:bg-white/10"
+                          : "bg-foreground/5 hover:bg-foreground/10"
                       )}
                     >
                       <User className={cn("w-4 h-4", layoutMode === 'focus' && "text-primary")} />
@@ -2281,7 +2281,7 @@ function LiveKitContent({
                         "flex flex-col items-center gap-1 p-2 rounded-xl transition-all min-w-[56px]",
                         layoutMode === 'gallery' 
                           ? "bg-primary/20 border border-primary/30" 
-                          : "bg-white/5 hover:bg-white/10"
+                          : "bg-foreground/5 hover:bg-foreground/10"
                       )}
                     >
                       <LayoutGrid className={cn("w-4 h-4", layoutMode === 'gallery' && "text-primary")} />
@@ -2298,7 +2298,7 @@ function LiveKitContent({
                         "flex flex-col items-center gap-1 p-2 rounded-xl transition-all min-w-[56px]",
                         layoutMode === 'webinar' 
                           ? "bg-primary/20 border border-primary/30" 
-                          : "bg-white/5 hover:bg-white/10"
+                          : "bg-foreground/5 hover:bg-foreground/10"
                       )}
                     >
                       <Presentation className={cn("w-4 h-4", layoutMode === 'webinar' && "text-primary")} />
@@ -2317,11 +2317,11 @@ function LiveKitContent({
                         className={cn(
                           "flex flex-col items-center gap-1 p-2 rounded-xl transition-all min-w-[56px]",
                           isPiPActive 
-                            ? "bg-green-500/20 border border-green-500/30" 
-                            : "bg-white/5 hover:bg-white/10"
+                            ? "bg-primary/20 border border-primary/30" 
+                            : "bg-foreground/5 hover:bg-foreground/10"
                         )}
                       >
-                        <PictureInPicture className={cn("w-5 h-5", isPiPActive && "text-green-400")} />
+                        <PictureInPicture className={cn("w-5 h-5", isPiPActive && "text-primary")} />
                         <span className="text-[9px] whitespace-nowrap">PiP</span>
                       </button>
                     </CallMenuHint>
@@ -2338,7 +2338,7 @@ function LiveKitContent({
                         "flex flex-col items-center gap-1 p-2 rounded-xl transition-all min-w-[56px]",
                         showWhiteboard 
                           ? "bg-primary/20 border border-primary/30" 
-                          : "bg-white/5 hover:bg-white/10"
+                          : "bg-foreground/5 hover:bg-foreground/10"
                       )}
                     >
                       <LayoutGrid className="w-5 h-5" />
@@ -2357,7 +2357,7 @@ function LiveKitContent({
                         "flex flex-col items-center gap-1 p-2 rounded-xl transition-all min-w-[56px]",
                         showDrawingOverlay 
                           ? "bg-primary/20 border border-primary/30" 
-                          : "bg-white/5 hover:bg-white/10"
+                          : "bg-foreground/5 hover:bg-foreground/10"
                       )}
                     >
                       <Pencil className="w-5 h-5" />
@@ -2368,7 +2368,7 @@ function LiveKitContent({
                 </div>
                 
                 {/* Virtual Background row */}
-                <div className="flex items-center justify-center gap-3 pt-2 border-t border-white/10">
+                <div className="flex items-center justify-center gap-3 pt-2 border-t border-border/20">
                   <VirtualBackgroundSelector
                     onSelectBlur={applyBlurBackground}
                     onSelectImage={applyImageBackground}
@@ -2407,32 +2407,32 @@ function LiveKitContent({
                 variant="outline"
                 size="icon"
                 className={cn(
-                  "w-10 h-10 sm:w-12 sm:h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg border-white/20",
+                  "w-10 h-10 sm:w-12 sm:h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg border-border/40",
                   isHandRaised 
-                    ? "bg-yellow-500/30 border-yellow-500/50 animate-pulse" 
-                    : "bg-white/15 hover:bg-white/25"
+                    ? "bg-warning/30 border-warning/50 animate-pulse" 
+                    : "bg-foreground/15 hover:bg-foreground/25"
                 )}
               >
-                <Hand className={cn("w-5 h-5", isHandRaised && "text-yellow-400")} />
+                <Hand className={cn("w-5 h-5", isHandRaised && "text-warning")} />
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="top" className="bg-black/80 border-white/10">
+            <TooltipContent side="top" className="bg-background/80 border-border/20">
               <p>{isHandRaised ? "Опустить руку" : "Поднять руку"}</p>
             </TooltipContent>
           </Tooltip>
 
           {/* Divider */}
-          <div className="w-px h-8 bg-white/10 mx-0.5" />
+          <div className="w-px h-8 bg-border/20 mx-0.5" />
 
           {/* Leave button */}
           <Tooltip>
             <TooltipTrigger asChild>
-              <DisconnectButton className="flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-destructive/90 hover:bg-destructive text-destructive-foreground transition-all hover:scale-105 hover:shadow-lg border border-destructive/60 shadow-[0_0_15px_rgba(220,50,50,0.3)]">
-                <PhoneOff className="w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_rgba(255,255,255,0.5)]" />
+              <DisconnectButton className="flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-destructive/90 hover:bg-destructive text-destructive-foreground transition-all hover:scale-105 hover:shadow-lg border border-destructive/60 shadow-[0_0_15px_hsl(var(--destructive)/0.3)]">
+                <PhoneOff className="w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_hsl(var(--foreground)/0.5)]" />
                 <span className="text-sm font-medium tracking-wide">Выйти</span>
               </DisconnectButton>
             </TooltipTrigger>
-            <TooltipContent side="top" className="bg-black/80 border-white/10">
+            <TooltipContent side="top" className="bg-background/80 border-border/20">
               <p>Выйти из звонка (Esc×2)</p>
             </TooltipContent>
           </Tooltip>
