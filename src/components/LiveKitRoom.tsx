@@ -188,6 +188,11 @@ export function LiveKitRoom({
   const currentRoomRef = useRef<string | null>(null);
   const isFetchingRef = useRef(false);
   
+  // MOBILE FIX: Debounce token fetch to prevent duplicate participants on reconnect storm
+  const fetchDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const lastFetchTimeRef = useRef<number>(0);
+  const FETCH_DEBOUNCE_MS = 1000; // Minimum 1 second between token fetches
+  
   // Stable token ref to prevent re-renders from triggering reconnection
   const tokenRef = useRef<string | null>(null);
   const tokenExpRef = useRef<number | null>(null);
@@ -211,11 +216,19 @@ export function LiveKitRoom({
 
   // Fetch token function - can be called for initial fetch or refresh
   const fetchToken = useCallback(async (isRefresh = false): Promise<boolean> => {
+    // MOBILE FIX: Debounce to prevent duplicate participants from reconnect storm
+    const now = Date.now();
+    if (now - lastFetchTimeRef.current < FETCH_DEBOUNCE_MS && !isRefresh) {
+      console.log("[LiveKitRoom] Token fetch debounced (too soon after last fetch)");
+      return false;
+    }
+    
     if (isFetchingRef.current) {
       console.log("[LiveKitRoom] Token fetch already in progress");
       return false;
     }
     
+    lastFetchTimeRef.current = now;
     isFetchingRef.current = true;
     try {
       if (!isRefresh) {

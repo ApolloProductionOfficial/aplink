@@ -415,6 +415,15 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose, onCanva
     if (tool !== 'laser') {
       laserPointsRef.current = [];
       baseImageDataRef.current = null;
+      
+      // CRITICAL: Stop any running laser animation IMMEDIATELY
+      // This prevents the laser loop from calling putImageData with null baseImage
+      // which was overwriting pen/shape drawings
+      if (laserAnimationRef.current) {
+        cancelAnimationFrame(laserAnimationRef.current);
+        laserAnimationRef.current = null;
+        console.log('[DrawingOverlay] Stopped laser animation on tool switch');
+      }
     }
   }, [tool]);
   
@@ -731,7 +740,11 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose, onCanva
             ctx.clearRect(0, 0, canvas.width, canvas.height);
           }
         } else if (message.type === 'DRAWING_OVERLAY_LASER' && message.sender !== participantName) {
-          laserPointsRef.current.push(message.point);
+          // Only process incoming laser points if local tool is laser
+          // This prevents laser animation from running when using other tools
+          if (toolRef.current === 'laser') {
+            laserPointsRef.current.push(message.point);
+          }
         }
       } catch {
         // Ignore non-JSON data
