@@ -1,65 +1,124 @@
 
-# План: Мобильная версия и стабильность звонков
 
-## ✅ ВЫПОЛНЕНО
+# План: Исправление ошибки "Failed to toggle screen share: {}"
 
-### 1. Рисунок пропадает через 1-2 секунды
-**Решение**: Добавлен `cancelAnimationFrame` в useEffect при смене tool (строки 411-427 DrawingOverlay.tsx). Теперь при переключении с лазера на карандаш анимационный цикл останавливается мгновенно, не успевая перезаписать рисунок.
+## Проблема
 
-### 2. REC включается автоматически  
-**Решение**: Принудительно отключена автозапись (`autoRecordEnabled = false`) в MeetingRoom.tsx строка 232-234. Теперь запись начинается ТОЛЬКО вручную по нажатию кнопки REC.
+При попытке демонстрации экрана в консоли появляется ошибка:
+```
+Failed to toggle screen share: {}
+```
 
-### 3. Чат увеличивает экран (zoom) при печати
-**Решение**: Изменён размер шрифта input с `text-sm` на `text-base sm:text-sm` в InCallChat.tsx строка 671. На мобильном шрифт 16px, iOS Safari не будет зумить.
+## Причина
 
-### 4. Два профиля при входе с телефона (дублирующиеся участники)
-**Решение**: Добавлен debounce для token fetch (минимум 1 секунда между запросами) в LiveKitRoom.tsx строки 189-192 и 218-231. Предотвращает "reconnect storm" на мобильных устройствах.
+Когда пользователь **отменяет** диалог выбора экрана (нажимает "Отмена" или Esc), браузер выбрасывает `NotAllowedError`. LiveKit SDK обёртывает эту ошибку, и при логировании она отображается как пустой объект `{}`.
 
-### 5. Входящие laser points игнорируются при других инструментах
-**Решение**: В handleData (DrawingOverlay.tsx строки 733-738) добавлена проверка `toolRef.current === 'laser'` — если локальный инструмент не лазер, входящие точки игнорируются.
+Текущий код в `LiveKitRoom.tsx` (строки 1249-1263):
+```typescript
+} catch (err: any) {
+  if ((err?.code === 13 || err?.name === 'NegotiationError') && !isRoomReconnecting) {
+    // Обработка NegotiationError...
+  } else {
+    console.error('Failed to toggle screen share:', err); // ← Это выводит {}
+  }
+}
+```
 
----
+Проблема: `NotAllowedError` (отмена пользователем) не обрабатывается, и всегда логируется как ошибка.
 
-## Скриншоты пользователя — анализ
+## Решение
 
-### Скриншот 1: Два профиля в комнате
-- **Причина**: Reconnect storm на мобильном создаёт несколько token requests
-- **Решение**: Debounce ✅
+Добавить специальную обработку для `NotAllowedError`:
 
-### Скриншот 2: "Два окошка" на главной
-- **Анализ**: Это не баг — форма имеет один контейнер с glassmorphism эффектом
-- На мобильном границы более тонкие (border-white/15) чем на десктопе (border-primary/40)
-- Если визуально кажется что их два — это из-за gradient overlay внутри карточки
+1. Если пользователь отменил выбор — тихо выйти без ошибки
+2. Если ошибка связана с политикой безопасности — показать понятное сообщение
+3. Улучшить логирование для других ошибок
 
-### Скриншот 3: REC и "Связь восстановлена"
-- **REC**: Исправлено отключением автозаписи ✅
-- **Reconnect**: Debounce должен уменьшить количество переподключений ✅
-- **Камера/микрофон**: Требуется user gesture на iOS — возможно нужна кнопка "Разрешить"
+## Файл для изменения
 
----
+### `src/components/LiveKitRoom.tsx`
 
-## Оставшиеся проблемы (требуют дальнейшего исследования)
+**Строки 1249-1263** — улучшить обработку ошибок screen share:
 
-### Камера и микрофон не работают на мобильном
-- Код уже содержит iOS Safe Mode с оптимизированными настройками
-- Возможные причины:
-  1. Разрешения не даны (нужен user gesture)
-  2. Конфликт с другим приложением (Telegram in-app browser?)
-  3. iOS ограничения на simulcast
+```diff
+    } catch (err: any) {
++     // Handle user cancellation (not an error - user just closed the picker)
++     if (err?.name === 'NotAllowedError' || err?.message?.includes('cancelled') || err?.message?.includes('canceled')) {
++       console.log('[LiveKitRoom] Screen share cancelled by user');
++       return; // Silent exit, not an error
++     }
++     
++     // Handle security/permission errors
++     if (err?.name === 'SecurityError' || err?.message?.includes('permission')) {
++       console.warn('[LiveKitRoom] Screen share blocked by browser security policy');
++       toast.error('Демонстрация экрана заблокирована', { 
++         description: 'Проверьте разрешения браузера'
++       });
++       return;
++     }
++     
+      if ((err?.code === 13 || err?.name === 'NegotiationError') && !isRoomReconnecting) {
+        console.warn('[LiveKitRoom] NegotiationError on screen share, retrying...');
+        onNegotiationError?.(err);
+        await new Promise(r => setTimeout(r, 600));
+        try {
+          const currentState = localParticipant?.isScreenShareEnabled ?? false;
+          await localParticipant?.setScreenShareEnabled(!currentState);
+        } catch (retryErr) {
+          console.error('Failed to toggle screen share after retry:', retryErr);
+          toast.error('Не удалось включить демонстрацию экрана');
+        }
+      } else {
+-       console.error('Failed to toggle screen share:', err);
++       // Log with more details for debugging
++       console.error('Failed to toggle screen share:', {
++         name: err?.name,
++         message: err?.message,
++         code: err?.code,
++         stack: err?.stack
++       });
++       toast.error('Ошибка демонстрации экрана', {
++         description: err?.message || 'Попробуйте ещё раз'
++       });
+      }
+    }
+```
 
-### Постоянные reconnect
-- Debounce добавлен, но root cause может быть в:
-  1. Нестабильном мобильном интернете
-  2. LiveKit server timeout settings
-  3. iOS background app restrictions
+## Техническая схема
 
----
+```text
+СЕЙЧАС:
+┌─────────────────────────────────────────────────────────────────────────┐
+│                                                                         │
+│  Пользователь нажал "Отмена" в диалоге выбора экрана                   │
+│           ↓                                                             │
+│  Браузер выбрасывает NotAllowedError                                   │
+│           ↓                                                             │
+│  LiveKit SDK обёртывает в объект без свойств                           │
+│           ↓                                                             │
+│  console.error('Failed to toggle screen share:', {})                   │
+│           ↓                                                             │
+│  ОШИБКА в консоли (хотя это НЕ ошибка)                                │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
 
-## Файлы изменены
+ПОСЛЕ:
+┌─────────────────────────────────────────────────────────────────────────┐
+│                                                                         │
+│  Пользователь нажал "Отмена"                                           │
+│           ↓                                                             │
+│  err?.name === 'NotAllowedError'?                                      │
+│           ↓                                                             │
+│  ДА → console.log('cancelled by user') → return                        │
+│  НЕТ → продолжаем обработку ошибки → toast.error()                     │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
 
-| Файл | Изменение |
-|------|-----------|
-| `src/components/DrawingOverlay.tsx` | cancelAnimationFrame + ignore incoming laser |
-| `src/components/InCallChat.tsx` | text-base для mobile input |
-| `src/components/LiveKitRoom.tsx` | debounce token fetch |
-| `src/pages/MeetingRoom.tsx` | force autoRecordEnabled = false |
+## Ожидаемый результат
+
+1. **Отмена пользователем**: Тихий выход, без ошибки в консоли
+2. **Блокировка браузером**: Понятное сообщение "Демонстрация экрана заблокирована"
+3. **Другие ошибки**: Детальное логирование с name/message/code для отладки
+4. **Все ошибки**: Показывают toast с описанием проблемы
+
