@@ -926,9 +926,12 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose, onCanva
     handleMouseMove(e);
   }, [handleMouseMove, resetHideTimer]);
 
-  if (!isOpen) return null;
-
-  // Touch handlers for mobile drawing
+  // =========================================
+  // CRITICAL: All useCallback hooks MUST be ABOVE any early return!
+  // This prevents "Rendered more hooks than during the previous render" errors
+  // =========================================
+  
+  // Touch handlers for mobile drawing - moved ABOVE early return
   const getTouchPosition = useCallback((e: React.TouchEvent<HTMLCanvasElement>): { x: number; y: number } => {
     const canvas = canvasRef.current;
     if (!canvas || e.touches.length === 0) return { x: 0, y: 0 };
@@ -945,7 +948,15 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose, onCanva
     e.preventDefault();
     setIsDrawing(true);
     resetHideTimer();
-    const pos = getTouchPosition(e);
+    const canvas = canvasRef.current;
+    if (!canvas || e.touches.length === 0) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0];
+    const pos = {
+      x: touch.clientX - rect.left,
+      y: touch.clientY - rect.top,
+    };
     
     if (tool === 'pen' || tool === 'eraser') {
       lastPointRef.current = pos;
@@ -955,19 +966,26 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose, onCanva
       broadcastLaserPoint(point);
     } else {
       shapeStartRef.current = pos;
-      const canvas = canvasRef.current;
       const ctx = contextRef.current;
       if (canvas && ctx) {
         savedImageDataRef.current = ctx.getImageData(0, 0, canvas.width, canvas.height);
       }
     }
-  }, [getTouchPosition, tool, resetHideTimer, broadcastLaserPoint]);
+  }, [tool, resetHideTimer, broadcastLaserPoint]);
 
   const handleTouchMove = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
     if (e.touches.length === 0) return;
     
-    const currentPoint = getTouchPosition(e);
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0];
+    const currentPoint = {
+      x: touch.clientX - rect.left,
+      y: touch.clientY - rect.top,
+    };
 
     if (tool === 'laser') {
       const point = { x: currentPoint.x, y: currentPoint.y, timestamp: Date.now() };
@@ -1002,7 +1020,7 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose, onCanva
       };
       drawShape(shape, true);
     }
-  }, [isDrawing, color, brushSize, tool, getTouchPosition, drawStroke, drawShape, broadcastStroke, broadcastLaserPoint]);
+  }, [isDrawing, color, brushSize, tool, drawStroke, drawShape, broadcastStroke, broadcastLaserPoint]);
 
   const handleTouchEnd = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
     if (!isDrawing) return;
@@ -1047,6 +1065,11 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose, onCanva
     shapeStartRef.current = null;
     savedImageDataRef.current = null;
   }, [isDrawing, tool, color, brushSize, drawShape, broadcastShape, saveToHistory]);
+
+  // =========================================
+  // SAFE TO RETURN NULL HERE - all hooks already called
+  // =========================================
+  if (!isOpen) return null;
 
   // Mobile-only essential tools (subset)
   const MOBILE_TOOLS: { id: Tool; icon: React.ComponentType<any>; label: string }[] = [

@@ -2284,7 +2284,7 @@ function LiveKitContent({
                             : "bg-white/5 hover:bg-white/10"
                         )}
                       >
-                        <PictureInPicture className={cn("w-4 h-4", isPiPActive && "text-green-400")} />
+                        <PictureInPicture className={cn("w-5 h-5", isPiPActive && "text-green-400")} />
                         <span className="text-[9px] whitespace-nowrap">PiP</span>
                       </button>
                     </CallMenuHint>
@@ -2304,7 +2304,7 @@ function LiveKitContent({
                           : "bg-white/5 hover:bg-white/10"
                       )}
                     >
-                      <LayoutGrid className="w-4 h-4" />
+                      <LayoutGrid className="w-5 h-5" />
                       <span className="text-[9px] whitespace-nowrap">Доска</span>
                     </button>
                   </CallMenuHint>
@@ -2323,7 +2323,7 @@ function LiveKitContent({
                           : "bg-white/5 hover:bg-white/10"
                       )}
                     >
-                      <Pencil className="w-4 h-4" />
+                      <Pencil className="w-5 h-5" />
                       <span className="text-[9px] whitespace-nowrap">Рисовать</span>
                     </button>
                   </CallMenuHint>
