@@ -1247,6 +1247,21 @@ function LiveKitContent({
       const currentState = localParticipant?.isScreenShareEnabled ?? false;
       await localParticipant?.setScreenShareEnabled(!currentState);
     } catch (err: any) {
+      // Handle user cancellation (not an error - user just closed the picker)
+      if (err?.name === 'NotAllowedError' || err?.message?.includes('cancelled') || err?.message?.includes('canceled')) {
+        console.log('[LiveKitRoom] Screen share cancelled by user');
+        return; // Silent exit, not an error
+      }
+      
+      // Handle security/permission errors
+      if (err?.name === 'SecurityError' || err?.message?.includes('permission')) {
+        console.warn('[LiveKitRoom] Screen share blocked by browser security policy');
+        toast.error('Демонстрация экрана заблокирована', { 
+          description: 'Проверьте разрешения браузера'
+        });
+        return;
+      }
+      
       if ((err?.code === 13 || err?.name === 'NegotiationError') && !isRoomReconnecting) {
         console.warn('[LiveKitRoom] NegotiationError on screen share, retrying...');
         onNegotiationError?.(err);
@@ -1259,7 +1274,16 @@ function LiveKitContent({
           toast.error('Не удалось включить демонстрацию экрана');
         }
       } else {
-        console.error('Failed to toggle screen share:', err);
+        // Log with more details for debugging
+        console.error('Failed to toggle screen share:', {
+          name: err?.name,
+          message: err?.message,
+          code: err?.code,
+          stack: err?.stack
+        });
+        toast.error('Ошибка демонстрации экрана', {
+          description: err?.message || 'Попробуйте ещё раз'
+        });
       }
     } finally {
       setTimeout(() => { isTogglingMediaRef.current = false; }, TOGGLE_LOCK_DURATION_MS);
