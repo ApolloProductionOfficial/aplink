@@ -229,7 +229,9 @@ const MeetingRoomContent = ({ roomId, userName }: MeetingRoomContentProps) => {
           .eq('user_id', user.id)
           .maybeSingle();
 
-        const autoRecordEnabled = profileData?.auto_record_enabled ?? false;
+        // FORCE AUTO-RECORD OFF: Never auto-start recording on mobile or desktop
+        // Users must manually start recording via the REC button
+        const autoRecordEnabled = false; // Disabled by default, ignore profile setting
         
         if (!autoRecordEnabled) {
           console.log('[MeetingRoom] Auto-recording disabled in profile settings');

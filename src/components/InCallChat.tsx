@@ -668,7 +668,9 @@ export function InCallChat({ room, participantName, isOpen, onToggle, buttonOnly
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Сообщение..."
-            className="flex-1 h-10 bg-white/10 border-white/[0.08] rounded-full px-4 text-sm focus:border-primary/50"
+            // CRITICAL: Use text-base (16px) on mobile to prevent iOS Safari auto-zoom
+            // iOS Safari auto-zooms inputs with font-size < 16px
+            className="flex-1 h-10 bg-white/10 border-white/[0.08] rounded-full px-4 text-base sm:text-sm focus:border-primary/50"
             disabled={isRecordingVoice}
           />
           <Popover>
