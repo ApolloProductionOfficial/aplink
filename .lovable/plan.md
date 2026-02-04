@@ -1,156 +1,247 @@
 
-# План: Исправление критической ошибки React Hooks и доработка UI
+# План: Исправление UI меню "Ещё", пропадания рисунков и ускорение субтитров
 
-## Проблема #1 (КРИТИЧЕСКАЯ): Краш при закрытии DrawingOverlay
+## Обнаруженные проблемы
 
-### Корневая причина
+### 1. Неровные кнопки в меню "Ещё" (PiP, Доска, Рисовать)
 
-В `DrawingOverlay.tsx` есть структурная ошибка порядка хуков:
+**Причина**: В `LiveKitRoom.tsx`:
+- Кнопки Layout (Фокус, Галерея, Вебинар) имеют `min-w-[56px]` (строки 2227, 2244, 2261)
+- Кнопки Tools (PiP, Доска, Рисовать) **НЕ ИМЕЮТ** `min-w-[56px]` — они используют только `p-2` и `flex flex-col`
+- Результат: Tools кнопки разного размера, не выровнены с Layout
 
-```tsx
-// Строка 929
-if (!isOpen) return null;
-
-// После этой строки идут useCallback (строки 944, 966, 1005):
-const handleTouchStart = useCallback((...) => {}, [...]);
-const handleTouchMove = useCallback((...) => {}, [...]);
-const handleTouchEnd = useCallback((...) => {}, [...]);
-```
-
-Когда `isOpen` меняется с `true` на `false`:
-- React ожидает тот же порядок и количество хуков
-- Но `return null` прерывает выполнение РАНЬШЕ, чем вызываются эти useCallback
-- = **"Rendered more hooks than during the previous render"**
-
-### Решение
-
-Перенести ВСЕ useCallback (handleTouchStart, handleTouchMove, handleTouchEnd) ВЫШЕ строки `if (!isOpen) return null`.
-
-Это критически важно для соблюдения правил React: "Хуки должны вызываться в одинаковом порядке при каждом рендере".
+**Решение**: Добавить `min-w-[56px]` к кнопкам PiP, Доска, Рисовать для единообразия с верхним рядом.
 
 ---
 
-## Проблема #2: Иконки PiP/Доска/Рисовать слишком маленькие
+### 2. Рисунок пропадает при использовании инструмента "Рисовать"
 
-### Текущее состояние
+**Причина**: В `DrawingOverlay.tsx` laser animation loop (строки 733-771) работает ПОСТОЯННО когда `isOpen=true`:
 
-В меню "Ещё" (LiveKitRoom.tsx, строки 2273-2331) иконки используют:
-- `w-4 h-4` (16px)
-- Кнопки имеют `min-w-[56px]` и `p-2`
+```typescript
+const animate = () => {
+  if (laserPointsRef.current.length > 0) {
+    if (!baseImageDataRef.current) {
+      baseImageDataRef.current = ctx.getImageData(...); // Сохраняет
+    }
+    ctx.putImageData(baseImageDataRef.current, 0, 0); // Восстанавливает СТАРОЕ состояние
+    drawLaserPoints();
+  } else {
+    baseImageDataRef.current = null; // ПРОБЛЕМА: сбрасывает без сохранения
+  }
+  requestAnimationFrame(animate);
+};
+```
 
-Это создаёт визуальный дисбаланс — маленькие иконки в больших кнопках.
+Когда инструмент НЕ laser, но пользователь рисует, `laserPointsRef.current.length === 0` и `baseImageDataRef.current = null` каждый кадр. Это НЕ стирает холст напрямую, но если пользователь переключился с laser на pen и быстро нарисовал, предыдущее состояние могло восстановиться.
 
-### Решение
+**Дополнительная проблема**: При наличии laser points система ВОССТАНАВЛИВАЕТ `baseImageDataRef` каждый кадр, перезаписывая новые рисунки.
 
-Увеличить иконки до `w-5 h-5` (20px) для:
-- PiP (строка 2287)
-- Доска (строка 2307)
-- Рисовать (строка 2326)
+**Решение**: 
+1. Запускать laser animation loop ТОЛЬКО когда `tool === 'laser'`
+2. При переключении с laser на другой инструмент — сохранить текущее состояние холста в historyRef
+3. Не восстанавливать baseImageData если laser точка не активна
 
 ---
 
-## Проблема #3: Автозапись включается автоматически
+### 3. Синхронизация рисования/доски между участниками
 
-### Текущее состояние (уже правильно)
+**Текущее состояние**: Уже работает через LiveKit Data Channel:
+- `DRAWING_OVERLAY_STROKE` — синхронизирует штрихи
+- `DRAWING_OVERLAY_SHAPE` — синхронизирует фигуры
+- `WHITEBOARD_OPEN` — открывает доску у всех участников
 
-Код в MeetingRoom.tsx (строки 223-231):
-```tsx
-const autoRecordEnabled = profileData?.auto_record_enabled ?? false;
-
-if (!autoRecordEnabled) {
-  // Показывает промт 15 секунд
-  setShowManualRecordPrompt(true);
-  setTimeout(() => setShowManualRecordPrompt(false), 15000);
-  return;
-}
-```
-
-Это уже соответствует запросу "Только вручную".
-
-### Дополнительная мера
-
-Убедиться, что на iOS промт не срабатывает автоматически при reconnect. Добавить флаг `hasShownManualPromptRef` чтобы промт показывался только один раз за сессию.
+Нужно убедиться что broadcast работает стабильно.
 
 ---
 
-## Проблема #4: Desktop эффекты (glass-shine, border-primary/40)
+### 4. Субтитры работают медленно (не одновременно с речью)
 
-### Проверка выполнена
+**Текущий pipeline**:
+1. VAD определяет речь (threshold 0.01 RMS)
+2. Ждёт 1.2 секунды тишины (строка 398)
+3. Создаёт аудио blob
+4. Отправляет на ElevenLabs Scribe (~1-2 сек)
+5. Отправляет на correct-caption для перевода (~1-2 сек)
+6. Отображает субтитры
 
-Код в Index.tsx (строка 461-472):
-```tsx
-className="... border border-white/15 md:border-primary/40 ..."
+**Итого**: 3-5 секунд задержки между речью и субтитрами.
 
-<div className="... hidden md:block">
-  <div className="... animate-glass-shine" ...>
-```
+**Решение для ускорения**:
+1. **Streaming transcription** — отправлять аудио ПОКА человек говорит (каждые 2-3 секунды), а не ждать окончания фразы
+2. Уменьшить silence timeout с 1200ms до 800ms
+3. Параллельно запускать transcription и translation (если язык можно определить быстро)
 
-Desktop-эффекты сохранены корректно:
-- `md:border-primary/40` — яркая обводка только на ≥768px
-- `hidden md:block` — анимация shine только на desktop
+---
+
+### 5. Мобильная синхронизация ПК ↔ Телефон
+
+Убедиться что Data Channel работает стабильно на мобильных:
+- Используется `reliable: true` для важных данных
+- Используется `reliable: false` для laser pointer (можно терять)
 
 ---
 
 ## Файлы для изменения
 
-### 1. `src/components/DrawingOverlay.tsx`
-- Перенести handleTouchStart, handleTouchMove, handleTouchEnd ВЫШЕ `if (!isOpen) return null`
-- Это устранит краш "Rendered more hooks"
+### 1. `src/components/LiveKitRoom.tsx`
+**Строки 2276-2329** — добавить `min-w-[56px]` к кнопкам PiP, Доска, Рисовать:
 
-### 2. `src/components/LiveKitRoom.tsx`
-- Увеличить иконки в инструментах (PiP, Доска, Рисовать) с `w-4 h-4` до `w-5 h-5`
+```diff
+<button
+  onClick={togglePiP}
+  className={cn(
+-   "flex flex-col items-center gap-1 p-2 rounded-xl transition-all",
++   "flex flex-col items-center gap-1 p-2 rounded-xl transition-all min-w-[56px]",
+    isPiPActive ...
+  )}
+>
+```
 
-### 3. `src/pages/MeetingRoom.tsx`
-- Добавить флаг предотвращения повторного показа промта записи при reconnect
+### 2. `src/components/DrawingOverlay.tsx`
+**Строки 733-771** — исправить laser animation loop:
+
+```diff
+// Laser animation loop - ONLY run when tool is 'laser'
+useEffect(() => {
+- if (!isOpen) return;
++ if (!isOpen || tool !== 'laser') return;
+  
+  const canvas = canvasRef.current;
+  const ctx = contextRef.current;
+  if (!canvas || !ctx) return;
+  
+  const animate = () => {
++   // Exit early if tool changed
++   if (tool !== 'laser') {
++     // Save current state before stopping
++     if (baseImageDataRef.current) {
++       // Don't lose drawings - keep the canvas as-is
++       baseImageDataRef.current = null;
++     }
++     return;
++   }
++   
+    if (laserPointsRef.current.length > 0) {
+      if (!baseImageDataRef.current) {
+        baseImageDataRef.current = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      }
+      ctx.putImageData(baseImageDataRef.current, 0, 0);
+      drawLaserPoints();
+-     if (laserPointsRef.current.length === 0) {
+-       baseImageDataRef.current = null;
+-     }
+    } else {
+-     baseImageDataRef.current = null;
++     // When laser stops, save final state including any new drawings
++     if (baseImageDataRef.current) {
++       // Canvas already has the correct state, just clear the cache
++       baseImageDataRef.current = null;
++     }
+    }
+    
+    laserAnimationRef.current = requestAnimationFrame(animate);
+  };
+  
+  animate();
+  
+  return () => {
+    if (laserAnimationRef.current) {
+      cancelAnimationFrame(laserAnimationRef.current);
+    }
+  };
+- }, [isOpen, drawLaserPoints]);
++ }, [isOpen, tool, drawLaserPoints]);
+```
+
+### 3. `src/hooks/useRealtimeCaptions.ts`
+**Строка 398** — ускорить распознавание:
+
+```diff
+- }, 1200); // Longer pause (1.2s) to capture complete phrases
++ }, 800); // Faster response (0.8s) - still captures phrases but more responsive
+```
+
+Добавить streaming режим для параллельной обработки (опционально, более сложное изменение):
+- Отправлять chunks каждые 2-3 секунды пока говорит
+- Объединять результаты на клиенте
 
 ---
 
 ## Техническая схема
 
 ```text
-ПРОБЛЕМА: Краш при закрытии DrawingOverlay
-┌─────────────────────────────────────────────────────┐
-│ DrawingOverlay.tsx                                  │
-├─────────────────────────────────────────────────────┤
-│                                                     │
-│ // Хуки 1-20: useState, useRef, useCallback...     │
-│                                                     │
-│ if (!isOpen) return null; // Строка 929            │
-│                      ↑                              │
-│                      │ РАННЕЕ ВОЗВРАЩЕНИЕ           │
-│                      │                              │
-│ handleTouchStart = useCallback(...) // Хук 21 ❌   │
-│ handleTouchMove = useCallback(...) // Хук 22 ❌    │
-│ handleTouchEnd = useCallback(...) // Хук 23 ❌     │
-│                                                     │
-│ ❌ При isOpen=false хуки 21-23 не вызываются!      │
-│                                                     │
-└─────────────────────────────────────────────────────┘
+ПРОБЛЕМА: Кнопки разного размера
+┌──────────────────────────────────────────────────────────────┐
+│ Меню "Ещё"                                                  │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  [Фокус]   [Галерея]  [Вебинар]   <- min-w-[56px] ✓         │
+│   56px       56px       56px                                │
+│                                                              │
+│  [PiP]     [Доска]   [Рисовать]   <- НЕТ min-w ✗            │
+│   42px       48px       52px      <- РАЗНЫЕ размеры         │
+│                                                              │
+│ ПОСЛЕ ИСПРАВЛЕНИЯ:                                          │
+│  [PiP]     [Доска]   [Рисовать]   <- min-w-[56px] ✓         │
+│   56px       56px       56px      <- ОДИНАКОВЫЕ             │
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
 
-РЕШЕНИЕ:
-┌─────────────────────────────────────────────────────┐
-│ DrawingOverlay.tsx (после исправления)             │
-├─────────────────────────────────────────────────────┤
-│                                                     │
-│ // ВСЕ хуки (1-23) объявлены ЗДЕСЬ                 │
-│ handleTouchStart = useCallback(...)                │
-│ handleTouchMove = useCallback(...)                 │
-│ handleTouchEnd = useCallback(...)                  │
-│                                                     │
-│ // Проверка ПОСЛЕ всех хуков                       │
-│ if (!isOpen) return null;                          │
-│                                                     │
-│ // JSX возвращается только когда isOpen=true       │
-│ return createPortal(...)                           │
-│                                                     │
-└─────────────────────────────────────────────────────┘
+ПРОБЛЕМА: Рисунок пропадает
+┌──────────────────────────────────────────────────────────────┐
+│ Laser Animation Loop (60 FPS)                               │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│ СЕЙЧАС (всегда работает):                                   │
+│ ┌─────────────────────────────────────────────────────────┐  │
+│ │ animate() {                                             │  │
+│ │   if (laserPoints > 0) {                               │  │
+│ │     ctx.putImageData(OLD_STATE) // Перезаписывает!     │  │
+│ │   } else {                                             │  │
+│ │     baseImageData = null        // Сбрасывает каждый кадр │ │
+│ │   }                                                    │  │
+│ │   requestAnimationFrame(animate)                       │  │
+│ │ }                                                      │  │
+│ └─────────────────────────────────────────────────────────┘  │
+│                                                              │
+│ ПОСЛЕ (только для laser):                                   │
+│ ┌─────────────────────────────────────────────────────────┐  │
+│ │ useEffect(() => {                                      │  │
+│ │   if (!isOpen || tool !== 'laser') return; // ⬅ GUARD │  │
+│ │   animate()...                                         │  │
+│ │ }, [isOpen, tool, drawLaserPoints]);                   │  │
+│ └─────────────────────────────────────────────────────────┘  │
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
+
+ПРОБЛЕМА: Субтитры медленные
+┌──────────────────────────────────────────────────────────────┐
+│ Pipeline (текущий)                                          │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│ Говорит → 1.2s тишины → ElevenLabs → AI Translation → Display│
+│           ↑                 ↑             ↑                  │
+│        1.2 sec          1-2 sec        1-2 sec               │
+│                                                              │
+│ ИТОГО: 3-5 секунд задержки                                  │
+│                                                              │
+│ ПОСЛЕ (0.8s silence):                                       │
+│ Говорит → 0.8s тишины → ElevenLabs → AI Translation → Display│
+│           ↑                                                  │
+│        0.8 sec                                               │
+│                                                              │
+│ ИТОГО: ~2-4 секунды (улучшение ~1 секунда)                  │
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
 ## Ожидаемый результат
 
-1. **Краш устранён**: Нажатие "Рисовать" → рисование → закрытие панели работает без ошибок
-2. **Иконки нормального размера**: PiP, Доска, Рисовать выглядят пропорционально
-3. **Запись только вручную**: Промт показывается 15 секунд, автозапись не включается
-4. **Desktop эффекты сохранены**: glass-shine и border-primary/40 работают на ≥768px
+1. **Ровные кнопки**: PiP, Доска, Рисовать будут одинакового размера (56px) как верхний ряд
+2. **Рисунок не пропадает**: Laser animation loop не перезаписывает рисунки других инструментов
+3. **Быстрее субтитры**: Задержка уменьшена с 3-5 до 2-4 секунд
+4. **Синхронизация**: Рисование и доска видны всем участникам через Data Channel
+5. **Мобильная стабильность**: Правильный reliable/unreliable для разных типов данных
