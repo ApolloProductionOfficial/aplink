@@ -730,15 +730,23 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose, onCanva
     return () => { room.off(RoomEvent.DataReceived, handleData); };
   }, [room, isOpen, drawStroke, drawShape, participantName]);
 
-  // Laser animation loop - uses ref to persist baseImageData across color changes
+  // Laser animation loop - ONLY runs when tool is 'laser' to prevent overwriting drawings
   useEffect(() => {
-    if (!isOpen) return;
+    // Guard: only run when open AND using laser tool
+    if (!isOpen || tool !== 'laser') return;
     
     const canvas = canvasRef.current;
     const ctx = contextRef.current;
     if (!canvas || !ctx) return;
     
     const animate = () => {
+      // Double-check tool hasn't changed during animation
+      if (tool !== 'laser') {
+        // Tool changed - clear base and stop
+        baseImageDataRef.current = null;
+        return;
+      }
+      
       // Only run animation if there are laser points
       if (laserPointsRef.current.length > 0) {
         // Save current state if we haven't yet (use ref so it's cleared on color change)
@@ -749,12 +757,8 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose, onCanva
         // Restore base and draw laser
         ctx.putImageData(baseImageDataRef.current, 0, 0);
         drawLaserPoints();
-        
-        // Clear base if no more points
-        if (laserPointsRef.current.length === 0) {
-          baseImageDataRef.current = null;
-        }
-      } else {
+      } else if (baseImageDataRef.current) {
+        // Laser stopped - clear the cached base so new drawings persist
         baseImageDataRef.current = null;
       }
       
@@ -767,8 +771,10 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose, onCanva
       if (laserAnimationRef.current) {
         cancelAnimationFrame(laserAnimationRef.current);
       }
+      // Clear base when switching away from laser to preserve drawings
+      baseImageDataRef.current = null;
     };
-  }, [isOpen, drawLaserPoints]);
+  }, [isOpen, tool, drawLaserPoints]);
 
   // Get position relative to canvas
   const getPosition = useCallback((e: React.MouseEvent<HTMLCanvasElement>): { x: number; y: number } => {
