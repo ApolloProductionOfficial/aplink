@@ -2278,7 +2278,7 @@ function LiveKitContent({
                       <button
                         onClick={togglePiP}
                         className={cn(
-                          "flex flex-col items-center gap-1 p-2 rounded-xl transition-all",
+                          "flex flex-col items-center gap-1 p-2 rounded-xl transition-all min-w-[56px]",
                           isPiPActive 
                             ? "bg-green-500/20 border border-green-500/30" 
                             : "bg-white/5 hover:bg-white/10"
@@ -2298,7 +2298,7 @@ function LiveKitContent({
                         setShowDrawingOverlay(false);
                       }}
                       className={cn(
-                        "flex flex-col items-center gap-1 p-2 rounded-xl transition-all",
+                        "flex flex-col items-center gap-1 p-2 rounded-xl transition-all min-w-[56px]",
                         showWhiteboard 
                           ? "bg-primary/20 border border-primary/30" 
                           : "bg-white/5 hover:bg-white/10"
@@ -2317,7 +2317,7 @@ function LiveKitContent({
                         setShowWhiteboard(false);
                       }}
                       className={cn(
-                        "flex flex-col items-center gap-1 p-2 rounded-xl transition-all",
+                        "flex flex-col items-center gap-1 p-2 rounded-xl transition-all min-w-[56px]",
                         showDrawingOverlay 
                           ? "bg-primary/20 border border-primary/30" 
                           : "bg-white/5 hover:bg-white/10"

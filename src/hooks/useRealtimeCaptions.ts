@@ -395,7 +395,7 @@ export const useRealtimeCaptions = ({
                 mediaRecorderRef.current.stop();
                 isRecordingRef.current = false;
               }
-            }, 1200); // Longer pause (1.2s) to capture complete phrases
+            }, 800); // Faster response (0.8s) for more responsive captions
           }
         } else if (isSpeaking && silenceTimeoutRef.current) {
           // Voice resumed - cancel silence timeout
