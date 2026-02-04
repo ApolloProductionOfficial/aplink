@@ -208,6 +208,8 @@ const MeetingRoomContent = ({ roomId, userName }: MeetingRoomContentProps) => {
 
   // State for manual recording prompt
   const [showManualRecordPrompt, setShowManualRecordPrompt] = useState(false);
+  // Prevent showing prompt multiple times on iOS reconnect
+  const hasShownManualPromptRef = useRef(false);
 
   // Auto-start recording for authenticated users (if enabled in settings)
   const autoStartRecording = useCallback(async () => {
@@ -224,10 +226,13 @@ const MeetingRoomContent = ({ roomId, userName }: MeetingRoomContentProps) => {
         
         if (!autoRecordEnabled) {
           console.log('[MeetingRoom] Auto-recording disabled in profile settings');
-          // Show prompt for manual recording - longer on mobile for better visibility
-          setShowManualRecordPrompt(true);
-          // Auto-hide after 15 seconds (longer for mobile users)
-          setTimeout(() => setShowManualRecordPrompt(false), 15000);
+          // Show prompt only once per session (prevents duplicate on iOS reconnect)
+          if (!hasShownManualPromptRef.current) {
+            hasShownManualPromptRef.current = true;
+            setShowManualRecordPrompt(true);
+            // Auto-hide after 15 seconds (longer for mobile users)
+            setTimeout(() => setShowManualRecordPrompt(false), 15000);
+          }
           return;
         }
 
