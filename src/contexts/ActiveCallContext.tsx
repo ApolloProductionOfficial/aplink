@@ -93,6 +93,10 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
   const [forceReconnectKey, setForceReconnectKey] = useState(0);
   const roomRef = useRef<Room | null>(null);
   const handlersRef = useRef<CallEventHandlers>({});
+  
+  // MOBILE FIX: Strict lock to prevent duplicate startCall executions
+  const isStartingCallRef = useRef(false);
+  const activeRoomSlugRef = useRef<string | null>(null);
 
   const startCall = useCallback((params: {
     roomName: string;
@@ -101,14 +105,32 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
     participantIdentity?: string;
     roomDisplayName: string;
   }) => {
-    // Skip if call is already active for the same room - prevents double initialization on maximize
+    // MOBILE FIX: Use ref-based lock to prevent race conditions
+    // Check ref BEFORE setState to prevent concurrent calls from queuing up
+    if (isStartingCallRef.current) {
+      console.log('[ActiveCallContext] startCall already in progress - skipping');
+      return;
+    }
+    
+    if (activeRoomSlugRef.current === params.roomSlug) {
+      console.log('[ActiveCallContext] Call already active for room:', params.roomSlug, '- skipping');
+      return;
+    }
+    
+    // Lock immediately before any async work
+    isStartingCallRef.current = true;
+    activeRoomSlugRef.current = params.roomSlug;
+    
+    console.log('[ActiveCallContext] Starting call for room:', params.roomSlug);
+    
+    // Use functional update to ensure we're working with latest state
     setState(prev => {
+      // Double-check inside setState in case of rapid calls
       if (prev.isActive && prev.roomSlug === params.roomSlug) {
-        console.log('[ActiveCallContext] Call already active for room:', params.roomSlug, '- skipping startCall');
+        console.log('[ActiveCallContext] (inside setState) Call already active, skipping');
         return prev;
       }
       
-      console.log('[ActiveCallContext] Starting call for room:', params.roomSlug);
       return {
         ...defaultState,
         isActive: true,
@@ -131,11 +153,20 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
         isRoomReconnecting: false,
       };
     });
+    
+    // Release lock after setState is queued (microtask)
+    queueMicrotask(() => {
+      isStartingCallRef.current = false;
+    });
   }, []);
 
   const endCall = useCallback(() => {
+    console.log('[ActiveCallContext] Ending call');
     roomRef.current = null;
     handlersRef.current = {};
+    // Reset refs to allow new calls
+    isStartingCallRef.current = false;
+    activeRoomSlugRef.current = null;
     setState(defaultState);
     setForceReconnectKey(0);
   }, []);

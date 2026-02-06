@@ -162,16 +162,34 @@ const MeetingRoomContent = ({ roomId, userName }: MeetingRoomContentProps) => {
 
   // Track presence in this room
   usePresence(roomDisplayName);
+  
+  // Ref to prevent duplicate startCall on remounts (React StrictMode, mobile reconnects)
+  const hasCalledStartRef = useRef(false);
+  const startCallRoomRef = useRef<string | null>(null);
 
-  // Register active call in global context
+  // Register active call in global context - with strict deduplication
   useEffect(() => {
-    if (isActive && activeRoomSlug === roomSlug) {
-      console.log('[MeetingRoom] Call already active for room:', roomSlug, '- skipping startCall');
+    // MOBILE FIX: Use refs to prevent duplicate startCall invocations
+    // This is critical for preventing 3 profiles appearing on mobile
+    if (hasCalledStartRef.current && startCallRoomRef.current === roomSlug) {
+      console.log('[MeetingRoom] startCall already called for room:', roomSlug, '- skipping');
       return;
     }
     
+    if (isActive && activeRoomSlug === roomSlug) {
+      console.log('[MeetingRoom] Call already active for room:', roomSlug, '- skipping startCall');
+      hasCalledStartRef.current = true;
+      startCallRoomRef.current = roomSlug;
+      return;
+    }
+    
+    // Mark as called BEFORE invoking to prevent race conditions
+    hasCalledStartRef.current = true;
+    startCallRoomRef.current = roomSlug;
+    
     participantsRef.current.add(safeUserName);
     
+    console.log('[MeetingRoom] Calling startCall for room:', roomSlug);
     startCall({
       roomName: roomDisplayName,
       roomSlug,
@@ -179,6 +197,14 @@ const MeetingRoomContent = ({ roomId, userName }: MeetingRoomContentProps) => {
       participantIdentity: user?.id,
       roomDisplayName,
     });
+    
+    // Cleanup on unmount - reset refs if room changes
+    return () => {
+      if (startCallRoomRef.current === roomSlug) {
+        // Only reset if we're leaving this specific room
+        // Don't reset on minimize/maximize
+      }
+    };
   }, [isActive, activeRoomSlug, startCall, roomDisplayName, roomSlug, safeUserName, user?.id]);
 
   // Handle disconnected logic

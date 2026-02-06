@@ -188,10 +188,14 @@ export function LiveKitRoom({
   const currentRoomRef = useRef<string | null>(null);
   const isFetchingRef = useRef(false);
   
-  // MOBILE FIX: Debounce token fetch to prevent duplicate participants on reconnect storm
+  // MOBILE FIX: Stronger debounce and serial lock for token fetch
+  // Prevents reconnect storms from creating duplicate participants
   const fetchDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const lastFetchTimeRef = useRef<number>(0);
-  const FETCH_DEBOUNCE_MS = 1000; // Minimum 1 second between token fetches
+  const lastFetchRoomRef = useRef<string | null>(null);
+  const FETCH_DEBOUNCE_MS = 2000; // Increased to 2 seconds for mobile stability
+  const FETCH_SERIAL_LOCK_MS = 500; // Minimum time between fetch attempts
+  const serialLockRef = useRef<Promise<boolean> | null>(null);
   
   // Stable token ref to prevent re-renders from triggering reconnection
   const tokenRef = useRef<string | null>(null);
@@ -214,12 +218,20 @@ export function LiveKitRoom({
   // IMPORTANT: use state token here; refs don't trigger renders and shouldn't be hook deps
   const memoizedToken = useMemo(() => token, [token]);
 
-  // Fetch token function - can be called for initial fetch or refresh
+  // Fetch token function with serial lock - prevents concurrent requests
   const fetchToken = useCallback(async (isRefresh = false): Promise<boolean> => {
-    // MOBILE FIX: Debounce to prevent duplicate participants from reconnect storm
+    // MOBILE FIX: Serial lock - wait for any pending fetch to complete
+    if (serialLockRef.current) {
+      console.log("[LiveKitRoom] Waiting for pending token fetch to complete...");
+      await serialLockRef.current;
+    }
+    
+    // MOBILE FIX: Strong debounce - reject if too soon after last fetch for same room
     const now = Date.now();
-    if (now - lastFetchTimeRef.current < FETCH_DEBOUNCE_MS && !isRefresh) {
-      console.log("[LiveKitRoom] Token fetch debounced (too soon after last fetch)");
+    const timeSinceLastFetch = now - lastFetchTimeRef.current;
+    
+    if (!isRefresh && timeSinceLastFetch < FETCH_DEBOUNCE_MS && lastFetchRoomRef.current === roomName) {
+      console.log("[LiveKitRoom] Token fetch debounced (too soon after last fetch)", { timeSinceLastFetch, room: roomName });
       return false;
     }
     
@@ -229,7 +241,13 @@ export function LiveKitRoom({
     }
     
     lastFetchTimeRef.current = now;
+    lastFetchRoomRef.current = roomName;
     isFetchingRef.current = true;
+    
+    // Create a promise that resolves when this fetch completes (for serial lock)
+    let resolveLock: (value: boolean) => void;
+    serialLockRef.current = new Promise(resolve => { resolveLock = resolve; });
+    
     try {
       if (!isRefresh) {
         setLoading(true);
@@ -286,8 +304,8 @@ export function LiveKitRoom({
       
       // Schedule token refresh 2 minutes before expiration
       if (exp && refreshTimerRef.current === null) {
-        const now = Math.floor(Date.now() / 1000);
-        const refreshIn = Math.max((exp - now - 120) * 1000, 60000); // At least 1 minute
+        const nowSec = Math.floor(Date.now() / 1000);
+        const refreshIn = Math.max((exp - nowSec - 120) * 1000, 60000); // At least 1 minute
         console.log("[LiveKitRoom] Scheduling token refresh in", Math.round(refreshIn / 1000), "seconds");
         
         refreshTimerRef.current = setTimeout(() => {
@@ -300,6 +318,7 @@ export function LiveKitRoom({
       // Step 3: Ready to connect audio
       setTimeout(() => setConnectionStep(3), 300);
       
+      resolveLock!(true);
       return true;
     } catch (err) {
       console.error("[LiveKitRoom] Error getting token:", err);
@@ -308,10 +327,13 @@ export function LiveKitRoom({
         setError(errorMessage);
       }
       onError?.(err instanceof Error ? err : new Error(errorMessage));
+      resolveLock!(false);
       return false;
     } finally {
       setLoading(false);
       isFetchingRef.current = false;
+      // Keep serialLockRef.current set so awaiting code gets the result
+      // It will be replaced on next fetch attempt
     }
   }, [roomName, participantName, participantIdentity, guestIdentity, setGuestIdentity, onError]);
 

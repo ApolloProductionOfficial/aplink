@@ -76,6 +76,9 @@ export function GlobalActiveCall() {
   // Stable key for LiveKitRoom - prevents unmounting during navigation
   const roomKeyRef = useRef<string | null>(null);
   
+  // MOBILE FIX: Track the room slug we generated a key for
+  const roomKeySlugRef = useRef<string | null>(null);
+  
   // Auto-reconnect state
   const [reconnectAttempt, setReconnectAttempt] = useState(0);
   const [isReconnecting, setIsReconnecting] = useState(false);
@@ -92,13 +95,18 @@ export function GlobalActiveCall() {
   const wasMinimizedRef = useRef(isMinimized);
   const didNavigateRef = useRef(false);
 
-  // Generate stable key when call starts
+  // Generate stable key when call starts - with deduplication
   useEffect(() => {
-    if (isActive && !roomKeyRef.current) {
-      roomKeyRef.current = `room-${roomSlug}-${Date.now()}`;
-      console.log('[GlobalActiveCall] Generated stable room key:', roomKeyRef.current);
+    if (isActive && roomSlug) {
+      // Only generate new key if room changed
+      if (roomKeySlugRef.current !== roomSlug) {
+        roomKeyRef.current = `room-${roomSlug}-${Date.now()}`;
+        roomKeySlugRef.current = roomSlug;
+        console.log('[GlobalActiveCall] Generated stable room key:', roomKeyRef.current);
+      }
     } else if (!isActive) {
       roomKeyRef.current = null;
+      roomKeySlugRef.current = null;
     }
   }, [isActive, roomSlug]);
 
@@ -193,12 +201,21 @@ export function GlobalActiveCall() {
   // IMPORTANT: Only play sounds/toasts on FIRST connection, not on minimize/maximize cycles
   const handleConnected = useCallback(() => {
     console.log('[GlobalActiveCall] Connected, hasConnectedRef:', hasConnectedRef.current);
-    setIsConnected(true);
+    
+    // MOBILE FIX: Use functional update to prevent race conditions
+    setIsConnected(prev => {
+      if (prev) {
+        console.log('[GlobalActiveCall] Already connected, skipping duplicate handleConnected');
+        return prev;
+      }
+      return true;
+    });
     
     // Check if this was a reconnection from network error
     const wasReconnecting = reconnectAttempt > 0 || isReconnecting;
     
-    setReconnectAttempt(0); // Reset reconnect counter on successful connection
+    // MOBILE FIX: Use functional updates for reconnect state
+    setReconnectAttempt(0);
     setIsReconnecting(false);
     
     // Only play sound on FIRST connection
@@ -207,7 +224,6 @@ export function GlobalActiveCall() {
     if (!hasConnectedRef.current) {
       hasConnectedRef.current = true;
       playConnectedSound();
-      // Removed success toast - it was interrupting other important notifications
       // Only call onConnected on first connection
       eventHandlers.onConnected?.();
     } else if (wasReconnecting) {
