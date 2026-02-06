@@ -35,17 +35,14 @@ serve(async (req) => {
     console.log("[Scribe Token] Requesting single-use token for realtime scribe...");
 
     // Request single-use token for realtime scribe
+    // Docs: https://elevenlabs.io/docs/cookbooks/speech-to-text/streaming
     const response = await fetch(
-      "https://api.elevenlabs.io/v1/speech-to-text/streaming/token",
+      "https://api.elevenlabs.io/v1/single-use-token/realtime_scribe",
       {
         method: "POST",
         headers: {
           "xi-api-key": ELEVENLABS_API_KEY,
-          "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          model_id: "scribe_v2_realtime"
-        }),
       }
     );
 
