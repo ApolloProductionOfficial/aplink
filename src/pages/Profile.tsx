@@ -235,10 +235,18 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background cursor-none">
+    <div className="min-h-screen bg-background cursor-none relative overflow-hidden">
       <CustomCursor />
+      
+      {/* Glassmorphism background effect */}
+      <div className="fixed inset-0 -z-10">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-background" />
+        <div className="absolute top-1/4 -left-32 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
+      </div>
+      
       {/* Header */}
-      <header className="sticky top-0 z-40 glass border-b border-border/50">
+      <header className="sticky top-0 z-40 bg-background/60 backdrop-blur-2xl border-b border-border/30 shadow-[0_4px_30px_rgba(0,0,0,0.1)]">
         <div className="container mx-auto px-4 py-4 flex items-center gap-4">
           <Button
             variant="ghost"
@@ -252,7 +260,7 @@ const Profile = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 max-w-md">
+      <main className="container mx-auto px-4 py-8 max-w-md relative z-10">
         {/* Avatar */}
         <div className="flex flex-col items-center mb-8">
           <div

@@ -882,12 +882,18 @@ const AdminPanel = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background cursor-none">
+    <div className="min-h-screen bg-background cursor-none relative overflow-hidden">
       <CustomCursor />
       <AnimatedBackground />
       
+      {/* Glassmorphism background layers */}
+      <div className="fixed inset-0 -z-5 pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[100px]" />
+        <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-primary/3 rounded-full blur-[120px]" />
+      </div>
+      
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-xl border-b border-border/50">
+      <header className="sticky top-0 z-50 bg-background/60 backdrop-blur-2xl border-b border-border/30 shadow-[0_4px_30px_rgba(0,0,0,0.1)]">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button
@@ -1678,7 +1684,7 @@ const AdminPanel = () => {
           </div>
         ) : activeTab === 'profile' ? (
           <div className="max-w-md mx-auto">
-            <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+            <Card className="bg-background/40 backdrop-blur-2xl border-border/30 shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <User className="w-5 h-5 text-primary" />

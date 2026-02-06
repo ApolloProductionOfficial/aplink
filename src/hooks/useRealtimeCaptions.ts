@@ -21,7 +21,8 @@ interface UseRealtimeCaptionsProps {
 }
 
 // WebSocket URL for ElevenLabs Scribe Realtime
-const SCRIBE_WS_URL = "wss://api.elevenlabs.io/v1/speech-to-text/streaming";
+// Docs: https://elevenlabs.io/docs/cookbooks/speech-to-text/streaming
+const SCRIBE_WS_URL = "wss://api.elevenlabs.io/v1/speech-to-text/realtime";
 
 export const useRealtimeCaptions = ({
   room,
