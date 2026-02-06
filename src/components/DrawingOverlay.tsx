@@ -722,27 +722,75 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose, onCanva
     );
   }, [room, participantName]);
 
-  // Listen for incoming data
+  // CRITICAL FIX: Store incoming strokes/shapes when overlay is closed
+  // These will be drawn when overlay opens
+  const pendingStrokesRef = useRef<Stroke[]>([]);
+  const pendingShapesRef = useRef<Shape[]>([]);
+  const pendingClearRef = useRef(false);
+  
+  // Apply pending drawings when overlay opens
   useEffect(() => {
-    if (!room || !isOpen) return;
+    if (!isOpen || !contextRef.current) return;
+    
+    // Apply any pending clear first
+    if (pendingClearRef.current) {
+      const canvas = canvasRef.current;
+      const ctx = contextRef.current;
+      if (canvas && ctx) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+      pendingClearRef.current = false;
+    }
+    
+    // Apply pending strokes
+    pendingStrokesRef.current.forEach(stroke => drawStroke(stroke));
+    pendingStrokesRef.current = [];
+    
+    // Apply pending shapes
+    pendingShapesRef.current.forEach(shape => drawShape(shape));
+    pendingShapesRef.current = [];
+  }, [isOpen, drawStroke, drawShape]);
+
+  // Listen for incoming data - ALWAYS listen when room exists
+  // CRITICAL FIX: Remove isOpen condition so we receive data even when closed
+  useEffect(() => {
+    if (!room) return;
 
     const handleData = (payload: Uint8Array) => {
       try {
         const message = JSON.parse(new TextDecoder().decode(payload));
-        if (message.type === 'DRAWING_OVERLAY_STROKE' && message.sender !== participantName) {
-          drawStroke(message.stroke);
-        } else if (message.type === 'DRAWING_OVERLAY_SHAPE' && message.sender !== participantName) {
-          drawShape(message.shape);
-        } else if (message.type === 'DRAWING_OVERLAY_CLEAR' && message.sender !== participantName) {
-          const canvas = canvasRef.current;
-          const ctx = contextRef.current;
-          if (canvas && ctx) {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        if (message.sender === participantName) return; // Ignore own messages
+        
+        if (message.type === 'DRAWING_OVERLAY_STROKE') {
+          if (isOpen && contextRef.current) {
+            drawStroke(message.stroke);
+          } else {
+            // Store for later when overlay opens
+            pendingStrokesRef.current.push(message.stroke);
           }
-        } else if (message.type === 'DRAWING_OVERLAY_LASER' && message.sender !== participantName) {
-          // Only process incoming laser points if local tool is laser
-          // This prevents laser animation from running when using other tools
-          if (toolRef.current === 'laser') {
+        } else if (message.type === 'DRAWING_OVERLAY_SHAPE') {
+          if (isOpen && contextRef.current) {
+            drawShape(message.shape);
+          } else {
+            pendingShapesRef.current.push(message.shape);
+          }
+        } else if (message.type === 'DRAWING_OVERLAY_CLEAR') {
+          if (isOpen) {
+            const canvas = canvasRef.current;
+            const ctx = contextRef.current;
+            if (canvas && ctx) {
+              ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+          } else {
+            // Mark pending clear and discard any pending strokes/shapes
+            pendingClearRef.current = true;
+            pendingStrokesRef.current = [];
+            pendingShapesRef.current = [];
+          }
+        } else if (message.type === 'DRAWING_OVERLAY_LASER') {
+          // Only process laser if overlay is open and using laser tool
+          if (isOpen && toolRef.current === 'laser') {
             laserPointsRef.current.push(message.point);
           }
         }
