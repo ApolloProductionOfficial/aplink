@@ -5,6 +5,21 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// In-memory cache to prevent duplicate tokens within short window
+// Key: `${roomName}:${identity}`, Value: { token, timestamp }
+const tokenCache = new Map<string, { token: string; url: string; room: string; identity: string; timestamp: number }>();
+const CACHE_DURATION_MS = 3000; // 3 seconds - prevents duplicates from rapid requests
+
+// Clean up old cache entries periodically
+function cleanupCache() {
+  const now = Date.now();
+  for (const [key, value] of tokenCache.entries()) {
+    if (now - value.timestamp > CACHE_DURATION_MS) {
+      tokenCache.delete(key);
+    }
+  }
+}
+
 // LiveKit token generation using JWT
 async function createToken(
   apiKey: string,
@@ -91,7 +106,7 @@ serve(async (req) => {
   try {
     const { roomName, participantName, participantIdentity } = await req.json();
     
-    console.log(`[livekit-token] Generating token for room: ${roomName}, participant: ${participantName}`);
+    console.log(`[livekit-token] Request for room: ${roomName}, participant: ${participantName}, identity: ${participantIdentity || 'new'}`);
     
     if (!roomName || !participantName) {
       console.error('[livekit-token] Missing required parameters');
@@ -119,8 +134,24 @@ serve(async (req) => {
       );
     }
     
-    // Generate identity if not provided
+    // Generate identity if not provided (for guests)
     const identity = participantIdentity || `user-${crypto.randomUUID().slice(0, 8)}`;
+    
+    // MOBILE FIX: Check cache for duplicate request
+    // This prevents multiple participants appearing when mobile reconnects rapidly
+    cleanupCache();
+    const cacheKey = `${roomName}:${identity}`;
+    const cached = tokenCache.get(cacheKey);
+    
+    if (cached && (Date.now() - cached.timestamp < CACHE_DURATION_MS)) {
+      console.log(`[livekit-token] Returning cached token for ${identity} (${Date.now() - cached.timestamp}ms old)`);
+      return new Response(
+        JSON.stringify(cached),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
     
     // Create access token
     const token = await createToken(
@@ -131,15 +162,21 @@ serve(async (req) => {
       participantName
     );
     
-    console.log(`[livekit-token] Token generated successfully for ${participantName} in room ${roomName}`);
+    const response = {
+      token,
+      url: livekitUrl,
+      room: roomName,
+      identity,
+      timestamp: Date.now()
+    };
+    
+    // Cache the response
+    tokenCache.set(cacheKey, response);
+    
+    console.log(`[livekit-token] Token generated for ${participantName} (${identity}) in room ${roomName}`);
     
     return new Response(
-      JSON.stringify({ 
-        token,
-        url: livekitUrl,
-        room: roomName,
-        identity
-      }),
+      JSON.stringify(response),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }

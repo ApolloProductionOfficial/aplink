@@ -193,9 +193,11 @@ export function LiveKitRoom({
   const fetchDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const lastFetchTimeRef = useRef<number>(0);
   const lastFetchRoomRef = useRef<string | null>(null);
-  const FETCH_DEBOUNCE_MS = 2000; // Increased to 2 seconds for mobile stability
-  const FETCH_SERIAL_LOCK_MS = 500; // Minimum time between fetch attempts
+  const lastFetchIdentityRef = useRef<string | null>(null);
+  const FETCH_DEBOUNCE_MS = 3000; // Increased to 3 seconds for mobile stability
+  const FETCH_SERIAL_LOCK_MS = 1000; // Minimum time between fetch attempts
   const serialLockRef = useRef<Promise<boolean> | null>(null);
+  const tokenGenerationIdRef = useRef<number>(0); // Unique ID per token generation attempt
   
   // Stable token ref to prevent re-renders from triggering reconnection
   const tokenRef = useRef<string | null>(null);
@@ -226,12 +228,21 @@ export function LiveKitRoom({
       await serialLockRef.current;
     }
     
-    // MOBILE FIX: Strong debounce - reject if too soon after last fetch for same room
+    // MOBILE FIX: Strong debounce - reject if too soon after last fetch for same room+identity
     const now = Date.now();
     const timeSinceLastFetch = now - lastFetchTimeRef.current;
+    const identityToUse = participantIdentity || guestIdentity || undefined;
     
-    if (!isRefresh && timeSinceLastFetch < FETCH_DEBOUNCE_MS && lastFetchRoomRef.current === roomName) {
-      console.log("[LiveKitRoom] Token fetch debounced (too soon after last fetch)", { timeSinceLastFetch, room: roomName });
+    // Check if this is a duplicate request (same room, same identity, within debounce window)
+    if (!isRefresh && 
+        timeSinceLastFetch < FETCH_DEBOUNCE_MS && 
+        lastFetchRoomRef.current === roomName &&
+        lastFetchIdentityRef.current === identityToUse) {
+      console.log("[LiveKitRoom] Token fetch debounced (duplicate request)", { 
+        timeSinceLastFetch, 
+        room: roomName,
+        identity: identityToUse 
+      });
       return false;
     }
     
@@ -240,8 +251,12 @@ export function LiveKitRoom({
       return false;
     }
     
+    // Increment generation ID and capture it for this request
+    const currentGenerationId = ++tokenGenerationIdRef.current;
+    
     lastFetchTimeRef.current = now;
     lastFetchRoomRef.current = roomName;
+    lastFetchIdentityRef.current = identityToUse || null;
     isFetchingRef.current = true;
     
     // Create a promise that resolves when this fetch completes (for serial lock)
@@ -254,11 +269,8 @@ export function LiveKitRoom({
         setError(null);
         setConnectionStep(0); // Step 0: Getting token
       }
-
-      // Use saved guest identity for token refresh to maintain same participant
-      const identityToUse = participantIdentity || guestIdentity || undefined;
       
-      console.log("[LiveKitRoom] Requesting token for room:", roomName, isRefresh ? "(refresh)" : "(initial)", "identity:", identityToUse);
+      console.log("[LiveKitRoom] Requesting token for room:", roomName, isRefresh ? "(refresh)" : "(initial)", "identity:", identityToUse, "genId:", currentGenerationId);
 
       const { data, error: fnError } = await supabase.functions.invoke(
         "livekit-token",
@@ -278,6 +290,13 @@ export function LiveKitRoom({
       if (!data?.token || !data?.url) {
         throw new Error("Invalid token response");
       }
+      
+      // MOBILE FIX: Check if this response is still relevant (newer request may have started)
+      if (currentGenerationId !== tokenGenerationIdRef.current) {
+        console.log("[LiveKitRoom] Stale token response ignored, genId:", currentGenerationId, "current:", tokenGenerationIdRef.current);
+        resolveLock!(false);
+        return false;
+      }
 
       // Step 1: Token received, now connecting
       setConnectionStep(1);
@@ -285,13 +304,14 @@ export function LiveKitRoom({
       // Save guest identity from response for future reconnects
       if (!participantIdentity && data.identity) {
         setGuestIdentity(data.identity);
+        lastFetchIdentityRef.current = data.identity;
         console.log("[LiveKitRoom] Saved guest identity:", data.identity);
       }
 
       // Extract and store token expiration
       const exp = getTokenExp(data.token);
       tokenExpRef.current = exp;
-      console.log("[LiveKitRoom] Token received, exp:", exp ? new Date(exp * 1000).toISOString() : 'unknown');
+      console.log("[LiveKitRoom] Token received, exp:", exp ? new Date(exp * 1000).toISOString() : 'unknown', "genId:", currentGenerationId);
 
       hasInitializedRef.current = true;
       currentRoomRef.current = roomName;
@@ -2471,12 +2491,13 @@ function LiveKitContent({
         />
       )}
 
-      {/* Collaborative Whiteboard */}
+      {/* Collaborative Whiteboard - rendered inside ResizableWhiteboardWindow for desktop */}
       <CollaborativeWhiteboard
         room={room}
         participantName={participantName}
         isOpen={showWhiteboard}
         onClose={() => setShowWhiteboard(false)}
+        windowMode={true}
       />
 
       {/* Drawing Overlay - for drawing on screen */}

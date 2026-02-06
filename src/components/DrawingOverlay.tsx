@@ -1165,7 +1165,16 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose, onCanva
   ];
 
   return createPortal(
-    <div className="fixed inset-0 z-[99995] pointer-events-auto" data-preserve-cursor>
+    <div 
+      className="fixed inset-0 z-[99995] pointer-events-auto" 
+      data-preserve-cursor
+      onClick={(e) => {
+        // Tap anywhere to show controls (mobile-friendly)
+        if (e.target === e.currentTarget || (e.target as HTMLElement).tagName === 'CANVAS') {
+          resetHideTimer();
+        }
+      }}
+    >
       {/* Transparent canvas overlay */}
       <canvas 
         ref={canvasRef}
@@ -1181,15 +1190,22 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose, onCanva
         onTouchEnd={handleTouchEnd}
       />
 
-      {/* Fixed close button - always visible (all devices) */}
+      {/* ALWAYS VISIBLE floating close button - visible even when panel is hidden */}
       <Button
         variant="ghost"
         size="icon"
         onClick={onClose}
-        className="fixed top-4 right-4 z-[99999] w-10 h-10 rounded-full bg-red-500/30 hover:bg-red-500/50 border border-red-500/50"
+        className="fixed top-4 right-4 z-[99999] w-12 h-12 rounded-full bg-red-500/40 hover:bg-red-500/60 border-2 border-red-500/60 shadow-lg shadow-red-500/20"
       >
-        <X className="w-5 h-5" />
+        <X className="w-6 h-6 text-white" />
       </Button>
+
+      {/* Mobile: Tap hint when controls are hidden */}
+      {isMobile && !showControls && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[99998] px-4 py-2 bg-black/60 backdrop-blur-xl rounded-full border border-white/10">
+          <span className="text-xs text-white/70">Тапни для меню</span>
+        </div>
+      )}
 
       {/* Mobile compact toolbar */}
       {isMobile ? (

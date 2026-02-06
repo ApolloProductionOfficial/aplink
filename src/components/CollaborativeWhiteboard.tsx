@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Room, RoomEvent } from 'livekit-client';
-import { Pencil, Eraser, Trash2, X, Circle, Download, FileText, Minus, MoveRight, Square, Film, Loader2, RotateCcw } from 'lucide-react';
+import { Pencil, Eraser, Trash2, X, Circle, Download, FileText, Minus, MoveRight, Square, Film, Loader2, RotateCcw, GripHorizontal, Maximize2, Minimize2 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -32,6 +32,8 @@ interface WhiteboardProps {
   participantName: string;
   isOpen: boolean;
   onClose: () => void;
+  /** If true, renders in a resizable floating window (desktop only) */
+  windowMode?: boolean;
 }
 
 const COLORS = [
@@ -54,7 +56,7 @@ const TOOLS: { id: Tool; icon: React.ComponentType<any>; label: string }[] = [
   { id: 'rectangle', icon: Square, label: 'Прямоугольник' },
 ];
 
-export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose }: WhiteboardProps) {
+export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose, windowMode = false }: WhiteboardProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [color, setColor] = useState('#ffffff');
@@ -76,6 +78,16 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
   // Mobile detection
   const isMobile = useIsMobile();
   
+  // Window mode state (for desktop draggable/resizable)
+  const [windowMaximized, setWindowMaximized] = useState(false);
+  const [windowPos, setWindowPos] = useState<{ x: number; y: number } | null>(null);
+  const [windowSize, setWindowSize] = useState<{ width: number; height: number } | null>(null);
+  const windowRef = useRef<HTMLDivElement>(null);
+  const isDraggingWindow = useRef(false);
+  const isResizingWindow = useRef(false);
+  const dragStartRef = useRef<{ x: number; y: number; px: number; py: number } | null>(null);
+  const resizeStartRef = useRef<{ width: number; height: number; px: number; py: number } | null>(null);
+  
   // Orientation detection for mobile landscape hint
   const [isPortrait, setIsPortrait] = useState(
     typeof window !== 'undefined' ? window.innerHeight > window.innerWidth : false
@@ -91,6 +103,98 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
       window.removeEventListener('resize', handleOrientationChange);
       window.removeEventListener('orientationchange', handleOrientationChange);
     };
+  }, []);
+
+  // Initialize window position and size for windowMode
+  useEffect(() => {
+    if (!isOpen || isMobile || !windowMode) return;
+    
+    // Try to restore from storage
+    if (!windowPos && !windowSize) {
+      try {
+        const saved = sessionStorage.getItem('whiteboard-window-state');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          setWindowPos(parsed.pos);
+          setWindowSize(parsed.size);
+          setWindowMaximized(parsed.maximized || false);
+          return;
+        }
+      } catch {}
+    }
+    
+    // Default: centered, 70% of screen
+    if (!windowPos) {
+      const defaultWidth = Math.min(1000, window.innerWidth * 0.7);
+      const defaultHeight = Math.min(650, window.innerHeight * 0.7);
+      setWindowPos({
+        x: (window.innerWidth - defaultWidth) / 2,
+        y: Math.max(80, (window.innerHeight - defaultHeight) / 2 - 50),
+      });
+      setWindowSize({ width: defaultWidth, height: defaultHeight });
+    }
+  }, [isOpen, isMobile, windowMode, windowPos, windowSize]);
+
+  // Persist window state
+  useEffect(() => {
+    if (windowPos && windowSize && windowMode && !isMobile) {
+      try {
+        sessionStorage.setItem('whiteboard-window-state', JSON.stringify({ 
+          pos: windowPos, 
+          size: windowSize, 
+          maximized: windowMaximized 
+        }));
+      } catch {}
+    }
+  }, [windowPos, windowSize, windowMaximized, windowMode, isMobile]);
+
+  // Window dragging handlers
+  const handleWindowDragStart = useCallback((e: React.PointerEvent) => {
+    if (windowMaximized || isMobile || !windowPos) return;
+    isDraggingWindow.current = true;
+    dragStartRef.current = { x: windowPos.x, y: windowPos.y, px: e.clientX, py: e.clientY };
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    e.preventDefault();
+  }, [windowMaximized, isMobile, windowPos]);
+
+  const handleWindowDragMove = useCallback((e: React.PointerEvent) => {
+    if (!isDraggingWindow.current || !dragStartRef.current || !windowRef.current) return;
+    const rect = windowRef.current.getBoundingClientRect();
+    const dx = e.clientX - dragStartRef.current.px;
+    const dy = e.clientY - dragStartRef.current.py;
+    const margin = 20;
+    const nextX = Math.min(Math.max(margin, dragStartRef.current.x + dx), window.innerWidth - rect.width - margin);
+    const nextY = Math.min(Math.max(margin, dragStartRef.current.y + dy), window.innerHeight - rect.height - margin);
+    setWindowPos({ x: nextX, y: nextY });
+  }, []);
+
+  const handleWindowDragEnd = useCallback(() => {
+    isDraggingWindow.current = false;
+    dragStartRef.current = null;
+  }, []);
+
+  // Window resizing handlers
+  const handleWindowResizeStart = useCallback((e: React.PointerEvent) => {
+    if (windowMaximized || isMobile || !windowSize) return;
+    isResizingWindow.current = true;
+    resizeStartRef.current = { width: windowSize.width, height: windowSize.height, px: e.clientX, py: e.clientY };
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    e.preventDefault();
+    e.stopPropagation();
+  }, [windowMaximized, isMobile, windowSize]);
+
+  const handleWindowResizeMove = useCallback((e: React.PointerEvent) => {
+    if (!isResizingWindow.current || !resizeStartRef.current) return;
+    const dx = e.clientX - resizeStartRef.current.px;
+    const dy = e.clientY - resizeStartRef.current.py;
+    const newWidth = Math.max(400, resizeStartRef.current.width + dx);
+    const newHeight = Math.max(300, resizeStartRef.current.height + dy);
+    setWindowSize({ width: newWidth, height: newHeight });
+  }, []);
+
+  const handleWindowResizeEnd = useCallback(() => {
+    isResizingWindow.current = false;
+    resizeStartRef.current = null;
   }, []);
 
   // Broadcast whiteboard open/close state to other participants
@@ -562,12 +666,234 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
   const essentialTools = TOOLS.filter(t => ['pen', 'eraser'].includes(t.id));
   const mobileToolsToShow = isMobile ? essentialTools : TOOLS;
 
+  // Window mode styling for desktop
+  const windowStyle = windowMode && !isMobile && !windowMaximized && windowPos && windowSize
+    ? { left: windowPos.x, top: windowPos.y, width: windowSize.width, height: windowSize.height }
+    : undefined;
+
+  const isWindowedDesktop = windowMode && !isMobile;
+
+  // If windowMode on desktop, render floating window
+  if (isWindowedDesktop) {
+    return createPortal(
+      <div
+        ref={windowRef}
+        className={cn(
+          "fixed z-[99990] flex flex-col bg-black/95 backdrop-blur-2xl border border-white/10 shadow-2xl overflow-hidden",
+          windowMaximized ? "inset-0 rounded-none" : "rounded-2xl"
+        )}
+        style={windowMaximized ? undefined : windowStyle}
+      >
+        {/* Title bar - draggable */}
+        <div
+          className="flex items-center justify-between px-4 py-2 border-b border-white/10 bg-white/5 cursor-grab active:cursor-grabbing select-none shrink-0"
+          onPointerDown={handleWindowDragStart}
+          onPointerMove={handleWindowDragMove}
+          onPointerUp={handleWindowDragEnd}
+        >
+          <div className="flex items-center gap-2">
+            <GripHorizontal className="w-4 h-4 text-white/40" />
+            <Pencil className="w-4 h-4 text-primary" />
+            <span className="text-sm font-medium text-white/90">Доска</span>
+          </div>
+          
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setWindowMaximized(prev => !prev)}
+              className="w-7 h-7 rounded-full hover:bg-white/10"
+            >
+              {windowMaximized ? (
+                <Minimize2 className="w-4 h-4 text-white/70" />
+              ) : (
+                <Maximize2 className="w-4 h-4 text-white/70" />
+              )}
+            </Button>
+            
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              className="w-7 h-7 rounded-full hover:bg-destructive/20"
+            >
+              <X className="w-4 h-4 text-white/70" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Toolbar */}
+        <div className="flex items-center justify-between flex-wrap gap-2 px-3 py-2 border-b border-white/5 bg-black/40 shrink-0">
+          {/* Color picker */}
+          <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-white/5 border border-white/10">
+            {COLORS.map((c) => (
+              <button
+                key={c}
+                onClick={() => setColor(c)}
+                className={cn(
+                  "w-5 h-5 rounded-full transition-all hover:scale-110",
+                  color === c && "ring-2 ring-white ring-offset-1 ring-offset-black"
+                )}
+                style={{ backgroundColor: c }}
+              />
+            ))}
+          </div>
+
+          {/* Brush size */}
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
+            <Circle className="w-3 h-3" />
+            <Slider
+              value={[brushSize]}
+              onValueChange={([v]) => setBrushSize(v)}
+              min={1}
+              max={20}
+              step={1}
+              className="w-20"
+            />
+            <Circle className="w-5 h-5" />
+          </div>
+
+          {/* Tool buttons */}
+          <div className="flex items-center gap-1">
+            {TOOLS.map((t) => {
+              const Icon = t.icon;
+              return (
+                <Button
+                  key={t.id}
+                  variant={tool === t.id ? 'default' : 'outline'}
+                  size="icon"
+                  onClick={() => setTool(t.id)}
+                  className="w-8 h-8 rounded-full"
+                  title={t.label}
+                >
+                  <Icon className="w-4 h-4" />
+                </Button>
+              );
+            })}
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleClear}
+              disabled={isClearing}
+              className="w-8 h-8 rounded-full hover:bg-destructive/20 hover:border-destructive/50"
+              title="Очистить всё"
+            >
+              {isClearing ? (
+                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Trash2 className="w-4 h-4" />
+              )}
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={exportAsImage}
+              className="w-8 h-8 rounded-full"
+              title="Скачать PNG"
+            >
+              <Download className="w-4 h-4" />
+            </Button>
+
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={exportAsPDF}
+              className="w-8 h-8 rounded-full"
+              title="Скачать PDF"
+            >
+              <FileText className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Canvas - fills remaining space */}
+        <div className="flex-1 p-2 overflow-hidden">
+          <canvas 
+            ref={canvasRef} 
+            width={1280} 
+            height={720}
+            data-preserve-cursor
+            className="w-full h-full rounded-xl border border-white/10 cursor-crosshair touch-none"
+            style={{ 
+              background: 'rgba(26, 26, 26, 0.8)',
+              cursor: 'crosshair',
+            }}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+            onTouchStart={(e) => {
+              const touch = e.touches[0];
+              const mouseEvent = { clientX: touch.clientX, clientY: touch.clientY } as React.MouseEvent<HTMLCanvasElement>;
+              handleMouseDown(mouseEvent);
+            }}
+            onTouchMove={(e) => {
+              const touch = e.touches[0];
+              const mouseEvent = { clientX: touch.clientX, clientY: touch.clientY } as React.MouseEvent<HTMLCanvasElement>;
+              handleMouseMove(mouseEvent);
+            }}
+            onTouchEnd={() => {
+              handleMouseUp({} as React.MouseEvent<HTMLCanvasElement>);
+            }}
+          />
+        </div>
+
+        {/* Footer hint */}
+        <div className="px-4 py-2 border-t border-white/5 bg-black/20 shrink-0">
+          <p className="text-xs text-muted-foreground text-center">
+            Рисуйте вместе с другими участниками • Изменения видны всем в реальном времени
+          </p>
+        </div>
+
+        {/* Resize handle (bottom-right) - only when not maximized */}
+        {!windowMaximized && (
+          <div
+            className="absolute bottom-0 right-0 w-5 h-5 cursor-se-resize"
+            onPointerDown={handleWindowResizeStart}
+            onPointerMove={handleWindowResizeMove}
+            onPointerUp={handleWindowResizeEnd}
+          >
+            <svg viewBox="0 0 20 20" className="w-full h-full text-white/20">
+              <path d="M14 20L20 14M10 20L20 10M6 20L20 6" stroke="currentColor" strokeWidth="2" fill="none" />
+            </svg>
+          </div>
+        )}
+      </div>,
+      document.body
+    );
+  }
+
+  // Original fullscreen modal for mobile or non-window mode
   return createPortal(
     <>
-      <div className="fixed inset-0 z-[99990] bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 md:p-8" data-preserve-cursor>
+      <div 
+        className="fixed inset-0 z-[99990] bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 md:p-8" 
+        data-preserve-cursor
+        onClick={(e) => {
+          // Click outside whiteboard panel to close (for mobile convenience)
+          if (e.target === e.currentTarget) {
+            // Don't auto-close on background tap - just let user use X button
+          }
+        }}
+      >
+        {/* ALWAYS VISIBLE floating close button - visible even in landscape */}
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={onClose}
+          className="fixed top-4 right-4 z-[99999] w-12 h-12 rounded-full bg-destructive/40 hover:bg-destructive/60 border-2 border-destructive/60 shadow-lg"
+        >
+          <X className="w-6 h-6 text-white" />
+        </Button>
+
         {/* Mobile landscape hint */}
         {isMobile && isPortrait && (
-          <div className="absolute inset-0 z-[99999] bg-black/90 flex flex-col items-center justify-center gap-4 p-6">
+          <div className="absolute inset-0 z-[99998] bg-black/90 flex flex-col items-center justify-center gap-4 p-6">
             <RotateCcw className="w-16 h-16 text-primary animate-spin" style={{ animationDuration: '3s' }} />
             <h3 className="text-lg font-semibold text-white text-center">Поверните телефон</h3>
             <p className="text-sm text-muted-foreground text-center max-w-[280px]">
