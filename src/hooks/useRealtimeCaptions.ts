@@ -552,7 +552,7 @@ export const useRealtimeCaptions = ({
     return () => { room.off(RoomEvent.DataReceived, handleDataReceived); };
   }, [room, enabled, participantName]);
 
-  // Start/stop based on enabled state
+  // Start/stop based on enabled state - STARTS IMMEDIATELY when enabled
   const roomIdentityRef = useRef<string | null>(null);
   
   useEffect(() => {
@@ -566,10 +566,13 @@ export const useRealtimeCaptions = ({
       useFallbackRef.current = false; // Reset fallback flag
     }
     
+    // INSTANT START: Start capture immediately when enabled, no language selection required
     if (enabled && room) {
+      console.log('[Captions] Starting capture immediately (enabled=true)');
+      // Use minimal delay only for room changes to ensure stability
       const timer = setTimeout(() => {
         startRealtimeCapture();
-      }, roomChanged ? 300 : 0);
+      }, roomChanged ? 200 : 0); // Reduced delay for faster start
       
       return () => {
         clearTimeout(timer);

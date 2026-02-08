@@ -58,11 +58,11 @@ const formatTime = (seconds: number): string => {
   return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 };
 
-// Get valid initial position
+// Get valid initial position - positioned under top panel
 const getInitialPosition = (): { x: number; y: number } => {
   const defaultPos = {
     x: Math.max(0, (window.innerWidth - PANEL_WIDTH) / 2),
-    y: 100
+    y: 70  // Changed from 100 - now directly under top control panel
   };
   
   try {
