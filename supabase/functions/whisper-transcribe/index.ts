@@ -30,9 +30,20 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Convert audio to base64 for Lovable AI
+    // Convert audio to base64 for Lovable AI - use chunked processing to avoid stack overflow
     const audioBuffer = await audioFile.arrayBuffer();
-    const audioBase64 = btoa(String.fromCharCode(...new Uint8Array(audioBuffer)));
+    const bytes = new Uint8Array(audioBuffer);
+    const chunkSize = 8192; // Process 8KB at a time to avoid stack overflow
+    let binary = "";
+    
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
+      for (let j = 0; j < chunk.length; j++) {
+        binary += String.fromCharCode(chunk[j]);
+      }
+    }
+    
+    const audioBase64 = btoa(binary);
 
     // Use Gemini Flash for audio transcription via description
     // Note: For actual audio transcription, we'll use a text-based approach
