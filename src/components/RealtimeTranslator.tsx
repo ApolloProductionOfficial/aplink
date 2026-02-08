@@ -603,6 +603,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
           direction: 'outgoing',
         };
 
+        // Check if we got audio from ElevenLabs or need browser TTS fallback
         if (result.audioContent) {
           const audioUrl = `data:audio/mpeg;base64,${result.audioContent}`;
           entry.audioUrl = audioUrl;
@@ -635,6 +636,40 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
               }
             } catch (e) {
               console.log('Could not broadcast translation:', e);
+            }
+          }
+        } else if (result.useBrowserTTS && 'speechSynthesis' in window) {
+          // FALLBACK: Use browser's Web Speech API for TTS
+          console.log('Using browser TTS fallback for:', result.translatedText);
+          const utterance = new SpeechSynthesisUtterance(result.translatedText);
+          utterance.lang = targetLang === 'ru' ? 'ru-RU' : 
+                          targetLang === 'uk' ? 'uk-UA' :
+                          targetLang === 'es' ? 'es-ES' :
+                          targetLang === 'de' ? 'de-DE' :
+                          targetLang === 'fr' ? 'fr-FR' :
+                          targetLang === 'it' ? 'it-IT' :
+                          targetLang === 'pt' ? 'pt-PT' :
+                          targetLang === 'zh' ? 'zh-CN' :
+                          targetLang === 'ja' ? 'ja-JP' :
+                          targetLang === 'ko' ? 'ko-KR' :
+                          targetLang === 'ar' ? 'ar-SA' : 'en-US';
+          utterance.rate = 1.0;
+          utterance.pitch = 1.0;
+          window.speechSynthesis.speak(utterance);
+          
+          // Still broadcast text-only for partners (they'll use their own browser TTS)
+          if (enableBroadcast && onSendTranslation) {
+            try {
+              // Send with empty audio, partner will synthesize locally
+              await onSendTranslation(
+                '', // No audio base64
+                result.translatedText,
+                result.originalText,
+                myLanguage
+              );
+              console.log('Broadcast text-only translation (browser TTS fallback)');
+            } catch (e) {
+              console.log('Could not broadcast text translation:', e);
             }
           }
         }

@@ -28,7 +28,12 @@ serve(async (req) => {
     const { text, voiceId, speed = 1.0 }: TTSRequest = await req.json();
 
     if (!ELEVENLABS_API_KEY) {
-      throw new Error("ELEVENLABS_API_KEY not configured");
+      // No API key configured - signal client to use browser TTS
+      console.log("ELEVENLABS_API_KEY not configured, signaling browser TTS fallback");
+      return new Response(
+        JSON.stringify({ success: false, useBrowserTTS: true, text, error: "API key not configured" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     if (!text) {
@@ -63,6 +68,16 @@ serve(async (req) => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error("ElevenLabs API error:", errorText);
+      
+      // Check for auth/payment issues - return fallback signal instead of error
+      if (response.status === 401 || response.status === 402 || response.status === 403) {
+        console.log("ElevenLabs auth/payment issue, signaling browser TTS fallback");
+        return new Response(
+          JSON.stringify({ success: false, useBrowserTTS: true, text, error: `Auth error: ${response.status}` }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
       throw new Error(`ElevenLabs API error: ${response.status}`);
     }
 
