@@ -246,7 +246,7 @@ Rules:
 
     console.log(`Translated text: "${translatedText.substring(0, 100)}..."`);
 
-    // Step 3: Synthesize speech using ElevenLabs TTS
+    // Step 3: Synthesize speech using ElevenLabs TTS (with fallback)
     console.log("Step 3: Synthesizing speech...");
     
     // Get voice ID - use provided voice or default for language
@@ -257,39 +257,53 @@ Rules:
     
     console.log(`Using voice: ${voiceConfig.name} (${voiceConfig.gender})`);
     
-    const ttsResponse = await fetch(
-      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
-      {
-        method: "POST",
-        headers: {
-          "xi-api-key": ELEVENLABS_API_KEY,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          text: translatedText,
-          model_id: "eleven_turbo_v2_5", // Fast model for low latency
-          output_format: "mp3_44100_128",
-          voice_settings: {
-            stability: 0.5,
-            similarity_boost: 0.75,
-            style: 0.3,
-            use_speaker_boost: true,
-            speed: 1.1, // Slightly faster for real-time feel
+    let audioBase64: string | null = null;
+    let useBrowserTTS = false;
+    
+    try {
+      const ttsResponse = await fetch(
+        `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
+        {
+          method: "POST",
+          headers: {
+            "xi-api-key": ELEVENLABS_API_KEY,
+            "Content-Type": "application/json",
           },
-        }),
-      }
-    );
+          body: JSON.stringify({
+            text: translatedText,
+            model_id: "eleven_turbo_v2_5", // Fast model for low latency
+            output_format: "mp3_44100_128",
+            voice_settings: {
+              stability: 0.5,
+              similarity_boost: 0.75,
+              style: 0.3,
+              use_speaker_boost: true,
+              speed: 1.1, // Slightly faster for real-time feel
+            },
+          }),
+        }
+      );
 
-    if (!ttsResponse.ok) {
-      const errorText = await ttsResponse.text();
-      console.error("TTS error:", ttsResponse.status, errorText);
-      throw new Error(`TTS failed: ${ttsResponse.status}`);
+      if (!ttsResponse.ok) {
+        const errorText = await ttsResponse.text();
+        console.error("TTS error:", ttsResponse.status, errorText);
+        // Check for payment/auth issues - signal client to use browser TTS
+        if (ttsResponse.status === 401 || ttsResponse.status === 403 || ttsResponse.status === 402) {
+          console.log("ElevenLabs auth/payment issue, signaling browser TTS fallback");
+          useBrowserTTS = true;
+        } else {
+          throw new Error(`TTS failed: ${ttsResponse.status}`);
+        }
+      } else {
+        const audioBuffer = await ttsResponse.arrayBuffer();
+        audioBase64 = base64Encode(audioBuffer);
+      }
+    } catch (ttsError) {
+      console.error("TTS request failed:", ttsError);
+      useBrowserTTS = true;
     }
 
-    const audioBuffer = await ttsResponse.arrayBuffer();
-    const audioBase64 = base64Encode(audioBuffer);
-
-    console.log("Translation pipeline completed successfully");
+    console.log(`Translation pipeline completed. Audio: ${audioBase64 ? 'ElevenLabs' : 'Browser fallback needed'}`);
 
     return new Response(
       JSON.stringify({
@@ -299,6 +313,7 @@ Rules:
         detectedLanguage,
         targetLanguage,
         voiceId: selectedVoiceKey,
+        useBrowserTTS, // Signal client to use Web Speech API
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
