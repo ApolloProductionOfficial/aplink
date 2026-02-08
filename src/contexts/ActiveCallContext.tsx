@@ -1,6 +1,17 @@
 import React, { createContext, useContext, useState, useCallback, useRef, ReactNode } from 'react';
 import { Room } from 'livekit-client';
 
+// Device ID utility for unique guest identity (prevents duplicate participants on mobile)
+const getDeviceId = (): string => {
+  if (typeof window === 'undefined') return 'ssr';
+  let id = localStorage.getItem('aplink_device_id');
+  if (!id) {
+    id = crypto.randomUUID().slice(0, 8);
+    localStorage.setItem('aplink_device_id', id);
+  }
+  return id;
+};
+
 interface CallEventHandlers {
   onConnected?: () => void;
   onDisconnected?: () => void;
@@ -121,7 +132,10 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
     isStartingCallRef.current = true;
     activeRoomSlugRef.current = params.roomSlug;
     
-    console.log('[ActiveCallContext] Starting call for room:', params.roomSlug);
+    // MOBILE FIX v6: Generate unique identity using deviceId to prevent duplicate participants
+    const effectiveIdentity = params.participantIdentity || `guest-${getDeviceId()}-${Date.now().toString(36)}`;
+    
+    console.log('[ActiveCallContext] Starting call for room:', params.roomSlug, 'identity:', effectiveIdentity);
     
     // Use functional update to ensure we're working with latest state
     setState(prev => {
@@ -138,7 +152,7 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
         roomName: params.roomName,
         roomSlug: params.roomSlug,
         participantName: params.participantName,
-        participantIdentity: params.participantIdentity,
+        participantIdentity: effectiveIdentity,
         roomDisplayName: params.roomDisplayName,
         liveKitRoom: roomRef.current,
         headerButtons: prev.headerButtons,
@@ -146,8 +160,8 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
         eventHandlers: handlersRef.current,
         // Preserve admin status
         isAdmin: prev.isAdmin,
-        // Preserve guest identity if already set
-        guestIdentity: prev.guestIdentity,
+        // Save generated guest identity for reconnects
+        guestIdentity: prev.guestIdentity || effectiveIdentity,
         // Reset fallback profile on new call
         useFallbackVideoProfile: false,
         isRoomReconnecting: false,

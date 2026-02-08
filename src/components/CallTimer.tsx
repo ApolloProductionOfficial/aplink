@@ -62,7 +62,7 @@ const formatTime = (seconds: number): string => {
 const getInitialPosition = (): { x: number; y: number } => {
   const defaultPos = {
     x: Math.max(0, (window.innerWidth - PANEL_WIDTH) / 2),
-    y: 70  // Changed from 100 - now directly under top control panel
+    y: 56  // Changed from 70 - now directly under top control panel (48px panel + 8px gap)
   };
   
   try {

@@ -71,6 +71,10 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose, onCanva
   // This prevents closure bugs where animate() captures stale 'tool' value
   const toolRef = useRef<Tool>('pen');
   
+  // CRITICAL FIX v6: Hard flag to completely control laser loop
+  // When false, laser animation MUST NOT run at all - prevents drawing erasure
+  const isLaserActiveRef = useRef(false);
+  
   // Mobile detection
   const isMobile = useIsMobile();
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
@@ -406,36 +410,39 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose, onCanva
   // Clear laser points AND cached image when color changes to prevent old color trails
   // NOTE: baseImageDataRef is now declared at the top of the component with other refs
   
-  // CRITICAL: Keep toolRef in sync with tool state
-  // This enables the laser animation loop to check the CURRENT tool value
+  // CRITICAL FIX v6: Keep toolRef AND isLaserActiveRef in sync with tool state
+  // This enables the laser animation loop to check the CURRENT tool value via hard flag
   useEffect(() => {
     const prevTool = toolRef.current;
     toolRef.current = tool;
     
-    // Clear laser state when switching away from laser tool
-    if (prevTool === 'laser' && tool !== 'laser') {
-      // CRITICAL FIX: When switching FROM laser, do NOT restore baseImageData
-      // Instead, null it out so laser loop stops trying to restore old state
-      // This preserves any drawings made while laser was active
-      baseImageDataRef.current = null;
-      laserPointsRef.current = [];
+    if (tool === 'laser') {
+      // ENABLE laser mode - set flag BEFORE anything else
+      isLaserActiveRef.current = true;
       
-      // CRITICAL: Stop any running laser animation IMMEDIATELY
-      // This prevents the laser loop from calling putImageData with null baseImage
-      // which was overwriting pen/shape drawings
-      if (laserAnimationRef.current) {
-        cancelAnimationFrame(laserAnimationRef.current);
-        laserAnimationRef.current = null;
-        console.log('[DrawingOverlay] Stopped laser animation on tool switch from laser');
+      // Save current canvas state for laser overlay
+      const canvas = canvasRef.current;
+      const ctx = contextRef.current;
+      if (canvas && ctx) {
+        baseImageDataRef.current = ctx.getImageData(0, 0, canvas.width, canvas.height);
       }
-    } else if (tool !== 'laser') {
-      // For any non-laser tool, ensure laser state is clean
+      console.log('[DrawingOverlay] Laser mode ENABLED');
+    } else {
+      // DISABLE laser mode COMPLETELY - HARD STOP
+      isLaserActiveRef.current = false;
+      
+      // Clear ALL laser state immediately
       laserPointsRef.current = [];
       baseImageDataRef.current = null;
       
+      // CRITICAL: Force stop animation loop IMMEDIATELY
       if (laserAnimationRef.current) {
         cancelAnimationFrame(laserAnimationRef.current);
         laserAnimationRef.current = null;
+      }
+      
+      if (prevTool === 'laser') {
+        console.log('[DrawingOverlay] Laser mode DISABLED - switched to:', tool);
       }
     }
   }, [tool]);
@@ -816,8 +823,8 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose, onCanva
     return () => { room.off(RoomEvent.DataReceived, handleData); };
   }, [room, isOpen, drawStroke, drawShape, participantName]);
 
-  // Laser animation loop - ONLY runs when tool is 'laser' to prevent overwriting drawings
-  // CRITICAL FIX: Uses toolRef.current to check real-time tool value, not stale closure
+  // Laser animation loop - ONLY runs when isLaserActiveRef is true
+  // CRITICAL FIX v6: Uses HARD FLAG to completely stop laser when switching tools
   useEffect(() => {
     // Guard: only run when open AND using laser tool
     if (!isOpen || tool !== 'laser') return;
@@ -827,44 +834,48 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose, onCanva
     if (!canvas || !ctx) return;
     
     const animate = () => {
-      // CRITICAL: Use toolRef.current instead of 'tool' closure variable
-      // This ensures we check the CURRENT tool value, not the stale one from effect creation
-      if (toolRef.current !== 'laser') {
-        // Tool changed - immediately stop animation and clear cache
+      // CRITICAL FIX v6: Check HARD FLAG first - this is the most reliable way
+      // to stop the loop because it's set synchronously in the tool change effect
+      if (!isLaserActiveRef.current) {
+        // Laser mode disabled - IMMEDIATELY exit without scheduling next frame
+        laserAnimationRef.current = null;
         baseImageDataRef.current = null;
-        if (laserAnimationRef.current) {
-          cancelAnimationFrame(laserAnimationRef.current);
-          laserAnimationRef.current = null;
-        }
-        return; // STOP - don't schedule next frame!
+        console.log('[DrawingOverlay] Laser loop stopped by isLaserActiveRef');
+        return; // HARD STOP - no more frames!
       }
       
-      // Only run animation if there are laser points
-      if (laserPointsRef.current.length > 0) {
-        // Save current state if we haven't yet (use ref so it's cleared on color change)
-        if (!baseImageDataRef.current) {
-          baseImageDataRef.current = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        }
-        
-        // Restore base and draw laser
+      // Double-check with toolRef as backup
+      if (toolRef.current !== 'laser') {
+        laserAnimationRef.current = null;
+        baseImageDataRef.current = null;
+        isLaserActiveRef.current = false;
+        return; // HARD STOP!
+      }
+      
+      // Only run animation if there are laser points AND we have base image
+      if (laserPointsRef.current.length > 0 && baseImageDataRef.current) {
+        // Restore base and draw laser on top
         ctx.putImageData(baseImageDataRef.current, 0, 0);
         drawLaserPoints();
-      } else if (baseImageDataRef.current) {
-        // Laser stopped - clear the cached base so new drawings persist
-        baseImageDataRef.current = null;
       }
       
-      laserAnimationRef.current = requestAnimationFrame(animate);
+      // Schedule next frame ONLY if laser is still active
+      if (isLaserActiveRef.current) {
+        laserAnimationRef.current = requestAnimationFrame(animate);
+      }
     };
     
+    // Start animation
+    isLaserActiveRef.current = true;
     animate();
     
     return () => {
+      // Cleanup - disable laser and stop animation
+      isLaserActiveRef.current = false;
       if (laserAnimationRef.current) {
         cancelAnimationFrame(laserAnimationRef.current);
         laserAnimationRef.current = null;
       }
-      // Clear base when switching away from laser to preserve drawings
       baseImageDataRef.current = null;
     };
   }, [isOpen, tool, drawLaserPoints]);
@@ -1203,14 +1214,18 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose, onCanva
         onTouchEnd={handleTouchEnd}
       />
 
-      {/* ALWAYS VISIBLE floating close button - visible even when panel is hidden */}
+      {/* ALWAYS VISIBLE floating close button - REDUCED SIZE to not exceed frame */}
       <Button
         variant="ghost"
         size="icon"
-        onClick={onClose}
-        className="fixed top-4 right-4 z-[99999] w-12 h-12 rounded-full bg-red-500/40 hover:bg-red-500/60 border-2 border-red-500/60 shadow-lg shadow-red-500/20"
+        onClick={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          onClose();
+        }}
+        className="fixed top-4 right-4 z-[99999] w-10 h-10 rounded-full bg-destructive/40 hover:bg-destructive/60 border-2 border-destructive/60 shadow-lg pointer-events-auto"
       >
-        <X className="w-6 h-6 text-white" />
+        <X className="w-5 h-5 text-white" />
       </Button>
 
       {/* Mobile: Tap hint when controls are hidden */}
