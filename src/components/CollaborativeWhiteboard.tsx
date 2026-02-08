@@ -885,8 +885,12 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
         <Button 
           variant="ghost" 
           size="icon" 
-          onClick={onClose}
-          className="fixed top-4 right-4 z-[99999] w-12 h-12 rounded-full bg-destructive/40 hover:bg-destructive/60 border-2 border-destructive/60 shadow-lg"
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            onClose();
+          }}
+          className="fixed top-4 right-4 z-[99999] w-12 h-12 rounded-full bg-destructive/40 hover:bg-destructive/60 border-2 border-destructive/60 shadow-lg pointer-events-auto"
         >
           <X className="w-6 h-6 text-white" />
         </Button>
@@ -977,8 +981,12 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  onClick={onClose}
-                  className="w-9 h-9 rounded-full bg-red-500/20 hover:bg-red-500/30"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    onClose();
+                  }}
+                  className="w-9 h-9 rounded-full bg-red-500/20 hover:bg-red-500/30 pointer-events-auto"
                 >
                   <X className="w-5 h-5" />
                 </Button>
@@ -1096,8 +1104,12 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  onClick={onClose}
-                  className="w-10 h-10 rounded-full"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    onClose();
+                  }}
+                  className="w-10 h-10 rounded-full pointer-events-auto"
                 >
                   <X className="w-5 h-5" />
                 </Button>

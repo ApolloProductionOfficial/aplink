@@ -24,6 +24,56 @@ interface UseRealtimeCaptionsProps {
 // Docs: https://elevenlabs.io/docs/cookbooks/speech-to-text/streaming
 const SCRIBE_WS_URL = "wss://api.elevenlabs.io/v1/speech-to-text/realtime";
 
+// Web Speech API types
+interface SpeechRecognitionEvent extends Event {
+  resultIndex: number;
+  results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognitionErrorEvent extends Event {
+  error: string;
+  message: string;
+}
+
+interface SpeechRecognitionResult {
+  isFinal: boolean;
+  readonly length: number;
+  item(index: number): SpeechRecognitionAlternative;
+  [index: number]: SpeechRecognitionAlternative;
+}
+
+interface SpeechRecognitionAlternative {
+  transcript: string;
+  confidence: number;
+}
+
+interface SpeechRecognitionResultList {
+  readonly length: number;
+  item(index: number): SpeechRecognitionResult;
+  [index: number]: SpeechRecognitionResult;
+}
+
+interface SpeechRecognitionType extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  maxAlternatives: number;
+  onstart: ((this: SpeechRecognitionType, ev: Event) => void) | null;
+  onresult: ((this: SpeechRecognitionType, ev: SpeechRecognitionEvent) => void) | null;
+  onerror: ((this: SpeechRecognitionType, ev: SpeechRecognitionErrorEvent) => void) | null;
+  onend: ((this: SpeechRecognitionType, ev: Event) => void) | null;
+  start(): void;
+  stop(): void;
+  abort(): void;
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition: new () => SpeechRecognitionType;
+    webkitSpeechRecognition: new () => SpeechRecognitionType;
+  }
+}
+
 export const useRealtimeCaptions = ({
   room,
   targetLang,
@@ -43,6 +93,10 @@ export const useRealtimeCaptions = ({
   const tokenRef = useRef<string | null>(null);
   const isConnectedRef = useRef(false);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Web Speech API refs (PRIMARY - free, instant)
+  const webSpeechRef = useRef<SpeechRecognitionType | null>(null);
+  const useWebSpeechRef = useRef(true); // Try Web Speech API first
   
   // For fallback to batch API if WebSocket fails
   const useFallbackRef = useRef(false);
@@ -246,10 +300,106 @@ export const useRealtimeCaptions = ({
     }
   }, [enabled, getScribeToken, handleWebSocketMessage]);
 
-  // Start audio capture and streaming
-  const startRealtimeCapture = useCallback(async () => {
-    if (!enabled) return;
+  // Start Web Speech API (PRIMARY - free, instant, works without tokens)
+  const startWebSpeechCapture = useCallback(() => {
+    // Check if Web Speech API is available
+    const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognitionClass) {
+      console.log('[Captions] Web Speech API not available');
+      return false;
+    }
+    
+    try {
+      const recognition = new SpeechRecognitionClass();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'ru-RU'; // Default to Russian, can be made dynamic
+      recognition.maxAlternatives = 1;
+      
+      recognition.onstart = () => {
+        console.log('[Captions] Web Speech API started');
+        setVadActive(true);
+        isConnectedRef.current = true;
+      };
+      
+      recognition.onresult = async (event: SpeechRecognitionEvent) => {
+        let interimTranscript = '';
+        let finalTranscript = '';
+        
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const result = event.results[i];
+          if (result.isFinal) {
+            finalTranscript += result[0].transcript;
+          } else {
+            interimTranscript += result[0].transcript;
+          }
+        }
+        
+        // Show interim results immediately (partial)
+        if (interimTranscript) {
+          setPartialText(interimTranscript);
+          setVadActive(true);
+          addCaption(interimTranscript, interimTranscript + '...', true);
+        }
+        
+        // Process final results - translate and show
+        if (finalTranscript && finalTranscript.length > 2) {
+          setPartialText("");
+          setIsProcessing(true);
+          const { corrected, translated } = await translateText(finalTranscript);
+          addCaption(corrected, translated, false);
+          setIsProcessing(false);
+        }
+      };
+      
+      recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+        console.warn('[Captions] Web Speech API error:', event.error);
+        // If Web Speech fails, try ElevenLabs as fallback
+        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+          useWebSpeechRef.current = false;
+          startElevenLabsCapture();
+        } else if (event.error !== 'aborted' && event.error !== 'no-speech') {
+          // Auto-restart on transient errors
+          setTimeout(() => {
+            if (enabled && webSpeechRef.current) {
+              try {
+                webSpeechRef.current.start();
+              } catch (e) {
+                console.warn('[Captions] Failed to restart Web Speech:', e);
+              }
+            }
+          }, 500);
+        }
+      };
+      
+      recognition.onend = () => {
+        console.log('[Captions] Web Speech API ended');
+        setVadActive(false);
+        // Auto-restart if still enabled
+        if (enabled && useWebSpeechRef.current) {
+          setTimeout(() => {
+            try {
+              recognition.start();
+            } catch (e) {
+              console.warn('[Captions] Failed to restart Web Speech:', e);
+            }
+          }, 100);
+        }
+      };
+      
+      recognition.start();
+      webSpeechRef.current = recognition;
+      return true;
+    } catch (error) {
+      console.error('[Captions] Failed to start Web Speech API:', error);
+      return false;
+    }
+  }, [enabled, addCaption, translateText]);
 
+  // Start ElevenLabs capture (FALLBACK - requires token and API)
+  // NOTE: This function doesn't call startFallbackVAD directly to avoid circular dependency
+  // Instead it sets useFallbackRef and the caller handles fallback
+  const startElevenLabsCapture = useCallback(async (): Promise<MediaStream | null> => {
     try {
       // Get microphone access
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -266,13 +416,13 @@ export const useRealtimeCaptions = ({
       const wsConnected = await connectWebSocket();
       
       if (wsConnected && wsRef.current?.readyState === WebSocket.OPEN) {
-        console.log('[Captions] Using realtime WebSocket streaming');
+        console.log('[Captions] Using ElevenLabs realtime WebSocket streaming');
         
         // Create AudioContext for PCM extraction
         audioContextRef.current = new AudioContext({ sampleRate: 16000 });
         const source = audioContextRef.current.createMediaStreamSource(stream);
         
-        // Use ScriptProcessorNode for PCM extraction (AudioWorklet not available in all browsers)
+        // Use ScriptProcessorNode for PCM extraction
         const processor = audioContextRef.current.createScriptProcessor(4096, 1, 1);
         
         processor.onaudioprocess = (e) => {
@@ -297,18 +447,49 @@ export const useRealtimeCaptions = ({
         
         source.connect(processor);
         processor.connect(audioContextRef.current.destination);
+        return null; // WebSocket connected, no fallback needed
         
       } else {
-        // Fall back to batch API with VAD
-        console.log('[Captions] Falling back to batch API');
+        // Return stream for fallback VAD
+        console.log('[Captions] WebSocket unavailable, returning stream for fallback');
         useFallbackRef.current = true;
-        startFallbackVAD(stream);
+        return stream;
       }
 
     } catch (error) {
-      console.error('[Captions] Failed to start capture:', error);
+      console.error('[Captions] Failed to start ElevenLabs capture:', error);
+      return null;
     }
-  }, [enabled, connectWebSocket]);
+  }, [connectWebSocket]);
+
+  // Fallback VAD-based recording (original implementation) - declared early so startRealtimeCapture can use it
+  const startFallbackVADRef = useRef<((stream: MediaStream) => void) | null>(null);
+
+  // Start audio capture and streaming - TRY WEB SPEECH FIRST (free, instant)
+  const startRealtimeCapture = useCallback(async () => {
+    if (!enabled) return;
+
+    console.log('[Captions] Starting capture - trying Web Speech API first (free, instant)');
+    
+    // Try Web Speech API first (free, no token required, instant start)
+    if (useWebSpeechRef.current) {
+      const webSpeechStarted = startWebSpeechCapture();
+      if (webSpeechStarted) {
+        console.log('[Captions] Using Web Speech API (instant, free)');
+        return;
+      }
+    }
+    
+    // Fall back to ElevenLabs
+    console.log('[Captions] Web Speech unavailable, trying ElevenLabs');
+    const fallbackStream = await startElevenLabsCapture();
+    
+    // If ElevenLabs returned a stream, it means WebSocket failed - use VAD fallback
+    if (fallbackStream && startFallbackVADRef.current) {
+      console.log('[Captions] Starting VAD fallback with stream');
+      startFallbackVADRef.current(fallbackStream);
+    }
+  }, [enabled, startWebSpeechCapture, startElevenLabsCapture]);
 
   // Fallback VAD-based recording (original implementation)
   const startFallbackVAD = useCallback((stream: MediaStream) => {
@@ -412,7 +593,8 @@ export const useRealtimeCaptions = ({
     checkVoiceActivity();
   }, [enabled]);
 
-  // Process audio chunk with batch API (fallback)
+  // Store ref for startFallbackVAD so it can be called from startRealtimeCapture
+  startFallbackVADRef.current = startFallbackVAD;
   const processAudioChunkFallback = useCallback(async (audioBlob: Blob) => {
     if (!enabled || audioBlob.size < 500) return;
 
@@ -471,6 +653,16 @@ export const useRealtimeCaptions = ({
   // Stop all capture
   const stopCapture = useCallback(() => {
     console.log('[Captions] Stopping capture...');
+    
+    // Stop Web Speech API
+    if (webSpeechRef.current) {
+      try {
+        webSpeechRef.current.abort();
+      } catch {
+        // Ignore
+      }
+      webSpeechRef.current = null;
+    }
     
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
