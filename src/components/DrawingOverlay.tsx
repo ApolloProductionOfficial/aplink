@@ -409,12 +409,16 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose, onCanva
   // CRITICAL: Keep toolRef in sync with tool state
   // This enables the laser animation loop to check the CURRENT tool value
   useEffect(() => {
+    const prevTool = toolRef.current;
     toolRef.current = tool;
     
     // Clear laser state when switching away from laser tool
-    if (tool !== 'laser') {
-      laserPointsRef.current = [];
+    if (prevTool === 'laser' && tool !== 'laser') {
+      // CRITICAL FIX: When switching FROM laser, do NOT restore baseImageData
+      // Instead, null it out so laser loop stops trying to restore old state
+      // This preserves any drawings made while laser was active
       baseImageDataRef.current = null;
+      laserPointsRef.current = [];
       
       // CRITICAL: Stop any running laser animation IMMEDIATELY
       // This prevents the laser loop from calling putImageData with null baseImage
@@ -422,7 +426,16 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose, onCanva
       if (laserAnimationRef.current) {
         cancelAnimationFrame(laserAnimationRef.current);
         laserAnimationRef.current = null;
-        console.log('[DrawingOverlay] Stopped laser animation on tool switch');
+        console.log('[DrawingOverlay] Stopped laser animation on tool switch from laser');
+      }
+    } else if (tool !== 'laser') {
+      // For any non-laser tool, ensure laser state is clean
+      laserPointsRef.current = [];
+      baseImageDataRef.current = null;
+      
+      if (laserAnimationRef.current) {
+        cancelAnimationFrame(laserAnimationRef.current);
+        laserAnimationRef.current = null;
       }
     }
   }, [tool]);

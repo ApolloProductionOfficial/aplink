@@ -927,12 +927,30 @@ function LiveKitContent({
     }
   }, [participants, pinnedParticipant]);
   
+  // Track previous screen share state for return-to-gallery logic
+  const prevScreenShareRef = useRef<boolean>(false);
+  
   // Auto-switch to focus mode when screen share starts
   useEffect(() => {
     if (isScreenShareEnabled && layoutMode === 'gallery') {
       setLayoutMode('focus');
       toast.info('Фокус-режим', {
         description: 'Автоматическое переключение для демонстрации экрана',
+        duration: 2000,
+      });
+    }
+  }, [isScreenShareEnabled, layoutMode]);
+  
+  // Return to gallery mode when screen share ends
+  useEffect(() => {
+    const wasScreenSharing = prevScreenShareRef.current;
+    prevScreenShareRef.current = isScreenShareEnabled;
+    
+    // If we WERE screen sharing but now stopped, and we're in focus mode, return to gallery
+    if (wasScreenSharing && !isScreenShareEnabled && layoutMode === 'focus') {
+      setLayoutMode('gallery');
+      toast.info('Галерея', {
+        description: 'Демонстрация завершена',
         duration: 2000,
       });
     }
