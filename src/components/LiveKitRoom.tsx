@@ -629,9 +629,9 @@ export function LiveKitRoom({
       serverUrl={serverUrl}
       token={memoizedToken}
       connect={true}
-      // Audio: always enabled by default (microphone on)
-      // Video: always disabled by default (camera off - user enables manually)
-      audio={true}
+      // Desktop: mic on by default, camera off by default.
+      // Mobile Safari: we start mic on the FIRST user interaction (gesture requirement), without any extra button.
+      audio={!isMobileDevice}
       video={false}
       onConnected={handleConnected}
       onDisconnected={handleDisconnected}
@@ -711,7 +711,63 @@ function LiveKitContent({
   // Audio playback permission - handles browser autoplay blocking
   const { mergedProps: startAudioProps, canPlayAudio } = useStartAudio({ room, props: {} });
   const [showAudioPrompt, setShowAudioPrompt] = useState(false);
-  
+
+  // MOBILE STABILITY: iOS/Safari requires getUserMedia to be triggered by a user gesture.
+  // We auto-start the microphone on the first touch/click anywhere (no extra blue button).
+  const autoStartMobileMicRef = useRef(false);
+
+  useEffect(() => {
+    if (!isMobileDevice) return;
+    if (!room || !localParticipant) return;
+    if (autoStartMobileMicRef.current) return;
+
+    const onFirstInteraction = async () => {
+      if (autoStartMobileMicRef.current) return;
+      autoStartMobileMicRef.current = true;
+
+      try {
+        // If there is already a mic track, just unmute it.
+        const micPub = localParticipant.getTrackPublication(Track.Source.Microphone);
+        if (micPub?.track) {
+          if (micPub.isMuted) await micPub.unmute();
+        } else {
+          // CRITICAL: capture inside the user gesture, then publish the SAME track (no second getUserMedia call).
+          const stream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true,
+            },
+            video: false,
+          });
+          const audioTrack = stream.getAudioTracks()[0];
+          if (!audioTrack) throw new Error('no audio track');
+
+          await localParticipant.publishTrack(audioTrack, { source: Track.Source.Microphone });
+        }
+
+        // Remote audio playback (autoplay can still be blocked; we keep the existing prompt for that)
+        try {
+          await room.startAudio();
+        } catch {
+          // handled by showAudioPrompt logic
+        }
+      } catch (err) {
+        console.warn('[LiveKitRoom] Mobile: auto-start mic failed:', err);
+        autoStartMobileMicRef.current = false;
+      }
+    };
+
+    // Use both, because iOS can be picky about which one fires first.
+    document.addEventListener('touchstart', onFirstInteraction, { once: true });
+    document.addEventListener('click', onFirstInteraction, { once: true });
+
+    return () => {
+      document.removeEventListener('touchstart', onFirstInteraction as any);
+      document.removeEventListener('click', onFirstInteraction as any);
+    };
+  }, [isMobileDevice, room, localParticipant]);
+
   // Show audio prompt when audio is blocked
   useEffect(() => {
     if (canPlayAudio === false) {
@@ -1190,24 +1246,38 @@ function LiveKitContent({
       const cameraPublication = localParticipant?.getTrackPublication(Track.Source.Camera);
       const currentState = localParticipant?.isCameraEnabled ?? false;
       
-      // MOBILE FIX: If camera is disabled and we're on mobile, request permission first
-      if (!currentState && isMobileToggle) {
+      // MOBILE FIX: If camera is disabled and we're on mobile, publish the track created inside the user gesture.
+      // This avoids a second internal getUserMedia() call that can break gesture context on iOS Safari.
+      if (!currentState && isMobileToggle && !cameraPublication?.track) {
         try {
-          console.log('[LiveKitRoom] Mobile: Requesting camera permission directly...');
-          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-          stream.getTracks().forEach(t => t.stop()); // Stop immediately, LiveKit will create own track
-          console.log('[LiveKitRoom] Mobile: Camera permission granted');
-          // Small delay before LiveKit takes over
-          await new Promise(r => setTimeout(r, 50));
+          console.log('[LiveKitRoom] Mobile: Capturing camera in gesture and publishing track...');
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              width: { ideal: isIOSSafeModeLive ? 960 : 1280 },
+              height: { ideal: isIOSSafeModeLive ? 540 : 720 },
+              frameRate: { ideal: isIOSSafeModeLive ? 20 : 24 },
+            },
+            audio: false,
+          });
+          const videoTrack = stream.getVideoTracks()[0];
+          if (!videoTrack) throw new Error('no video track');
+
+          await localParticipant?.publishTrack(videoTrack, {
+            source: Track.Source.Camera,
+            ...(isIOSSafeModeLive ? { simulcast: false, videoCodec: 'vp8' as const } : {}),
+          });
+
+          diagnostics.logMediaToggle('camera', true, 'publishTrack');
+          return;
         } catch (permErr: any) {
-          console.error('[LiveKitRoom] Mobile: Camera permission denied:', permErr);
-          diagnostics.logMediaToggle('camera', false, `permission denied: ${permErr?.message}`);
-          if (permErr.name === 'NotAllowedError') {
+          console.error('[LiveKitRoom] Mobile: Camera capture/publish failed:', permErr);
+          diagnostics.logMediaToggle('camera', false, `publish failed: ${permErr?.message}`);
+          if (permErr?.name === 'NotAllowedError') {
             toast.error('Доступ к камере запрещён', {
               description: 'Разрешите доступ в настройках браузера',
             });
           } else {
-            toast.error('Ошибка камеры', { description: permErr.message });
+            toast.error('Ошибка камеры', { description: permErr?.message || 'Попробуйте ещё раз' });
           }
           return;
         }
@@ -1286,24 +1356,33 @@ function LiveKitContent({
       const micPublication = localParticipant?.getTrackPublication(Track.Source.Microphone);
       const currentState = localParticipant?.isMicrophoneEnabled ?? false;
       
-      // MOBILE FIX: If mic is disabled and we're on mobile, request permission first
-      if (!currentState && isMobileToggle) {
+      // MOBILE FIX: If mic is disabled and we're on mobile, publish the track created inside the user gesture.
+      if (!currentState && isMobileToggle && !micPublication?.track) {
         try {
-          console.log('[LiveKitRoom] Mobile: Requesting microphone permission directly...');
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          stream.getTracks().forEach(t => t.stop()); // Stop immediately, LiveKit will create own track
-          console.log('[LiveKitRoom] Mobile: Microphone permission granted');
-          // Small delay before LiveKit takes over
-          await new Promise(r => setTimeout(r, 50));
+          console.log('[LiveKitRoom] Mobile: Capturing microphone in gesture and publishing track...');
+          const stream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true,
+            },
+            video: false,
+          });
+          const audioTrack = stream.getAudioTracks()[0];
+          if (!audioTrack) throw new Error('no audio track');
+
+          await localParticipant?.publishTrack(audioTrack, { source: Track.Source.Microphone });
+          diagnostics.logMediaToggle('microphone', true, 'publishTrack');
+          return;
         } catch (permErr: any) {
-          console.error('[LiveKitRoom] Mobile: Microphone permission denied:', permErr);
-          diagnostics.logMediaToggle('microphone', false, `permission denied: ${permErr?.message}`);
-          if (permErr.name === 'NotAllowedError') {
+          console.error('[LiveKitRoom] Mobile: Microphone capture/publish failed:', permErr);
+          diagnostics.logMediaToggle('microphone', false, `publish failed: ${permErr?.message}`);
+          if (permErr?.name === 'NotAllowedError') {
             toast.error('Доступ к микрофону запрещён', {
               description: 'Разрешите доступ в настройках браузера',
             });
           } else {
-            toast.error('Ошибка микрофона', { description: permErr.message });
+            toast.error('Ошибка микрофона', { description: permErr?.message || 'Попробуйте ещё раз' });
           }
           return;
         }
