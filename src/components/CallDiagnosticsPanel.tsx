@@ -361,6 +361,45 @@ export function CallDiagnosticsPanel({
               </div>
             </div>
 
+            {/* Track Publications Debug (useful for mobile debugging) */}
+            {(() => {
+              const camPub = liveKitRoom?.localParticipant?.getTrackPublication(Track.Source.Camera);
+              const micPub = liveKitRoom?.localParticipant?.getTrackPublication(Track.Source.Microphone);
+              return (
+                <div className="space-y-2 pt-2 border-t border-white/[0.05]">
+                  <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Track Publications</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    {/* Mic track */}
+                    <div className={cn(
+                      "flex flex-col gap-0.5 p-2 rounded-lg text-xs",
+                      micPub?.track ? "bg-green-500/10 border border-green-500/20" : "bg-white/[0.03] border border-white/[0.05]"
+                    )}>
+                      <div className="flex items-center gap-1.5">
+                        {micPub?.track ? <Mic className="w-3 h-3 text-green-400" /> : <MicOff className="w-3 h-3 text-muted-foreground" />}
+                        <span className="font-medium">Mic</span>
+                      </div>
+                      <span className="text-[10px] text-muted-foreground">
+                        {!micPub?.track ? "no track" : micPub.isMuted ? "muted" : "active"}
+                      </span>
+                    </div>
+                    {/* Cam track */}
+                    <div className={cn(
+                      "flex flex-col gap-0.5 p-2 rounded-lg text-xs",
+                      camPub?.track && !camPub.isMuted ? "bg-green-500/10 border border-green-500/20" : "bg-white/[0.03] border border-white/[0.05]"
+                    )}>
+                      <div className="flex items-center gap-1.5">
+                        {camPub?.track && !camPub.isMuted ? <Camera className="w-3 h-3 text-green-400" /> : <CameraOff className="w-3 h-3 text-muted-foreground" />}
+                        <span className="font-medium">Camera</span>
+                      </div>
+                      <span className="text-[10px] text-muted-foreground">
+                        {!camPub?.track ? "no track" : camPub.isMuted ? "muted" : "active"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* Media & Participants */}
             <div className="flex items-center gap-3 pt-2 border-t border-white/[0.05]">
               <div className={cn(
