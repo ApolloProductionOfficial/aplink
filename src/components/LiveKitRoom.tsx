@@ -713,7 +713,8 @@ function LiveKitContent({
   const [showAudioPrompt, setShowAudioPrompt] = useState(false);
 
   // MOBILE STABILITY: iOS/Safari requires getUserMedia to be triggered by a user gesture.
-  // We auto-start the microphone on the first touch/click anywhere (no extra blue button).
+  // We auto-start the microphone AND prepare camera on the first touch/click anywhere.
+  // Camera is published but immediately muted, so user just has to tap the camera button to unmute.
   const autoStartMobileMicRef = useRef(false);
 
   useEffect(() => {
@@ -725,36 +726,58 @@ function LiveKitContent({
       if (autoStartMobileMicRef.current) return;
       autoStartMobileMicRef.current = true;
 
-      try {
-        // If there is already a mic track, just unmute it.
-        const micPub = localParticipant.getTrackPublication(Track.Source.Microphone);
-        if (micPub?.track) {
-          if (micPub.isMuted) await micPub.unmute();
-        } else {
-          // CRITICAL: capture inside the user gesture, then publish the SAME track (no second getUserMedia call).
-          const stream = await navigator.mediaDevices.getUserMedia({
-            audio: {
-              echoCancellation: true,
-              noiseSuppression: true,
-              autoGainControl: true,
-            },
-            video: false,
-          });
-          const audioTrack = stream.getAudioTracks()[0];
-          if (!audioTrack) throw new Error('no audio track');
+      console.log('[LiveKitRoom] Mobile: First user gesture detected - capturing media');
 
+      try {
+        // CRITICAL: Capture BOTH audio AND video in a single getUserMedia call within the gesture.
+        // This is the only reliable way on iOS Safari to ensure both permissions are granted.
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+          video: {
+            width: { ideal: 960 },
+            height: { ideal: 540 },
+            frameRate: { ideal: 20 },
+          },
+        });
+
+        const audioTrack = stream.getAudioTracks()[0];
+        const videoTrack = stream.getVideoTracks()[0];
+
+        // Publish audio (unmuted)
+        if (audioTrack) {
           await localParticipant.publishTrack(audioTrack, { source: Track.Source.Microphone });
+          console.log('[LiveKitRoom] Mobile: Microphone published');
         }
 
-        // Remote audio playback (autoplay can still be blocked; we keep the existing prompt for that)
+        // Publish video but immediately mute it so it's "off" by default.
+        // User taps camera button -> we just unmute (no new getUserMedia call).
+        if (videoTrack) {
+          const camPub = await localParticipant.publishTrack(videoTrack, {
+            source: Track.Source.Camera,
+            simulcast: false,
+            videoCodec: 'vp8' as const,
+          });
+          // Mute camera so user sees it as "off"
+          if (camPub) {
+            await camPub.mute();
+            console.log('[LiveKitRoom] Mobile: Camera published & muted (ready to unmute)');
+          }
+        }
+
+        // Remote audio playback
         try {
           await room.startAudio();
         } catch {
           // handled by showAudioPrompt logic
         }
-      } catch (err) {
-        console.warn('[LiveKitRoom] Mobile: auto-start mic failed:', err);
+      } catch (err: any) {
+        console.warn('[LiveKitRoom] Mobile: auto-start media failed:', err);
         autoStartMobileMicRef.current = false;
+        // If user denied permission, we'll show error when they try to toggle
       }
     };
 
@@ -1246,8 +1269,21 @@ function LiveKitContent({
       const cameraPublication = localParticipant?.getTrackPublication(Track.Source.Camera);
       const currentState = localParticipant?.isCameraEnabled ?? false;
       
-      // MOBILE FIX: If camera is disabled and we're on mobile, publish the track created inside the user gesture.
-      // This avoids a second internal getUserMedia() call that can break gesture context on iOS Safari.
+      // iOS/Mobile: The camera track is already published (muted) from the first gesture.
+      // We just need to mute/unmute it - no new getUserMedia call required.
+      if (isMobileToggle && cameraPublication?.track) {
+        if (cameraPublication.isMuted) {
+          await cameraPublication.unmute();
+          console.log('[LiveKitRoom] Mobile: Camera unmuted');
+        } else {
+          await cameraPublication.mute();
+          console.log('[LiveKitRoom] Mobile: Camera muted');
+        }
+        diagnostics.logMediaToggle('camera', true, 'mute-toggle');
+        return;
+      }
+
+      // If mobile but no track yet (user denied on first gesture, now trying again)
       if (!currentState && isMobileToggle && !cameraPublication?.track) {
         try {
           console.log('[LiveKitRoom] Mobile: Capturing camera in gesture and publishing track...');
@@ -1264,10 +1300,11 @@ function LiveKitContent({
 
           await localParticipant?.publishTrack(videoTrack, {
             source: Track.Source.Camera,
-            ...(isIOSSafeModeLive ? { simulcast: false, videoCodec: 'vp8' as const } : {}),
+            simulcast: false,
+            videoCodec: 'vp8' as const,
           });
 
-          diagnostics.logMediaToggle('camera', true, 'publishTrack');
+          diagnostics.logMediaToggle('camera', true, 'publishTrack-retry');
           return;
         } catch (permErr: any) {
           console.error('[LiveKitRoom] Mobile: Camera capture/publish failed:', permErr);
@@ -1283,18 +1320,18 @@ function LiveKitContent({
         }
       }
       
-      // iOS Safe Mode: use mute/unmute if track already exists to avoid renegotiation
+      // Desktop: iOS Safe Mode uses mute/unmute if track already exists
       if (isIOSSafeModeLive && cameraPublication?.track) {
         if (cameraPublication.isMuted) {
           await cameraPublication.unmute();
-          console.log('[LiveKitRoom] iOS: Camera unmuted');
+          console.log('[LiveKitRoom] iOS Desktop: Camera unmuted');
         } else {
           await cameraPublication.mute();
-          console.log('[LiveKitRoom] iOS: Camera muted');
+          console.log('[LiveKitRoom] iOS Desktop: Camera muted');
         }
         diagnostics.logMediaToggle('camera', true);
       } else {
-        // Standard approach: enable/disable
+        // Standard desktop approach: enable/disable
         await localParticipant?.setCameraEnabled(!currentState);
         diagnostics.logMediaToggle('camera', true);
       }
@@ -1317,8 +1354,8 @@ function LiveKitContent({
           // On other platforms: retry once after delay
           await new Promise(r => setTimeout(r, 800));
           try {
-            const currentState = localParticipant?.isCameraEnabled ?? false;
-            await localParticipant?.setCameraEnabled(!currentState);
+            const cs = localParticipant?.isCameraEnabled ?? false;
+            await localParticipant?.setCameraEnabled(!cs);
             diagnostics.logMediaToggle('camera', true, 'retry');
           } catch (retryErr: any) {
             console.error('Failed to toggle camera after retry:', retryErr);
@@ -1356,7 +1393,21 @@ function LiveKitContent({
       const micPublication = localParticipant?.getTrackPublication(Track.Source.Microphone);
       const currentState = localParticipant?.isMicrophoneEnabled ?? false;
       
-      // MOBILE FIX: If mic is disabled and we're on mobile, publish the track created inside the user gesture.
+      // iOS/Mobile: The mic track is already published from the first gesture.
+      // We just need to mute/unmute it - no new getUserMedia call required.
+      if (isMobileToggle && micPublication?.track) {
+        if (micPublication.isMuted) {
+          await micPublication.unmute();
+          console.log('[LiveKitRoom] Mobile: Microphone unmuted');
+        } else {
+          await micPublication.mute();
+          console.log('[LiveKitRoom] Mobile: Microphone muted');
+        }
+        diagnostics.logMediaToggle('microphone', true, 'mute-toggle');
+        return;
+      }
+
+      // If mobile but no track yet (user denied on first gesture, now trying again)
       if (!currentState && isMobileToggle && !micPublication?.track) {
         try {
           console.log('[LiveKitRoom] Mobile: Capturing microphone in gesture and publishing track...');
@@ -1372,7 +1423,7 @@ function LiveKitContent({
           if (!audioTrack) throw new Error('no audio track');
 
           await localParticipant?.publishTrack(audioTrack, { source: Track.Source.Microphone });
-          diagnostics.logMediaToggle('microphone', true, 'publishTrack');
+          diagnostics.logMediaToggle('microphone', true, 'publishTrack-retry');
           return;
         } catch (permErr: any) {
           console.error('[LiveKitRoom] Mobile: Microphone capture/publish failed:', permErr);
@@ -1388,18 +1439,18 @@ function LiveKitContent({
         }
       }
       
-      // iOS Safe Mode: use mute/unmute if track already exists to avoid renegotiation
+      // Desktop iOS Safe Mode: use mute/unmute if track already exists
       if (isIOSSafeModeLive && micPublication?.track) {
         if (micPublication.isMuted) {
           await micPublication.unmute();
-          console.log('[LiveKitRoom] iOS: Microphone unmuted');
+          console.log('[LiveKitRoom] iOS Desktop: Microphone unmuted');
         } else {
           await micPublication.mute();
-          console.log('[LiveKitRoom] iOS: Microphone muted');
+          console.log('[LiveKitRoom] iOS Desktop: Microphone muted');
         }
         diagnostics.logMediaToggle('microphone', true);
       } else {
-        // Standard approach: enable/disable
+        // Standard desktop approach: enable/disable
         await localParticipant?.setMicrophoneEnabled(!currentState);
         diagnostics.logMediaToggle('microphone', true);
       }
