@@ -194,8 +194,9 @@ export function LiveKitRoom({
   const lastFetchTimeRef = useRef<number>(0);
   const lastFetchRoomRef = useRef<string | null>(null);
   const lastFetchIdentityRef = useRef<string | null>(null);
-  const FETCH_DEBOUNCE_MS = 3000; // Increased to 3 seconds for mobile stability
-  const FETCH_SERIAL_LOCK_MS = 1000; // Minimum time between fetch attempts
+  // MOBILE STABILITY: Increased debounce to prevent reconnect storms
+  const FETCH_DEBOUNCE_MS = 5000; // 5 seconds debounce for mobile stability
+  const FETCH_SERIAL_LOCK_MS = 2000; // Minimum time between fetch attempts
   const serialLockRef = useRef<Promise<boolean> | null>(null);
   const tokenGenerationIdRef = useRef<number>(0); // Unique ID per token generation attempt
   
@@ -468,7 +469,7 @@ export function LiveKitRoom({
     return useFallbackVideoProfile || detectIsIOSOrMobileSafari();
   }, [useFallbackVideoProfile]);
   
-  // MOBILE FIX: Detect any mobile device for gesture-based media activation
+  // Mobile device detection for adapted behavior
   const isMobileDevice = useMemo(() => {
     if (typeof navigator === 'undefined') return false;
     const ua = navigator.userAgent;
@@ -628,10 +629,10 @@ export function LiveKitRoom({
       serverUrl={serverUrl}
       token={memoizedToken}
       connect={true}
-      // MOBILE FIX: Don't auto-request media on mobile - requires user gesture
-      // On mobile, we'll show a prompt and request media directly in click handler
-      audio={!isMobileDevice}
-      video={!isMobileDevice}
+      // Audio: always enabled by default (microphone on)
+      // Video: always disabled by default (camera off - user enables manually)
+      audio={true}
+      video={false}
       onConnected={handleConnected}
       onDisconnected={handleDisconnected}
       onError={handleRoomError}
@@ -711,11 +712,6 @@ function LiveKitContent({
   const { mergedProps: startAudioProps, canPlayAudio } = useStartAudio({ room, props: {} });
   const [showAudioPrompt, setShowAudioPrompt] = useState(false);
   
-  // MOBILE FIX: Track if user has tapped to enable media
-  const [mobileMediaEnabled, setMobileMediaEnabled] = useState(false);
-  const [showMobileMediaPrompt, setShowMobileMediaPrompt] = useState(isMobileDevice);
-  const mobileMediaEnablingRef = useRef(false);
-  
   // Show audio prompt when audio is blocked
   useEffect(() => {
     if (canPlayAudio === false) {
@@ -751,98 +747,6 @@ function LiveKitContent({
       };
     }
   }, [room, canPlayAudio]);
-  
-  // MOBILE FIX: Enable media on mobile with direct user gesture
-  // This is CRITICAL for iOS Safari - getUserMedia MUST be called directly from click/touch handler
-  const handleMobileMediaEnable = useCallback(async () => {
-    if (mobileMediaEnablingRef.current || mobileMediaEnabled) {
-      console.log('[LiveKitRoom] Mobile media enable already in progress or done');
-      return;
-    }
-    
-    mobileMediaEnablingRef.current = true;
-    console.log('[LiveKitRoom] Mobile: Enabling camera and microphone via user gesture');
-    
-    try {
-      // CRITICAL: Request getUserMedia DIRECTLY in click handler - not in async chain
-      // This preserves the gesture context required by iOS Safari
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-        },
-        video: {
-          width: { ideal: 960 },
-          height: { ideal: 540 },
-          frameRate: { ideal: 20 },
-        },
-      });
-      
-      console.log('[LiveKitRoom] Mobile: Got media stream, tracks:', stream.getTracks().map(t => t.kind));
-      
-      // Stop the temporary stream - LiveKit will create its own
-      stream.getTracks().forEach(track => track.stop());
-      
-      // Now enable camera and mic through LiveKit (permission already granted)
-      if (localParticipant) {
-        // Small delay to ensure tracks are properly stopped
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        try {
-          await localParticipant.setCameraEnabled(true);
-          console.log('[LiveKitRoom] Mobile: Camera enabled');
-        } catch (camErr) {
-          console.warn('[LiveKitRoom] Mobile: Camera enable failed:', camErr);
-        }
-        
-        try {
-          await localParticipant.setMicrophoneEnabled(true);
-          console.log('[LiveKitRoom] Mobile: Microphone enabled');
-        } catch (micErr) {
-          console.warn('[LiveKitRoom] Mobile: Microphone enable failed:', micErr);
-        }
-      }
-      
-      // Also start audio playback (for remote participants)
-      try {
-        await room.startAudio();
-        console.log('[LiveKitRoom] Mobile: Room audio started');
-      } catch (audioErr) {
-        console.warn('[LiveKitRoom] Mobile: Room audio start failed:', audioErr);
-      }
-      
-      setMobileMediaEnabled(true);
-      setShowMobileMediaPrompt(false);
-      setShowAudioPrompt(false);
-      
-      toast.success('Камера и микрофон включены', {
-        duration: 2000,
-      });
-      
-    } catch (err: any) {
-      console.error('[LiveKitRoom] Mobile: Failed to enable media:', err);
-      
-      if (err.name === 'NotAllowedError') {
-        toast.error('Доступ к камере/микрофону запрещён', {
-          description: 'Разрешите доступ в настройках браузера',
-          duration: 5000,
-        });
-      } else if (err.name === 'NotFoundError') {
-        toast.error('Камера или микрофон не найдены', {
-          description: 'Проверьте подключение устройств',
-          duration: 5000,
-        });
-      } else {
-        toast.error('Ошибка при включении камеры/микрофона', {
-          description: err.message || 'Попробуйте перезагрузить страницу',
-          duration: 5000,
-        });
-      }
-    } finally {
-      mobileMediaEnablingRef.current = false;
-    }
-  }, [localParticipant, room, mobileMediaEnabled]);
   
   // Raise hand hook
   const { isHandRaised, raisedHands, toggleHand } = useRaiseHand(room, participantName);
@@ -2220,25 +2124,8 @@ function LiveKitContent({
         </div>
       )}
 
-      {/* MOBILE FIX: Prompt to enable camera and microphone on mobile devices */}
-      {showMobileMediaPrompt && !mobileMediaEnabled && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-background/80 backdrop-blur-md">
-          <button
-            onClick={handleMobileMediaEnable}
-            className="flex flex-col items-center gap-4 px-8 py-6 rounded-2xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-[0_0_80px_hsl(var(--primary)/0.6)] transition-all hover:scale-105 active:scale-95 cursor-pointer border border-primary-foreground/20"
-          >
-            <div className="flex items-center gap-3">
-              <Video className="w-10 h-10" />
-              <Mic className="w-10 h-10" />
-            </div>
-            <span className="text-xl font-bold text-center">Нажмите для включения<br/>камеры и микрофона</span>
-            <span className="text-sm opacity-80 text-center">Требуется для видеозвонка</span>
-          </button>
-        </div>
-      )}
-
       {/* Audio blocked warning - prominent button to enable audio */}
-      {showAudioPrompt && !showMobileMediaPrompt && (
+      {showAudioPrompt && (
         <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-background/60 backdrop-blur-sm">
           <button
             {...startAudioProps}
