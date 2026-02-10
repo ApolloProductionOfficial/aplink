@@ -542,7 +542,7 @@ export function LiveKitRoom({
       publishDefaults: {
         simulcast: true,
         videoCodec: 'vp9' as const,
-        backupCodec: { codec: 'vp8' as const },
+        backupCodec: { codec: 'h264' as const },
         dtx: true,
         red: true,
         videoSimulcastLayers: [
@@ -551,6 +551,8 @@ export function LiveKitRoom({
           VideoPresets.h1080,
         ],
       },
+      // Keep tracks alive across reconnections to prevent re-negotiation failures
+      stopLocalTrackOnUnpublish: false,
     };
   }, [isIOSSafeMode]);
 
@@ -1315,22 +1317,21 @@ function LiveKitContent({
         }
       }
 
-      const currentState = localParticipant?.isCameraEnabled ?? false;
-
-      // Desktop: iOS Safe Mode uses mute/unmute if track already exists
-      if (isIOSSafeModeLive && cameraPublication?.track) {
+      // Desktop: prefer mute/unmute if track already published (prevents NegotiationError)
+      if (cameraPublication?.track) {
         if (cameraPublication.isMuted) {
           await cameraPublication.unmute();
-          console.log('[LiveKitRoom] iOS Desktop: Camera unmuted');
+          console.log('[LiveKitRoom] Desktop: Camera unmuted (mute/unmute)');
         } else {
           await cameraPublication.mute();
-          console.log('[LiveKitRoom] iOS Desktop: Camera muted');
+          console.log('[LiveKitRoom] Desktop: Camera muted (mute/unmute)');
         }
-        diagnostics.logMediaToggle('camera', true);
+        diagnostics.logMediaToggle('camera', true, 'mute-toggle');
       } else {
-        // Standard desktop approach: enable/disable
+        // First-time enable: use setCameraEnabled to create the track
+        const currentState = localParticipant?.isCameraEnabled ?? false;
         await localParticipant?.setCameraEnabled(!currentState);
-        diagnostics.logMediaToggle('camera', true);
+        diagnostics.logMediaToggle('camera', true, 'setCameraEnabled');
       }
     } catch (err: any) {
       diagnostics.logMediaToggle('camera', false, err?.message);
@@ -1438,22 +1439,21 @@ function LiveKitContent({
         }
       }
 
-      const currentState = localParticipant?.isMicrophoneEnabled ?? false;
-
-      // Desktop iOS Safe Mode: use mute/unmute if track already exists
-      if (isIOSSafeModeLive && micPublication?.track) {
+      // Desktop: prefer mute/unmute if track already published (prevents NegotiationError)
+      if (micPublication?.track) {
         if (micPublication.isMuted) {
           await micPublication.unmute();
-          console.log('[LiveKitRoom] iOS Desktop: Microphone unmuted');
+          console.log('[LiveKitRoom] Desktop: Microphone unmuted (mute/unmute)');
         } else {
           await micPublication.mute();
-          console.log('[LiveKitRoom] iOS Desktop: Microphone muted');
+          console.log('[LiveKitRoom] Desktop: Microphone muted (mute/unmute)');
         }
-        diagnostics.logMediaToggle('microphone', true);
+        diagnostics.logMediaToggle('microphone', true, 'mute-toggle');
       } else {
-        // Standard desktop approach: enable/disable
+        // First-time enable: use setMicrophoneEnabled to create the track
+        const currentState = localParticipant?.isMicrophoneEnabled ?? false;
         await localParticipant?.setMicrophoneEnabled(!currentState);
-        diagnostics.logMediaToggle('microphone', true);
+        diagnostics.logMediaToggle('microphone', true, 'setMicrophoneEnabled');
       }
     } catch (err: any) {
       diagnostics.logMediaToggle('microphone', false, err?.message);
