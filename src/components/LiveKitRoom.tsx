@@ -865,6 +865,9 @@ function LiveKitContent({
   const [showChat, setShowChat] = useState(false);
   const [showWhiteboard, setShowWhiteboard] = useState(false);
   const [showDrawingOverlay, setShowDrawingOverlay] = useState(false);
+  // Issue 5: Refs for stable data handler closure (prevents reconnection on whiteboard toggle)
+  const showWhiteboardRef = useRef(false);
+  const showDrawingOverlayRef = useRef(false);
   // Track if a remote participant has the whiteboard open (for mobile tile display)
   const [remoteWhiteboardSender, setRemoteWhiteboardSender] = useState<string | null>(null);
   const [currentBackground, setCurrentBackground] = useState<'none' | 'blur-light' | 'blur-strong' | 'image'>('none');
@@ -1080,62 +1083,52 @@ function LiveKitContent({
     });
   }, []);
   
-  // Auto-switch to focus mode when screen sharing starts (for better screen visibility)
+  // Issue 4 FIX: Single merged screen share layout effect with 500ms debounce
+  // Prevents flicker from rapid layout toggles when screen share starts/stops
+  const screenShareDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  
   useEffect(() => {
-    // Check if anyone is screen sharing
+    // Check if anyone is screen sharing (remote or local)
     const someoneScreenSharing = participants.some(p => {
       const tracks = p.getTrackPublications();
       return Array.from(tracks.values()).some(t => t.source === Track.Source.ScreenShare && t.isSubscribed);
-    });
+    }) || isScreenShareEnabled;
     
-    if (someoneScreenSharing && layoutMode !== 'focus') {
-      setLayoutMode('focus');
-      toast.info('Демонстрация экрана', {
-        description: 'Автоматически включён режим фокуса',
-        duration: 3000,
-      });
-    }
-  }, [participants, layoutMode]);
-  
-  // Clear pinned participant if they leave
-  useEffect(() => {
-    if (pinnedParticipant) {
-      const stillExists = participants.some(p => p.identity === pinnedParticipant);
-      if (!stillExists) {
-        setPinnedParticipant(null);
-        toast.info('Закрепленный участник покинул комнату');
-      }
-    }
-  }, [participants, pinnedParticipant]);
-  
-  // Track previous screen share state for return-to-gallery logic
-  const prevScreenShareRef = useRef<boolean>(false);
-  
-  // Auto-switch to focus mode when screen share starts
-  useEffect(() => {
-    if (isScreenShareEnabled && layoutMode === 'gallery') {
-      setLayoutMode('focus');
-      toast.info('Фокус-режим', {
-        description: 'Автоматическое переключение для демонстрации экрана',
-        duration: 2000,
-      });
-    }
-  }, [isScreenShareEnabled, layoutMode]);
-  
-  // Return to gallery mode when screen share ends
-  useEffect(() => {
     const wasScreenSharing = prevScreenShareRef.current;
-    prevScreenShareRef.current = isScreenShareEnabled;
+    prevScreenShareRef.current = someoneScreenSharing;
     
-    // If we WERE screen sharing but now stopped, and we're in focus mode, return to gallery
-    if (wasScreenSharing && !isScreenShareEnabled && layoutMode === 'focus') {
+    // Clear pending debounce
+    if (screenShareDebounceRef.current) {
+      clearTimeout(screenShareDebounceRef.current);
+      screenShareDebounceRef.current = null;
+    }
+    
+    if (someoneScreenSharing && !wasScreenSharing) {
+      // Screen share STARTED — debounce 500ms to prevent flicker from brief share attempts
+      screenShareDebounceRef.current = setTimeout(() => {
+        if (layoutMode !== 'focus') {
+          setLayoutMode('focus');
+          toast.info('Фокус-режим', {
+            description: 'Автоматическое переключение для демонстрации экрана',
+            duration: 2000,
+          });
+        }
+      }, 500);
+    } else if (!someoneScreenSharing && wasScreenSharing && layoutMode === 'focus') {
+      // Screen share ENDED — return to gallery
       setLayoutMode('gallery');
       toast.info('Галерея', {
         description: 'Демонстрация завершена',
         duration: 2000,
       });
     }
-  }, [isScreenShareEnabled, layoutMode]);
+    
+    return () => {
+      if (screenShareDebounceRef.current) {
+        clearTimeout(screenShareDebounceRef.current);
+      }
+    };
+  }, [participants, isScreenShareEnabled, layoutMode]);
   
   // Track active speaker (keep the handler in a separate effect)
   const [speakingParticipantState, setSpeakingParticipant] = useState<string | undefined>(undefined);
@@ -1157,7 +1150,12 @@ function LiveKitContent({
     };
   }, [room]);
   
+  // Issue 5: Sync refs for stable closure access in data handler
+  useEffect(() => { showWhiteboardRef.current = showWhiteboard; }, [showWhiteboard]);
+  useEffect(() => { showDrawingOverlayRef.current = showDrawingOverlay; }, [showDrawingOverlay]);
+
   // Listen for whiteboard/drawing overlay open events from other participants
+  // Issue 5 FIX: Uses refs instead of state to prevent handler re-registration on toggle
   useEffect(() => {
     if (!room) return;
     
@@ -1168,7 +1166,7 @@ function LiveKitContent({
         // Auto-open whiteboard when another participant opens it
         if (message.type === 'WHITEBOARD_OPEN' && message.sender !== participantName) {
           setRemoteWhiteboardSender(message.sender);
-          if (!isMobile && !showWhiteboard) {
+          if (!isMobile && !showWhiteboardRef.current) {
             // Desktop: auto-open whiteboard
             setShowWhiteboard(true);
             toast.info(`${message.sender} открыл доску`, {
@@ -1184,8 +1182,7 @@ function LiveKitContent({
           }
         }
         
-        // Drawing overlay is personal - do NOT auto-open for other participants
-        // Only show a notification that someone is drawing
+        // Drawing overlay is personal — only notify
         if (message.type === 'DRAWING_OVERLAY_OPEN' && message.sender !== participantName) {
           console.log('[LiveKitRoom] Remote participant opened drawing overlay (local-only):', message.sender);
           toast.info(`${message.sender} рисует на экране`, {
@@ -1212,7 +1209,7 @@ function LiveKitContent({
     return () => {
       room.off(RoomEvent.DataReceived, handleRemoteWhiteboardEvents);
     };
-  }, [room, participantName, showWhiteboard, showDrawingOverlay]);
+  }, [room, participantName, isMobile]); // Issue 5: Removed showWhiteboard, showDrawingOverlay from deps
 
   // Notify parent when room is ready and try to enable audio proactively
   useEffect(() => {
@@ -1725,7 +1722,7 @@ function LiveKitContent({
         callRecorderRef.current = null;
       }
       if (callRecordingAnimationRef.current) {
-        cancelAnimationFrame(callRecordingAnimationRef.current);
+        clearTimeout(callRecordingAnimationRef.current); // Issue 7: Changed from cancelAnimationFrame
         callRecordingAnimationRef.current = null;
       }
       if (callRecordingCanvasRef.current) {
@@ -1752,35 +1749,33 @@ function LiveKitContent({
       }
       
       // Create canvas to composite all videos + drawings
+      // Issue 7 FIX: Reduced resolution from 1920x1080 to 1280x720
       const canvas = document.createElement('canvas');
-      canvas.width = 1920;
-      canvas.height = 1080;
+      canvas.width = 1280;
+      canvas.height = 720;
       const ctx = canvas.getContext('2d')!;
       callRecordingCanvasRef.current = canvas;
       
-      // Animation loop to draw all videos + drawing overlay on canvas
+      // Issue 7 FIX: Throttled to 15fps using setTimeout instead of rAF at 60fps
       let isActive = true;
+      const DRAW_INTERVAL_MS = 1000 / 15; // ~66ms per frame
+      
       const drawFrame = () => {
         if (!isActive) return;
         
-        // Clear canvas with black background
         ctx.fillStyle = '#000';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
-        // Get current video elements (may change during call)
         const videos = Array.from(containerRef.current?.querySelectorAll('video') ?? []) as HTMLVideoElement[];
         const count = videos.length;
         
         if (count === 1) {
-          // Single video - full screen
           ctx.drawImage(videos[0], 0, 0, canvas.width, canvas.height);
         } else if (count === 2) {
-          // 2 videos - side by side
           const halfW = canvas.width / 2;
           ctx.drawImage(videos[0], 0, 0, halfW, canvas.height);
           ctx.drawImage(videos[1], halfW, 0, halfW, canvas.height);
         } else if (count <= 4) {
-          // 2x2 grid
           const halfW = canvas.width / 2;
           const halfH = canvas.height / 2;
           videos.forEach((video, i) => {
@@ -1789,7 +1784,6 @@ function LiveKitContent({
             ctx.drawImage(video, x, y, halfW, halfH);
           });
         } else {
-          // 3x3 grid for more
           const thirdW = canvas.width / 3;
           const thirdH = canvas.height / 3;
           videos.slice(0, 9).forEach((video, i) => {
@@ -1804,13 +1798,14 @@ function LiveKitContent({
           ctx.drawImage(drawingCanvasRef.current, 0, 0, canvas.width, canvas.height);
         }
         
-        callRecordingAnimationRef.current = requestAnimationFrame(drawFrame);
+        // Issue 7: setTimeout at 15fps instead of requestAnimationFrame at 60fps
+        callRecordingAnimationRef.current = setTimeout(drawFrame, DRAW_INTERVAL_MS) as unknown as number;
       };
       
       drawFrame();
       
-      // Capture canvas stream at 30fps
-      const stream = canvas.captureStream(30);
+      // Issue 7: Capture at 15fps instead of 30fps
+      const stream = canvas.captureStream(15);
       
       // Create AudioContext to mix all audio sources
       const audioContext = new AudioContext();

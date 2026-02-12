@@ -12,6 +12,16 @@ const getDeviceId = (): string => {
   return id;
 };
 
+// Issue 8: Translation entry type for history panel
+export interface TranslationEntry {
+  id: string;
+  senderName: string;
+  originalText: string;
+  translatedText: string;
+  sourceLang: string;
+  timestamp: number;
+}
+
 interface CallEventHandlers {
   onConnected?: () => void;
   onDisconnected?: () => void;
@@ -32,17 +42,18 @@ interface ActiveCallState {
   headerButtons: ReactNode | null;
   connectionIndicator: ReactNode | null;
   eventHandlers: CallEventHandlers;
-  // Panel visibility states - managed globally for persistence across routes
+  // Panel visibility states
   showTranslator: boolean;
   showCaptions: boolean;
   showIPPanel: boolean;
   isAdmin: boolean;
-  // Reconnection state - managed globally to block UI during reconnect
+  // Reconnection state
   isRoomReconnecting: boolean;
-  // Guest identity preservation - prevents identity change on reconnect
   guestIdentity: string | null;
-  // Fallback mode flag - when true, use stable video settings
   useFallbackVideoProfile: boolean;
+  // Issue 8: Translation history
+  translationHistory: TranslationEntry[];
+  showTranslationHistory: boolean;
 }
 
 interface ActiveCallContextType extends ActiveCallState {
@@ -60,18 +71,19 @@ interface ActiveCallContextType extends ActiveCallState {
   setHeaderButtons: (node: ReactNode | null) => void;
   setConnectionIndicator: (node: ReactNode | null) => void;
   setEventHandlers: (handlers: CallEventHandlers) => void;
-  // Panel visibility setters
   setShowTranslator: (show: boolean) => void;
   setShowCaptions: (show: boolean) => void;
   setShowIPPanel: (show: boolean) => void;
   setIsAdmin: (isAdmin: boolean) => void;
-  // Reconnection state setters
   setIsRoomReconnecting: (isReconnecting: boolean) => void;
   setGuestIdentity: (identity: string | null) => void;
   setUseFallbackVideoProfile: (useFallback: boolean) => void;
-  // Force reconnect trigger (incremented to trigger controlled reconnect)
   forceReconnectKey: number;
   triggerForceReconnect: () => void;
+  // Issue 8: Translation history methods
+  addTranslationEntry: (entry: Omit<TranslationEntry, 'id'>) => void;
+  clearTranslationHistory: () => void;
+  setShowTranslationHistory: (show: boolean) => void;
 }
 
 const defaultState: ActiveCallState = {
@@ -86,15 +98,16 @@ const defaultState: ActiveCallState = {
   headerButtons: null,
   connectionIndicator: null,
   eventHandlers: {},
-  // Panel defaults
   showTranslator: false,
   showCaptions: false,
   showIPPanel: false,
   isAdmin: false,
-  // Reconnection defaults
   isRoomReconnecting: false,
   guestIdentity: null,
   useFallbackVideoProfile: false,
+  // Issue 8
+  translationHistory: [],
+  showTranslationHistory: false,
 };
 
 const ActiveCallContext = createContext<ActiveCallContextType | null>(null);
@@ -116,8 +129,6 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
     participantIdentity?: string;
     roomDisplayName: string;
   }) => {
-    // MOBILE FIX: Use ref-based lock to prevent race conditions
-    // Check ref BEFORE setState to prevent concurrent calls from queuing up
     if (isStartingCallRef.current) {
       console.log('[ActiveCallContext] startCall already in progress - skipping');
       return;
@@ -128,18 +139,14 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
       return;
     }
     
-    // Lock immediately before any async work
     isStartingCallRef.current = true;
     activeRoomSlugRef.current = params.roomSlug;
     
-    // MOBILE FIX v6: Generate unique identity using deviceId to prevent duplicate participants
     const effectiveIdentity = params.participantIdentity || `guest-${getDeviceId()}-${Date.now().toString(36)}`;
     
     console.log('[ActiveCallContext] Starting call for room:', params.roomSlug, 'identity:', effectiveIdentity);
     
-    // Use functional update to ensure we're working with latest state
     setState(prev => {
-      // Double-check inside setState in case of rapid calls
       if (prev.isActive && prev.roomSlug === params.roomSlug) {
         console.log('[ActiveCallContext] (inside setState) Call already active, skipping');
         return prev;
@@ -158,17 +165,13 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
         headerButtons: prev.headerButtons,
         connectionIndicator: prev.connectionIndicator,
         eventHandlers: handlersRef.current,
-        // Preserve admin status
         isAdmin: prev.isAdmin,
-        // Save generated guest identity for reconnects
         guestIdentity: prev.guestIdentity || effectiveIdentity,
-        // Reset fallback profile on new call
         useFallbackVideoProfile: false,
         isRoomReconnecting: false,
       };
     });
     
-    // Release lock after setState is queued (microtask)
     queueMicrotask(() => {
       isStartingCallRef.current = false;
     });
@@ -178,7 +181,6 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
     console.log('[ActiveCallContext] Ending call');
     roomRef.current = null;
     handlersRef.current = {};
-    // Reset refs to allow new calls
     isStartingCallRef.current = false;
     activeRoomSlugRef.current = null;
     setState(defaultState);
@@ -211,7 +213,6 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
     setState(prev => ({ ...prev, eventHandlers: handlers }));
   }, []);
 
-  // Panel visibility setters
   const setShowTranslator = useCallback((show: boolean) => {
     setState(prev => ({ ...prev, showTranslator: show }));
   }, []);
@@ -228,7 +229,6 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
     setState(prev => ({ ...prev, isAdmin }));
   }, []);
 
-  // Reconnection state setters
   const setIsRoomReconnecting = useCallback((isReconnecting: boolean) => {
     setState(prev => ({ ...prev, isRoomReconnecting: isReconnecting }));
   }, []);
@@ -241,10 +241,28 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
     setState(prev => ({ ...prev, useFallbackVideoProfile: useFallback }));
   }, []);
 
-  // Force reconnect trigger
   const triggerForceReconnect = useCallback(() => {
     console.log('[ActiveCallContext] Triggering force reconnect');
     setForceReconnectKey(prev => prev + 1);
+  }, []);
+
+  // Issue 8: Translation history methods
+  const addTranslationEntry = useCallback((entry: Omit<TranslationEntry, 'id'>) => {
+    setState(prev => ({
+      ...prev,
+      translationHistory: [
+        ...prev.translationHistory.slice(-49), // Keep last 50 entries
+        { ...entry, id: `t-${Date.now()}-${Math.random().toString(36).slice(2, 6)}` },
+      ],
+    }));
+  }, []);
+
+  const clearTranslationHistory = useCallback(() => {
+    setState(prev => ({ ...prev, translationHistory: [], showTranslationHistory: false }));
+  }, []);
+
+  const setShowTranslationHistory = useCallback((show: boolean) => {
+    setState(prev => ({ ...prev, showTranslationHistory: show }));
   }, []);
 
   return (
@@ -268,6 +286,10 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
         setUseFallbackVideoProfile,
         forceReconnectKey,
         triggerForceReconnect,
+        // Issue 8
+        addTranslationEntry,
+        clearTranslationHistory,
+        setShowTranslationHistory,
       }}
     >
       {children}
