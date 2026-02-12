@@ -865,6 +865,8 @@ function LiveKitContent({
   const [showChat, setShowChat] = useState(false);
   const [showWhiteboard, setShowWhiteboard] = useState(false);
   const [showDrawingOverlay, setShowDrawingOverlay] = useState(false);
+  // Track if a remote participant has the whiteboard open (for mobile tile display)
+  const [remoteWhiteboardSender, setRemoteWhiteboardSender] = useState<string | null>(null);
   const [currentBackground, setCurrentBackground] = useState<'none' | 'blur-light' | 'blur-strong' | 'image'>('none');
   const [isProcessingBackground, setIsProcessingBackground] = useState(false);
   const [showScreenshotFlash, setShowScreenshotFlash] = useState(false);
@@ -1165,10 +1167,18 @@ function LiveKitContent({
         
         // Auto-open whiteboard when another participant opens it
         if (message.type === 'WHITEBOARD_OPEN' && message.sender !== participantName) {
-          if (!showWhiteboard) {
+          setRemoteWhiteboardSender(message.sender);
+          if (!isMobile && !showWhiteboard) {
+            // Desktop: auto-open whiteboard
             setShowWhiteboard(true);
             toast.info(`${message.sender} открыл доску`, {
               description: 'Нажмите, чтобы рисовать вместе',
+              duration: 3000,
+            });
+          } else if (isMobile) {
+            // Mobile: show tile notification only
+            toast.info(`${message.sender} открыл доску`, {
+              description: 'Нажмите на плитку "Доска" для просмотра',
               duration: 3000,
             });
           }
@@ -1186,7 +1196,7 @@ function LiveKitContent({
         
         // Close whiteboard when all participants close it
         if (message.type === 'WHITEBOARD_CLOSE' && message.sender !== participantName) {
-          // Keep whiteboard open for user to decide
+          setRemoteWhiteboardSender(null);
           console.log('[LiveKitRoom] Remote participant closed whiteboard:', message.sender);
         }
         
@@ -2240,6 +2250,20 @@ function LiveKitContent({
           </div>
         )}
       </div>
+
+      {/* Mobile whiteboard tile - appears as a floating tile when remote participant has whiteboard open */}
+      {isMobile && (remoteWhiteboardSender || showWhiteboard) && !showWhiteboard && (
+        <button
+          onClick={() => setShowWhiteboard(true)}
+          className="absolute bottom-24 right-3 z-40 flex flex-col items-center justify-center w-28 h-20 rounded-2xl bg-background/60 backdrop-blur-xl border border-primary/30 shadow-[0_4px_20px_hsl(var(--primary)/0.2)] active:scale-95 transition-all"
+        >
+          <Pencil className="w-6 h-6 text-primary mb-1" />
+          <span className="text-xs font-medium text-foreground">Доска</span>
+          {remoteWhiteboardSender && (
+            <span className="text-[9px] text-muted-foreground truncate max-w-[100px]">{remoteWhiteboardSender}</span>
+          )}
+        </button>
+      )}
 
       {/* Audio Problem Detector */}
       <AudioProblemDetector

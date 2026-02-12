@@ -70,6 +70,7 @@ export function initGlobalErrorHandlers() {
     // Filter out noise (network, extensions, non-app errors, expected disconnects, WebRTC internals)
     if (
       errorMessage.includes('FunctionsFetchError') ||
+      errorMessage.includes('FunctionsHttpError') ||
       errorMessage.includes('AbortError') ||
       errorMessage.includes('NetworkError') ||
       errorMessage.includes('Load failed') ||
@@ -84,6 +85,10 @@ export function initGlobalErrorHandlers() {
       errorMessage.includes('Grammarly') ||
       errorMessage.includes('Loading chunk') ||
       errorMessage.includes('dynamically imported module') ||
+      // Filter out expected billing/credit errors
+      errorMessage.includes('credits exhausted') ||
+      errorMessage.includes('payment_required') ||
+      errorMessage.includes('Edge function returned 402') ||
       // Filter out expected LiveKit disconnection reasons
       errorMessage.includes('"reason":3') ||
       errorMessage.includes('"reasonName":"Cancelled"') ||
@@ -157,6 +162,9 @@ export function initGlobalErrorHandlers() {
       fullMessage.includes('payment_required') ||
       fullMessage.includes('Not enough credits') ||
       fullMessage.includes('Edge function returned 402') ||
+      fullMessage.includes('FunctionsHttpError') ||
+      fullMessage.includes('[Captions] Translation error') ||
+      fullMessage.includes('Translation error:') ||
       // Filter out internal WebRTC errors
       fullMessage.includes("removeTrack") ||
       fullMessage.includes("sender was not created by this peer connection") ||

@@ -77,41 +77,58 @@ export function CaptionsOverlay({
     clearCaptions(); // Clear captions when language changes
   };
 
-  // Drag handlers
-  const handleDragStart = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
+  // Unified drag start (mouse + touch)
+  const startDrag = useCallback((clientX: number, clientY: number) => {
     setIsDragging(true);
     dragRef.current = {
-      startX: e.clientX,
-      startY: e.clientY,
+      startX: clientX,
+      startY: clientY,
       startPosX: position.x,
       startPosY: position.y,
     };
   }, [position]);
 
+  const handleMouseDragStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    startDrag(e.clientX, e.clientY);
+  }, [startDrag]);
+
+  const handleTouchDragStart = useCallback((e: React.TouchEvent) => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    startDrag(touch.clientX, touch.clientY);
+  }, [startDrag]);
+
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
+    const handleMove = (clientX: number, clientY: number) => {
       if (!isDragging) return;
-      const deltaX = e.clientX - dragRef.current.startX;
-      const deltaY = e.clientY - dragRef.current.startY;
+      const deltaX = clientX - dragRef.current.startX;
+      const deltaY = clientY - dragRef.current.startY;
       setPosition({
         x: dragRef.current.startPosX + deltaX,
         y: dragRef.current.startPosY + deltaY,
       });
     };
 
-    const handleMouseUp = () => {
-      setIsDragging(false);
+    const handleMouseMove = (e: MouseEvent) => handleMove(e.clientX, e.clientY);
+    const handleTouchMove = (e: TouchEvent) => {
+      e.preventDefault();
+      handleMove(e.touches[0].clientX, e.touches[0].clientY);
     };
+    const handleEnd = () => setIsDragging(false);
 
     if (isDragging) {
       document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener('mouseup', handleEnd);
+      document.addEventListener('touchmove', handleTouchMove, { passive: false });
+      document.addEventListener('touchend', handleEnd);
     }
 
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('mouseup', handleEnd);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleEnd);
     };
   }, [isDragging]);
 
@@ -204,8 +221,9 @@ export function CaptionsOverlay({
         <div className="flex items-center gap-2">
           {/* Drag handle */}
           <div 
-            className="flex items-center justify-center w-8 h-8 rounded-full bg-black/50 border border-white/20 cursor-grab active:cursor-grabbing backdrop-blur-md"
-            onMouseDown={handleDragStart}
+            className="flex items-center justify-center w-8 h-8 rounded-full bg-black/50 border border-white/20 cursor-grab active:cursor-grabbing backdrop-blur-md touch-none"
+            onMouseDown={handleMouseDragStart}
+            onTouchStart={handleTouchDragStart}
           >
             <GripHorizontal className="w-4 h-4 text-white/40" />
           </div>
