@@ -20,11 +20,12 @@ function isIOSDevice(): boolean {
  * NOTE: iOS Safari does not support programmatic PiP - only user-initiated
  * via native video controls, so we disable this feature on iOS
  */
-export function useNativePiP(room: Room | null) {
+export function useNativePiP(room: Room | null, autoPiPOnTabSwitch: boolean = true) {
   const [isPiPActive, setIsPiPActive] = useState(false);
   const [isPiPSupported, setIsPiPSupported] = useState(false);
   const activeVideoRef = useRef<HTMLVideoElement | null>(null);
   const isIOS = useRef(isIOSDevice());
+  const userExitedPiPRef = useRef(false);
 
   // Check if PiP is supported (disabled on iOS)
   useEffect(() => {
@@ -44,11 +45,16 @@ export function useNativePiP(room: Room | null) {
   useEffect(() => {
     const handleEnterPiP = () => {
       setIsPiPActive(true);
+      userExitedPiPRef.current = false;
     };
 
     const handleLeavePiP = () => {
       setIsPiPActive(false);
       activeVideoRef.current = null;
+      // If user manually closed PiP, don't auto-reopen on next tab switch
+      if (document.visibilityState === 'visible') {
+        userExitedPiPRef.current = true;
+      }
     };
 
     document.addEventListener('enterpictureinpicture', handleEnterPiP);
@@ -195,6 +201,37 @@ export function useNativePiP(room: Room | null) {
       await requestPiP();
     }
   }, [isPiPActive, exitPiP, requestPiP]);
+
+  // Auto PiP when switching tabs (like Google Meet)
+  useEffect(() => {
+    if (!autoPiPOnTabSwitch || !isPiPSupported || isIOS.current) return;
+
+    const handleVisibility = async () => {
+      if (document.visibilityState === 'hidden' && room && !isPiPActive && !userExitedPiPRef.current) {
+        // Tab hidden → auto-enter PiP
+        try {
+          await requestPiP();
+        } catch {
+          // Silently fail — browser may block without user gesture
+        }
+      } else if (document.visibilityState === 'visible' && isPiPActive) {
+        // Tab visible again → auto-exit PiP
+        try {
+          await exitPiP();
+        } catch {}
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [autoPiPOnTabSwitch, isPiPSupported, isPiPActive, room, requestPiP, exitPiP]);
+
+  // Reset user-exited flag when entering a new room
+  useEffect(() => {
+    if (room) {
+      userExitedPiPRef.current = false;
+    }
+  }, [room]);
 
   return {
     isPiPActive,
