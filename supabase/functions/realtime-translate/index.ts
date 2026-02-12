@@ -148,9 +148,7 @@ serve(async (req) => {
       throw new Error("No audio file provided");
     }
 
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
-    }
+    // LOVABLE_API_KEY no longer needed - using free MyMemory API for translation
 
     console.log(`Received audio file: ${audioFile.name}, size: ${audioFile.size}`);
     console.log(`Target language: ${targetLanguage}, Source language: ${sourceLanguage || 'auto'}, Voice: ${voiceKey || 'default'}`);
@@ -204,64 +202,37 @@ serve(async (req) => {
     // Detect source language from transcription if available
     const detectedLanguage = transcription.language_code || sourceLanguage || 'unknown';
 
-    // Step 2: Translate using Lovable AI
+    // Step 2: Translate using free MyMemory API (no API key needed)
     console.log("Step 2: Translating text...");
-    const translateResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          {
-            role: "system",
-            content: `You are a professional real-time interpreter. Translate the given text to ${LANGUAGE_NAMES[targetLanguage] || 'Russian'}. 
-Rules:
-- Provide ONLY the translation, nothing else
-- Keep the original tone and style
-- Preserve any proper nouns
-- If the text is already in the target language, return it unchanged
-- Be concise and natural sounding for speech synthesis`
-          },
-          {
-            role: "user",
-            content: originalText
+    
+    // Detect source lang code from transcription
+    const srcLangCode = sourceLanguage || detectedLanguage || 'en';
+    
+    let translatedText = originalText;
+    
+    // Only translate if source and target are different
+    if (srcLangCode !== targetLanguage) {
+      try {
+        const langPair = `${srcLangCode}|${targetLanguage}`;
+        const myMemoryUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(originalText)}&langpair=${langPair}`;
+        
+        const translateResponse = await fetch(myMemoryUrl);
+        
+        if (translateResponse.ok) {
+          const translateResult = await translateResponse.json();
+          if (translateResult?.responseData?.translatedText && translateResult?.responseStatus === 200) {
+            translatedText = translateResult.responseData.translatedText;
+          } else {
+            console.warn("MyMemory returned no valid translation, using original text");
           }
-        ],
-        max_tokens: 1000,
-        temperature: 0.3,
-      }),
-    });
-
-    if (!translateResponse.ok) {
-      const errorText = await translateResponse.text();
-      console.error("Translation error:", translateResponse.status, errorText);
-      
-      // If credits exhausted (402), return proper status so client can fall back
-      if (translateResponse.status === 402) {
-        console.log("AI credits exhausted, signaling browser fallback");
-        return new Response(
-          JSON.stringify({
-            error: "AI credits exhausted",
-            useBrowserTranslation: true,
-            originalText,
-            detectedLanguage,
-            targetLanguage,
-          }),
-          { 
-            status: 402,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
-        );
+        } else {
+          console.error("MyMemory translation error:", translateResponse.status);
+        }
+      } catch (translateError) {
+        console.error("Translation fetch failed:", translateError);
+        // Continue with original text as fallback
       }
-      
-      throw new Error(`Translation failed: ${translateResponse.status}`);
     }
-
-    const translateResult = await translateResponse.json();
-    const translatedText = translateResult.choices?.[0]?.message?.content?.trim() || originalText;
 
     console.log(`Translated text: "${translatedText.substring(0, 100)}..."`);
 
