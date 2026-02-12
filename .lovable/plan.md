@@ -1,90 +1,172 @@
 
-# Plan: 8 Critical Fixes for APLink Calls
 
-## Issue 1: Auto-PiP Only Works Once
-**Problem**: The `userExitedPiPRef` flag is set to `true` when PiP closes while the tab is visible (line 56 in useNativePiP.ts), but it never resets when the user returns to the tab and switches away again. Additionally, the `isPiPActive` state in the effect dependencies causes the auto-PiP effect to re-register with stale closure values.
-
-**Fix (useNativePiP.ts)**:
-- Reset `userExitedPiPRef` to `false` when the user returns to the tab (visibility becomes `visible`) and auto-exit PiP completes
-- Use refs instead of state for `isPiPActive` check inside the visibility handler to avoid stale closures
-- Add PiP control buttons (mute mic, end call) to the PiP window via `MediaSession API` metadata
-
-## Issue 2: Whiteboard Not Visible as Separate Window for Remote Participants
-**Problem**: The whiteboard opens in `windowMode` on desktop but syncs only drawing data via LiveKit data channel. Remote participants see the whiteboard content, but the `WHITEBOARD_OPEN` signal correctly triggers auto-open on desktop (line 1171). The real issue is likely that the whiteboard reconnects/disconnects the participant (see Issue 5).
-
-**Fix**: Already working architecturally. The real fix is in Issue 5 (preventing reconnection when toggling whiteboard).
-
-## Issue 3: Participants Get Disconnected Over Time (Tab Switch / Minimize)
-**Problem**: When the browser tab is hidden for extended periods, the WebSocket connection can be garbage-collected or the OS can suspend the tab. LiveKit's built-in reconnection sometimes fails silently.
-
-**Fix (GlobalActiveCall.tsx)**:
-- Add a `visibilitychange` listener that, when the tab becomes visible again, checks `room.state` and forces a silent token refresh if the connection is degraded
-- Increase the reconnection attempt limit from 5 to 8
-- Add a heartbeat ping using `room.localParticipant.publishData` every 15 seconds to keep the WebSocket alive
-
-## Issue 4: Screen Share Layout Flickers Between Focus/Gallery
-**Problem**: The auto-switch logic (lines 1115-1138 in LiveKitRoom.tsx) has TWO separate `useEffect` hooks monitoring `isScreenShareEnabled`. When screen share starts, both effects fire. The "return to gallery" effect uses `prevScreenShareRef` which updates asynchronously, causing race conditions and multiple layout toggles.
-
-**Fix (LiveKitRoom.tsx)**:
-- Merge both effects into a single `useEffect` that compares `prevScreenShareRef.current` with current `isScreenShareEnabled`
-- Add a debounce (500ms) before switching layout to prevent rapid toggles
-- Only switch to focus mode if screen share has been active for at least 500ms (prevents flicker from brief share attempts)
-
-## Issue 5: Whiteboard Toggle Causes Reconnection for Other Participants
-**Problem**: Opening the whiteboard broadcasts `WHITEBOARD_OPEN` via `room.localParticipant.publishData()`. The receiving side's `handleRemoteWhiteboardEvents` handler (line 1164) depends on `showWhiteboard` in its effect dependencies (line 1215). When `showWhiteboard` changes, the effect re-registers, potentially causing the data handler to be removed and re-added. During this gap, other data messages (like keep-alive or media negotiation) may be missed.
-
-**Fix (LiveKitRoom.tsx)**:
-- Remove `showWhiteboard` and `showDrawingOverlay` from the effect dependencies of the data handler (line 1215)
-- Use refs (`showWhiteboardRef`, `showDrawingOverlayRef`) instead so the handler doesn't re-register on state change
-- This prevents the data channel listener from being disrupted during whiteboard toggle
-
-## Issue 6: Drawing Overlay Not Visible to Others + Laser/Erasing Issues
-**Problem**: The DrawingOverlay broadcasts strokes via data channel, but the laser animation loop has a known issue where it can overwrite the canvas state. The `isLaserActiveRef` flag (line 76 in DrawingOverlay.tsx) should prevent this, but there may be timing issues.
-
-**Fix (DrawingOverlay.tsx)**:
-- Ensure that when switching FROM laser to pen, the canvas state is fully restored from the stroke buffer before any new drawing begins
-- Add a `requestAnimationFrame` synchronization barrier when switching tools
-- Fix the data broadcast to include a `tool` field so remote participants know whether to render a stroke or ignore laser points
-- Ensure remote strokes are rendered immediately upon receipt even if the overlay is closed (cache and replay)
-
-## Issue 7: Extreme CPU Usage (452% on Arc Browser)
-**Problem**: The recording animation loop (`drawFrame` at line 1763) runs `requestAnimationFrame` at 60fps, compositing ALL video elements onto a 1920x1080 canvas every frame. Combined with `canvas.captureStream(30)`, this creates massive GPU/CPU load. Additionally, the auto-hide panel timers create frequent re-renders.
-
-**Fix (LiveKitRoom.tsx)**:
-- Throttle the recording canvas draw loop to 15fps instead of using `requestAnimationFrame` (use `setTimeout` with 66ms interval)
-- Reduce recording canvas resolution from 1920x1080 to 1280x720
-- Add `will-change: transform` to video elements to enable GPU compositing
-- Use `captureStream(15)` instead of `captureStream(30)` for recording
-- Debounce the auto-hide panel timer to prevent excessive re-renders
-- When recording is NOT active, do not run any animation loops
-
-## Issue 8: Translator History Not Visible to Other Participants
-**Problem**: The translator currently sends audio + text via data channel, but the receiving side only shows a brief toast notification (line 186 in GlobalActiveCall.tsx, duration 3000ms). There is no persistent history/log visible to participants.
-
-**Fix**:
-- Add a `translationHistory` state array in `ActiveCallContext` that stores received translations
-- When a `translation_audio` message is received in GlobalActiveCall, append it to the history
-- Display a small floating panel (like chat) showing recent translations with sender name, original text, and translated text
-- Auto-show the translator panel on the receiving side when translations come in (with a "dismiss" option)
-- Add a `useBrowserTTS` flag to the broadcast payload to signal fallback
+# Plan: 13 Critical Fixes for APLink Mobile and Desktop Calls
 
 ---
 
-## Technical Summary of Files to Modify
+## 1. Screen Share Shows Multiple Screens
+**Root Cause**: The `FocusVideoLayout` subscribes to all tracks with `Track.Source.ScreenShare` and may render multiple screen share tracks (one per participant). When the layout detects screen share, both the camera track and screen share track of the same participant render.
+
+**Fix** (`src/components/FocusVideoLayout.tsx`):
+- Filter screen share tracks to only show ONE active screen share (prioritize remote, then local)
+- If multiple participants share screens simultaneously, show only the most recent one
+- Deduplicate tracks in `useTracks` result by filtering to unique participants for screen share
+
+---
+
+## 2. Screen Share Not Working on Mobile
+**Root Cause**: `getDisplayMedia()` is not supported on most mobile browsers (iOS Safari, some Android browsers). The current code calls `localParticipant.setScreenShareEnabled()` which internally calls `getDisplayMedia()`.
+
+**Fix** (`src/components/LiveKitRoom.tsx`):
+- Detect mobile and show a clear message: "Screen sharing is not supported on mobile browsers"
+- Hide the screen share button on mobile or replace it with a disabled state + explanation tooltip
+- On Android Chrome (which does support it), keep the button active
+
+---
+
+## 3. Menu Hides When Tapping Screen Again on Mobile
+**Root Cause**: The `handleTouchStart` and `handleClick` on the container div (line 2153-2154) fire when the user taps anywhere, including on the bottom panel. The auto-hide timer triggers after 4 seconds and immediately hides the panels again. Tapping the panel area re-triggers the timer but the user experiences the menu disappearing.
+
+**Fix** (`src/components/LiveKitRoom.tsx`):
+- Add `e.stopPropagation()` on the bottom control bar's `onTouchStart` and `onClick` to prevent the container handler from re-setting the hide timer
+- When panels are visible and the user taps on them, reset the timer to a longer duration (8s) instead of restarting the 4s countdown
+- Add a "lock panels" state that keeps panels visible while a Popover is open
+
+---
+
+## 4. Notifications Too Frequent and Non-Critical
+**Root Cause**: Many `toast.*` calls fire for non-critical events like pin/unpin (line 1075-1081), layout switching (lines 1062, 1112-1124), gallery mode suggestion, etc.
+
+**Fix** (`src/components/LiveKitRoom.tsx`):
+- Remove toasts from: `handlePinParticipant`, layout mode changes (focus/gallery/webinar buttons in the More menu), screen share auto-switch layout
+- Keep toasts only for: errors, recording start/stop, reconnection, audio blocked, microphone/camera permission errors
+- Make remaining toasts more transparent: add `className: 'opacity-80'` style to non-critical toasts
+
+---
+
+## 5. Cannot Download MP4 Recording on Mobile/PC
+**Root Cause**: The `saveRecordingAsMp4` function calls a `convert-to-mp4` edge function that may not be configured. The WebM download works but users want MP4.
+
+**Fix** (`src/components/LiveKitRoom.tsx`):
+- Make the "Save WebM" button the primary action (it always works)
+- For MP4: try to use MediaRecorder with `video/mp4` mimeType if supported (newer Chrome/Edge support it natively without server conversion)
+- If `MediaRecorder.isTypeSupported('video/mp4;codecs=avc1')`, record directly in MP4
+- Fallback: download as WebM with clear label that it plays everywhere
+
+---
+
+## 6. Landscape Mode on Mobile Not Optimized
+**Root Cause**: The current UI layout uses fixed sizes and doesn't adapt to landscape orientation.
+
+**Fix** (`src/components/LiveKitRoom.tsx`, `src/index.css`):
+- Detect landscape via `window.matchMedia('(orientation: landscape)')`
+- In landscape: reduce bottom bar padding, use smaller icons (w-8 h-8 instead of w-10 h-10)
+- Position chat as a side panel (right-side, 40% width) instead of bottom overlay
+- Reduce header panel height
+
+---
+
+## 7. Subtitles Not Working (Not Transcribing Speech)
+**Root Cause**: Looking at the screenshot, the subtitle panel shows "Voice detected..." but no actual text. The Web Speech API (`SpeechRecognition`) may not be receiving results because:
+- The mic audio stream isn't being fed to the recognition engine
+- Or the recognition language doesn't match the spoken language
+
+**Fix** (`src/hooks/useRealtimeCaptions.ts`):
+- Add diagnostic logging when `onresult` fires vs when it doesn't
+- Ensure the `SpeechRecognition` instance is started with `continuous: true` and `interimResults: true`
+- Add a fallback: if no results after 5 seconds of detected voice, restart the recognition engine
+- Display partial/interim results immediately (even before `isFinal`)
+
+---
+
+## 8. Mobile Icons and Panels Too Large
+**Root Cause**: Button sizes are `w-10 h-10 sm:w-12 sm:h-12` on mobile. Popover panels take too much screen space.
+
+**Fix** (`src/components/LiveKitRoom.tsx`):
+- Reduce mobile button sizes from `w-10 h-10` to `w-8 h-8`
+- Reduce icon sizes from `w-5 h-5` to `w-4 h-4` on mobile
+- Add `max-h-[50vh]` to all Popover panels on mobile
+- Reduce Popover padding from `p-3/p-4` to `p-2` on mobile
+- Make the mic popup more compact: smaller toggle buttons (w-10 to w-8), less spacing
+
+---
+
+## 9. Whiteboard Sync to Mobile Participants
+**Root Cause**: The whiteboard data channel broadcasts drawing data but mobile participants may not see updates if their whiteboard isn't open or if data messages are dropped during state transitions.
+
+**Fix** (`src/components/CollaborativeWhiteboard.tsx`, `src/components/LiveKitRoom.tsx`):
+- Cache incoming whiteboard data even when the whiteboard panel is closed
+- When a mobile user opens the whiteboard tile, replay all cached strokes
+- Ensure the `WHITEBOARD_OPEN` signal is sent with reliable delivery
+- Add a "sync request" message that new viewers can send to get the full canvas state from the host
+
+---
+
+## 10. Drawing Overlay Disappears + Laser Pointer Not Visible
+**Root Cause**: The laser animation loop overwrites the canvas state. When switching from laser back to pen, the `requestAnimationFrame` barrier may not be working consistently. The laser cursor is only rendered on the canvas (8px glow dot), but there's no CSS cursor change.
+
+**Fix** (`src/components/DrawingOverlay.tsx`):
+- When tool is 'laser', set CSS cursor to `crosshair` on the canvas element
+- After switching from laser to pen, wait TWO frames (double `requestAnimationFrame`) before enabling drawing to ensure the animation loop has fully stopped
+- Save canvas state to history BEFORE starting laser mode, and restore it reliably when exiting
+- Add a visible cursor ring that follows mouse position when laser is active (rendered in DOM, not canvas)
+
+---
+
+## 11. Mobile Recording Indicator Too Large
+**Root Cause**: The recording indicator (line 2288-2294) shows full text "REC" + duration counter on mobile, taking up header space.
+
+**Fix** (`src/components/LiveKitRoom.tsx`):
+- On mobile (`isMobile`): show only a small red dot (w-3 h-3) in the top-left corner, no text
+- On desktop: keep the current full indicator with "REC" label and timer
+
+---
+
+## 12. High CPU/Heat During Transcription + Recording
+**Root Cause**: The `SpeechRecognition` engine running continuously + MediaRecorder + canvas compositing all consume significant resources. The 15fps throttle helped recording, but transcription still runs Web Speech API constantly.
+
+**Fix** (`src/hooks/useRealtimeCaptions.ts`, `src/components/LiveKitRoom.tsx`):
+- Add VAD (Voice Activity Detection) gating: only run SpeechRecognition when audio level exceeds threshold
+- When the user is silent for 3+ seconds, pause SpeechRecognition and restart on next voice detection
+- Reduce canvas compositing to 10fps on mobile (keep 15fps on desktop)
+- Add `will-change: transform` to video elements to offload to GPU
+
+---
+
+## 13. Translator Not Working Bidirectionally (PC to Phone)
+**Root Cause**: The translator receives data via `RoomEvent.DataReceived` in `GlobalActiveCall.tsx`, but mobile audio playback may fail due to autoplay restrictions. The `speakWithBrowserTTS` fallback may not work if `speechSynthesis` is blocked on mobile.
+
+**Fix** (`src/components/GlobalActiveCall.tsx`):
+- When receiving translation on mobile, require a user gesture first (similar to audio prompt)
+- Auto-open the translator panel on the receiving side when a translation is received (currently only shows toast)
+- Queue translations and play them after the user taps "enable audio" if autoplay is blocked
+- Make the TranslationHistoryPanel also show a "play" button next to each entry for manual replay
+- Reduce timer icon/panel sizes on mobile (as mentioned in the user's last note)
+
+---
+
+## Technical Summary
 
 | File | Changes |
 |------|---------|
-| `src/hooks/useNativePiP.ts` | Fix re-trigger logic, reset flag on tab return, add MediaSession controls |
-| `src/components/LiveKitRoom.tsx` | Merge screen share layout effects, throttle recording loop, fix whiteboard data handler deps, reduce canvas resolution |
-| `src/components/GlobalActiveCall.tsx` | Add heartbeat, fix visibility reconnect, add translation history state |
-| `src/components/DrawingOverlay.tsx` | Fix tool switch synchronization, ensure broadcast includes tool type |
-| `src/contexts/ActiveCallContext.tsx` | Add translationHistory array to context |
+| `src/components/LiveKitRoom.tsx` | Issues 1-6, 8, 11, 12: Screen share dedup, mobile screen share disable, panel auto-hide fix, reduce toasts, MP4 recording, landscape, smaller icons, mobile REC dot, GPU hints |
+| `src/components/FocusVideoLayout.tsx` | Issue 1: Filter to single screen share track |
+| `src/components/DrawingOverlay.tsx` | Issue 10: CSS cursor for laser, double-rAF barrier, DOM cursor ring |
+| `src/hooks/useRealtimeCaptions.ts` | Issues 7, 12: Fix speech recognition restart, VAD gating |
+| `src/components/GlobalActiveCall.tsx` | Issue 13: Mobile audio playback queue, auto-open translator |
+| `src/components/TranslationHistoryPanel.tsx` | Issue 13: Add play button per entry |
+| `src/components/CollaborativeWhiteboard.tsx` | Issue 9: Cache strokes, sync request protocol |
+| `src/index.css` | Issue 6: Landscape media queries |
+| `src/components/CallTimer.tsx` | Issue 13 (last note): Smaller timer on mobile |
 
 ## Implementation Order
-1. Fix CPU usage (Issue 7) - highest impact on user experience
-2. Fix PiP re-trigger (Issue 1) - simple fix
-3. Fix screen share flicker (Issue 4) - merge effects
-4. Fix whiteboard reconnection (Issue 5) - remove deps
-5. Fix drawing sync (Issue 6) - tool switch barrier
-6. Fix disconnection (Issue 3) - heartbeat + visibility
-7. Add translator history (Issue 8) - new feature
+1. Issues 4, 8, 11 (UI cleanup: reduce toasts, smaller icons, mobile REC dot) -- quick wins
+2. Issue 3 (panel auto-hide fix) -- improves mobile UX immediately
+3. Issues 1, 2 (screen share fixes)
+4. Issue 5 (MP4 download)
+5. Issue 6 (landscape mode)
+6. Issues 7, 12 (subtitles + CPU optimization)
+7. Issue 10 (drawing overlay fixes)
+8. Issue 9 (whiteboard sync)
+9. Issue 13 (translator bidirectional)
+
