@@ -73,9 +73,14 @@ export function FocusVideoLayout({
     return withVideo || remoteParticipants[0];
   }, [remoteParticipants, pinnedParticipant]);
 
-  // Get screen share tracks
+  // Get screen share tracks - Issue 1 FIX: Only show ONE screen share (prioritize remote, then local)
   const screenShareTracks = useMemo(() => {
-    return tracks.filter(t => t.source === Track.Source.ScreenShare && t.publication);
+    const allScreenShares = tracks.filter(t => t.source === Track.Source.ScreenShare && t.publication);
+    if (allScreenShares.length <= 1) return allScreenShares;
+    // Prioritize remote screen share over local
+    const remote = allScreenShares.find(t => !t.participant.isLocal);
+    if (remote) return [remote];
+    return [allScreenShares[0]];
   }, [tracks]);
 
   // Local video track reference - use tracks from hook for reactivity

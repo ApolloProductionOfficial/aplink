@@ -310,6 +310,40 @@ All colors MUST be HSL.
     }
   }
   
+  /* ISSUE 6: Landscape mode optimization */
+  @media (max-height: 500px) and (orientation: landscape) {
+    .landscape-compact-bar {
+      padding-top: 4px !important;
+      padding-bottom: 4px !important;
+    }
+    
+    .landscape-compact-icon {
+      width: 2rem !important; /* 32px */
+      height: 2rem !important;
+    }
+    
+    .landscape-compact-icon svg {
+      width: 1rem !important; /* 16px */
+      height: 1rem !important;
+    }
+    
+    .landscape-side-panel {
+      position: absolute !important;
+      right: 0 !important;
+      top: 0 !important;
+      bottom: 0 !important;
+      width: 40% !important;
+      max-width: 350px !important;
+      height: 100% !important;
+      border-radius: 16px 0 0 16px !important;
+    }
+    
+    /* Move chat input up */
+    .landscape-chat-input {
+      padding-bottom: 8px !important;
+    }
+  }
+  
   .animate-gradient {
     background-size: 200% 200%;
     animation: gradient 8s ease infinite;
