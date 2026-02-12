@@ -5,6 +5,28 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Free MyMemory translation API - no API key needed
+async function translateWithMyMemory(text: string, sourceLang: string, targetLang: string): Promise<string> {
+  const langPair = `${sourceLang}|${targetLang}`;
+  const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${langPair}`;
+  
+  const response = await fetch(url);
+  if (!response.ok) {
+    console.error("MyMemory error:", response.status);
+    return text; // fallback to original
+  }
+  
+  const data = await response.json();
+  const translated = data?.responseData?.translatedText;
+  
+  if (!translated || data?.responseStatus !== 200) {
+    console.warn("MyMemory returned no translation, using original");
+    return text;
+  }
+  
+  return translated;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -20,100 +42,25 @@ serve(async (req) => {
       );
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
-    }
-
-    const langNames: Record<string, string> = {
-      ru: 'русский',
-      en: 'английский',
-      uk: 'украинский',
-      es: 'испанский',
-      de: 'немецкий',
-      fr: 'французский',
-      it: 'итальянский',
-      pt: 'португальский',
-      zh: 'китайский',
-      ja: 'японский',
-      ko: 'корейский',
-      ar: 'арабский',
-    };
-
-    const targetLangName = langNames[targetLang] || targetLang;
-    const sourceLangName = sourceLang ? (langNames[sourceLang] || sourceLang) : 'автоопределение';
-
-    const prompt = `Fix STT errors and translate. Source: ${sourceLangName}. Target: ${targetLangName}.
-Text: "${originalText}"
-Reply ONLY JSON: {"corrected":"fixed text","translated":"${targetLangName} translation"}`;
-
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash-lite",
-        messages: [
-          { role: "user", content: prompt }
-        ],
-        temperature: 0.2,
-        max_tokens: 200,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Lovable AI error:", response.status, errorText);
-      
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: "Rate limit exceeded" }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "Payment required" }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      throw new Error(`AI gateway error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || "";
+    // Detect source language - default to 'en' if not provided
+    const srcLang = sourceLang || 'en';
     
-    console.log("AI response:", content);
-
-    // Parse JSON from response
-    let result = { corrected: originalText, translated: originalText };
-    try {
-      // Remove markdown code block wrapper if present
-      let cleanContent = content.trim();
-      if (cleanContent.startsWith('```json')) {
-        cleanContent = cleanContent.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-      } else if (cleanContent.startsWith('```')) {
-        cleanContent = cleanContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
-      }
-      
-      // Try to extract JSON from the response
-      const jsonMatch = cleanContent.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        result = JSON.parse(jsonMatch[0]);
-        console.log("Successfully parsed caption result:", result);
-      }
-    } catch (parseError) {
-      console.error("Failed to parse AI response as JSON:", parseError);
-      // Fallback: use original text
-      result = { corrected: originalText, translated: content.trim() || originalText };
+    // If source and target are the same, just return original
+    if (srcLang === targetLang) {
+      return new Response(
+        JSON.stringify({ corrected: originalText, translated: originalText }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
+
+    console.log(`Translating "${originalText.substring(0, 50)}..." from ${srcLang} to ${targetLang}`);
+
+    const translated = await translateWithMyMemory(originalText, srcLang, targetLang);
+    
+    console.log(`Translated: "${translated.substring(0, 50)}..."`);
 
     return new Response(
-      JSON.stringify(result),
+      JSON.stringify({ corrected: originalText, translated }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
