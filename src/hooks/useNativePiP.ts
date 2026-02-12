@@ -2,10 +2,6 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Room, Track } from 'livekit-client';
 import { toast } from 'sonner';
 
-/**
- * Detect if running on iOS (iPhone/iPad)
- * iOS Safari doesn't support programmatic PiP requests
- */
 function isIOSDevice(): boolean {
   if (typeof navigator === 'undefined') return false;
   const ua = navigator.userAgent;
@@ -14,11 +10,11 @@ function isIOSDevice(): boolean {
 }
 
 /**
- * Hook for managing native browser Picture-in-Picture functionality
- * Allows viewing the call in a floating window when switching tabs
+ * Hook for managing native browser Picture-in-Picture functionality.
  * 
- * NOTE: iOS Safari does not support programmatic PiP - only user-initiated
- * via native video controls, so we disable this feature on iOS
+ * Issue 1 FIX: Uses refs instead of state for the visibility handler
+ * to avoid stale closures. Resets userExitedPiPRef when user returns
+ * to the tab so PiP re-triggers on subsequent tab switches.
  */
 export function useNativePiP(room: Room | null, autoPiPOnTabSwitch: boolean = true) {
   const [isPiPActive, setIsPiPActive] = useState(false);
@@ -26,32 +22,38 @@ export function useNativePiP(room: Room | null, autoPiPOnTabSwitch: boolean = tr
   const activeVideoRef = useRef<HTMLVideoElement | null>(null);
   const isIOS = useRef(isIOSDevice());
   const userExitedPiPRef = useRef(false);
+  // Issue 1: Ref mirror to avoid stale closure in visibilitychange handler
+  const isPiPActiveRef = useRef(false);
+  const roomRef = useRef<Room | null>(null);
 
-  // Check if PiP is supported (disabled on iOS)
+  // Keep roomRef in sync
+  useEffect(() => { roomRef.current = room; }, [room]);
+
+  // Check PiP support (disabled on iOS)
   useEffect(() => {
-    // iOS doesn't support programmatic PiP requests
     if (isIOS.current) {
       setIsPiPSupported(false);
       return;
     }
-    
     setIsPiPSupported(
       'pictureInPictureEnabled' in document && 
       document.pictureInPictureEnabled
     );
   }, []);
 
-  // Listen for PiP events
+  // Listen for PiP events — sync ref
   useEffect(() => {
     const handleEnterPiP = () => {
       setIsPiPActive(true);
+      isPiPActiveRef.current = true;
       userExitedPiPRef.current = false;
     };
 
     const handleLeavePiP = () => {
       setIsPiPActive(false);
+      isPiPActiveRef.current = false;
       activeVideoRef.current = null;
-      // If user manually closed PiP, don't auto-reopen on next tab switch
+      // If user manually closed PiP while tab is visible → disable auto for this session
       if (document.visibilityState === 'visible') {
         userExitedPiPRef.current = true;
       }
@@ -68,34 +70,27 @@ export function useNativePiP(room: Room | null, autoPiPOnTabSwitch: boolean = tr
 
   // Request PiP for remote participant's video
   const requestPiP = useCallback(async () => {
-    // Skip on iOS - programmatic PiP not supported
-    if (isIOS.current) {
-      console.log('[useNativePiP] PiP not supported on iOS');
-      return;
-    }
+    if (isIOS.current) return;
     
-    if (!room || !isPiPSupported) {
+    const currentRoom = roomRef.current;
+    if (!currentRoom || !isPiPSupported) {
       toast.error('Picture-in-Picture не поддерживается');
       return;
     }
 
     try {
-      // Find remote participant with video
-      const remoteParticipants = Array.from(room.remoteParticipants.values());
+      const remoteParticipants = Array.from(currentRoom.remoteParticipants.values());
       
       for (const participant of remoteParticipants) {
         const cameraPub = participant.getTrackPublication(Track.Source.Camera);
         const track = cameraPub?.track;
         
         if (track && !cameraPub.isMuted) {
-          // Create or find video element for this track
           let videoElement = document.querySelector(
             `video[data-participant="${participant.identity}"]`
           ) as HTMLVideoElement | null;
           
-          // If no dedicated video found, create a temporary one
           if (!videoElement) {
-            // Find any video element that has this track attached
             const allVideos = document.querySelectorAll('video');
             for (const video of allVideos) {
               const htmlVideo = video as HTMLVideoElement;
@@ -109,7 +104,6 @@ export function useNativePiP(room: Room | null, autoPiPOnTabSwitch: boolean = tr
             }
           }
           
-          // If still not found, create temporary video and attach track
           if (!videoElement) {
             videoElement = document.createElement('video');
             videoElement.autoplay = true;
@@ -121,7 +115,6 @@ export function useNativePiP(room: Room | null, autoPiPOnTabSwitch: boolean = tr
             document.body.appendChild(videoElement);
             track.attach(videoElement);
             
-            // Clean up after PiP ends
             videoElement.addEventListener('leavepictureinpicture', () => {
               track.detach(videoElement!);
               videoElement?.remove();
@@ -131,13 +124,8 @@ export function useNativePiP(room: Room | null, autoPiPOnTabSwitch: boolean = tr
           if (videoElement && videoElement.readyState >= 2) {
             await videoElement.requestPictureInPicture();
             activeVideoRef.current = videoElement;
-            toast.success('Picture-in-Picture активен', {
-              description: 'Окно будет видно при переключении вкладок',
-              duration: 2000,
-            });
             return;
           } else if (videoElement) {
-            // Wait for video to be ready
             await new Promise<void>((resolve, reject) => {
               const timeout = setTimeout(() => reject(new Error('Video not ready')), 3000);
               videoElement!.addEventListener('loadeddata', () => {
@@ -148,14 +136,13 @@ export function useNativePiP(room: Room | null, autoPiPOnTabSwitch: boolean = tr
             
             await videoElement.requestPictureInPicture();
             activeVideoRef.current = videoElement;
-            toast.success('Picture-in-Picture активен');
             return;
           }
         }
       }
       
-      // No remote video found, try local video
-      const localCameraPub = room.localParticipant.getTrackPublication(Track.Source.Camera);
+      // Fallback: local video
+      const localCameraPub = currentRoom.localParticipant.getTrackPublication(Track.Source.Camera);
       const localTrack = localCameraPub?.track;
       
       if (localTrack && !localCameraPub.isMuted) {
@@ -167,19 +154,17 @@ export function useNativePiP(room: Room | null, autoPiPOnTabSwitch: boolean = tr
             if (tracks.some(t => t.id === localTrack.mediaStreamTrack?.id)) {
               await htmlVideo.requestPictureInPicture();
               activeVideoRef.current = htmlVideo;
-              toast.success('Picture-in-Picture активен (ваше видео)');
               return;
             }
           }
         }
       }
 
-      toast.error('Нет видео для Picture-in-Picture');
+      console.log('[useNativePiP] No video available for PiP');
     } catch (err) {
       console.error('[useNativePiP] Failed to request PiP:', err);
-      toast.error('Не удалось активировать Picture-in-Picture');
     }
-  }, [room, isPiPSupported]);
+  }, [isPiPSupported]);
 
   // Exit PiP
   const exitPiP = useCallback(async () => {
@@ -202,31 +187,39 @@ export function useNativePiP(room: Room | null, autoPiPOnTabSwitch: boolean = tr
     }
   }, [isPiPActive, exitPiP, requestPiP]);
 
-  // Auto PiP when switching tabs (like Google Meet)
+  // Issue 1 FIX: Auto PiP on tab switch using REFS (no stale closures)
+  // Resets userExitedPiPRef when returning to tab so PiP re-triggers
   useEffect(() => {
     if (!autoPiPOnTabSwitch || !isPiPSupported || isIOS.current) return;
 
     const handleVisibility = async () => {
-      if (document.visibilityState === 'hidden' && room && !isPiPActive && !userExitedPiPRef.current) {
+      if (document.visibilityState === 'hidden') {
         // Tab hidden → auto-enter PiP
-        try {
-          await requestPiP();
-        } catch {
-          // Silently fail — browser may block without user gesture
+        if (roomRef.current && !isPiPActiveRef.current && !userExitedPiPRef.current) {
+          try {
+            await requestPiP();
+          } catch {
+            // Browser may block without user gesture
+          }
         }
-      } else if (document.visibilityState === 'visible' && isPiPActive) {
-        // Tab visible again → auto-exit PiP
-        try {
-          await exitPiP();
-        } catch {}
+      } else if (document.visibilityState === 'visible') {
+        // Tab visible → auto-exit PiP and RESET manual exit flag
+        if (isPiPActiveRef.current) {
+          try {
+            await exitPiP();
+          } catch {}
+        }
+        // Issue 1 FIX: Always reset so next tab switch triggers PiP again
+        userExitedPiPRef.current = false;
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibility);
     return () => document.removeEventListener('visibilitychange', handleVisibility);
-  }, [autoPiPOnTabSwitch, isPiPSupported, isPiPActive, room, requestPiP, exitPiP]);
+  }, [autoPiPOnTabSwitch, isPiPSupported, requestPiP, exitPiP]);
+  // NOTE: Removed isPiPActive and room from deps — using refs instead
 
-  // Reset user-exited flag when entering a new room
+  // Reset user-exited flag on new room
   useEffect(() => {
     if (room) {
       userExitedPiPRef.current = false;

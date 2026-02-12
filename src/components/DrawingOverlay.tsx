@@ -430,10 +430,7 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose, onCanva
     } else {
       // DISABLE laser mode COMPLETELY - HARD STOP
       isLaserActiveRef.current = false;
-      
-      // Clear ALL laser state immediately
       laserPointsRef.current = [];
-      baseImageDataRef.current = null;
       
       // CRITICAL: Force stop animation loop IMMEDIATELY
       if (laserAnimationRef.current) {
@@ -441,8 +438,26 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose, onCanva
         laserAnimationRef.current = null;
       }
       
+      // Issue 6 FIX: When switching FROM laser, restore canvas from history
+      // using requestAnimationFrame barrier to ensure laser loop has fully stopped
       if (prevTool === 'laser') {
+        baseImageDataRef.current = null;
+        
+        requestAnimationFrame(() => {
+          const ctx = contextRef.current;
+          const canvas = canvasRef.current;
+          if (ctx && canvas && historyRef.current.length > 0) {
+            const lastState = historyRef.current[historyRef.current.length - 1];
+            if (lastState) {
+              ctx.putImageData(lastState, 0, 0);
+              console.log('[DrawingOverlay] Canvas restored from history after laser exit');
+            }
+          }
+        });
+        
         console.log('[DrawingOverlay] Laser mode DISABLED - switched to:', tool);
+      } else {
+        baseImageDataRef.current = null;
       }
     }
   }, [tool]);

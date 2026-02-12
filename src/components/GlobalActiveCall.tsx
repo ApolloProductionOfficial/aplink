@@ -12,6 +12,7 @@ import ParticipantsIPPanel from '@/components/ParticipantsIPPanel';
 import { useAuth } from '@/hooks/useAuth';
 import { useConnectionSounds } from '@/hooks/useConnectionSounds';
 import { useLiveKitTranslationBroadcast } from '@/hooks/useLiveKitTranslationBroadcast';
+import { TranslationHistoryPanel } from '@/components/TranslationHistoryPanel';
 import { cn } from '@/lib/utils';
 import '@/styles/call-animations.css';
 
@@ -54,6 +55,12 @@ export function GlobalActiveCall() {
     setShowTranslator,
     setShowCaptions,
     setShowIPPanel,
+    // Issue 8: Translation history
+    translationHistory,
+    addTranslationEntry,
+    showTranslationHistory,
+    setShowTranslationHistory,
+    clearTranslationHistory,
   } = useActiveCall();
 
   // Translation broadcast for LiveKit
@@ -82,7 +89,7 @@ export function GlobalActiveCall() {
   // Auto-reconnect state
   const [reconnectAttempt, setReconnectAttempt] = useState(0);
   const [isReconnecting, setIsReconnecting] = useState(false);
-  const MAX_RECONNECT_ATTEMPTS = 5;
+  const MAX_RECONNECT_ATTEMPTS = 8; // Issue 3: Increased from 5
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Track animation states for smooth transitions
@@ -164,21 +171,29 @@ export function GlobalActiveCall() {
         if (message.type === 'translation_audio') {
           console.log('[GlobalActiveCall] Received translation from:', message.senderName);
           
+          // Issue 8: Store in translation history
+          addTranslationEntry({
+            senderName: message.senderName || 'Unknown',
+            originalText: message.originalText || '',
+            translatedText: message.text || '',
+            sourceLang: message.sourceLang || '',
+            timestamp: message.timestamp || Date.now(),
+          });
+          
+          // Auto-show translation history panel
+          setShowTranslationHistory(true);
+          
           const hasAudio = message.audioBase64 && message.audioBase64.length > 0;
           
-          if (hasAudio) {
-            // Try playing ElevenLabs audio
+          if (hasAudio && !message.useBrowserTTS) {
             const audioUrl = `data:audio/mpeg;base64,${message.audioBase64}`;
             playTranslatedAudio(audioUrl).catch((err) => {
               console.warn('[GlobalActiveCall] Audio playback failed, using browser TTS:', err);
-              // Fallback to browser TTS if audio playback fails (e.g. mobile AudioContext blocked)
               if (message.text) {
                 speakWithBrowserTTS(message.text, message.sourceLang === 'ru' ? 'en' : message.sourceLang || 'en');
               }
             });
           } else if (message.text) {
-            // No audio provided - use browser TTS directly
-            // Determine target lang: the text is already translated, so use the text's language
             const textLang = message.sourceLang === 'ru' ? 'en' : (message.sourceLang === 'en' ? 'ru' : 'en');
             speakWithBrowserTTS(message.text, textLang);
           }
@@ -198,7 +213,7 @@ export function GlobalActiveCall() {
     return () => {
       liveKitRoom.off(RoomEvent.DataReceived, handleDataReceived);
     };
-  }, [liveKitRoom, playTranslatedAudio, speakWithBrowserTTS]);
+  }, [liveKitRoom, playTranslatedAudio, speakWithBrowserTTS, addTranslationEntry, setShowTranslationHistory]);
   
   // Start/stop broadcast when translator is toggled
   useEffect(() => {
@@ -208,6 +223,42 @@ export function GlobalActiveCall() {
       stopBroadcast();
     }
   }, [showTranslator, liveKitRoom, isBroadcasting, startBroadcast, stopBroadcast]);
+
+  // Issue 3 FIX: Heartbeat ping every 15s to keep WebSocket alive + visibility reconnect
+  useEffect(() => {
+    if (!liveKitRoom) return;
+    
+    const heartbeatInterval = setInterval(() => {
+      if (liveKitRoom.state === 'connected') {
+        try {
+          liveKitRoom.localParticipant.publishData(
+            new TextEncoder().encode(JSON.stringify({ type: 'keep-alive', t: Date.now() })),
+            { reliable: false }
+          );
+        } catch {}
+      }
+    }, 15000);
+    
+    // When returning to tab, check if connection is degraded
+    const handleVisibility = () => {
+      if (document.visibilityState !== 'visible' || !liveKitRoom) return;
+      
+      const state = liveKitRoom.state;
+      if (state !== 'connected') {
+        console.log('[GlobalActiveCall] Tab visible, room state:', state);
+        if (state === 'disconnected') {
+          toast.info('Восстанавливаем соединение...', { duration: 3000 });
+        }
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibility);
+    
+    return () => {
+      clearInterval(heartbeatInterval);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [liveKitRoom]);
 
   // Reset on unmount
   useEffect(() => {
@@ -566,6 +617,18 @@ export function GlobalActiveCall() {
               onSendTranslation={sendTranslationToParticipants}
             />
           </div>,
+          document.body
+        )}
+
+      {/* Issue 8: Translation History Panel */}
+      {showTranslationHistory &&
+        createPortal(
+          <TranslationHistoryPanel
+            entries={translationHistory}
+            isOpen={showTranslationHistory}
+            onClose={() => setShowTranslationHistory(false)}
+            onClear={clearTranslationHistory}
+          />,
           document.body
         )}
 
