@@ -152,6 +152,11 @@ export function initGlobalErrorHandlers() {
       fullMessage.includes('postMessage') ||
       fullMessage.includes('Loading chunk') ||
       fullMessage.includes('dynamically imported module') ||
+      // Filter out expected billing/credit limit errors
+      fullMessage.includes('credits exhausted') ||
+      fullMessage.includes('payment_required') ||
+      fullMessage.includes('Not enough credits') ||
+      fullMessage.includes('Edge function returned 402') ||
       // Filter out internal WebRTC errors
       fullMessage.includes("removeTrack") ||
       fullMessage.includes("sender was not created by this peer connection") ||
