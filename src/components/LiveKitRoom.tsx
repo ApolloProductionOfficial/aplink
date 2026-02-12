@@ -1327,9 +1327,21 @@ function LiveKitContent({
 
   // Track media toggle lock to prevent NegotiationError on iOS
   const isTogglingMediaRef = useRef(false);
+  const toggleLockTimerRef = useRef<NodeJS.Timeout | null>(null);
   // iOS needs longer lock duration to prevent race conditions during SDP negotiation
   const isIOSSafeModeLocal = useMemo(() => detectIsIOSOrMobileSafari(), []);
-  const TOGGLE_LOCK_DURATION_MS = isIOSSafeModeLocal ? 2000 : 1000;
+  const TOGGLE_LOCK_DURATION_MS = isIOSSafeModeLocal ? 2000 : 800;
+  
+  // Safety: reset stuck toggle lock after max 3 seconds
+  const releaseToggleLock = useCallback(() => {
+    if (toggleLockTimerRef.current) clearTimeout(toggleLockTimerRef.current);
+    toggleLockTimerRef.current = setTimeout(() => {
+      if (isTogglingMediaRef.current) {
+        console.warn('[LiveKitRoom] Toggle lock was stuck, releasing');
+        isTogglingMediaRef.current = false;
+      }
+    }, 3000);
+  }, []);
 
   // iOS Safe Mode detection for this component
   const isIOSSafeModeLive = useMemo(() => detectIsIOSOrMobileSafari(), []);
@@ -1358,6 +1370,7 @@ function LiveKitContent({
     
     try {
       isTogglingMediaRef.current = true;
+      releaseToggleLock(); // Safety: auto-release if stuck
       diagnostics.addEvent('TOGGLE_CAMERA', 'start');
       
       const cameraPublication = localParticipant?.getTrackPublication(Track.Source.Camera);
@@ -1450,7 +1463,7 @@ function LiveKitContent({
     } finally {
       setTimeout(() => { isTogglingMediaRef.current = false; }, TOGGLE_LOCK_DURATION_MS);
     }
-  }, [localParticipant, isRoomReconnecting, onNegotiationError, isIOSSafeModeLive, diagnostics, isMobileToggle]);
+  }, [localParticipant, isRoomReconnecting, onNegotiationError, isIOSSafeModeLive, diagnostics, isMobileToggle, releaseToggleLock]);
 
   // Toggle microphone with iOS-safe mute/unmute approach
   // MOBILE FIX: On mobile, request getUserMedia directly in click handler to preserve gesture context
@@ -1468,6 +1481,7 @@ function LiveKitContent({
     
     try {
       isTogglingMediaRef.current = true;
+      releaseToggleLock(); // Safety: auto-release if stuck
       diagnostics.addEvent('TOGGLE_MIC', 'start');
       
       const micPublication = localParticipant?.getTrackPublication(Track.Source.Microphone);
@@ -1557,7 +1571,7 @@ function LiveKitContent({
     } finally {
       setTimeout(() => { isTogglingMediaRef.current = false; }, TOGGLE_LOCK_DURATION_MS);
     }
-  }, [localParticipant, isRoomReconnecting, onNegotiationError, isIOSSafeModeLive, diagnostics, isMobileToggle]);
+  }, [localParticipant, isRoomReconnecting, onNegotiationError, isIOSSafeModeLive, diagnostics, isMobileToggle, releaseToggleLock]);
 
   // Toggle screen share with lock
   const toggleScreenShare = useCallback(async () => {
@@ -2338,7 +2352,7 @@ function LiveKitContent({
 
       {/* Audio blocked warning - prominent button to enable audio */}
       {showAudioPrompt && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-background/60 backdrop-blur-sm">
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[99999] animate-fade-in pointer-events-auto">
           <button
             {...startAudioProps}
             onClick={async () => {
@@ -2350,11 +2364,13 @@ function LiveKitContent({
                 console.error('[LiveKitRoom] Failed to start audio:', err);
               }
             }}
-            className="flex flex-col items-center gap-4 px-8 py-6 rounded-2xl bg-primary/90 hover:bg-primary text-primary-foreground shadow-[0_0_60px_hsl(var(--primary)/0.5)] transition-all hover:scale-105 cursor-pointer"
+            className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-accent hover:bg-accent/80 text-accent-foreground shadow-2xl backdrop-blur-xl border border-border/50 transition-all hover:scale-105 cursor-pointer"
           >
-            <VolumeOff className="w-12 h-12" />
-            <span className="text-xl font-bold">Нажмите для включения звука</span>
-            <span className="text-sm opacity-80">Браузер заблокировал автовоспроизведение</span>
+            <VolumeOff className="w-6 h-6" />
+            <div className="text-left">
+              <div className="font-bold text-sm">Нажмите для включения звука</div>
+              <div className="text-xs opacity-80">Браузер заблокировал автовоспроизведение</div>
+            </div>
           </button>
         </div>
       )}
