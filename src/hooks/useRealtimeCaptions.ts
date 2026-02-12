@@ -98,6 +98,9 @@ export const useRealtimeCaptions = ({
   const webSpeechRef = useRef<SpeechRecognitionType | null>(null);
   const useWebSpeechRef = useRef(true); // Try Web Speech API first
   
+  // Credit exhaustion warning tracking
+  const creditWarningShownRef = useRef(false);
+  
   // For fallback to batch API if WebSocket fails
   const useFallbackRef = useRef(false);
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -138,7 +141,24 @@ export const useRealtimeCaptions = ({
       });
 
       if (error) {
-        console.error('[Captions] Translation error:', error);
+        // Check for 402 / credit exhaustion
+        const errorName = (error as any)?.name || '';
+        const errorContext = (error as any)?.context || {};
+        const is402 = errorName === 'FunctionsHttpError' || errorContext?.status === 402;
+        
+        if (is402 && !creditWarningShownRef.current) {
+          creditWarningShownRef.current = true;
+          // Import toast dynamically to avoid circular deps
+          const { toast } = await import('sonner');
+          toast.warning('Кредиты AI исчерпаны', {
+            description: 'Субтитры показывают оригинальный текст без перевода',
+            duration: 8000,
+          });
+        }
+        
+        if (!is402) {
+          console.error('[Captions] Translation error:', error);
+        }
         return { corrected: text, translated: text };
       }
 
@@ -204,12 +224,18 @@ export const useRealtimeCaptions = ({
         setVadActive(false);
         setIsProcessing(true);
         
-        // Translate the committed transcript
-        const { corrected, translated } = await translateText(message.text);
-        addCaption(corrected, translated, false);
-        
-        console.log('[Captions] Committed:', message.text, '→', translated);
-        setIsProcessing(false);
+        try {
+          // Translate the committed transcript
+          const { corrected, translated } = await translateText(message.text);
+          addCaption(corrected, translated, false);
+          console.log('[Captions] Committed:', message.text, '→', translated);
+        } catch (translateErr) {
+          // Fallback: show original text
+          addCaption(message.text, message.text, false);
+          console.warn('[Captions] Translation failed, showing original:', translateErr);
+        } finally {
+          setIsProcessing(false);
+        }
       }
       else if (message.type === 'error') {
         console.error('[Captions] WebSocket error:', message.error);
@@ -346,9 +372,15 @@ export const useRealtimeCaptions = ({
         if (finalTranscript && finalTranscript.length > 2) {
           setPartialText("");
           setIsProcessing(true);
-          const { corrected, translated } = await translateText(finalTranscript);
-          addCaption(corrected, translated, false);
-          setIsProcessing(false);
+          try {
+            const { corrected, translated } = await translateText(finalTranscript);
+            addCaption(corrected, translated, false);
+          } catch (translateErr) {
+            addCaption(finalTranscript, finalTranscript, false);
+            console.warn('[Captions] Translation failed, showing original:', translateErr);
+          } finally {
+            setIsProcessing(false);
+          }
         }
       };
       
