@@ -202,35 +202,51 @@ serve(async (req) => {
     // Detect source language from transcription if available
     const detectedLanguage = transcription.language_code || sourceLanguage || 'unknown';
 
-    // Step 2: Translate using free MyMemory API (no API key needed)
+    // Step 2: Translate using free APIs (MyMemory + Lingva fallback, no API key needed)
     console.log("Step 2: Translating text...");
     
-    // Detect source lang code from transcription
     const srcLangCode = sourceLanguage || detectedLanguage || 'en';
-    
     let translatedText = originalText;
     
-    // Only translate if source and target are different
     if (srcLangCode !== targetLanguage) {
+      // Try MyMemory first (50k chars/day with email)
+      let translated = false;
       try {
         const langPair = `${srcLangCode}|${targetLanguage}`;
-        const myMemoryUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(originalText)}&langpair=${langPair}`;
-        
-        const translateResponse = await fetch(myMemoryUrl);
-        
-        if (translateResponse.ok) {
-          const translateResult = await translateResponse.json();
-          if (translateResult?.responseData?.translatedText && translateResult?.responseStatus === 200) {
-            translatedText = translateResult.responseData.translatedText;
-          } else {
-            console.warn("MyMemory returned no valid translation, using original text");
+        const myMemoryUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(originalText)}&langpair=${langPair}&de=aplink@lovable.app`;
+        const mmResp = await fetch(myMemoryUrl, { signal: AbortSignal.timeout(5000) });
+        if (mmResp.ok) {
+          const mmData = await mmResp.json();
+          const mmText = mmData?.responseData?.translatedText;
+          if (mmText && mmData?.responseStatus === 200 && !mmText.includes('PLEASE SELECT') && !mmText.includes('MYMEMORY WARNING')) {
+            translatedText = mmText;
+            translated = true;
           }
-        } else {
-          console.error("MyMemory translation error:", translateResponse.status);
         }
-      } catch (translateError) {
-        console.error("Translation fetch failed:", translateError);
-        // Continue with original text as fallback
+      } catch (e) { console.warn("MyMemory failed:", e); }
+      
+      // Fallback: Lingva (free Google Translate proxy, unlimited)
+      if (!translated) {
+        const lingvaInstances = ['lingva.ml', 'lingva.thedaviddelta.com', 'translate.plausibility.cloud'];
+        for (const inst of lingvaInstances) {
+          try {
+            const url = `https://${inst}/api/v1/${srcLangCode}/${targetLanguage}/${encodeURIComponent(originalText)}`;
+            const resp = await fetch(url, { signal: AbortSignal.timeout(5000) });
+            if (resp.ok) {
+              const data = await resp.json();
+              if (data?.translation) {
+                translatedText = data.translation;
+                translated = true;
+                console.log(`Lingva (${inst}) OK`);
+                break;
+              }
+            }
+          } catch (e) { console.warn(`Lingva ${inst} failed:`, e); }
+        }
+      }
+      
+      if (!translated) {
+        console.warn("All translation services failed, using original text");
       }
     }
 

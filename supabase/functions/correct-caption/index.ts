@@ -5,26 +5,68 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Free MyMemory translation API - no API key needed
-async function translateWithMyMemory(text: string, sourceLang: string, targetLang: string): Promise<string> {
-  const langPair = `${sourceLang}|${targetLang}`;
-  const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${langPair}`;
+// Lingva Translate - free Google Translate proxy, no limits
+async function translateWithLingva(text: string, sourceLang: string, targetLang: string): Promise<string | null> {
+  const instances = [
+    'lingva.ml',
+    'lingva.thedaviddelta.com',
+    'translate.plausibility.cloud',
+  ];
   
-  const response = await fetch(url);
-  if (!response.ok) {
-    console.error("MyMemory error:", response.status);
-    return text; // fallback to original
+  for (const instance of instances) {
+    try {
+      const url = `https://${instance}/api/v1/${sourceLang}/${targetLang}/${encodeURIComponent(text)}`;
+      const response = await fetch(url, { signal: AbortSignal.timeout(5000) });
+      if (response.ok) {
+        const data = await response.json();
+        if (data?.translation) {
+          console.log(`Lingva (${instance}) translation OK`);
+          return data.translation;
+        }
+      }
+    } catch (e) {
+      console.warn(`Lingva instance ${instance} failed:`, e);
+    }
   }
-  
-  const data = await response.json();
-  const translated = data?.responseData?.translatedText;
-  
-  if (!translated || data?.responseStatus !== 200) {
-    console.warn("MyMemory returned no translation, using original");
-    return text;
+  return null;
+}
+
+// MyMemory - 50k chars/day with email
+async function translateWithMyMemory(text: string, sourceLang: string, targetLang: string): Promise<string | null> {
+  try {
+    const langPair = `${sourceLang}|${targetLang}`;
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${langPair}&de=aplink@lovable.app`;
+    const response = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    if (!response.ok) return null;
+    
+    const data = await response.json();
+    if (data?.responseData?.translatedText && data?.responseStatus === 200) {
+      // MyMemory returns "PLEASE SELECT TWO LANGUAGES" or similar on errors
+      const result = data.responseData.translatedText;
+      if (result.includes('PLEASE SELECT') || result.includes('MYMEMORY WARNING')) {
+        return null;
+      }
+      return result;
+    }
+  } catch (e) {
+    console.warn("MyMemory failed:", e);
   }
+  return null;
+}
+
+// Cascading translation: MyMemory → Lingva → original text
+async function translate(text: string, sourceLang: string, targetLang: string): Promise<string> {
+  // Try MyMemory first (fast, good quality)
+  const myMemoryResult = await translateWithMyMemory(text, sourceLang, targetLang);
+  if (myMemoryResult) return myMemoryResult;
   
-  return translated;
+  // Fallback to Lingva (unlimited, uses Google Translate)
+  const lingvaResult = await translateWithLingva(text, sourceLang, targetLang);
+  if (lingvaResult) return lingvaResult;
+  
+  // Ultimate fallback: return original
+  console.warn("All translation services failed, returning original text");
+  return text;
 }
 
 serve(async (req) => {
@@ -42,10 +84,8 @@ serve(async (req) => {
       );
     }
 
-    // Detect source language - default to 'en' if not provided
     const srcLang = sourceLang || 'en';
     
-    // If source and target are the same, just return original
     if (srcLang === targetLang) {
       return new Response(
         JSON.stringify({ corrected: originalText, translated: originalText }),
@@ -54,10 +94,8 @@ serve(async (req) => {
     }
 
     console.log(`Translating "${originalText.substring(0, 50)}..." from ${srcLang} to ${targetLang}`);
-
-    const translated = await translateWithMyMemory(originalText, srcLang, targetLang);
-    
-    console.log(`Translated: "${translated.substring(0, 50)}..."`);
+    const translated = await translate(originalText, srcLang, targetLang);
+    console.log(`Result: "${translated.substring(0, 50)}..."`);
 
     return new Response(
       JSON.stringify({ corrected: originalText, translated }),
