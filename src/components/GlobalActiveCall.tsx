@@ -139,6 +139,19 @@ export function GlobalActiveCall() {
     wasMinimizedRef.current = isMinimized;
   }, [isActive, isMinimized]);
 
+  // Browser TTS fallback for mobile
+  const speakWithBrowserTTS = useCallback((text: string, lang: string) => {
+    if (!('speechSynthesis' in window) || !text) return;
+    
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = lang || 'en';
+    utterance.rate = 1.1;
+    utterance.volume = 1.0;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utterance);
+    console.log('[GlobalActiveCall] Browser TTS fallback used');
+  }, []);
+
   // Handle incoming translation data from other participants
   useEffect(() => {
     if (!liveKitRoom) return;
@@ -148,12 +161,27 @@ export function GlobalActiveCall() {
         const decoder = new TextDecoder();
         const message = JSON.parse(decoder.decode(payload));
         
-        if (message.type === 'translation_audio' && message.audioBase64) {
+        if (message.type === 'translation_audio') {
           console.log('[GlobalActiveCall] Received translation from:', message.senderName);
           
-          // Play the translated audio
-          const audioUrl = `data:audio/mpeg;base64,${message.audioBase64}`;
-          playTranslatedAudio(audioUrl);
+          const hasAudio = message.audioBase64 && message.audioBase64.length > 0;
+          
+          if (hasAudio) {
+            // Try playing ElevenLabs audio
+            const audioUrl = `data:audio/mpeg;base64,${message.audioBase64}`;
+            playTranslatedAudio(audioUrl).catch((err) => {
+              console.warn('[GlobalActiveCall] Audio playback failed, using browser TTS:', err);
+              // Fallback to browser TTS if audio playback fails (e.g. mobile AudioContext blocked)
+              if (message.text) {
+                speakWithBrowserTTS(message.text, message.sourceLang === 'ru' ? 'en' : message.sourceLang || 'en');
+              }
+            });
+          } else if (message.text) {
+            // No audio provided - use browser TTS directly
+            // Determine target lang: the text is already translated, so use the text's language
+            const textLang = message.sourceLang === 'ru' ? 'en' : (message.sourceLang === 'en' ? 'ru' : 'en');
+            speakWithBrowserTTS(message.text, textLang);
+          }
           
           toast.success(`🌐 ${message.senderName}`, {
             description: message.text?.substring(0, 100) || 'Перевод получен',
@@ -170,7 +198,7 @@ export function GlobalActiveCall() {
     return () => {
       liveKitRoom.off(RoomEvent.DataReceived, handleDataReceived);
     };
-  }, [liveKitRoom, playTranslatedAudio]);
+  }, [liveKitRoom, playTranslatedAudio, speakWithBrowserTTS]);
   
   // Start/stop broadcast when translator is toggled
   useEffect(() => {
