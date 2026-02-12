@@ -5,7 +5,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Lingva Translate - free Google Translate proxy, no limits
+// Lingva Translate - free Google Translate proxy, unlimited, best quality
 async function translateWithLingva(text: string, sourceLang: string, targetLang: string): Promise<string | null> {
   const instances = [
     'lingva.ml',
@@ -20,18 +20,18 @@ async function translateWithLingva(text: string, sourceLang: string, targetLang:
       if (response.ok) {
         const data = await response.json();
         if (data?.translation) {
-          console.log(`Lingva (${instance}) translation OK`);
+          console.log(`Lingva (${instance}) OK`);
           return data.translation;
         }
       }
     } catch (e) {
-      console.warn(`Lingva instance ${instance} failed:`, e);
+      console.warn(`Lingva ${instance} failed:`, e);
     }
   }
   return null;
 }
 
-// MyMemory - 50k chars/day with email
+// MyMemory fallback - 50k chars/day with email
 async function translateWithMyMemory(text: string, sourceLang: string, targetLang: string): Promise<string | null> {
   try {
     const langPair = `${sourceLang}|${targetLang}`;
@@ -40,12 +40,12 @@ async function translateWithMyMemory(text: string, sourceLang: string, targetLan
     if (!response.ok) return null;
     
     const data = await response.json();
-    if (data?.responseData?.translatedText && data?.responseStatus === 200) {
-      // MyMemory returns "PLEASE SELECT TWO LANGUAGES" or similar on errors
-      const result = data.responseData.translatedText;
-      if (result.includes('PLEASE SELECT') || result.includes('MYMEMORY WARNING')) {
-        return null;
-      }
+    const result = data?.responseData?.translatedText;
+    const match = data?.responseData?.match;
+    
+    // Only use if high confidence match and no error messages
+    if (result && data?.responseStatus === 200 && match > 0.5 &&
+        !result.includes('PLEASE SELECT') && !result.includes('MYMEMORY WARNING')) {
       return result;
     }
   } catch (e) {
@@ -54,18 +54,15 @@ async function translateWithMyMemory(text: string, sourceLang: string, targetLan
   return null;
 }
 
-// Cascading translation: MyMemory → Lingva → original text
+// Cascading: Lingva (best quality, unlimited) → MyMemory → original
 async function translate(text: string, sourceLang: string, targetLang: string): Promise<string> {
-  // Try MyMemory first (fast, good quality)
-  const myMemoryResult = await translateWithMyMemory(text, sourceLang, targetLang);
-  if (myMemoryResult) return myMemoryResult;
-  
-  // Fallback to Lingva (unlimited, uses Google Translate)
-  const lingvaResult = await translateWithLingva(text, sourceLang, targetLang);
-  if (lingvaResult) return lingvaResult;
-  
-  // Ultimate fallback: return original
-  console.warn("All translation services failed, returning original text");
+  const lingva = await translateWithLingva(text, sourceLang, targetLang);
+  if (lingva) return lingva;
+
+  const mm = await translateWithMyMemory(text, sourceLang, targetLang);
+  if (mm) return mm;
+
+  console.warn("All translation services failed, returning original");
   return text;
 }
 
