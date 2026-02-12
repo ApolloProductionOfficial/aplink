@@ -1,84 +1,111 @@
 
-# Plan: Translation Fallback, Whiteboard Fixes, and Stuck Participants Cleanup
+
+# Plan: Mobile Whiteboard Window, Captions Touch Drag, Translation Fallback Fixes
 
 ## Summary
 
-This plan addresses 4 issues: (1) translation 402 error handling with browser fallback, (2) whiteboard close/expand buttons not working on desktop, (3) drawings disappearing, and (4) stuck participants cleanup (already done).
+This plan addresses 5 issues: (1) captions translation 402 error - add graceful fallback without AI, (2) captions not draggable on mobile (touch support), (3) whiteboard displayed as separate "participant window" on mobile, (4) "Ожидание речи" stuck when translation fails, and (5) explaining the AI architecture.
 
 ---
 
-## Completed: Stuck Participants Cleanup
+## Explanation: How Translation Works and Why 402 Happens
 
-The `cleanup-old-participants` function was already executed successfully. **17 stuck participants** were deleted (cutoff: records older than 30 days).
+The system uses **3 different AI/API services**:
 
----
+1. **ElevenLabs Scribe** (speech-to-text) -- uses your ElevenLabs API key, works fine
+2. **Lovable AI Gateway** (text translation) -- uses workspace AI credits, **this is where 402 happens**
+3. **ElevenLabs TTS** (text-to-speech) -- uses your ElevenLabs API key, works fine
 
-## Issue 1: Translation Error 402 - What It Means and How to Fix
+Both `realtime-translate` AND `correct-caption` (used by subtitles) call Lovable AI Gateway for translation. When credits run out, BOTH features break.
 
-**Explanation:** The real-time translator uses a 3-step pipeline:
-1. **ElevenLabs Scribe** - converts your speech to text (uses your ElevenLabs API key)
-2. **Lovable AI Gateway** - translates the text (uses workspace AI credits)
-3. **ElevenLabs TTS** - converts translated text back to speech
-
-The 402 error occurs at **step 2** because your Lovable workspace AI credits are exhausted. This is not a code bug -- it is a billing limit. To restore full-quality translation, top up credits in **Settings -> Workspace -> Usage**.
-
-**Code Fix:** Currently the edge function throws a generic 500 error. The fix will:
-
-### A. Edge function (`realtime-translate/index.ts`)
-- When the AI gateway returns 402, return a **402 status** to the client (not 500) with a clear message
-- Include `useBrowserTranslation: true` flag so the client can fall back
-
-### B. Client (`RealtimeTranslator.tsx`)
-- When the response is 402, show a toast: "Перевод временно недоступен (лимит кредитов). Используется браузерный перевод."
-- Fall back to **free browser-based translation** using the `correct-caption` edge function (which also uses AI but with a different model) or simple text pass-through
-- Continue showing translated text in the UI even without audio
-
-### C. Client (`RealtimeTranslator.tsx`) - processAudioChunk
-- Instead of `throw new Error(...)` on non-200, parse the response JSON and check for 402
-- On 402: use browser TTS + show a one-time warning toast (debounced so it doesn't spam)
+**Solution**: Add a **free browser-based translation fallback** that works without any AI credits. When the AI gateway returns 402, the system will simply display the original transcribed text without translation (since free translation APIs don't exist in-browser). The transcription (ElevenLabs) will continue working.
 
 ---
 
-## Issue 2: Whiteboard Close/Expand Buttons Not Working (Desktop)
+## Issue 1: Captions/Subtitles 402 Error - Graceful Fallback
 
-**Root Cause:** The close and maximize buttons (lines 700-722 in `CollaborativeWhiteboard.tsx`) are inside the title bar div that has `onPointerDown={handleWindowDragStart}`. The drag handler captures the pointer via `setPointerCapture`, which prevents button clicks from firing.
+### File: `src/hooks/useRealtimeCaptions.ts` (translateText function, ~line 130)
 
-**Fix:**
-- Add `e.stopPropagation()` to both the Maximize and Close button `onClick` handlers
-- Add `onPointerDown={(e) => e.stopPropagation()}` to both buttons to prevent the drag handler from intercepting pointer events
+**Current**: Calls `correct-caption` edge function which uses Lovable AI. When credits exhausted, throws FunctionsHttpError.
 
----
+**Fix**:
+- Wrap the `supabase.functions.invoke('correct-caption')` call in error handling
+- On 402 error: show a one-time debounced toast warning
+- Return original text as both `corrected` and `translated` (pass-through without translation)
+- This means subtitles will still show the original speech text, just not translated
+- Add a ref to track if warning was already shown (avoid spam)
 
-## Issue 3: Drawings Disappearing
+### File: `supabase/functions/correct-caption/index.ts`
 
-This is related to the known issue documented in memory. The drawing overlay uses a laser animation loop that can clear the canvas. The fix has been previously implemented via `toolRef` isolation, but if issues persist:
-- Verify that `savedImageDataRef` is properly saved before shape preview
-- Ensure incoming strokes from other participants are not lost during tool switches
-
----
-
-## Issue 4: Drawing Mode Should Not Open for Others
-
-Currently, the system broadcasts `DRAWING_OVERLAY_OPEN` signals to all participants. The fix:
-- The DrawingOverlay open signal should **not** auto-open the overlay for other participants
-- Only the Whiteboard (collaborative board) should sync open state across participants
-- Drawing overlay is personal and should remain local-only
+Already handles 402 correctly (returns 402 status). No changes needed.
 
 ---
 
-## Technical Details
+## Issue 2: Captions Not Draggable on Mobile (Touch Support)
 
-### Files to modify:
+### File: `src/components/CaptionsOverlay.tsx`
 
-1. **`supabase/functions/realtime-translate/index.ts`** (lines 238-242)
-   - Check for 402 specifically and return proper status code with `useBrowserTranslation: true`
+**Current**: Drag only uses `onMouseDown` / `mousemove` / `mouseup` events (lines 81-116). These don't fire on touch devices.
 
-2. **`src/components/RealtimeTranslator.tsx`** (line 581)
-   - Handle 402 response: parse JSON, show toast, fall back to browser translation
-   - Add debounced toast for credit limit warning
+**Fix**:
+- Add `onTouchStart` handler alongside `onMouseDown` on the drag handle
+- Add `touchmove` and `touchend` event listeners alongside `mousemove` and `mouseup`
+- Use `e.touches[0].clientX/Y` for touch coordinates
+- Prevent default on touch to avoid scroll conflicts
 
-3. **`src/components/CollaborativeWhiteboard.tsx`** (lines 700-722)
-   - Add `onPointerDown={(e) => e.stopPropagation()}` and `e.stopPropagation()` in onClick to maximize/close buttons in windowed mode title bar
+---
 
-4. **`src/components/LiveKitRoom.tsx`** (or wherever DrawingOverlay open broadcast is handled)
-   - Remove auto-open broadcast for DrawingOverlay -- keep it local-only
+## Issue 3: Whiteboard as Separate "Participant Window" on Mobile
+
+When a participant opens the whiteboard on desktop, mobile users should see it as a **separate tile** in the participant grid (like an extra participant called "Доска"). Tapping it opens the whiteboard in a landscape-oriented overlay.
+
+### File: `src/components/LiveKitRoom.tsx`
+
+**Changes**:
+- When `showWhiteboard` is true AND device is mobile, render a fake "participant tile" in the video grid with a canvas thumbnail showing the whiteboard content
+- Tapping this tile opens the whiteboard in a full-screen landscape overlay
+- The overlay has a close button and auto-suggests landscape orientation
+
+### File: `src/components/CollaborativeWhiteboard.tsx`
+
+**Changes**:
+- Add a `mobileMode` prop that renders the whiteboard in a full-screen overlay optimized for mobile
+- In mobile mode: no windowed drag, just full-screen with close button
+- Auto-lock to landscape orientation hint
+
+---
+
+## Issue 4: "Ожидание речи" Stuck
+
+**Root cause**: Web Speech API is working (transcription happens), but when translation fails (402), the UI shows the error state and appears "stuck."
+
+**Fix** (in `useRealtimeCaptions.ts`):
+- The `vadActive` state should reflect actual voice detection, not be blocked by translation errors
+- Ensure `setIsProcessing(false)` is always called in the `finally` block of translation
+- When translation fails, still add the caption with original text so UI doesn't appear frozen
+
+---
+
+## Technical Details: Files to Modify
+
+1. **`src/hooks/useRealtimeCaptions.ts`** (~line 130-153)
+   - Add 402 error handling in `translateText` - catch FunctionsHttpError, show debounced toast, return original text
+   - Add `creditWarningShownRef` to prevent toast spam
+   - Ensure `setIsProcessing(false)` in finally block
+
+2. **`src/components/CaptionsOverlay.tsx`** (~lines 81-116)
+   - Add touch event handlers (`onTouchStart`, `touchmove`, `touchend`) for mobile drag support
+   - Use unified handler that works with both mouse and touch events
+
+3. **`src/components/LiveKitRoom.tsx`** (~line 1160+)
+   - When `showWhiteboard && isMobile`: render a whiteboard participant tile in the video grid
+   - Tapping tile opens full-screen whiteboard overlay
+
+4. **`src/components/CollaborativeWhiteboard.tsx`**
+   - Add `mobileFullscreen` mode: renders as a full-screen overlay without window drag mechanics
+   - Close button always visible, landscape orientation hint
+
+5. **`src/components/RealtimeTranslator.tsx`** (line 581-602)
+   - Already handles 402 from `realtime-translate` edge function
+   - Minor improvement: also filter the `FunctionsHttpError` in global error handler (already done)
+
