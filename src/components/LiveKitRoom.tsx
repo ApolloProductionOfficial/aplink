@@ -14,7 +14,7 @@ import {
   useStartAudio,
 } from "@livekit/components-react";
 import "@livekit/components-styles";
-import { Track, RoomEvent, Room, RemoteParticipant, VideoPresets, LocalParticipant, ConnectionState } from "livekit-client";
+import { Track, RoomEvent, Room, RemoteParticipant, VideoPresets, LocalParticipant, ConnectionState, ConnectionQuality } from "livekit-client";
 import { BackgroundBlur, VirtualBackground } from "@livekit/track-processors";
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -81,6 +81,31 @@ function detectIsIOSOrMobileSafari(): boolean {
   const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
   const isMobileDevice = /Mobi|Android/i.test(ua) || isIOS;
   return isIOS || (isSafari && isMobileDevice);
+}
+
+// ====== TELEGRAM CALL ERROR NOTIFICATION (rate-limited, module-level) ======
+let _lastTelegramNotifyTime = 0;
+async function sendCallErrorToTelegram(errorType: string, message: string, details?: Record<string, unknown>) {
+  const now = Date.now();
+  if (now - _lastTelegramNotifyTime < 30000) return; // Max 1 per 30s
+  _lastTelegramNotifyTime = now;
+  try {
+    await supabase.functions.invoke('send-telegram-notification', {
+      body: {
+        errorType: `CALL_${errorType}`,
+        errorMessage: message,
+        source: 'Call Diagnostics',
+        severity: errorType === 'NEGOTIATION_ERROR' ? 'error' : 'warning',
+        details: {
+          ...details,
+          url: typeof window !== 'undefined' ? window.location.href : '',
+          userAgent: typeof navigator !== 'undefined' ? navigator.userAgent.substring(0, 200) : '',
+        },
+      },
+    });
+  } catch (err) {
+    console.warn('[LiveKitRoom] Failed to send Telegram notification:', err);
+  }
 }
 
 // ====== TOKEN UTILITIES ======
@@ -426,6 +451,7 @@ export function LiveKitRoom({
     }
   }, [fetchToken]);
 
+
   // Handle NegotiationError and trigger fallback if repeated
   const handleNegotiationError = useCallback((error: any) => {
     const now = Date.now();
@@ -440,6 +466,14 @@ export function LiveKitRoom({
     
     console.warn("[LiveKitRoom] NegotiationError count in window:", negotiationErrorsRef.current.length);
     
+    // Send Telegram notification
+    sendCallErrorToTelegram('NEGOTIATION_ERROR', `NegotiationError (code 13) in room ${roomName}`, {
+      roomName,
+      participantName,
+      errorCount: negotiationErrorsRef.current.length,
+      useFallbackVideoProfile,
+    });
+    
     // If threshold exceeded, enable fallback and reconnect
     if (negotiationErrorsRef.current.length >= NEGOTIATION_ERROR_THRESHOLD && !useFallbackVideoProfile) {
       console.log("[LiveKitRoom] Enabling fallback video profile due to repeated NegotiationErrors");
@@ -450,7 +484,7 @@ export function LiveKitRoom({
       });
       handleForceReconnect("negotiation-fallback");
     }
-  }, [useFallbackVideoProfile, setUseFallbackVideoProfile, handleForceReconnect]);
+  }, [useFallbackVideoProfile, setUseFallbackVideoProfile, handleForceReconnect, sendCallErrorToTelegram, roomName, participantName]);
 
   const handleConnected = useCallback(() => {
     console.log("[LiveKitRoom] Connected to room");
@@ -879,16 +913,20 @@ function LiveKitContent({
     const handleReconnecting = () => {
       console.log('[LiveKitRoom] Reconnecting...');
       setIsRoomReconnecting(true);
+      diagnostics.addEvent('RECONNECTING', roomName);
       toast.info("Переподключение...", {
         id: 'reconnecting',
         duration: 60000,
         icon: <RefreshCw className="w-4 h-4 animate-spin" />,
       });
+      // Send Telegram notification for reconnect event
+      sendCallErrorToTelegram('RECONNECT', `Reconnecting in room ${roomName}`, { roomName, participant: participantName });
     };
     
     const handleReconnected = () => {
       console.log('[LiveKitRoom] Reconnected successfully');
       setIsRoomReconnecting(false);
+      diagnostics.addEvent('RECONNECTED', roomName);
       toast.success("Связь восстановлена", {
         id: 'reconnecting',
         duration: 3000,
@@ -909,9 +947,58 @@ function LiveKitContent({
       room.off(RoomEvent.Reconnected, handleReconnected);
       room.off(RoomEvent.Disconnected, handleDisconnected);
     };
-  }, [room, setIsRoomReconnecting]);
+  }, [room, setIsRoomReconnecting, diagnostics, roomName, participantName]);
 
-  // Local track states
+  // ====== ADAPTIVE BITRATE: Downgrade video quality on poor network ======
+  const lastBitrateAdjustRef = useRef<number>(0);
+  useEffect(() => {
+    if (!room) return;
+
+    const handleQualityChanged = (quality: ConnectionQuality, participant: any) => {
+      if (!participant?.isLocal) return;
+      const now = Date.now();
+      // Throttle adjustments to max once per 10s
+      if (now - lastBitrateAdjustRef.current < 10000) return;
+      lastBitrateAdjustRef.current = now;
+
+      const camPub = room.localParticipant?.getTrackPublication(Track.Source.Camera);
+      if (!camPub?.track || !camPub.track.mediaStreamTrack) return;
+
+      const sender = camPub.track.sender;
+      if (!sender) return;
+
+      const params = sender.getParameters();
+      if (!params.encodings || params.encodings.length === 0) return;
+
+      let targetMaxBitrate: number;
+      switch (quality) {
+        case ConnectionQuality.Poor:
+          targetMaxBitrate = 150_000; // 150 kbps
+          console.log('[LiveKitRoom] Adaptive bitrate: POOR network → 150kbps');
+          toast.warning('Качество сети низкое', { description: 'Видео временно снижено', duration: 3000, id: 'adaptive-bitrate' });
+          break;
+        case ConnectionQuality.Good:
+          targetMaxBitrate = 800_000; // 800 kbps
+          console.log('[LiveKitRoom] Adaptive bitrate: GOOD network → 800kbps');
+          break;
+        case ConnectionQuality.Excellent:
+          targetMaxBitrate = 2_500_000; // 2.5 Mbps
+          console.log('[LiveKitRoom] Adaptive bitrate: EXCELLENT network → 2.5Mbps');
+          break;
+        default:
+          return;
+      }
+
+      params.encodings[0].maxBitrate = targetMaxBitrate;
+      sender.setParameters(params).catch(err => {
+        console.warn('[LiveKitRoom] Failed to set adaptive bitrate:', err);
+      });
+    };
+
+    room.on(RoomEvent.ConnectionQualityChanged, handleQualityChanged);
+    return () => { room.off(RoomEvent.ConnectionQualityChanged, handleQualityChanged); };
+  }, [room]);
+
   // IMPORTANT: On mobile we publish tracks manually (gesture requirement), so `localParticipant.isMicrophoneEnabled`
   // may not reflect the real state. Use publication mute state instead.
   const cameraPublication = localParticipant?.getTrackPublication(Track.Source.Camera);
@@ -1341,26 +1428,12 @@ function LiveKitContent({
         console.warn('[LiveKitRoom] NegotiationError on camera toggle');
         onNegotiationError?.(err);
         
-        // On iOS: DON'T retry automatically - let the connection stabilize
-        if (isIOSSafeModeLive) {
-          console.warn('[LiveKitRoom] iOS: Skipping camera retry, waiting for stable connection');
-          toast.warning('Подождите несколько секунд и попробуйте снова', {
-            description: 'Соединение стабилизируется',
-            duration: 4000,
-          });
-        } else if (!isRoomReconnecting) {
-          // On other platforms: retry once after delay
-          await new Promise(r => setTimeout(r, 800));
-          try {
-            const cs = localParticipant?.isCameraEnabled ?? false;
-            await localParticipant?.setCameraEnabled(!cs);
-            diagnostics.logMediaToggle('camera', true, 'retry');
-          } catch (retryErr: any) {
-            console.error('Failed to toggle camera after retry:', retryErr);
-            diagnostics.logMediaToggle('camera', false, `retry failed: ${retryErr?.message}`);
-            toast.error('Не удалось переключить камеру', { description: 'Попробуйте ещё раз' });
-          }
-        }
+        // Don't retry with setCameraEnabled — it causes the same error.
+        // Instead, wait for connection to stabilize and let the user try again.
+        toast.warning('Подождите несколько секунд и попробуйте снова', {
+          description: 'Соединение стабилизируется',
+          duration: 4000,
+        });
       } else {
         console.error('Failed to toggle camera:', err);
         toast.error('Ошибка камеры');
@@ -1463,26 +1536,11 @@ function LiveKitContent({
         console.warn('[LiveKitRoom] NegotiationError on mic toggle');
         onNegotiationError?.(err);
         
-        // On iOS: DON'T retry automatically - let the connection stabilize
-        if (isIOSSafeModeLive) {
-          console.warn('[LiveKitRoom] iOS: Skipping mic retry, waiting for stable connection');
-          toast.warning('Подождите несколько секунд и попробуйте снова', {
-            description: 'Соединение стабилизируется',
-            duration: 4000,
-          });
-        } else if (!isRoomReconnecting) {
-          // On other platforms: retry once after delay
-          await new Promise(r => setTimeout(r, 800));
-          try {
-            const currentState = localParticipant?.isMicrophoneEnabled ?? false;
-            await localParticipant?.setMicrophoneEnabled(!currentState);
-            diagnostics.logMediaToggle('microphone', true, 'retry');
-          } catch (retryErr: any) {
-            console.error('Failed to toggle microphone after retry:', retryErr);
-            diagnostics.logMediaToggle('microphone', false, `retry failed: ${retryErr?.message}`);
-            toast.error('Не удалось переключить микрофон', { description: 'Попробуйте ещё раз' });
-          }
-        }
+        // Don't retry with setMicrophoneEnabled — it causes the same error.
+        toast.warning('Подождите несколько секунд и попробуйте снова', {
+          description: 'Соединение стабилизируется',
+          duration: 4000,
+        });
       } else {
         console.error('Failed to toggle microphone:', err);
         toast.error('Ошибка микрофона');
