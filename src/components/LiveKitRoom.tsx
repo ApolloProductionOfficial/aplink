@@ -1037,10 +1037,7 @@ function LiveKitContent({
     // remoteParticipantCount >= 2 => total participants >= 3
     if (remoteParticipantCount >= 2 && !galleryModeSuggestedRef.current) {
       galleryModeSuggestedRef.current = true;
-      toast.info('Групповой звонок', {
-        description: 'Для 3+ участников удобнее «Галерея» или «Вебинар» (можно переключить в меню раскладки)',
-        duration: 3500,
-      });
+      // Issue 4: Removed non-critical toast for gallery mode suggestion
     }
     if (remoteParticipantCount < 2) {
       galleryModeSuggestedRef.current = false;
@@ -1053,16 +1050,7 @@ function LiveKitContent({
       const modes: Array<'focus' | 'gallery' | 'webinar'> = ['focus', 'gallery', 'webinar'];
       const currentIndex = modes.indexOf(prev);
       const nextMode = modes[(currentIndex + 1) % modes.length];
-      const modeNames = { focus: 'Фокус-режим', gallery: 'Галерейный режим', webinar: 'Вебинар-режим' };
-      const modeDescs = { 
-        focus: 'Один участник на весь экран', 
-        gallery: 'Все участники в сетке',
-        webinar: 'Спикер + лента зрителей'
-      };
-      toast.success(modeNames[nextMode], {
-        description: modeDescs[nextMode],
-        duration: 2000,
-      });
+      // Issue 4: Removed non-critical layout mode toast
       return nextMode;
     });
   }, []);
@@ -1071,14 +1059,7 @@ function LiveKitContent({
   const handlePinParticipant = useCallback((identity: string | null) => {
     setPinnedParticipant(prev => {
       const newValue = prev === identity ? null : identity;
-      if (newValue) {
-        toast.success('Участник закреплен', {
-          description: 'Будет показан на главном экране',
-          duration: 2000,
-        });
-      } else {
-        toast.info('Закрепление снято', { duration: 1500 });
-      }
+      // Issue 4: Removed pin/unpin toasts
       return newValue;
     });
   }, []);
@@ -1109,19 +1090,12 @@ function LiveKitContent({
       screenShareDebounceRef.current = setTimeout(() => {
         if (layoutMode !== 'focus') {
           setLayoutMode('focus');
-          toast.info('Фокус-режим', {
-            description: 'Автоматическое переключение для демонстрации экрана',
-            duration: 2000,
-          });
+          // Issue 4: Removed auto-switch toast
         }
       }, 500);
     } else if (!someoneScreenSharing && wasScreenSharing && layoutMode === 'focus') {
-      // Screen share ENDED — return to gallery
+      // Screen share ENDED — return to gallery (Issue 4: removed toast)
       setLayoutMode('gallery');
-      toast.info('Галерея', {
-        description: 'Демонстрация завершена',
-        duration: 2000,
-      });
     }
     
     return () => {
@@ -1170,26 +1144,16 @@ function LiveKitContent({
           if (!isMobile && !showWhiteboardRef.current) {
             // Desktop: auto-open whiteboard
             setShowWhiteboard(true);
-            toast.info(`${message.sender} открыл доску`, {
-              description: 'Нажмите, чтобы рисовать вместе',
-              duration: 3000,
-            });
+          // Issue 4: Removed non-critical whiteboard toast
           } else if (isMobile) {
-            // Mobile: show tile notification only
-            toast.info(`${message.sender} открыл доску`, {
-              description: 'Нажмите на плитку "Доска" для просмотра',
-              duration: 3000,
-            });
+            // Issue 4: Removed non-critical whiteboard toast for mobile
           }
         }
         
         // Drawing overlay is personal — only notify
         if (message.type === 'DRAWING_OVERLAY_OPEN' && message.sender !== participantName) {
           console.log('[LiveKitRoom] Remote participant opened drawing overlay (local-only):', message.sender);
-          toast.info(`${message.sender} рисует на экране`, {
-            description: 'Рисунки видны всем участникам',
-            duration: 3000,
-          });
+          // Issue 4: Removed non-critical drawing overlay toast
         }
         
         // Close whiteboard when all participants close it
@@ -1286,41 +1250,43 @@ function LiveKitContent({
   }, [isMobile]);
 
   // Handle click to show panels (works like finger tap on desktop too)
-  const handleClick = useCallback(() => {
+  // Issue 3 FIX: stopPropagation on control bars prevents this from re-triggering
+  const handleClick = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     // Show both panels on click
     setShowTopPanel(true);
     setShowBottomPanel(true);
     lastTouchRef.current = Date.now();
     
-    // Auto-hide after 4 seconds
+    // Auto-hide after 6 seconds (Issue 3: increased from 4s)
     if (hideTimeoutRef.current) {
       clearTimeout(hideTimeoutRef.current);
     }
     hideTimeoutRef.current = setTimeout(() => {
-      if (Date.now() - lastTouchRef.current >= 4000) {
+      if (Date.now() - lastTouchRef.current >= 6000) {
         setShowTopPanel(false);
         setShowBottomPanel(false);
       }
-    }, 4000);
+    }, 6000);
   }, []);
 
   // Touch handler for mobile - tap to show/hide panels
-  const handleTouchStart = useCallback(() => {
+  // Issue 3 FIX: Same longer timeout
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
     // Show panels on touch
     setShowTopPanel(true);
     setShowBottomPanel(true);
     lastTouchRef.current = Date.now();
     
-    // Auto-hide after 4 seconds
+    // Auto-hide after 6 seconds (Issue 3: increased from 4s)
     if (hideTimeoutRef.current) {
       clearTimeout(hideTimeoutRef.current);
     }
     hideTimeoutRef.current = setTimeout(() => {
-      if (Date.now() - lastTouchRef.current >= 4000) {
+      if (Date.now() - lastTouchRef.current >= 6000) {
         setShowTopPanel(false);
         setShowBottomPanel(false);
       }
-    }, 4000);
+    }, 6000);
   }, []);
 
   // Track media toggle lock to prevent NegotiationError on iOS
@@ -1584,6 +1550,15 @@ function LiveKitContent({
       return;
     }
     try {
+      // Issue 2: Check for mobile browser support
+      if (isMobile && !/Android/i.test(navigator.userAgent)) {
+        toast.info("Демонстрация экрана недоступна", {
+          description: "На мобильных устройствах функция ограничена (поддерживается на Android Chrome)",
+          duration: 4000
+        });
+        return;
+      }
+
       isTogglingMediaRef.current = true;
       const currentState = localParticipant?.isScreenShareEnabled ?? false;
       await localParticipant?.setScreenShareEnabled(!currentState);
@@ -1841,12 +1816,13 @@ function LiveKitContent({
       // Merge audio into stream if available
       destination.stream.getAudioTracks().forEach(track => stream.addTrack(track));
       
-      // Create recorder with best available codec
-      const recorder = new MediaRecorder(stream, {
-        mimeType: MediaRecorder.isTypeSupported('video/webm;codecs=vp9') 
-          ? 'video/webm;codecs=vp9' 
-          : 'video/webm'
-      });
+      // Issue 5: Try to record directly in MP4 (H.264) if supported, otherwise WebM (VP9)
+      const mp4Supported = MediaRecorder.isTypeSupported('video/mp4;codecs=avc1');
+      const mimeType = mp4Supported ? 'video/mp4;codecs=avc1' : (
+        MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' : 'video/webm'
+      );
+      
+      const recorder = new MediaRecorder(stream, { mimeType });
       
       callRecordingChunksRef.current = [];
       
@@ -1859,7 +1835,7 @@ function LiveKitContent({
       recorder.onstop = () => {
         isActive = false;
         
-        const blob = new Blob(callRecordingChunksRef.current, { type: 'video/webm' });
+        const blob = new Blob(callRecordingChunksRef.current, { type: mimeType });
         const url = URL.createObjectURL(blob);
         
         // Show preview instead of auto-download
@@ -1895,9 +1871,14 @@ function LiveKitContent({
   const saveRecording = useCallback(() => {
     if (!recordingPreviewUrl) return;
     
+    // Determine extension based on recorded mime type (checking the blob would be better but URL is opaque)
+    // We assume based on browser support logic used in start
+    const mp4Supported = MediaRecorder.isTypeSupported('video/mp4;codecs=avc1');
+    const ext = mp4Supported ? 'mp4' : 'webm';
+    
     const a = document.createElement('a');
     a.href = recordingPreviewUrl;
-    a.download = `aplink-call-${Date.now()}.webm`;
+    a.download = `aplink-call-${Date.now()}.${ext}`;
     a.click();
     
     URL.revokeObjectURL(recordingPreviewUrl);
@@ -2284,13 +2265,19 @@ function LiveKitContent({
       {/* Screenshot flash overlay */}
       {showScreenshotFlash && <div className="screenshot-flash" />}
 
-      {/* Recording indicator with timer - fixed position */}
+      {/* Recording indicator - Issue 11: small red dot on mobile, full on desktop */}
       {isCallRecording && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[99997] flex items-center gap-2 px-4 py-2 bg-destructive/20 backdrop-blur-xl border border-destructive/50 rounded-full shadow-[0_0_20px_hsl(var(--destructive)/0.3)]">
-          <span className="w-2.5 h-2.5 bg-destructive rounded-full animate-pulse" />
-          <span className="text-sm font-bold text-destructive">REC</span>
-          <span className="text-sm text-foreground/90 font-mono">{formatRecordingDuration(recordingDuration)}</span>
-        </div>
+        isMobile ? (
+          <div className="fixed top-3 left-3 z-[99997]">
+            <span className="w-3 h-3 bg-destructive rounded-full animate-pulse block" />
+          </div>
+        ) : (
+          <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[99997] flex items-center gap-2 px-4 py-2 bg-destructive/20 backdrop-blur-xl border border-destructive/50 rounded-full shadow-[0_0_20px_hsl(var(--destructive)/0.3)]">
+            <span className="w-2.5 h-2.5 bg-destructive rounded-full animate-pulse" />
+            <span className="text-sm font-bold text-destructive">REC</span>
+            <span className="text-sm text-foreground/90 font-mono">{formatRecordingDuration(recordingDuration)}</span>
+          </div>
+        )
       )}
 
       {/* Recording preview dialog */}
@@ -2308,7 +2295,7 @@ function LiveKitContent({
               autoPlay={false}
             />
             <p className="text-xs text-muted-foreground mt-3 text-center">
-              WebM — универсальный формат. MP4 — для совместимости с iPhone/iPad.
+              Запись готова к сохранению. MP4 поддерживается на iPhone/iPad.
             </p>
             <div className="flex flex-col sm:flex-row gap-2 mt-4 justify-end">
               <Button 
@@ -2339,7 +2326,7 @@ function LiveKitContent({
                 className="bg-primary hover:bg-primary/90 order-1 sm:order-3"
                 disabled={isConvertingToMp4}
               >
-                Сохранить .webm
+                Сохранить запись
               </Button>
             </div>
           </div>
@@ -2371,7 +2358,7 @@ function LiveKitContent({
         </div>
       )}
 
-      {/* Bottom Control Bar - Responsive with glassmorphism */}
+      {/* Bottom Control Bar - Issue 3: stopPropagation prevents auto-hide reset, Issue 8: smaller on mobile */}
       <div 
         className={cn(
           "absolute bottom-2 sm:bottom-4 left-1/2 -translate-x-1/2 z-50 w-full px-2 sm:px-0 sm:w-auto",
@@ -2382,8 +2369,10 @@ function LiveKitContent({
               ? "opacity-0 scale-95"
               : "translate-y-12 opacity-0 scale-90 pointer-events-none"
         )}
+        onTouchStart={(e) => { e.stopPropagation(); lastTouchRef.current = Date.now(); }}
+        onClick={(e) => { e.stopPropagation(); lastTouchRef.current = Date.now(); }}
       >
-        <div className="flex items-center justify-center gap-1.5 sm:gap-2.5 px-3 sm:px-5 py-2.5 sm:py-3.5 rounded-2xl sm:rounded-[2.5rem] bg-background/40 backdrop-blur-2xl border border-border/20 shadow-[0_8px_32px_hsl(var(--background)/0.4)] flex-wrap sm:flex-nowrap max-w-full overflow-visible">
+        <div className="flex items-center justify-center gap-1 sm:gap-2.5 px-2 sm:px-5 py-2 sm:py-3.5 rounded-2xl sm:rounded-[2.5rem] bg-background/40 backdrop-blur-2xl border border-border/20 shadow-[0_8px_32px_hsl(var(--background)/0.4)] flex-wrap sm:flex-nowrap max-w-full overflow-visible">
           {/* Camera toggle */}
           <Tooltip>
             <TooltipTrigger asChild>
@@ -2392,16 +2381,16 @@ function LiveKitContent({
                 variant={isCameraEnabled ? "outline" : "secondary"}
                 size="icon"
                 className={cn(
-                  "w-10 h-10 sm:w-12 sm:h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg border-border/40",
+                  "w-8 h-8 sm:w-12 sm:h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg border-border/40",
                   isCameraEnabled 
                     ? "bg-foreground/15 hover:bg-foreground/25" 
                     : "bg-destructive/40 border-destructive/60 hover:bg-destructive/50"
                 )}
               >
                 {isCameraEnabled ? (
-                  <Video className="w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_hsl(var(--foreground)/0.5)]" />
+                  <Video className="w-4 h-4 sm:w-5 sm:h-5 stroke-[1.8] drop-shadow-[0_0_3px_hsl(var(--foreground)/0.5)]" />
                 ) : (
-                  <VideoOff className="w-5 h-5 stroke-[1.8] text-destructive drop-shadow-[0_0_3px_hsl(var(--foreground)/0.4)]" />
+                  <VideoOff className="w-4 h-4 sm:w-5 sm:h-5 stroke-[1.8] text-destructive drop-shadow-[0_0_3px_hsl(var(--foreground)/0.4)]" />
                 )}
               </Button>
             </TooltipTrigger>
@@ -2419,16 +2408,16 @@ function LiveKitContent({
                     variant={isMicrophoneEnabled ? "outline" : "secondary"}
                     size="icon"
                     className={cn(
-                      "w-10 h-10 sm:w-12 sm:h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg border-border/40",
+                      "w-8 h-8 sm:w-12 sm:h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg border-border/40",
                       isMicrophoneEnabled 
                         ? "bg-foreground/15 hover:bg-foreground/25" 
                         : "bg-destructive/40 border-destructive/60 hover:bg-destructive/50"
                     )}
                   >
                     {isMicrophoneEnabled ? (
-                      <Mic className="w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_hsl(var(--foreground)/0.5)]" />
+                      <Mic className="w-4 h-4 sm:w-5 sm:h-5 stroke-[1.8] drop-shadow-[0_0_3px_hsl(var(--foreground)/0.5)]" />
                     ) : (
-                      <MicOff className="w-5 h-5 stroke-[1.8] text-destructive drop-shadow-[0_0_3px_hsl(var(--foreground)/0.4)]" />
+                      <MicOff className="w-4 h-4 sm:w-5 sm:h-5 stroke-[1.8] text-destructive drop-shadow-[0_0_3px_hsl(var(--foreground)/0.4)]" />
                     )}
                   </Button>
                 </PopoverTrigger>
@@ -2441,14 +2430,14 @@ function LiveKitContent({
               side="top" 
               align="center" 
               sideOffset={12}
-              className="p-3 bg-background/40 backdrop-blur-2xl border border-border/20 rounded-2xl shadow-[0_8px_32px_hsl(var(--background)/0.4)]"
+              className="p-2 sm:p-3 bg-background/40 backdrop-blur-2xl border border-border/20 rounded-2xl shadow-[0_8px_32px_hsl(var(--background)/0.4)] max-h-[50vh] overflow-y-auto"
             >
               <div className="flex flex-col items-center gap-3">
                 {/* Main: Toggle Mic (centered on top) */}
                 <button
                   onClick={toggleMicrophone}
                   className={cn(
-                    "w-12 h-12 rounded-full flex items-center justify-center",
+                    "w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center",
                     "bg-foreground/10 backdrop-blur-sm border border-border/30",
                     "hover:bg-foreground/20 transition-all hover:scale-110 hover:shadow-lg",
                     !isMicrophoneEnabled && "bg-destructive/30 border-destructive/50 shadow-[0_0_15px_hsl(var(--destructive)/0.2)]"
@@ -2468,7 +2457,7 @@ function LiveKitContent({
                     <button
                       onClick={toggleNoiseSuppression}
                       className={cn(
-                        "w-10 h-10 rounded-full flex items-center justify-center",
+                        "w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center",
                         "bg-foreground/10 backdrop-blur-sm border border-border/30",
                         "hover:bg-foreground/20 transition-all hover:scale-110 hover:shadow-lg",
                         isNoiseSuppressionEnabled && "bg-primary/30 border-primary/50 shadow-[0_0_15px_hsl(var(--primary)/0.3)]"
@@ -2486,7 +2475,7 @@ function LiveKitContent({
                       <button
                         onClick={toggleVoiceCommands}
                         className={cn(
-                          "w-10 h-10 rounded-full flex items-center justify-center",
+                        "w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center",
                           "bg-foreground/10 backdrop-blur-sm border border-border/30",
                           "hover:bg-foreground/20 transition-all hover:scale-110 hover:shadow-lg",
                           isVoiceCommandsActive && "bg-accent/30 border-accent/50 shadow-[0_0_15px_hsl(var(--accent)/0.3)]"
@@ -2512,14 +2501,14 @@ function LiveKitContent({
                     variant={isScreenShareEnabled ? "default" : "outline"}
                     size="icon"
                     className={cn(
-                      "w-12 h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg border-border/40",
+                      "w-10 h-10 sm:w-12 sm:h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg border-border/40",
                       isScreenShareEnabled 
                         ? "bg-primary/40 border-primary/60 hover:bg-primary/50" 
                         : "bg-foreground/15 hover:bg-foreground/25"
                     )}
                   >
                     <MonitorUp className={cn(
-                      "w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_hsl(var(--foreground)/0.5)]",
+                      "w-4 h-4 sm:w-5 sm:h-5 stroke-[1.8] drop-shadow-[0_0_3px_hsl(var(--foreground)/0.5)]",
                       isScreenShareEnabled && "text-primary"
                     )} />
                   </Button>
@@ -2533,7 +2522,7 @@ function LiveKitContent({
               side="top" 
               align="center" 
               sideOffset={12}
-              className="w-auto p-3 bg-background/40 backdrop-blur-2xl border border-border/20 rounded-2xl shadow-[0_8px_32px_hsl(var(--background)/0.4)]"
+              className="w-auto p-2 sm:p-3 bg-background/40 backdrop-blur-2xl border border-border/20 rounded-2xl shadow-[0_8px_32px_hsl(var(--background)/0.4)] max-h-[50vh] overflow-y-auto"
             >
               <div className="flex flex-col gap-2">
                 <span className="text-[10px] text-muted-foreground font-medium text-center mb-1">Демонстрация</span>
@@ -2585,13 +2574,13 @@ function LiveKitContent({
             <Tooltip>
               <TooltipTrigger asChild>
                 <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="w-12 h-12 rounded-full bg-foreground/15 hover:bg-foreground/25 border-border/40 transition-all hover:scale-105 hover:shadow-lg"
-                  >
-                    <MoreHorizontal className="w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_hsl(var(--foreground)/0.5)]" />
-                  </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-foreground/15 hover:bg-foreground/25 border-border/40 transition-all hover:scale-105 hover:shadow-lg"
+                    >
+                      <MoreHorizontal className="w-4 h-4 sm:w-5 sm:h-5 stroke-[1.8] drop-shadow-[0_0_3px_hsl(var(--foreground)/0.5)]" />
+                    </Button>
                 </PopoverTrigger>
               </TooltipTrigger>
               <TooltipContent side="top" className="bg-background/80 border-border/20">
@@ -2602,7 +2591,7 @@ function LiveKitContent({
               side="top" 
               align="center" 
               sideOffset={12}
-              className="w-auto p-4 bg-background/60 backdrop-blur-2xl border border-border/20 rounded-2xl shadow-[0_8px_32px_hsl(var(--background)/0.4)]"
+              className="w-auto p-2 sm:p-4 bg-background/60 backdrop-blur-2xl border border-border/20 rounded-2xl shadow-[0_8px_32px_hsl(var(--background)/0.4)] max-h-[50vh] overflow-y-auto"
             >
               <div className="flex flex-col gap-4">
                 {/* Layout modes section */}
@@ -2610,10 +2599,7 @@ function LiveKitContent({
                   <span className="text-[10px] text-muted-foreground font-medium">Режим отображения</span>
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => {
-                        setLayoutMode('focus');
-                        toast.success('Фокус-режим');
-                      }}
+                      onClick={() => setLayoutMode('focus')}
                       title="Один участник в фокусе, остальные мини"
                       className={cn(
                         "flex flex-col items-center gap-1 p-2 rounded-xl transition-all min-w-[56px]",
@@ -2627,10 +2613,7 @@ function LiveKitContent({
                     </button>
                     
                     <button
-                      onClick={() => {
-                        setLayoutMode('gallery');
-                        toast.success('Галерейный режим');
-                      }}
+                      onClick={() => setLayoutMode('gallery')}
                       title="Все участники равномерно на экране"
                       className={cn(
                         "flex flex-col items-center gap-1 p-2 rounded-xl transition-all min-w-[56px]",
@@ -2644,10 +2627,7 @@ function LiveKitContent({
                     </button>
                     
                     <button
-                      onClick={() => {
-                        setLayoutMode('webinar');
-                        toast.success('Вебинар-режим');
-                      }}
+                      onClick={() => setLayoutMode('webinar')}
                       title="Спикер крупно, зрители списком"
                       className={cn(
                         "flex flex-col items-center gap-1 p-2 rounded-xl transition-all min-w-[56px]",
@@ -2768,7 +2748,7 @@ function LiveKitContent({
                     : "bg-foreground/15 hover:bg-foreground/25"
                 )}
               >
-                <Hand className={cn("w-5 h-5", isHandRaised && "text-warning")} />
+                <Hand className={cn("w-4 h-4 sm:w-5 sm:h-5", isHandRaised && "text-warning")} />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="top" className="bg-background/80 border-border/20">
@@ -2782,9 +2762,9 @@ function LiveKitContent({
           {/* Leave button */}
           <Tooltip>
             <TooltipTrigger asChild>
-              <DisconnectButton className="flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-destructive/90 hover:bg-destructive text-destructive-foreground transition-all hover:scale-105 hover:shadow-lg border border-destructive/60 shadow-[0_0_15px_hsl(var(--destructive)/0.3)]">
-                <PhoneOff className="w-5 h-5 stroke-[1.8] drop-shadow-[0_0_3px_hsl(var(--foreground)/0.5)]" />
-                <span className="text-sm font-medium tracking-wide">Выйти</span>
+              <DisconnectButton className="flex items-center justify-center gap-2 px-3 sm:px-5 py-2 sm:py-3 rounded-full bg-destructive/90 hover:bg-destructive text-destructive-foreground transition-all hover:scale-105 hover:shadow-lg border border-destructive/60 shadow-[0_0_15px_hsl(var(--destructive)/0.3)]">
+                <PhoneOff className="w-4 h-4 sm:w-5 sm:h-5 stroke-[1.8] drop-shadow-[0_0_3px_hsl(var(--foreground)/0.5)]" />
+                <span className="text-xs sm:text-sm font-medium tracking-wide">Выйти</span>
               </DisconnectButton>
             </TooltipTrigger>
             <TooltipContent side="top" className="bg-background/80 border-border/20">

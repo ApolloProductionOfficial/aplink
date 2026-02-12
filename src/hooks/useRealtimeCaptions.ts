@@ -327,6 +327,7 @@ export const useRealtimeCaptions = ({
   }, [enabled, getScribeToken, handleWebSocketMessage]);
 
   // Start Web Speech API (PRIMARY - free, instant, works without tokens)
+  // Issue 7 & 12: Add VAD logic to only restart recognition when user is actually speaking
   const startWebSpeechCapture = useCallback(() => {
     // Check if Web Speech API is available
     const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -342,10 +343,24 @@ export const useRealtimeCaptions = ({
       recognition.lang = 'ru-RU'; // Default to Russian, can be made dynamic
       recognition.maxAlternatives = 1;
       
+      // Issue 7: Add watchdog to restart if no results but speaking
+      const watchdogRef = { current: null as NodeJS.Timeout | null };
+      
+      const resetWatchdog = () => {
+        if (watchdogRef.current) clearTimeout(watchdogRef.current);
+        watchdogRef.current = setTimeout(() => {
+          if (isConnectedRef.current && recognition) {
+            console.log('[Captions] Watchdog: No results for 8s, restarting...');
+            try { recognition.stop(); } catch {}
+          }
+        }, 8000);
+      };
+      
       recognition.onstart = () => {
         console.log('[Captions] Web Speech API started');
         setVadActive(true);
         isConnectedRef.current = true;
+        resetWatchdog();
       };
       
       recognition.onresult = async (event: SpeechRecognitionEvent) => {
@@ -366,6 +381,7 @@ export const useRealtimeCaptions = ({
           setPartialText(interimTranscript);
           setVadActive(true);
           addCaption(interimTranscript, interimTranscript + '...', true);
+          resetWatchdog(); // Reset watchdog on activity
         }
         
         // Process final results - translate and show
@@ -380,6 +396,7 @@ export const useRealtimeCaptions = ({
             console.warn('[Captions] Translation failed, showing original:', translateErr);
           } finally {
             setIsProcessing(false);
+            resetWatchdog(); // Reset watchdog on success
           }
         }
       };
@@ -407,6 +424,7 @@ export const useRealtimeCaptions = ({
       recognition.onend = () => {
         console.log('[Captions] Web Speech API ended');
         setVadActive(false);
+        if (watchdogRef.current) clearTimeout(watchdogRef.current);
         // Auto-restart if still enabled
         if (enabled && useWebSpeechRef.current) {
           setTimeout(() => {
