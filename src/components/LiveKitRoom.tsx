@@ -1086,6 +1086,7 @@ function LiveKitContent({
   // Issue 4 FIX: Single merged screen share layout effect with 500ms debounce
   // Prevents flicker from rapid layout toggles when screen share starts/stops
   const screenShareDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const prevScreenShareRef = useRef(false);
   
   useEffect(() => {
     // Check if anyone is screen sharing (remote or local)
