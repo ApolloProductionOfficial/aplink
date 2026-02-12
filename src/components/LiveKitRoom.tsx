@@ -1174,15 +1174,14 @@ function LiveKitContent({
           }
         }
         
-        // Auto-open drawing overlay when another participant opens it
+        // Drawing overlay is personal - do NOT auto-open for other participants
+        // Only show a notification that someone is drawing
         if (message.type === 'DRAWING_OVERLAY_OPEN' && message.sender !== participantName) {
-          if (!showDrawingOverlay) {
-            setShowDrawingOverlay(true);
-            toast.info(`${message.sender} включил рисование на экране`, {
-              description: 'Все видят его рисунки',
-              duration: 3000,
-            });
-          }
+          console.log('[LiveKitRoom] Remote participant opened drawing overlay (local-only):', message.sender);
+          toast.info(`${message.sender} рисует на экране`, {
+            description: 'Рисунки видны всем участникам',
+            duration: 3000,
+          });
         }
         
         // Close whiteboard when all participants close it

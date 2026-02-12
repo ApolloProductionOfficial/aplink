@@ -238,6 +238,25 @@ Rules:
     if (!translateResponse.ok) {
       const errorText = await translateResponse.text();
       console.error("Translation error:", translateResponse.status, errorText);
+      
+      // If credits exhausted (402), return proper status so client can fall back
+      if (translateResponse.status === 402) {
+        console.log("AI credits exhausted, signaling browser fallback");
+        return new Response(
+          JSON.stringify({
+            error: "AI credits exhausted",
+            useBrowserTranslation: true,
+            originalText,
+            detectedLanguage,
+            targetLanguage,
+          }),
+          { 
+            status: 402,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+      
       throw new Error(`Translation failed: ${translateResponse.status}`);
     }
 

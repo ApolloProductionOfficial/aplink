@@ -578,9 +578,30 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
         }
       );
 
-      if (!response.ok) throw new Error(`Translation failed: ${response.status}`);
-
       const result = await response.json();
+      
+      // Handle 402 - AI credits exhausted, use browser translation fallback
+      if (response.status === 402 && result.useBrowserTranslation) {
+        console.log('AI credits exhausted, using browser TTS fallback');
+        toast.warning('Перевод временно недоступен (лимит кредитов). Используется браузерный перевод.', { id: 'credit-limit', duration: 8000 });
+        
+        if (result.originalText && 'speechSynthesis' in window) {
+          // We have the transcribed text but no translation - speak original text
+          const entry: TranslationEntry = {
+            id: Date.now().toString(),
+            originalText: result.originalText,
+            translatedText: result.originalText + ' ⚠️',
+            timestamp: new Date(),
+            sourceLanguage: myLanguage,
+            targetLanguage: targetLang,
+            direction: 'outgoing',
+          };
+          setTranslations(prev => [...prev.slice(-19), entry]);
+        }
+        return;
+      }
+      
+      if (!response.ok) throw new Error(`Translation failed: ${response.status}`);
       
       if (result.translatedText && result.translatedText.trim()) {
         // Auto-detect partner's language from our translation target

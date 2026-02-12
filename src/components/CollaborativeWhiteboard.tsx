@@ -701,7 +701,8 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setWindowMaximized(prev => !prev)}
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => { e.stopPropagation(); setWindowMaximized(prev => !prev); }}
               className="w-7 h-7 rounded-full hover:bg-white/10"
             >
               {windowMaximized ? (
@@ -714,7 +715,8 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
             <Button
               variant="ghost"
               size="icon"
-              onClick={onClose}
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => { e.stopPropagation(); onClose(); }}
               className="w-7 h-7 rounded-full hover:bg-destructive/20"
             >
               <X className="w-4 h-4 text-white/70" />
