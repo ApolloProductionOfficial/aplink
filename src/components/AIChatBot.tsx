@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useScrollVisibility } from "@/hooks/useScrollVisibility";
 import { useNavigate } from "react-router-dom";
+import { useAIModelSettings } from "@/hooks/useAIModelSettings";
 import OscarWelcome from "./OscarWelcome";
 
 interface Message {
@@ -25,6 +26,7 @@ const AIChatBot = () => {
   const chatWindowRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const { t, language } = useTranslation();
+  const { config: aiConfig } = useAIModelSettings();
   const navigate = useNavigate();
   
   // Use scroll visibility hook - mobile only, hide during scroll
@@ -85,7 +87,7 @@ const AIChatBot = () => {
 
     try {
       const { data, error } = await supabase.functions.invoke('ai-chat', {
-        body: { messages: [...messages, userMessage] }
+        body: { messages: [...messages, userMessage], provider: aiConfig.provider, model: aiConfig.model }
       });
 
       if (error) throw error;

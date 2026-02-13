@@ -12,24 +12,43 @@ serve(async (req) => {
   }
 
   try {
-    const { roomId, roomName, transcript, participants, userId, durationSeconds, recordingUrl } = await req.json();
+    const { roomId, roomName, transcript, participants, userId, durationSeconds, recordingUrl, provider, model } = await req.json();
     
-    console.log('Summarizing meeting:', { roomId, roomName, transcriptLength: transcript?.length, userId, durationSeconds });
+    console.log('Summarizing meeting:', { roomId, roomName, transcriptLength: transcript?.length, userId, durationSeconds, provider, model });
     
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY is not configured');
+    // Determine AI provider
+    const useProvider = provider || 'lovable';
+    const useModel = model || 'google/gemini-2.5-flash';
+
+    let apiUrl: string;
+    let apiKey: string;
+
+    if (useProvider === 'openrouter') {
+      const key = Deno.env.get('OPENROUTER_API_KEY');
+      if (!key) throw new Error('OPENROUTER_API_KEY is not configured');
+      apiUrl = 'https://openrouter.ai/api/v1/chat/completions';
+      apiKey = key;
+    } else {
+      const key = Deno.env.get('LOVABLE_API_KEY');
+      if (!key) throw new Error('LOVABLE_API_KEY is not configured');
+      apiUrl = 'https://ai.gateway.lovable.dev/v1/chat/completions';
+      apiKey = key;
+    }
+
+    const headers: Record<string, string> = {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    };
+    if (useProvider === 'openrouter') {
+      headers['HTTP-Referer'] = 'https://aplink.lovable.app';
+      headers['X-Title'] = 'APLink by Apollo Production';
     }
     
-    // Generate summary using Lovable AI
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const aiResponse = await fetch(apiUrl, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: useModel,
         messages: [
           {
             role: 'system',
@@ -67,31 +86,18 @@ Respond in the same language as the transcript. If unsure, use Russian.`
     const aiData = await aiResponse.json();
     const content = aiData.choices?.[0]?.message?.content || '';
     
-    console.log('AI response:', content);
-    
     // Parse AI response
     let parsedContent;
     try {
-      // Try to extract JSON from the response
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         parsedContent = JSON.parse(jsonMatch[0]);
       } else {
-        parsedContent = {
-          summary: content,
-          keyPoints: [],
-          actionItems: [],
-          decisions: []
-        };
+        parsedContent = { summary: content, keyPoints: [], actionItems: [], decisions: [] };
       }
     } catch (e) {
       console.error('Parse error:', e);
-      parsedContent = {
-        summary: content,
-        keyPoints: [],
-        actionItems: [],
-        decisions: []
-      };
+      parsedContent = { summary: content, keyPoints: [], actionItems: [], decisions: [] };
     }
     
     // Save to database
