@@ -1,10 +1,11 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 const RECORDING_STORAGE_KEY = 'meeting-recording-backup';
 
 interface UseAudioRecorderReturn {
   isRecording: boolean;
-  startRecording: () => Promise<void>;
+  startRecording: (roomId?: string) => Promise<void>;
   stopRecording: () => Promise<Blob | null>;
   getAudioBlob: () => Blob | null;
   getRecoveredRecording: () => Blob | null;
@@ -45,6 +46,12 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
   const isStoppingRef = useRef(false);
   const backupIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const recoveredBlobRef = useRef<Blob | null>(null);
+  
+  // Server-side chunk upload refs
+  const roomIdRef = useRef<string | null>(null);
+  const chunkIndexRef = useRef(0);
+  const serverUploadIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const lastUploadedSizeRef = useRef(0);
 
   // Check for recovered recording on mount
   useEffect(() => {
@@ -120,12 +127,45 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
     console.log('Recording backup cleared');
   }, []);
 
-  const startRecording = useCallback(async () => {
+  // Upload current recording chunk to server storage
+  const uploadChunkToServer = useCallback(async () => {
+    const currentRoomId = roomIdRef.current;
+    if (!currentRoomId) return;
+    
+    const blob = createBlobFromChunks();
+    if (!blob || blob.size <= lastUploadedSizeRef.current) return; // No new data
+    
+    try {
+      const chunkIdx = chunkIndexRef.current++;
+      const fileName = `${currentRoomId}/chunk_${chunkIdx}_${Date.now()}.webm`;
+      
+      const { error } = await supabase.storage
+        .from('call-recordings')
+        .upload(fileName, blob, {
+          contentType: 'audio/webm',
+          upsert: true,
+        });
+      
+      if (error) {
+        console.warn('[AudioRecorder] Chunk upload failed:', error.message);
+      } else {
+        lastUploadedSizeRef.current = blob.size;
+        console.log('[AudioRecorder] Chunk uploaded to server:', fileName, 'size:', blob.size);
+      }
+    } catch (e) {
+      console.warn('[AudioRecorder] Server upload error:', e);
+    }
+  }, [createBlobFromChunks]);
+
+  const startRecording = useCallback(async (roomId?: string) => {
     try {
       // Reset state
       audioChunksRef.current = [];
       audioBlobRef.current = null;
       isStoppingRef.current = false;
+      roomIdRef.current = roomId || `recording_${Date.now()}`;
+      chunkIndexRef.current = 0;
+      lastUploadedSizeRef.current = 0;
       clearBackup();
 
       // Use only microphone - avoid getDisplayMedia which can cause call to exit
@@ -168,6 +208,11 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
           clearInterval(backupIntervalRef.current);
           backupIntervalRef.current = null;
         }
+        // Clear server upload interval
+        if (serverUploadIntervalRef.current) {
+          clearInterval(serverUploadIntervalRef.current);
+          serverUploadIntervalRef.current = null;
+        }
       };
 
       // Handle when user stops microphone or track ends unexpectedly
@@ -177,6 +222,7 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
           // Save current chunks before stopping
           createBlobFromChunks();
           saveBackup(); // Save backup on unexpected end
+          uploadChunkToServer(); // Upload final chunk to server
           
           if (mediaRecorderRef.current?.state === 'recording' && !isStoppingRef.current) {
             isStoppingRef.current = true;
@@ -194,15 +240,18 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
       mediaRecorder.start(500); // Collect data every 500ms for more frequent saves
       setIsRecording(true);
       
-      // Start periodic backup every 5 seconds
+      // Start periodic backup every 5 seconds (localStorage)
       backupIntervalRef.current = setInterval(saveBackup, 5000);
       
-      console.log('Microphone recording started');
+      // Start periodic server upload every 30 seconds (crash-proof)
+      serverUploadIntervalRef.current = setInterval(uploadChunkToServer, 30000);
+      
+      console.log('Microphone recording started, roomId:', roomIdRef.current);
     } catch (error) {
       console.error('Failed to start recording:', error);
       throw error;
     }
-  }, [createBlobFromChunks, saveBackup, clearBackup]);
+  }, [createBlobFromChunks, saveBackup, clearBackup, uploadChunkToServer]);
 
   const stopRecording = useCallback(async (): Promise<Blob | null> => {
     isStoppingRef.current = true;
@@ -212,6 +261,14 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
       clearInterval(backupIntervalRef.current);
       backupIntervalRef.current = null;
     }
+    // Clear server upload interval
+    if (serverUploadIntervalRef.current) {
+      clearInterval(serverUploadIntervalRef.current);
+      serverUploadIntervalRef.current = null;
+    }
+    
+    // Final upload to server
+    await uploadChunkToServer();
     
     return new Promise((resolve) => {
       // First, always try to create blob from existing chunks

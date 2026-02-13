@@ -13,10 +13,18 @@ interface UseLiveKitTranslationBroadcastReturn {
 /**
  * Hook to broadcast translated audio to other LiveKit participants
  * Uses LiveKit's data channel for reliable delivery
+ * FIX: Uses refs for room and broadcasting state to prevent stale closures
  */
 export const useLiveKitTranslationBroadcast = (room: Room | null): UseLiveKitTranslationBroadcastReturn => {
   const [isActive, setIsActive] = useState(false);
   const [isBroadcasting, setIsBroadcasting] = useState(false);
+  
+  // FIX: Use refs to prevent stale closure issues (same pattern as captions fix)
+  const roomRef = useRef<Room | null>(null);
+  const isBroadcastingRef = useRef(false);
+  
+  // Keep refs in sync
+  roomRef.current = room;
   
   // Audio context for playback
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -49,31 +57,44 @@ export const useLiveKitTranslationBroadcast = (room: Room | null): UseLiveKitTra
   const startBroadcast = useCallback(async () => {
     await initializeAudioContext();
     
-    if (!room) {
+    if (!roomRef.current) {
       console.warn('[LiveKit Broadcast] No room available');
       return;
     }
 
+    isBroadcastingRef.current = true;
     setIsBroadcasting(true);
     console.log('[LiveKit Broadcast] Started');
-  }, [room, initializeAudioContext]);
+  }, [initializeAudioContext]);
 
   // Stop broadcasting
   const stopBroadcast = useCallback(() => {
+    isBroadcastingRef.current = false;
     setIsBroadcasting(false);
     console.log('[LiveKit Broadcast] Stopped');
   }, []);
 
   // Send translation to all participants via data channel
+  // FIX: Auto-start broadcast if not yet started (lazy initialization)
   const sendTranslationToParticipants = useCallback(async (
     audioBase64: string,
     text: string,
     originalText: string,
     sourceLang: string
   ) => {
-    if (!room || !isBroadcasting) {
-      console.warn('[LiveKit Broadcast] Cannot send - not broadcasting or no room');
+    const currentRoom = roomRef.current;
+    
+    if (!currentRoom) {
+      console.warn('[LiveKit Broadcast] Cannot send - no room available');
       return;
+    }
+    
+    // FIX: Auto-start broadcast if not active (lazy initialization)
+    if (!isBroadcastingRef.current) {
+      console.log('[LiveKit Broadcast] Auto-starting broadcast for translation send');
+      await initializeAudioContext();
+      isBroadcastingRef.current = true;
+      setIsBroadcasting(true);
     }
 
     try {
@@ -83,22 +104,22 @@ export const useLiveKitTranslationBroadcast = (room: Room | null): UseLiveKitTra
         text,
         originalText,
         sourceLang,
-        senderName: room.localParticipant.name || room.localParticipant.identity,
+        senderName: currentRoom.localParticipant.name || currentRoom.localParticipant.identity,
         timestamp: Date.now(),
       });
 
       const encoder = new TextEncoder();
       const data = encoder.encode(payload);
 
-      await room.localParticipant.publishData(data, {
+      await currentRoom.localParticipant.publishData(data, {
         reliable: true,
       });
 
-      console.log('[LiveKit Broadcast] Translation sent to participants');
+      console.log('[LiveKit Broadcast] Translation sent to participants, text length:', text.length);
     } catch (error) {
       console.error('[LiveKit Broadcast] Failed to send translation:', error);
     }
-  }, [room, isBroadcasting]);
+  }, [initializeAudioContext]);
 
   // Play audio locally through mixer
   const playAudioLocally = useCallback(async (audioUrl: string) => {

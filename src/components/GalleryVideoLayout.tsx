@@ -103,12 +103,14 @@ export function GalleryVideoLayout({
               <ContextMenuTrigger asChild>
                 <div
                   className={cn(
-                    "relative rounded-2xl overflow-hidden bg-black/40 backdrop-blur-sm border transition-all duration-300 group",
+                    "relative rounded-2xl overflow-hidden bg-black/40 backdrop-blur-sm border group",
+                    "transition-all duration-500 ease-out will-change-transform",
                     isSpeaking 
-                      ? "ring-2 ring-primary ring-offset-2 ring-offset-background border-primary/50 shadow-[0_0_30px_hsl(var(--primary)/0.3)]" 
-                      : "border-white/10",
+                      ? "gallery-tile-speaking scale-[1.03] z-10 border-primary/60" 
+                      : "border-white/10 scale-[0.97] opacity-[0.88]",
+                    isSpeaking && !isPinned && "gallery-speaking-glow",
                     isPinned && "border-primary/50 ring-1 ring-primary/30",
-                    isLocal && !isPinned && "border-primary/30"
+                    isLocal && !isPinned && !isSpeaking && "border-primary/30 opacity-100 scale-100"
                   )}
                 >
                   {/* Video or placeholder */}
@@ -161,11 +163,9 @@ export function GalleryVideoLayout({
                     </button>
                   )}
 
-                  {/* Speaking indicator overlay */}
+                  {/* Speaking indicator overlay - enhanced pulse */}
                   {isSpeaking && (
-                    <div className="absolute inset-0 pointer-events-none">
-                      <div className="absolute inset-0 rounded-2xl ring-2 ring-primary/60 animate-pulse" />
-                    </div>
+                    <div className="absolute inset-0 pointer-events-none rounded-2xl gallery-speaking-pulse-ring" />
                   )}
 
                   {/* Bottom info bar */}
