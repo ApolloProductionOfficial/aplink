@@ -555,16 +555,27 @@ export function LiveKitRoom({
       };
     }
     
+    // Detect macOS for CPU optimization (VP9 decode is CPU-heavy without HW accel on Mac)
+    const isMac = typeof navigator !== 'undefined' && 
+      (/Macintosh|MacIntel/.test(navigator.platform) || /Mac OS X/.test(navigator.userAgent)) &&
+      navigator.maxTouchPoints <= 1; // Exclude iPad
+    
     // Default HD profile for desktop/modern browsers
+    // MacBook optimization: use VP8 on Mac to reduce CPU load (VP9 lacks HW decode on macOS)
+    const preferredCodec = isMac ? 'vp8' as const : 'vp9' as const;
+    const captureRes = isMac 
+      ? { width: 1280, height: 720, frameRate: 30 }  // Cap at 720p on Mac to reduce thermal
+      : { width: 1920, height: 1080, frameRate: 30 };
+    
+    if (isMac) {
+      console.log("[LiveKitRoom] macOS detected: using VP8 codec + 720p cap for thermal optimization");
+    }
+    
     return {
       adaptiveStream: true,
       dynacast: true,
       videoCaptureDefaults: {
-        resolution: {
-          width: 1920,
-          height: 1080,
-          frameRate: 30,
-        },
+        resolution: captureRes,
       },
       audioCaptureDefaults: {
         autoGainControl: true,
@@ -575,15 +586,13 @@ export function LiveKitRoom({
       },
       publishDefaults: {
         simulcast: true,
-        videoCodec: 'vp9' as const,
+        videoCodec: preferredCodec,
         backupCodec: { codec: 'h264' as const },
         dtx: true,
         red: true,
-        videoSimulcastLayers: [
-          VideoPresets.h360,
-          VideoPresets.h540,
-          VideoPresets.h1080,
-        ],
+        videoSimulcastLayers: isMac
+          ? [VideoPresets.h360, VideoPresets.h720]  // Fewer layers on Mac
+          : [VideoPresets.h360, VideoPresets.h540, VideoPresets.h1080],
       },
       // Keep tracks alive across reconnections to prevent re-negotiation failures
       stopLocalTrackOnUnpublish: false,

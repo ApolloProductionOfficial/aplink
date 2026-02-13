@@ -275,7 +275,7 @@ const MeetingRoomContent = ({ roomId, userName }: MeetingRoomContentProps) => {
 
         console.log('[MeetingRoom] Auto-starting recording for authenticated user');
         hasStartedRecordingRef.current = true;
-        await startRecording();
+        await startRecording(roomSlug);
         setRecordingDuration(0);
         recordingTimerRef.current = setInterval(() => {
           setRecordingDuration(prev => prev + 1);
@@ -297,7 +297,7 @@ const MeetingRoomContent = ({ roomId, userName }: MeetingRoomContentProps) => {
     if (!isRecordingRef.current && !hasStartedRecordingRef.current) {
       try {
         hasStartedRecordingRef.current = true;
-        await startRecording();
+        await startRecording(roomSlug);
         setRecordingDuration(0);
         recordingTimerRef.current = setInterval(() => {
           setRecordingDuration(prev => prev + 1);
@@ -644,7 +644,7 @@ const MeetingRoomContent = ({ roomId, userName }: MeetingRoomContentProps) => {
     } else {
       try {
         hasStartedRecordingRef.current = true;
-        await startRecording();
+        await startRecording(roomSlug);
         setRecordingDuration(0);
         recordingTimerRef.current = setInterval(() => {
           setRecordingDuration(prev => prev + 1);
