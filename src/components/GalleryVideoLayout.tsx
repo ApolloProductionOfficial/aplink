@@ -1,8 +1,9 @@
 import { useMemo } from 'react';
-import { Track, LocalParticipant, RemoteParticipant } from 'livekit-client';
+import { Track, LocalParticipant, RemoteParticipant, ConnectionQuality } from 'livekit-client';
 import { VideoTrack, useParticipants, useTracks } from '@livekit/components-react';
-import { User, VideoOff, Mic, MicOff, Pin } from 'lucide-react';
+import { User, VideoOff, Mic, MicOff, Pin, UserX, Signal, SignalLow, SignalMedium, SignalHigh, SignalZero } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   ContextMenu,
   ContextMenuContent,
@@ -10,8 +11,37 @@ import {
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
 
-// Connection quality indicator completely removed per user request
-// Quality info is available in CallDiagnosticsPanel
+// Signal quality indicator component
+function SignalIndicator({ quality }: { quality: ConnectionQuality }) {
+  const config = (() => {
+    switch (quality) {
+      case ConnectionQuality.Excellent:
+        return { icon: SignalHigh, color: 'text-green-400', label: 'Отличное соединение' };
+      case ConnectionQuality.Good:
+        return { icon: SignalMedium, color: 'text-green-400', label: 'Хорошее соединение' };
+      case ConnectionQuality.Poor:
+        return { icon: SignalLow, color: 'text-yellow-400', label: 'Слабое соединение' };
+      case ConnectionQuality.Lost:
+        return { icon: SignalZero, color: 'text-destructive', label: 'Соединение потеряно' };
+      default:
+        return { icon: Signal, color: 'text-muted-foreground', label: 'Неизвестно' };
+    }
+  })();
+  const Icon = config.icon;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div className="flex items-center">
+          <Icon className={cn("w-3 h-3", config.color)} />
+        </div>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="text-xs">
+        {config.label}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
 
 interface GalleryVideoLayoutProps {
   localParticipant: LocalParticipant | null;
@@ -19,6 +49,7 @@ interface GalleryVideoLayoutProps {
   speakingParticipant?: string;
   pinnedParticipant?: string;
   onPinParticipant?: (identity: string | null) => void;
+  onKickParticipant?: (identity: string) => void;
 }
 
 /**
@@ -26,8 +57,8 @@ interface GalleryVideoLayoutProps {
  * - All participants displayed in equal-sized tiles
  * - Adaptive grid: 2 cols for 2-4, 3 cols for 5-9, 4 cols for 10+
  * - Speaking indicator (pulsing border)
- * - Local participant included in grid with "Вы" label
- * - Pin participant with context menu or hover button
+ * - Signal quality indicator next to mic
+ * - Kick participant via context menu
  */
 export function GalleryVideoLayout({ 
   localParticipant, 
@@ -35,6 +66,7 @@ export function GalleryVideoLayout({
   speakingParticipant,
   pinnedParticipant,
   onPinParticipant,
+  onKickParticipant,
 }: GalleryVideoLayoutProps) {
   const participants = useParticipants();
   const tracks = useTracks([
@@ -97,6 +129,7 @@ export function GalleryVideoLayout({
           const videoTrack = getVideoTrack(participant.identity);
           const hasVideo = videoTrack?.publication && !videoTrack.publication.isMuted;
           const isMuted = !participant.isMicrophoneEnabled;
+          const connectionQuality = participant.connectionQuality;
           
           return (
             <ContextMenu key={participant.identity}>
@@ -139,8 +172,6 @@ export function GalleryVideoLayout({
                       </div>
                     </div>
                   )}
-
-                  {/* Connection quality indicator REMOVED per user request */}
 
                   {/* Pin indicator */}
                   {isPinned && (
@@ -195,16 +226,19 @@ export function GalleryVideoLayout({
                         )}
                       </div>
 
-                      {/* Mic indicator */}
-                      <div className={cn(
-                        "w-6 h-6 rounded-full flex items-center justify-center",
-                        isMuted ? "bg-destructive/60" : "bg-white/20"
-                      )}>
-                        {isMuted ? (
-                          <MicOff className="w-3.5 h-3.5 text-white" />
-                        ) : (
-                          <Mic className="w-3.5 h-3.5 text-white" />
-                        )}
+                      {/* Signal + Mic indicators */}
+                      <div className="flex items-center gap-1.5">
+                        <SignalIndicator quality={connectionQuality} />
+                        <div className={cn(
+                          "w-6 h-6 rounded-full flex items-center justify-center",
+                          isMuted ? "bg-destructive/60" : "bg-white/20"
+                        )}>
+                          {isMuted ? (
+                            <MicOff className="w-3.5 h-3.5 text-white" />
+                          ) : (
+                            <Mic className="w-3.5 h-3.5 text-white" />
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -219,12 +253,23 @@ export function GalleryVideoLayout({
               </ContextMenuTrigger>
               
               {/* Context menu for non-local participants */}
-              {!isLocal && onPinParticipant && (
+              {!isLocal && (
                 <ContextMenuContent className="bg-background/95 backdrop-blur-xl border-white/10">
-                  <ContextMenuItem onClick={() => onPinParticipant(isPinned ? null : participant.identity)}>
-                    <Pin className="w-4 h-4 mr-2" />
-                    {isPinned ? 'Открепить' : 'Закрепить'}
-                  </ContextMenuItem>
+                  {onPinParticipant && (
+                    <ContextMenuItem onClick={() => onPinParticipant(isPinned ? null : participant.identity)}>
+                      <Pin className="w-4 h-4 mr-2" />
+                      {isPinned ? 'Открепить' : 'Закрепить'}
+                    </ContextMenuItem>
+                  )}
+                  {onKickParticipant && (
+                    <ContextMenuItem 
+                      onClick={() => onKickParticipant(participant.identity)}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <UserX className="w-4 h-4 mr-2" />
+                      Удалить из звонка
+                    </ContextMenuItem>
+                  )}
                 </ContextMenuContent>
               )}
             </ContextMenu>

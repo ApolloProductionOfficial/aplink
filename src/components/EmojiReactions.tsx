@@ -137,6 +137,73 @@ const CUSTOM_REACTIONS: CustomReaction[] = [
     glowColor: 'rgba(129, 140, 248, 0.6)'
   },
   {
+    id: 'cherry',
+    label: 'Вишенка',
+    svg: (
+      <svg viewBox="0 0 48 48" className="w-full h-full">
+        <defs>
+          <linearGradient id="cherry-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#ff1744"/>
+            <stop offset="100%" stopColor="#c51162"/>
+          </linearGradient>
+        </defs>
+        <circle cx="18" cy="32" r="10" fill="url(#cherry-grad)"/>
+        <circle cx="32" cy="34" r="9" fill="url(#cherry-grad)"/>
+        <ellipse cx="15" cy="28" rx="4" ry="5" fill="#ff5252" opacity="0.3"/>
+        <path d="M18 22 Q20 10 28 6 M32 25 Q30 12 28 6" stroke="#4ade80" strokeWidth="2" fill="none" strokeLinecap="round"/>
+        <ellipse cx="28" cy="6" rx="4" ry="2.5" fill="#4ade80" opacity="0.8"/>
+      </svg>
+    ),
+    glowColor: 'rgba(255, 23, 68, 0.6)',
+  },
+  {
+    id: 'hot_pepper',
+    label: 'Перчик',
+    svg: (
+      <svg viewBox="0 0 48 48" className="w-full h-full">
+        <defs>
+          <linearGradient id="pepper-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#ff1744"/>
+            <stop offset="50%" stopColor="#ff5722"/>
+            <stop offset="100%" stopColor="#ff9100"/>
+          </linearGradient>
+        </defs>
+        <path d="M24 8 C18 8 12 14 10 22 C8 30 10 38 16 42 C20 44 24 42 26 38 C28 34 30 28 32 22 C34 16 30 8 24 8" 
+              fill="url(#pepper-grad)"/>
+        <path d="M24 8 Q26 4 24 2 M24 8 Q22 4 20 3" stroke="#4ade80" strokeWidth="2" fill="none" strokeLinecap="round"/>
+        <path d="M16 20 C18 18 20 20 22 24" stroke="#ffcc00" strokeWidth="1.5" fill="none" opacity="0.4"/>
+      </svg>
+    ),
+    glowColor: 'rgba(255, 87, 34, 0.7)',
+  },
+  {
+    id: 'wink',
+    label: 'Подмигивание',
+    svg: (
+      <svg viewBox="0 0 48 48" className="w-full h-full">
+        <circle cx="24" cy="24" r="20" fill="#ffd600" stroke="#ffab00" strokeWidth="1"/>
+        <circle cx="16" cy="20" r="3" fill="#5d4037"/>
+        <path d="M30 18 L34 22" stroke="#5d4037" strokeWidth="2.5" strokeLinecap="round"/>
+        <path d="M16 32 Q24 40 32 32" stroke="#5d4037" strokeWidth="2" fill="none" strokeLinecap="round"/>
+      </svg>
+    ),
+    glowColor: 'rgba(255, 214, 0, 0.6)',
+  },
+  {
+    id: 'tongue',
+    label: 'Язычок',
+    svg: (
+      <svg viewBox="0 0 48 48" className="w-full h-full">
+        <circle cx="24" cy="24" r="20" fill="#ffd600" stroke="#ffab00" strokeWidth="1"/>
+        <circle cx="16" cy="20" r="3" fill="#5d4037"/>
+        <circle cx="32" cy="20" r="3" fill="#5d4037"/>
+        <path d="M16 32 Q24 38 32 32" stroke="#5d4037" strokeWidth="2" fill="none"/>
+        <path d="M20 34 Q24 44 28 34" fill="#ff5252"/>
+      </svg>
+    ),
+    glowColor: 'rgba(255, 82, 82, 0.6)',
+  },
+  {
     id: 'crown',
     label: 'Корона',
     svg: (

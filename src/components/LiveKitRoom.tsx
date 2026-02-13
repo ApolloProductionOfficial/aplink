@@ -899,8 +899,8 @@ function LiveKitContent({
   // Touch-to-show panels on mobile
   const lastTouchRef = useRef<number>(Date.now());
   
-  // Track speaking participant for indicators
-  const speakingParticipant = useMemo(() => undefined as string | undefined, []);
+  // Track speaking participant for indicators (hook kept for order stability)
+  const _speakingHookPlaceholder = useMemo(() => undefined as string | undefined, []);
   
   // Track if gallery mode was suggested
   const galleryModeSuggestedRef = useRef(false);
@@ -1133,6 +1133,9 @@ function LiveKitContent({
       room.off(RoomEvent.ActiveSpeakersChanged, handleActiveSpeakerChange);
     };
   }, [room]);
+  
+  // CRITICAL FIX: Use actual speaking state instead of hardcoded undefined
+  const speakingParticipant = speakingParticipantState;
   
   // Issue 5: Sync refs for stable closure access in data handler
   useEffect(() => { showWhiteboardRef.current = showWhiteboard; }, [showWhiteboard]);
@@ -1463,8 +1466,19 @@ function LiveKitContent({
         // Mobile: keep a single published mic track; toggle via mute/unmute to avoid renegotiation.
         if (micPublication?.track) {
           if (micPublication.isMuted) {
-            await micPublication.unmute();
-            console.log('[LiveKitRoom] Mobile: Microphone unmuted');
+            try {
+              await micPublication.unmute();
+              console.log('[LiveKitRoom] Mobile: Microphone unmuted');
+            } catch (unmuteErr) {
+              console.warn('[LiveKitRoom] Mobile: unmute() failed, fallback to setMicrophoneEnabled:', unmuteErr);
+              try {
+                await localParticipant?.setMicrophoneEnabled(true);
+                console.log('[LiveKitRoom] Mobile: Microphone enabled via setMicrophoneEnabled fallback');
+              } catch (fallbackErr: any) {
+                console.error('[LiveKitRoom] Mobile: All mic enable methods failed:', fallbackErr);
+                toast.error('Не удалось включить микрофон', { description: 'Попробуйте перезагрузить страницу' });
+              }
+            }
           } else {
             await micPublication.mute();
             console.log('[LiveKitRoom] Mobile: Microphone muted');
@@ -2213,6 +2227,18 @@ function LiveKitContent({
             speakingParticipant={speakingParticipant}
             pinnedParticipant={pinnedParticipant}
             onPinParticipant={handlePinParticipant}
+            onKickParticipant={async (identity: string) => {
+              try {
+                const { data, error } = await supabase.functions.invoke('kick-participant', {
+                  body: { roomName, participantIdentity: identity },
+                });
+                if (error) throw error;
+                toast.success(`Участник ${identity} удалён из звонка`);
+              } catch (err: any) {
+                console.error('[LiveKitRoom] Kick failed:', err);
+                toast.error('Не удалось удалить участника');
+              }
+            }}
           />
         ) : layoutMode === 'gallery' ? (
           <GalleryVideoLayout
@@ -2221,6 +2247,18 @@ function LiveKitContent({
             speakingParticipant={speakingParticipant}
             pinnedParticipant={pinnedParticipant}
             onPinParticipant={handlePinParticipant}
+            onKickParticipant={async (identity: string) => {
+              try {
+                const { data, error } = await supabase.functions.invoke('kick-participant', {
+                  body: { roomName, participantIdentity: identity },
+                });
+                if (error) throw error;
+                toast.success(`Участник ${identity} удалён из звонка`);
+              } catch (err: any) {
+                console.error('[LiveKitRoom] Kick failed:', err);
+                toast.error('Не удалось удалить участника');
+              }
+            }}
           />
         ) : (
           <WebinarVideoLayout
