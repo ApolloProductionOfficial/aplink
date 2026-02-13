@@ -185,6 +185,15 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
     activeRoomSlugRef.current = null;
     setState(defaultState);
     setForceReconnectKey(0);
+    // Clear chat sessionStorage
+    try {
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i);
+        if (key?.startsWith('aplink-chat-')) keysToRemove.push(key);
+      }
+      keysToRemove.forEach(k => sessionStorage.removeItem(k));
+    } catch {}
   }, []);
 
   const minimize = useCallback(() => {

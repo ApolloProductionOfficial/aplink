@@ -643,12 +643,13 @@ export const useRealtimeCaptions = ({
         silenceTimeoutRef.current = null;
       }
 
-      if (enabled) {
-        requestAnimationFrame(checkVoiceActivity);
-      }
+      // VAD check continues via setInterval (set up below)
     };
 
-    checkVoiceActivity();
+    // Use setInterval at 100ms (10 checks/sec) instead of rAF (60fps) to reduce CPU
+    const vadInterval = setInterval(checkVoiceActivity, 100);
+    
+    return () => clearInterval(vadInterval);
   }, [enabled]);
 
   // Store ref for startFallbackVAD so it can be called from startRealtimeCapture

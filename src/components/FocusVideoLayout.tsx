@@ -1,7 +1,7 @@
 import { useMemo, useState, useCallback } from 'react';
 import { Track, LocalParticipant, RemoteParticipant, ConnectionQuality } from 'livekit-client';
 import { VideoTrack, useParticipants, useTracks, TrackReferenceOrPlaceholder } from '@livekit/components-react';
-import { User, VideoOff, Mic, MicOff, Pin, UserX, Signal, SignalLow, SignalMedium, SignalHigh, SignalZero } from 'lucide-react';
+import { User, VideoOff, Mic, MicOff, Pin, UserX, Signal, SignalLow, SignalMedium, SignalHigh, SignalZero, Presentation } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DraggablePiP } from '@/components/DraggablePiP';
 import { useAudioLevelMeter } from '@/hooks/useAudioLevelMeter';
@@ -147,18 +147,30 @@ export function FocusVideoLayout({
     // Only render if we have a valid publication
     if (!screenTrack.publication) return null;
     
+    const isLocalScreenShare = screenTrack.participant.isLocal;
+    
     return (
       <div className="relative h-full w-full">
-        {/* Full screen share */}
+        {/* Full screen share - show placeholder for local to prevent recursive mirror */}
         <div className="absolute inset-0 bg-black">
-          <VideoTrack
-            trackRef={{
-              participant: screenTrack.participant,
-              source: screenTrack.source,
-              publication: screenTrack.publication,
-            }}
-            className="w-full h-full object-contain"
-          />
+          {isLocalScreenShare ? (
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-background">
+              <div className="flex flex-col items-center gap-4 text-center">
+                <Presentation className="w-16 h-16 text-primary/60" />
+                <div className="text-xl font-medium text-foreground">Вы демонстрируете экран</div>
+                <div className="text-sm text-muted-foreground">Другие участники видят ваш экран</div>
+              </div>
+            </div>
+          ) : (
+            <VideoTrack
+              trackRef={{
+                participant: screenTrack.participant,
+                source: screenTrack.source,
+                publication: screenTrack.publication,
+              }}
+              className="w-full h-full object-contain"
+            />
+          )}
         </div>
 
         {/* Participants strip on the right */}

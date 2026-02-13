@@ -1637,13 +1637,16 @@ function LiveKitContent({
     try {
       setIsProcessingBackground(true);
       const track = localParticipant?.getTrackPublication(Track.Source.Camera)?.track;
-      if (track) {
-        const processor = BackgroundBlur(intensity);
-        await track.setProcessor(processor);
-        setCurrentBackground(intensity <= 5 ? 'blur-light' : 'blur-strong');
+      if (!track) {
+        toast.error('Камера не активна — включите камеру перед применением фона');
+        return;
       }
-    } catch (err) {
+      const processor = BackgroundBlur(intensity);
+      await track.setProcessor(processor);
+      setCurrentBackground(intensity <= 5 ? 'blur-light' : 'blur-strong');
+    } catch (err: any) {
       console.error('Failed to apply blur background:', err);
+      toast.error(`Не удалось применить размытие: ${err?.message || 'WebGL не поддерживается'}`);
     } finally {
       setIsProcessingBackground(false);
     }
@@ -1653,13 +1656,16 @@ function LiveKitContent({
     try {
       setIsProcessingBackground(true);
       const track = localParticipant?.getTrackPublication(Track.Source.Camera)?.track;
-      if (track) {
-        const processor = VirtualBackground(imageUrl);
-        await track.setProcessor(processor);
-        setCurrentBackground('image');
+      if (!track) {
+        toast.error('Камера не активна — включите камеру перед применением фона');
+        return;
       }
-    } catch (err) {
+      const processor = VirtualBackground(imageUrl);
+      await track.setProcessor(processor);
+      setCurrentBackground('image');
+    } catch (err: any) {
       console.error('Failed to apply image background:', err);
+      toast.error(`Не удалось применить виртуальный фон: ${err?.message || 'WebGL не поддерживается'}`);
     } finally {
       setIsProcessingBackground(false);
     }
@@ -2057,9 +2063,6 @@ function LiveKitContent({
       // Add to new participants for animation
       setNewParticipants(prev => new Set(prev).add(participant.identity));
       
-      // Voice notification
-      announceParticipantJoined(participant.name || participant.identity);
-      
       // Remove animation class after animation completes
       setTimeout(() => {
         setNewParticipants(prev => {
@@ -2074,7 +2077,6 @@ function LiveKitContent({
 
     const handleParticipantDisconnected = (participant: RemoteParticipant) => {
       console.log("[LiveKitRoom] Participant left:", participant.identity);
-      announceParticipantLeft(participant.name || participant.identity);
       onParticipantLeft?.(participant.identity);
     };
 
