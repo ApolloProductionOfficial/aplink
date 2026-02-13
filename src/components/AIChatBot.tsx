@@ -26,7 +26,7 @@ const AIChatBot = () => {
   const chatWindowRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const { t, language } = useTranslation();
-  const { config: aiConfig } = useAIModelSettings();
+  const { getModelForTask } = useAIModelSettings();
   const navigate = useNavigate();
   
   // Use scroll visibility hook - mobile only, hide during scroll
@@ -86,8 +86,9 @@ const AIChatBot = () => {
     setIsLoading(true);
 
     try {
+      const chatModel = getModelForTask('chat');
       const { data, error } = await supabase.functions.invoke('ai-chat', {
-        body: { messages: [...messages, userMessage], provider: aiConfig.provider, model: aiConfig.model }
+        body: { messages: [...messages, userMessage], provider: chatModel.provider, model: chatModel.model }
       });
 
       if (error) throw error;
