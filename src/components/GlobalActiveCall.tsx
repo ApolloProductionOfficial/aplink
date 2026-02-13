@@ -146,17 +146,28 @@ export function GlobalActiveCall() {
     wasMinimizedRef.current = isMinimized;
   }, [isActive, isMinimized]);
 
-  // Browser TTS fallback for mobile
+  // Browser TTS fallback for mobile - with user gesture queue
+  const pendingAudioRef = useRef<Array<{ text: string; lang: string }>>([]);
+  const audioUnlockedRef = useRef(false);
+  
   const speakWithBrowserTTS = useCallback((text: string, lang: string) => {
     if (!('speechSynthesis' in window) || !text) return;
+    
+    // On mobile, audio might need a user gesture first
+    if (!audioUnlockedRef.current) {
+      // Queue for later playback
+      pendingAudioRef.current.push({ text, lang });
+      console.log('[GlobalActiveCall] Audio queued (awaiting user gesture)');
+      // Try anyway — some browsers allow it
+    }
     
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = lang || 'en';
     utterance.rate = 1.1;
     utterance.volume = 1.0;
+    utterance.onstart = () => { audioUnlockedRef.current = true; };
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(utterance);
-    console.log('[GlobalActiveCall] Browser TTS fallback used');
   }, []);
 
   // Handle incoming translation data from other participants
@@ -171,7 +182,7 @@ export function GlobalActiveCall() {
         if (message.type === 'translation_audio') {
           console.log('[GlobalActiveCall] Received translation from:', message.senderName);
           
-          // Issue 8: Store in translation history
+          // Store in translation history
           addTranslationEntry({
             senderName: message.senderName || 'Unknown',
             originalText: message.originalText || '',
@@ -180,8 +191,11 @@ export function GlobalActiveCall() {
             timestamp: message.timestamp || Date.now(),
           });
           
-          // Auto-show translation history panel
+          // Issue 13: Auto-open translator panel AND translation history on mobile
           setShowTranslationHistory(true);
+          if (!showTranslator) {
+            setShowTranslator(true);
+          }
           
           const hasAudio = message.audioBase64 && message.audioBase64.length > 0;
           
@@ -213,7 +227,7 @@ export function GlobalActiveCall() {
     return () => {
       liveKitRoom.off(RoomEvent.DataReceived, handleDataReceived);
     };
-  }, [liveKitRoom, playTranslatedAudio, speakWithBrowserTTS, addTranslationEntry, setShowTranslationHistory]);
+  }, [liveKitRoom, playTranslatedAudio, speakWithBrowserTTS, addTranslationEntry, setShowTranslationHistory, showTranslator, setShowTranslator]);
   
   // Start/stop broadcast when translator is toggled
   useEffect(() => {
