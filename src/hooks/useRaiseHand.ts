@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { Room, RoomEvent } from 'livekit-client';
+import { useDataChannelMessage } from '@/hooks/useDataChannel';
 
 interface RaisedHand {
   participantIdentity: string;
@@ -73,51 +74,32 @@ export const useRaiseHand = (
     console.log('[RaiseHand] Sent hand state:', raised);
   }, [room, participantName]);
 
-  // Handle incoming hand messages
-  useEffect(() => {
-    if (!room) return;
+  // Handle incoming hand messages via centralized data channel
+  useDataChannelMessage(room, HAND_MESSAGE_TYPE, useCallback((message: any) => {
+    const { participantIdentity, participantName: name, raised } = message;
 
-    const handleDataReceived = (payload: Uint8Array, participant: any) => {
-      try {
-        const decoder = new TextDecoder();
-        const message = JSON.parse(decoder.decode(payload));
-
-        if (message.type === HAND_MESSAGE_TYPE) {
-          const { participantIdentity, participantName: name, raised } = message;
-
-          setRaisedHands((prev) => {
-            const next = new Map(prev);
-            
-            if (raised) {
-              next.set(participantIdentity, {
-                participantIdentity,
-                participantName: name,
-                raisedAt: Date.now(),
-              });
-              // Play sound for others' raised hands
-              if (participantIdentity !== room.localParticipant?.identity) {
-                playHandSound();
-              }
-            } else {
-              next.delete(participantIdentity);
-            }
-            
-            return next;
-          });
-
-          console.log('[RaiseHand] Received hand state:', name, raised);
+    setRaisedHands((prev) => {
+      const next = new Map(prev);
+      
+      if (raised) {
+        next.set(participantIdentity, {
+          participantIdentity,
+          participantName: name,
+          raisedAt: Date.now(),
+        });
+        // Play sound for others' raised hands
+        if (participantIdentity !== room?.localParticipant?.identity) {
+          playHandSound();
         }
-      } catch {
-        // Not a hand message
+      } else {
+        next.delete(participantIdentity);
       }
-    };
+      
+      return next;
+    });
 
-    room.on(RoomEvent.DataReceived, handleDataReceived);
-
-    return () => {
-      room.off(RoomEvent.DataReceived, handleDataReceived);
-    };
-  }, [room, playHandSound]);
+    console.log('[RaiseHand] Received hand state:', name, raised);
+  }, [room, playHandSound]));
 
   // Clean up audio context
   useEffect(() => {

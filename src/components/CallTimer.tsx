@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Room, RoomEvent } from 'livekit-client';
+import { useDataChannelMessage } from '@/hooks/useDataChannel';
 import { Timer, Play, Pause, X, GripHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -227,35 +228,26 @@ export function CallTimer({ room, isHost = true }: CallTimerProps) {
   }, [room]);
 
   // Listen for timer events from other participants
-  useEffect(() => {
-    if (!room) return;
-
-    const handleData = (payload: Uint8Array) => {
-      try {
-        const message = JSON.parse(new TextDecoder().decode(payload));
-        if (message.type?.startsWith('TIMER_')) {
-          setTimerState({
-            endTime: message.endTime,
-            duration: message.duration,
-            isPaused: message.isPaused,
-            pausedAt: message.pausedAt,
-          });
-          
-          if (message.type === 'TIMER_START' || message.type === 'TIMER_RESUME') {
-            const remaining = Math.max(0, Math.ceil((message.endTime - Date.now()) / 1000));
-            setRemainingSeconds(remaining);
-          } else if (message.type === 'TIMER_PAUSE') {
-            setRemainingSeconds(message.pausedAt || 0);
-          } else if (message.type === 'TIMER_RESET') {
-            setRemainingSeconds(0);
-          }
-        }
-      } catch {}
-    };
-
-    room.on(RoomEvent.DataReceived, handleData);
-    return () => { room.off(RoomEvent.DataReceived, handleData); };
-  }, [room]);
+  // Listen for timer sync via centralized data channel
+  useDataChannelMessage(room, 'TIMER_*', useCallback((message: any) => {
+    if (message.type?.startsWith('TIMER_')) {
+      setTimerState({
+        endTime: message.endTime,
+        duration: message.duration,
+        isPaused: message.isPaused,
+        pausedAt: message.pausedAt,
+      });
+      
+      if (message.type === 'TIMER_START' || message.type === 'TIMER_RESUME') {
+        const remaining = Math.max(0, Math.ceil((message.endTime - Date.now()) / 1000));
+        setRemainingSeconds(remaining);
+      } else if (message.type === 'TIMER_PAUSE') {
+        setRemainingSeconds(message.pausedAt || 0);
+      } else if (message.type === 'TIMER_RESET') {
+        setRemainingSeconds(0);
+      }
+    }
+  }, []));
 
   // --- TIMER CONTROLS ---
   const startTimer = useCallback((seconds: number) => {

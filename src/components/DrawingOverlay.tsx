@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Room, RoomEvent } from 'livekit-client';
+import { useDataChannelMessage } from '@/hooks/useDataChannel';
 import { Pencil, Eraser, Trash2, X, Circle, Minus, MoveRight, Square, Undo2, Download, Crosshair, Video, Pause, Play, Square as StopIcon, MonitorUp } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
@@ -798,61 +799,43 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose, onCanva
     pendingShapesRef.current = [];
   }, [isOpen, drawStroke, drawShape]);
 
-  // Listen for incoming data - ALWAYS listen when room exists
-  // CRITICAL FIX: Remove isOpen condition so we receive data even when closed
-  useEffect(() => {
-    if (!room) return;
-
-    const handleData = (payload: Uint8Array) => {
-      try {
-        const message = JSON.parse(new TextDecoder().decode(payload));
-        
-        if (message.sender === participantName) return; // Ignore own messages
-        
-        if (message.type === 'DRAWING_OVERLAY_STROKE') {
-          if (isOpen && contextRef.current) {
-            drawStroke(message.stroke);
-            // CRITICAL FIX: Update baseImageDataRef after remote stroke so laser doesn't erase it
-            if (isLaserActiveRef.current && canvasRef.current && contextRef.current) {
-              baseImageDataRef.current = contextRef.current.getImageData(0, 0, canvasRef.current.width, canvasRef.current.height);
-            }
-          } else {
-            // Store for later when overlay opens
-            pendingStrokesRef.current.push(message.stroke);
-          }
-        } else if (message.type === 'DRAWING_OVERLAY_SHAPE') {
-          if (isOpen && contextRef.current) {
-            drawShape(message.shape);
-          } else {
-            pendingShapesRef.current.push(message.shape);
-          }
-        } else if (message.type === 'DRAWING_OVERLAY_CLEAR') {
-          if (isOpen) {
-            const canvas = canvasRef.current;
-            const ctx = contextRef.current;
-            if (canvas && ctx) {
-              ctx.clearRect(0, 0, canvas.width, canvas.height);
-            }
-          } else {
-            // Mark pending clear and discard any pending strokes/shapes
-            pendingClearRef.current = true;
-            pendingStrokesRef.current = [];
-            pendingShapesRef.current = [];
-          }
-        } else if (message.type === 'DRAWING_OVERLAY_LASER') {
-          // Only process laser if overlay is open and using laser tool
-          if (isOpen && toolRef.current === 'laser') {
-            laserPointsRef.current.push(message.point);
-          }
+  // Listen for incoming drawing data via centralized data channel
+  useDataChannelMessage(room, ['DRAWING_OVERLAY_STROKE', 'DRAWING_OVERLAY_SHAPE', 'DRAWING_OVERLAY_CLEAR', 'DRAWING_OVERLAY_LASER'], useCallback((message: any) => {
+    if (message.sender === participantName) return;
+    
+    if (message.type === 'DRAWING_OVERLAY_STROKE') {
+      if (isOpen && contextRef.current) {
+        drawStroke(message.stroke);
+        if (isLaserActiveRef.current && canvasRef.current && contextRef.current) {
+          baseImageDataRef.current = contextRef.current.getImageData(0, 0, canvasRef.current.width, canvasRef.current.height);
         }
-      } catch {
-        // Ignore non-JSON data
+      } else {
+        pendingStrokesRef.current.push(message.stroke);
       }
-    };
-
-    room.on(RoomEvent.DataReceived, handleData);
-    return () => { room.off(RoomEvent.DataReceived, handleData); };
-  }, [room, isOpen, drawStroke, drawShape, participantName]);
+    } else if (message.type === 'DRAWING_OVERLAY_SHAPE') {
+      if (isOpen && contextRef.current) {
+        drawShape(message.shape);
+      } else {
+        pendingShapesRef.current.push(message.shape);
+      }
+    } else if (message.type === 'DRAWING_OVERLAY_CLEAR') {
+      if (isOpen) {
+        const canvas = canvasRef.current;
+        const ctx = contextRef.current;
+        if (canvas && ctx) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+      } else {
+        pendingClearRef.current = true;
+        pendingStrokesRef.current = [];
+        pendingShapesRef.current = [];
+      }
+    } else if (message.type === 'DRAWING_OVERLAY_LASER') {
+      if (isOpen && toolRef.current === 'laser') {
+        laserPointsRef.current.push(message.point);
+      }
+    }
+  }, [isOpen, drawStroke, drawShape, participantName]));
 
   // Laser animation loop - ONLY runs when isLaserActiveRef is true
   // CRITICAL FIX v6: Uses HARD FLAG to completely stop laser when switching tools

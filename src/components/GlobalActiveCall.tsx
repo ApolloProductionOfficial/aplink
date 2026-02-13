@@ -2,6 +2,7 @@ import { useEffect, useCallback, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { Room, RoomEvent } from 'livekit-client';
+import { useDataChannelMessage } from '@/hooks/useDataChannel';
 import { toast } from 'sonner';
 import { useActiveCall } from '@/contexts/ActiveCallContext';
 import { LiveKitRoom } from '@/components/LiveKitRoom';
@@ -170,64 +171,43 @@ export function GlobalActiveCall() {
     window.speechSynthesis.speak(utterance);
   }, []);
 
-  // Handle incoming translation data from other participants
-  useEffect(() => {
-    if (!liveKitRoom) return;
+  // Handle incoming translation data via centralized data channel
+  useDataChannelMessage(liveKitRoom, 'translation_audio', useCallback((message: any) => {
+    console.log('[GlobalActiveCall] Received translation from:', message.senderName);
     
-    const handleDataReceived = (payload: Uint8Array, participant: any) => {
-      try {
-        const decoder = new TextDecoder();
-        const message = JSON.parse(decoder.decode(payload));
-        
-        if (message.type === 'translation_audio') {
-          console.log('[GlobalActiveCall] Received translation from:', message.senderName);
-          
-          // Store in translation history
-          addTranslationEntry({
-            senderName: message.senderName || 'Unknown',
-            originalText: message.originalText || '',
-            translatedText: message.text || '',
-            sourceLang: message.sourceLang || '',
-            timestamp: message.timestamp || Date.now(),
-          });
-          
-          // Issue 13: Auto-open translator panel AND translation history on mobile
-          setShowTranslationHistory(true);
-          if (!showTranslator) {
-            setShowTranslator(true);
-          }
-          
-          const hasAudio = message.audioBase64 && message.audioBase64.length > 0;
-          
-          if (hasAudio && !message.useBrowserTTS) {
-            const audioUrl = `data:audio/mpeg;base64,${message.audioBase64}`;
-            playTranslatedAudio(audioUrl).catch((err) => {
-              console.warn('[GlobalActiveCall] Audio playback failed, using browser TTS:', err);
-              if (message.text) {
-                speakWithBrowserTTS(message.text, message.sourceLang === 'ru' ? 'en' : message.sourceLang || 'en');
-              }
-            });
-          } else if (message.text) {
-            const textLang = message.sourceLang === 'ru' ? 'en' : (message.sourceLang === 'en' ? 'ru' : 'en');
-            speakWithBrowserTTS(message.text, textLang);
-          }
-          
-          toast.success(`🌐 ${message.senderName}`, {
-            description: message.text?.substring(0, 100) || 'Перевод получен',
-            duration: 3000,
-          });
+    addTranslationEntry({
+      senderName: message.senderName || 'Unknown',
+      originalText: message.originalText || '',
+      translatedText: message.text || '',
+      sourceLang: message.sourceLang || '',
+      timestamp: message.timestamp || Date.now(),
+    });
+    
+    setShowTranslationHistory(true);
+    if (!showTranslator) {
+      setShowTranslator(true);
+    }
+    
+    const hasAudio = message.audioBase64 && message.audioBase64.length > 0;
+    
+    if (hasAudio && !message.useBrowserTTS) {
+      const audioUrl = `data:audio/mpeg;base64,${message.audioBase64}`;
+      playTranslatedAudio(audioUrl).catch((err) => {
+        console.warn('[GlobalActiveCall] Audio playback failed, using browser TTS:', err);
+        if (message.text) {
+          speakWithBrowserTTS(message.text, message.sourceLang === 'ru' ? 'en' : message.sourceLang || 'en');
         }
-      } catch {
-        // Not a translation message
-      }
-    };
+      });
+    } else if (message.text) {
+      const textLang = message.sourceLang === 'ru' ? 'en' : (message.sourceLang === 'en' ? 'ru' : 'en');
+      speakWithBrowserTTS(message.text, textLang);
+    }
     
-    liveKitRoom.on(RoomEvent.DataReceived, handleDataReceived);
-    
-    return () => {
-      liveKitRoom.off(RoomEvent.DataReceived, handleDataReceived);
-    };
-  }, [liveKitRoom, playTranslatedAudio, speakWithBrowserTTS, addTranslationEntry, setShowTranslationHistory, showTranslator, setShowTranslator]);
+    toast.success(`🌐 ${message.senderName}`, {
+      description: message.text?.substring(0, 100) || 'Перевод получен',
+      duration: 3000,
+    });
+  }, [playTranslatedAudio, speakWithBrowserTTS, addTranslationEntry, setShowTranslationHistory, showTranslator, setShowTranslator]));
   
   // Start/stop broadcast when translator is toggled
   useEffect(() => {

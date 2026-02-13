@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { Room, RoomEvent } from "livekit-client";
+import { useDataChannelMessage } from '@/hooks/useDataChannel';
 import { Smile } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -368,39 +369,19 @@ export function EmojiReactions({ room, participantName }: EmojiReactionsProps) {
     return () => clearTimeout(timer);
   }, [reactions]);
 
-  // Listen for incoming reactions
-  useEffect(() => {
-    if (!room) return;
-
-    const handleDataReceived = (payload: Uint8Array) => {
-      try {
-        const decoder = new TextDecoder();
-        const message = JSON.parse(decoder.decode(payload));
-
-        if (message.type === 'emoji_reaction') {
-          const newReaction: EmojiReaction = {
-            id: `${Date.now()}-${Math.random()}`,
-            reactionId: message.reactionId,
-            senderName: message.senderName,
-            // Avoid center area (30-70%) to prevent overlap with "Waiting for participant" text
-            x: Math.random() > 0.5 ? (5 + Math.random() * 25) : (70 + Math.random() * 25), // Left 5-30% or right 70-95%
-            y: 20 + Math.random() * 25, // Random position 20-45% from bottom
-            timestamp: Date.now(),
-          };
-
-          setReactions(prev => [...prev, newReaction]);
-        }
-      } catch {
-        // Not a reaction message
-      }
+  // Listen for incoming reactions via centralized data channel
+  useDataChannelMessage(room, 'emoji_reaction', useCallback((message: any) => {
+    const newReaction: EmojiReaction = {
+      id: `${Date.now()}-${Math.random()}`,
+      reactionId: message.reactionId,
+      senderName: message.senderName,
+      x: Math.random() > 0.5 ? (5 + Math.random() * 25) : (70 + Math.random() * 25),
+      y: 20 + Math.random() * 25,
+      timestamp: Date.now(),
     };
 
-    room.on(RoomEvent.DataReceived, handleDataReceived);
-
-    return () => {
-      room.off(RoomEvent.DataReceived, handleDataReceived);
-    };
-  }, [room]);
+    setReactions(prev => [...prev, newReaction]);
+  }, []));
 
   // Send reaction
   const sendReaction = useCallback(async (reactionId: string) => {
