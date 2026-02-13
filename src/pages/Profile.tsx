@@ -14,6 +14,7 @@ import DoNotDisturbSettings from '@/components/DoNotDisturbSettings';
 import BotLanguageSettings from '@/components/BotLanguageSettings';
 import AutoRecordSettings from '@/components/AutoRecordSettings';
 import { AvatarCropDialog } from '@/components/AvatarCropDialog';
+import { AIModelSettings } from '@/components/AIModelSettings';
 
 const Profile = () => {
   const { user, isLoading: authLoading, updatePassword } = useAuth();
@@ -485,6 +486,11 @@ const Profile = () => {
           </div>
         </div>
         
+        {/* AI Model Settings */}
+        <div className="mt-6">
+          <AIModelSettings />
+        </div>
+
         {/* Bot Language Settings */}
         <div className="mt-6">
           <BotLanguageSettings />

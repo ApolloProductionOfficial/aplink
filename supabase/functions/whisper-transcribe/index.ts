@@ -6,7 +6,6 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -14,6 +13,8 @@ serve(async (req) => {
   try {
     const formData = await req.formData();
     const audioFile = formData.get('audio') as File;
+    const provider = (formData.get('provider') as string) || 'lovable';
+    const model = (formData.get('model') as string) || 'google/gemini-2.5-flash';
 
     if (!audioFile) {
       return new Response(
@@ -22,40 +23,51 @@ serve(async (req) => {
       );
     }
 
-    console.log('[Whisper] Received audio file:', audioFile.name, 'size:', audioFile.size, 'type:', audioFile.type);
+    console.log('[Whisper] Received audio file:', audioFile.name, 'size:', audioFile.size, 'provider:', provider);
 
-    // Use Lovable AI gateway for transcription
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    // Determine API
+    let apiUrl: string;
+    let apiKey: string;
+
+    if (provider === 'openrouter') {
+      const key = Deno.env.get("OPENROUTER_API_KEY");
+      if (!key) throw new Error("OPENROUTER_API_KEY is not configured");
+      apiUrl = "https://openrouter.ai/api/v1/chat/completions";
+      apiKey = key;
+    } else {
+      const key = Deno.env.get("LOVABLE_API_KEY");
+      if (!key) throw new Error("LOVABLE_API_KEY is not configured");
+      apiUrl = "https://ai.gateway.lovable.dev/v1/chat/completions";
+      apiKey = key;
     }
 
-    // Convert audio to base64 for Lovable AI - use chunked processing to avoid stack overflow
+    // Convert audio to base64
     const audioBuffer = await audioFile.arrayBuffer();
     const bytes = new Uint8Array(audioBuffer);
-    const chunkSize = 8192; // Process 8KB at a time to avoid stack overflow
+    const chunkSize = 8192;
     let binary = "";
-    
     for (let i = 0; i < bytes.length; i += chunkSize) {
       const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
       for (let j = 0; j < chunk.length; j++) {
         binary += String.fromCharCode(chunk[j]);
       }
     }
-    
     const audioBase64 = btoa(binary);
 
-    // Use Gemini Flash for audio transcription via description
-    // Note: For actual audio transcription, we'll use a text-based approach
-    // by describing that we need the text from audio
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    };
+    if (provider === 'openrouter') {
+      headers['HTTP-Referer'] = 'https://aplink.lovable.app';
+      headers['X-Title'] = 'APLink by Apollo Production';
+    }
+
+    const response = await fetch(apiUrl, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
+      headers,
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: model,
         messages: [
           {
             role: "user",
@@ -66,10 +78,7 @@ serve(async (req) => {
               },
               {
                 type: "input_audio",
-                input_audio: {
-                  data: audioBase64,
-                  format: "wav"
-                }
+                input_audio: { data: audioBase64, format: "wav" }
               }
             ]
           }
@@ -81,15 +90,9 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("[Whisper] Lovable AI error:", response.status, errorText);
-      
-      // Try fallback: use Gemini to describe what might be said
-      // This is a workaround if direct audio transcription fails
+      console.error("[Whisper] AI error:", response.status, errorText);
       return new Response(
-        JSON.stringify({ 
-          error: `Transcription failed: ${response.status}`,
-          text: '' 
-        }),
+        JSON.stringify({ error: `Transcription failed: ${response.status}`, text: '' }),
         { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -97,7 +100,7 @@ serve(async (req) => {
     const data = await response.json();
     const transcribedText = data.choices?.[0]?.message?.content?.trim() || '';
 
-    console.log('[Whisper] Transcription result:', transcribedText.substring(0, 100));
+    console.log('[Whisper] Result:', transcribedText.substring(0, 100));
 
     return new Response(
       JSON.stringify({ text: transcribedText }),
@@ -107,10 +110,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('[Whisper] Error:', error);
     return new Response(
-      JSON.stringify({ 
-        error: error instanceof Error ? error.message : 'Unknown error',
-        text: ''
-      }),
+      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error', text: '' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
