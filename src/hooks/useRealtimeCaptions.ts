@@ -172,6 +172,10 @@ export const useRealtimeCaptions = ({
     }
   }, [targetLang]);
 
+  // FIX Issue 1: Use ref for room to prevent stale closures in Web Speech callbacks
+  const roomRef = useRef<Room | null>(null);
+  roomRef.current = room;
+
   // Add caption to list and broadcast
   const addCaption = useCallback((originalText: string, translatedText: string, isPartial: boolean = false) => {
     const newCaption: Caption = {
@@ -195,17 +199,20 @@ export const useRealtimeCaptions = ({
     }
 
     // Broadcast to other participants (only committed transcripts)
-    if (room && !isPartial) {
+    // FIX: Use roomRef.current to always get the latest room reference
+    const currentRoom = roomRef.current;
+    if (currentRoom && !isPartial) {
       const captionData = { type: 'realtime_caption', caption: newCaption };
       const encoder = new TextEncoder();
       const data = encoder.encode(JSON.stringify(captionData));
       try {
-        room.localParticipant.publishData(data, { reliable: true });
+        currentRoom.localParticipant.publishData(data, { reliable: true });
+        console.log('[Captions] Broadcast caption to other participants');
       } catch (err) {
         console.error('[Captions] Failed to broadcast caption:', err);
       }
     }
-  }, [participantName, targetLang, room]);
+  }, [participantName, targetLang]);
 
   // Process WebSocket message
   const handleWebSocketMessage = useCallback(async (event: MessageEvent) => {

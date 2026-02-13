@@ -1250,6 +1250,14 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose, onCanva
         />
       )}
 
+      {/* Issue 7: Screen recording indicator - small red dot */}
+      {isScreenRecording && (
+        <div className="fixed top-3 right-16 z-[99999] flex items-center gap-1.5 px-2 py-1 bg-black/60 backdrop-blur-md rounded-full border border-destructive/40">
+          <span className="w-2.5 h-2.5 bg-destructive rounded-full animate-pulse" />
+          <span className="text-[10px] text-destructive font-bold">REC</span>
+        </div>
+      )}
+
       {/* ALWAYS VISIBLE floating close button - REDUCED SIZE to not exceed frame */}
       <Button
         variant="ghost"
