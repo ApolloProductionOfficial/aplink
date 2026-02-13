@@ -1,13 +1,23 @@
 import { useEffect, useRef } from 'react';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
+import { useActiveCall } from '@/contexts/ActiveCallContext';
 
 const StarField = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const reduceMotion = useReducedMotion();
+  
+  // Pause when a call is active to save CPU/GPU
+  let callActive = false;
+  try {
+    const call = useActiveCall();
+    callActive = call.isActive;
+  } catch {
+    // Not inside ActiveCallProvider
+  }
 
   useEffect(() => {
-    // Don't render canvas animation on mobile for performance
-    if (reduceMotion) return;
+    // Don't render canvas animation on mobile or during calls
+    if (reduceMotion || callActive) return;
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -89,10 +99,10 @@ const StarField = () => {
       window.removeEventListener('resize', handleResize);
       cancelAnimationFrame(animationFrameId);
     };
-  }, [reduceMotion]);
+  }, [reduceMotion, callActive]);
 
-  // Don't render anything on mobile for maximum performance
-  if (reduceMotion) {
+  // Don't render anything on mobile or during calls for maximum performance
+  if (reduceMotion || callActive) {
     return null;
   }
 

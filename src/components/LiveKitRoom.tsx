@@ -2065,12 +2065,18 @@ function LiveKitContent({
         // Screenshot notification from another participant
         if (message.type === 'SCREENSHOT_TAKEN' && message.participantIdentity !== localParticipant?.identity) {
           setShowScreenshotFlash(true);
-          // Play shutter sound for remote screenshot too
           const shutterSound = new Audio('/audio/camera-shutter.mp3');
           shutterSound.volume = 0.35;
           shutterSound.play().catch(() => {});
           toast.info(`📸 ${message.participantName} сделал скриншот`);
           setTimeout(() => setShowScreenshotFlash(false), 350);
+        }
+        // PARTICIPANT_KICKED: show toast and disconnect gracefully
+        if (message.type === 'PARTICIPANT_KICKED' && message.kickedIdentity === localParticipant?.identity) {
+          toast.error('Вас удалили из звонка', { duration: 5000 });
+          setTimeout(() => {
+            room?.disconnect();
+          }, 1500);
         }
       } catch {
         // Ignore non-JSON messages
@@ -2229,6 +2235,13 @@ function LiveKitContent({
             onPinParticipant={handlePinParticipant}
             onKickParticipant={async (identity: string) => {
               try {
+                // Send Data Channel notification BEFORE kicking
+                if (room) {
+                  const kickMsg = JSON.stringify({ type: 'PARTICIPANT_KICKED', kickedIdentity: identity });
+                  room.localParticipant.publishData(new TextEncoder().encode(kickMsg), { reliable: true });
+                }
+                // Wait for the message to be delivered
+                await new Promise(resolve => setTimeout(resolve, 1500));
                 const { data, error } = await supabase.functions.invoke('kick-participant', {
                   body: { roomName, participantIdentity: identity },
                 });
@@ -2249,6 +2262,11 @@ function LiveKitContent({
             onPinParticipant={handlePinParticipant}
             onKickParticipant={async (identity: string) => {
               try {
+                if (room) {
+                  const kickMsg = JSON.stringify({ type: 'PARTICIPANT_KICKED', kickedIdentity: identity });
+                  room.localParticipant.publishData(new TextEncoder().encode(kickMsg), { reliable: true });
+                }
+                await new Promise(resolve => setTimeout(resolve, 1500));
                 const { data, error } = await supabase.functions.invoke('kick-participant', {
                   body: { roomName, participantIdentity: identity },
                 });
@@ -2831,23 +2849,27 @@ function LiveKitContent({
         />
       )}
 
-      {/* Collaborative Whiteboard - rendered inside ResizableWhiteboardWindow for desktop */}
-      <CollaborativeWhiteboard
-        room={room}
-        participantName={participantName}
-        isOpen={showWhiteboard}
-        onClose={() => setShowWhiteboard(false)}
-        windowMode={true}
-      />
+      {/* Collaborative Whiteboard - only mount when open to save CPU */}
+      {showWhiteboard && (
+        <CollaborativeWhiteboard
+          room={room}
+          participantName={participantName}
+          isOpen={showWhiteboard}
+          onClose={() => setShowWhiteboard(false)}
+          windowMode={true}
+        />
+      )}
 
-      {/* Drawing Overlay - for drawing on screen */}
-      <DrawingOverlay
-        room={room}
-        participantName={participantName}
-        isOpen={showDrawingOverlay}
-        onClose={() => setShowDrawingOverlay(false)}
-        onCanvasReady={(canvas) => { drawingCanvasRef.current = canvas; }}
-      />
+      {/* Drawing Overlay - only mount when open to save CPU */}
+      {showDrawingOverlay && (
+        <DrawingOverlay
+          room={room}
+          participantName={participantName}
+          isOpen={showDrawingOverlay}
+          onClose={() => setShowDrawingOverlay(false)}
+          onCanvasReady={(canvas) => { drawingCanvasRef.current = canvas; }}
+        />
+      )}
 
       <RoomAudioRenderer />
     </div>
