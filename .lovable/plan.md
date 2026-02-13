@@ -1,133 +1,141 @@
 
-# Plan: 7 Critical Fixes for APLink Call Experience
+# Plan: 7 Critical Fixes for Call Experience
 
-## Overview
-This plan addresses 7 issues (point 8 was empty) covering gallery speaking animations, MacBook overheating optimization, emoji redesign, recording persistence, drawing fixes, emoji animations for peach/eggplant, and translation broadcast fix.
+## 1. Signal Level Indicator Next to Each Participant's Microphone
 
----
-
-## 1. Gallery Speaking Highlight with Center Focus Animation
-
-**Problem:** When someone speaks in gallery mode, they should visually stand out with pulsing animation and be centered/enlarged.
+**Problem:** No way to see if a participant's connection/audio is healthy.
 
 **Solution:**
-- Modify `GalleryVideoLayout.tsx` to apply `scale` and `z-index` boost to the speaking participant's tile
-- Add a glowing aura animation around the speaking tile (CSS keyframes with `box-shadow` pulse)
-- Non-speaking tiles get slightly dimmed (`opacity: 0.85`) and scale down (`scale(0.95)`) for visual contrast
-- Use `transition-all duration-500` for smooth CSS transitions between speaking states
-- Add a new CSS animation `@keyframes gallery-speaking-pulse` in `call-animations.css`
+- Add a small signal strength icon (1-4 bars) next to each participant's mic icon in `GalleryVideoLayout.tsx` and `FocusVideoLayout.tsx`
+- Use LiveKit's built-in `connectionQuality` property from each participant (`ConnectionQuality.Excellent/Good/Poor/Lost`)
+- Show as a tooltip on hover with details: "Good connection", "Poor connection", etc.
+- Color-code: green (excellent/good), yellow (poor), red (lost)
 
-**Files:**
-- `src/components/GalleryVideoLayout.tsx` -- add dynamic classes for speaking/non-speaking
-- `src/styles/call-animations.css` -- add `gallery-speaking-pulse` keyframes
+**Files:** `GalleryVideoLayout.tsx`, `FocusVideoLayout.tsx`
 
 ---
 
-## 2. MacBook Overheating Optimization
+## 2. Fix Speaking Participant Highlighting (CRITICAL BUG)
 
-**Problem:** High CPU usage during calls causes MacBook overheating.
-
-**Solution (multi-layer):**
-- **Video codec:** In `LiveKitRoom.tsx`, prefer VP8 over VP9 on macOS (VP9 decode is CPU-heavy on Mac without HW acceleration). Add codec preference detection.
-- **Simulcast:** Enable simulcast in LiveKit publish options to reduce encoding load. Lower quality layers for non-focused participants.
-- **Canvas rendering:** Reduce drawing overlay and whiteboard canvas render frequency from 15fps to 10fps on Mac detection (`navigator.platform`).
-- **Audio processing:** In `useRealtimeCaptions.ts`, increase VAD silence interval from current value to reduce Web Speech API polling frequency.
-- **Adaptive quality:** Cap video resolution to 720p when battery is discharging (Battery Status API where available).
-
-**Files:**
-- `src/components/LiveKitRoom.tsx` -- codec preference, simulcast config
-- `src/components/DrawingOverlay.tsx` -- lower fps on macOS
-- `src/hooks/useRealtimeCaptions.ts` -- increase VAD interval
-
----
-
-## 3. Emoji Redesign: Minimalist + Thumbs Up/Down Animations
-
-**Problem:** Current emojis are not stylish enough. Need thumbs up (+) and thumbs down (-) with animations.
+**Problem:** Speaking participant is NEVER highlighted because `speakingParticipant` is hardcoded to `undefined` on line 903 of `LiveKitRoom.tsx`. The actual state `speakingParticipantState` exists on line 1118 but is never passed to layouts.
 
 **Solution:**
-- Redesign emoji SVGs in `EmojiReactions.tsx` to be more minimalist/sleek with thinner strokes and cleaner gradients
-- Add two new reactions: `thumbs_up` (animated bounce-in) and `thumbs_down` (animated shake)
-- Add new CSS keyframes: `emoji-thumbs-up-bounce` (scale 0 -> 1.2 -> 1 with rotation) and `emoji-thumbs-down-shake` (horizontal shake + fade)
-- Update the float animation to include a slight rotation and scaling effect for more dynamism
+- Replace the hardcoded `const speakingParticipant = useMemo(() => undefined ...)` with a reference to `speakingParticipantState`
+- This single-line fix will make ALL speaking indicators work: gallery glow, focus mode aura, PiP speaking border
 
-**Files:**
-- `src/components/EmojiReactions.tsx` -- add thumbs up/down SVGs, refine existing SVGs
-- `src/index.css` -- add new emoji animation keyframes
+**File:** `LiveKitRoom.tsx` (line 903)
 
 ---
 
-## 4. Recording Auto-Save to Server (Crash-Proof)
+## 3. Organizer Can Kick Participants
 
-**Problem:** When recording for transcription, if PC shuts down or call ends, the recording is lost.
+**Problem:** No ability for the room creator to remove participants.
 
 **Solution:**
-- Modify `useAudioRecorder.ts` to periodically upload audio chunks (every 30 seconds) to Lovable Cloud storage bucket `call-recordings`
-- On call end or disconnect, the `summarize-meeting` edge function processes whatever chunks are available server-side
-- Add a `recording_chunks` concept: each chunk gets uploaded with `roomId` + `timestamp` metadata
-- On call end, trigger server-side assembly of chunks and transcription
-- If client disconnects unexpectedly, a cleanup function (or next login) checks for orphaned chunks and processes them
+- Create a new edge function `kick-participant` that uses the LiveKit Server API (`POST /twirp/livekit.RoomService/RemoveParticipant`) with admin credentials to force-disconnect a participant
+- Add a "Kick" option to the context menu on participant tiles in `GalleryVideoLayout.tsx` and `FocusVideoLayout.tsx` (only visible if current user is admin/organizer)
+- Pass `isAdmin` prop from `LiveKitRoom` to layout components
+- When kicked, the participant receives a `PARTICIPANT_KICKED` data message before disconnection, showing a toast
 
 **Files:**
-- `src/hooks/useAudioRecorder.ts` -- add periodic chunk upload
-- `src/pages/MeetingRoom.tsx` -- update save logic to use server-side chunks
-- `supabase/functions/summarize-meeting/index.ts` -- handle chunk assembly
+- `supabase/functions/kick-participant/index.ts` (new)
+- `GalleryVideoLayout.tsx` -- add kick menu item
+- `FocusVideoLayout.tsx` -- add kick menu item  
+- `LiveKitRoom.tsx` -- pass isAdmin, add kick handler
 
 ---
 
-## 5. Fix Drawing Mode
+## 4. Fix Drawing Overlay Erasure
 
-**Problem:** Drawing mode has issues (likely strokes disappearing or tools not working properly).
+**Problem:** Drawings disappear when using the drawing overlay.
+
+**Root cause:** The laser tool's animation loop (`drawLaserPoints`) restores `baseImageDataRef` which may be stale, overwriting new drawings. When switching tools, the double-rAF barrier sometimes doesn't fully prevent a race condition.
 
 **Solution:**
-- Review and fix the double-rAF barrier in `DrawingOverlay.tsx` that was added for laser tool switching
-- Ensure `contextRef` is always valid by re-acquiring on every tool change, not just on open
-- Fix the canvas state restoration after minimize/maximize cycles by saving/restoring from `historyRef` more aggressively
-- Add explicit `ctx.save()`/`ctx.restore()` around all draw operations to prevent state leaks
+- In `DrawingOverlay.tsx`, after every stroke/shape completes, update `baseImageDataRef` with the current canvas state so the laser loop never restores an old state
+- Add `saveToHistory()` calls after each stroke end and shape end
+- Ensure `baseImageDataRef` is always refreshed after clearing or undoing
 
-**Files:**
-- `src/components/DrawingOverlay.tsx` -- fix context management and state restoration
+**File:** `DrawingOverlay.tsx`
 
 ---
 
-## 6. Peach and Eggplant Emoji Animations
+## 5. Fix Mobile Microphone Enable Issues
 
-**Problem:** The peach (butt) and eggplant emojis need special animations.
+**Problem:** Some mobile users can't enable their microphone.
+
+**Root cause:** iOS/Safari requires a user gesture to call `getUserMedia`. The current implementation captures mic on first touch but the `mute()`/`unmute()` pattern may fail if the initial track was never published.
 
 **Solution:**
-- Add a wobble/jiggle animation to the peach emoji SVG (`@keyframes peach-wobble` with subtle rotation oscillation)
-- Add a bounce/grow animation to the eggplant emoji SVG (`@keyframes eggplant-bounce` with scale pulse)
-- Apply these animations both in the picker grid and during the float-up display
-- Add CSS classes `.emoji-peach-animate` and `.emoji-eggplant-animate`
+- In `LiveKitRoom.tsx`, when a mobile user taps the mic button and no microphone track exists, explicitly call `room.localParticipant.setMicrophoneEnabled(true)` instead of just `unmute()`
+- Add a fallback: if `unmute()` fails, try full `setMicrophoneEnabled(true)` with a user-gesture-wrapped `getUserMedia` call
+- Add console logging for mic toggle failures to aid debugging
 
-**Files:**
-- `src/components/EmojiReactions.tsx` -- apply animation classes to peach/eggplant
-- `src/index.css` -- add wobble/bounce keyframes
+**File:** `LiveKitRoom.tsx` (mic toggle handler)
 
 ---
 
-## 7. Fix Translation Not Heard by Other Participants
+## 6. Whiteboard as Participant-Like Window + Undo Button
 
-**Problem:** When speaking Russian, the English translation is not heard by the other side.
-
-**Root cause analysis:** The `sendTranslationToParticipants` function in `useLiveKitTranslationBroadcast.ts` checks `isBroadcasting` state, but the broadcast may not be started when the translator opens. Additionally, the `onSendTranslation` callback is passed correctly but the `isBroadcasting` check uses stale state due to closure issues.
+**Problem:** Whiteboard opens as a separate overlay rather than appearing as a participant tile. No undo button.
 
 **Solution:**
-- In `useLiveKitTranslationBroadcast.ts`, use a `ref` for `isBroadcasting` to prevent stale closure issues (same pattern as the captions fix)
-- Auto-start broadcast immediately when `sendTranslationToParticipants` is called (lazy initialization)
-- In `GlobalActiveCall.tsx`, ensure `startBroadcast()` is called BEFORE the translator renders
-- Add error logging when broadcast fails to identify the exact failure point
-- Verify the `DataReceived` handler on the receiving side correctly decodes and plays audio
+- Add an Undo button (`RotateCcw` icon) to the whiteboard toolbar in both window mode and mobile mode, using a `historyRef` similar to `DrawingOverlay`
+- For desktop: whiteboard already has a window mode. Adjust it to appear in the video grid area alongside participants (like a speaker view) rather than as a floating overlay
+- For mobile: keep the existing tile-based approach (tap to expand)
+- Add `historyRef` tracking to `CollaborativeWhiteboard.tsx` with `saveToHistory()` after each stroke/shape and an undo function
 
-**Files:**
-- `src/hooks/useLiveKitTranslationBroadcast.ts` -- use refs for broadcasting state, auto-start
-- `src/components/GlobalActiveCall.tsx` -- ensure broadcast starts before translator
+**File:** `CollaborativeWhiteboard.tsx`
 
 ---
 
-## Technical Notes
+## 7. Touchpad Drawing Support on Whiteboard
 
-- All CSS animations use `will-change: transform` for GPU acceleration
-- MacBook detection via `navigator.platform.includes('Mac')` or `navigator.userAgent`
-- Audio chunk uploads use the existing `call-recordings` storage bucket
-- Translation broadcast fix follows the same ref-based pattern that fixed the captions sync issue
+**Problem:** Touchpad gestures (two-finger scroll, pinch) interfere with drawing instead of being treated as drawing input.
+
+**Solution:**
+- In `CollaborativeWhiteboard.tsx`, add `wheel` event listener on the canvas to convert scroll-to-draw
+- Add `gesturestart`/`gesturechange` listeners for pinch-to-zoom on the canvas
+- Set `touch-action: none` on the canvas (already present) and add `overscroll-behavior: none` to prevent page scrolling
+- Add pointer events support (already using mouse events) -- convert to `onPointerDown`/`onPointerMove`/`onPointerUp` for unified touch+mouse+pen+touchpad handling
+
+**File:** `CollaborativeWhiteboard.tsx`
+
+---
+
+## 8. OnlyFans-Themed Emoji Reactions
+
+**Problem:** Need themed reactions fitting the OnlyFans brand.
+
+**Solution:**
+- Add new custom SVG reactions to `EmojiReactions.tsx`:
+  - Lips/Kiss (already exists as "kiss")
+  - Hot pepper (spicy)
+  - Wink face
+  - Cherry emoji
+  - Tongue emoji
+- Each with neon glow effects matching the existing style
+- Add animation classes for the new emojis
+
+**File:** `EmojiReactions.tsx`, `src/index.css`
+
+---
+
+## Implementation Order
+
+1. Fix #2 first (speaking highlight) -- single line fix, high impact
+2. Fix #4 (drawing erasure)
+3. Fix #5 (mobile mic)
+4. Fix #1 (signal indicators)
+5. Fix #3 (kick participants) -- requires new edge function
+6. Fix #6 (whiteboard undo)
+7. Fix #7 (touchpad)
+8. Fix #8 (themed emojis)
+
+## Technical Details
+
+- **Speaking fix:** Change line 903 in LiveKitRoom.tsx from `useMemo(() => undefined)` to use `speakingParticipantState` 
+- **Kick API:** Uses LiveKit's Twirp RPC protocol at `https://call.aplink.live/twirp/livekit.RoomService/RemoveParticipant`
+- **Signal quality:** Uses `participant.connectionQuality` enum from livekit-client
+- **Undo on whiteboard:** `historyRef` stores up to 20 `ImageData` snapshots, pop on undo
+- **Touchpad:** `PointerEvent` API unifies mouse, touch, and stylus/touchpad input
