@@ -35,14 +35,17 @@ export const LOVABLE_MODELS = [
   { id: 'openai/gpt-5', name: 'GPT-5', speed: 'medium', category: 'quality' },
 ] as const;
 
-// Recommended models per use case
-export const RECOMMENDED_MODELS: Record<string, { openrouter: string; lovable: string }> = {
-  chat: { openrouter: 'openai/gpt-4o-mini', lovable: 'google/gemini-2.5-flash' },
-  translation: { openrouter: 'google/gemini-2.5-flash', lovable: 'google/gemini-2.5-flash' },
-  captions: { openrouter: 'google/gemini-2.5-flash-lite', lovable: 'google/gemini-2.5-flash-lite' },
-  summarize: { openrouter: 'anthropic/claude-sonnet-4', lovable: 'google/gemini-2.5-pro' },
-  transcribe: { openrouter: 'google/gemini-2.5-flash', lovable: 'google/gemini-2.5-flash' },
+// Recommended models per use case — fast models for real-time tasks, smart models for analysis
+export const RECOMMENDED_MODELS: Record<string, { openrouter: string; lovable: string; label: string; icon: string }> = {
+  chat:        { openrouter: 'openai/gpt-4o-mini',          lovable: 'google/gemini-2.5-flash',      label: 'Чат',           icon: '💬' },
+  translation: { openrouter: 'google/gemini-2.5-flash-lite', lovable: 'google/gemini-2.5-flash-lite', label: 'Перевод',       icon: '🌍' },
+  captions:    { openrouter: 'google/gemini-2.5-flash-lite', lovable: 'google/gemini-2.5-flash-lite', label: 'Субтитры',      icon: '📝' },
+  summarize:   { openrouter: 'anthropic/claude-sonnet-4',    lovable: 'google/gemini-2.5-pro',        label: 'Саммари',       icon: '📊' },
+  transcribe:  { openrouter: 'google/gemini-2.5-flash',     lovable: 'google/gemini-2.5-flash',      label: 'Транскрипция',  icon: '🎙️' },
+  analysis:    { openrouter: 'openai/gpt-4o',               lovable: 'google/gemini-2.5-pro',        label: 'Анализ',        icon: '🧠' },
 };
+
+export type AITask = keyof typeof RECOMMENDED_MODELS;
 
 const DEFAULT_CONFIG: AIModelConfig = { provider: 'lovable', model: 'google/gemini-2.5-flash' };
 
@@ -84,5 +87,26 @@ export function useAIModelSettings() {
     if (error) console.error('Failed to save AI settings:', error);
   }, [user]);
 
-  return { config, save, loading };
+  /** Returns the optimal {provider, model} for a specific task.
+   *  If user selected a manual model, it uses that for ALL tasks.
+   *  If user is on default model, it auto-picks the best model per task. */
+  const getModelForTask = useCallback((task: AITask): AIModelConfig => {
+    const rec = RECOMMENDED_MODELS[task];
+    if (!rec) return config;
+
+    // Check if user manually chose a non-default model
+    const defaultModel = config.provider === 'openrouter' ? 'openai/gpt-4o-mini' : 'google/gemini-2.5-flash';
+    const isDefaultModel = config.model === defaultModel;
+
+    if (!isDefaultModel) {
+      // User explicitly chose a model — respect their choice for all tasks
+      return config;
+    }
+
+    // Auto-pick optimal model for this task
+    const optimalModel = config.provider === 'openrouter' ? rec.openrouter : rec.lovable;
+    return { provider: config.provider, model: optimalModel };
+  }, [config]);
+
+  return { config, save, loading, getModelForTask };
 }

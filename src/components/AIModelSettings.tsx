@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import { useAIModelSettings, OPENROUTER_MODELS, LOVABLE_MODELS, type AIModelConfig } from '@/hooks/useAIModelSettings';
+import { useAIModelSettings, OPENROUTER_MODELS, LOVABLE_MODELS, RECOMMENDED_MODELS, type AIModelConfig } from '@/hooks/useAIModelSettings';
 import { toast } from 'sonner';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
@@ -79,6 +79,24 @@ export function AIModelSettings() {
             <span className="text-sm font-medium">
               {models.find(m => m.id === config.model)?.name || config.model}
             </span>
+          </div>
+        </div>
+
+        {/* Auto-recommendations info */}
+        <div className="p-2 rounded-lg bg-muted/30 border border-border/30">
+          <p className="text-xs text-muted-foreground mb-1.5">🤖 Авто-выбор по задаче</p>
+          <div className="grid grid-cols-2 gap-1">
+            {Object.entries(RECOMMENDED_MODELS).map(([task, rec]) => {
+              const modelId = isOpenRouter ? rec.openrouter : rec.lovable;
+              const allModels = [...OPENROUTER_MODELS, ...LOVABLE_MODELS];
+              const m = allModels.find(m => m.id === modelId);
+              return (
+                <div key={task} className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                  <span>{rec.icon}</span>
+                  <span className="truncate">{m?.name || modelId.split('/')[1]}</span>
+                </div>
+              );
+            })}
           </div>
         </div>
 

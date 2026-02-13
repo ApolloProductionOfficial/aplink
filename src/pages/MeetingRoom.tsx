@@ -28,6 +28,7 @@ import { usePresence } from "@/hooks/usePresence";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 import { useConnectionSounds } from "@/hooks/useConnectionSounds";
+import { useAIModelSettings } from "@/hooks/useAIModelSettings";
 import { useTranslation } from "@/hooks/useTranslation";
 import { MeetingEndSaveDialog, type MeetingSaveStatus } from "@/components/MeetingEndSaveDialog";
 import { invokeBackendFunctionKeepalive } from "@/utils/invokeBackendFunctionKeepalive";
@@ -117,6 +118,7 @@ const MeetingRoomContent = ({ roomId, userName }: MeetingRoomContentProps) => {
   const isRecordingRef = useRef(false);
   
   const { playConnectedSound, playDisconnectedSound, playReconnectingSound } = useConnectionSounds();
+  const { getModelForTask } = useAIModelSettings();
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [connectionQuality, setConnectionQuality] = useState<number>(100);
   const [recordingDuration, setRecordingDuration] = useState(0);
@@ -516,6 +518,7 @@ const MeetingRoomContent = ({ roomId, userName }: MeetingRoomContentProps) => {
     try {
       const transcript = await transcribeAudio(audioBlob);
       
+      const sumModel = getModelForTask('summarize');
       const { error } = await supabase.functions.invoke('summarize-meeting', {
         body: {
           roomId: `recovered-${Date.now()}`,
@@ -523,6 +526,8 @@ const MeetingRoomContent = ({ roomId, userName }: MeetingRoomContentProps) => {
           transcript: transcript ? `[Восстановленная запись]: ${transcript}` : '[Аудио без транскрипции]',
           participants: [userName || 'Участник'],
           userId: user.id,
+          provider: sumModel.provider,
+          model: sumModel.model,
         },
       });
 
@@ -737,9 +742,10 @@ const MeetingRoomContent = ({ roomId, userName }: MeetingRoomContentProps) => {
       setRecordingSaveStatus('saving');
       setRecordingSaveProgress(50);
 
+      const sumModel1 = getModelForTask('summarize');
       const response = await invokeBackendFunctionKeepalive<{ success: boolean; meeting?: { id: string } }>(
         "summarize-meeting",
-        { ...base, userId: user.id },
+        { ...base, userId: user.id, provider: sumModel1.provider, model: sumModel1.model },
       );
 
       clearInterval(progressInterval);
@@ -794,9 +800,10 @@ const MeetingRoomContent = ({ roomId, userName }: MeetingRoomContentProps) => {
     pendingSaveBaseRef.current = base;
 
     try {
+      const sumModel2 = getModelForTask('summarize');
       const response = await invokeBackendFunctionKeepalive<{ success: boolean; meeting?: { id: string } }>(
         "summarize-meeting",
-        { ...base, userId: user.id },
+        { ...base, userId: user.id, provider: sumModel2.provider, model: sumModel2.model },
       );
 
       if (response?.success && response?.meeting?.id) {
@@ -835,9 +842,10 @@ const MeetingRoomContent = ({ roomId, userName }: MeetingRoomContentProps) => {
         return;
       }
 
+      const sumModel3 = getModelForTask('summarize');
       const response = await invokeBackendFunctionKeepalive<{ success: boolean; meeting?: { id: string } }>(
         "summarize-meeting",
-        { ...base, userId: user.id },
+        { ...base, userId: user.id, provider: sumModel3.provider, model: sumModel3.model },
       );
 
       if (response?.success && response?.meeting?.id) {
