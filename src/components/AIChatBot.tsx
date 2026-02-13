@@ -404,10 +404,19 @@ const AIChatBot = () => {
           <div className="absolute inset-0 bg-gradient-to-br from-primary/3 via-transparent to-primary/5 animate-pulse-glow pointer-events-none" />
           <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/60 to-transparent animate-shimmer" />
           
-          {/* Header */}
+          {/* Header - Issue 6: Show current AI model */}
           <div className="relative p-4 border-b border-primary/15 bg-gradient-to-r from-primary/5 via-primary/3 to-primary/5">
             <h3 className="font-semibold text-lg bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent">{t.chatbot.title}</h3>
-            <p className="text-xs text-muted-foreground">{t.chatbot.subtitle}</p>
+            <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+              {t.chatbot.subtitle}
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-[10px] text-primary font-medium">
+                ⚡ {(() => {
+                  const m = getModelForTask('chat');
+                  const name = m.model.split('/').pop() || m.model;
+                  return name;
+                })()}
+              </span>
+            </p>
           </div>
 
           {/* Messages */}

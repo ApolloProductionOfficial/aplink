@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { Room } from "livekit-client";
-import { Subtitles, X, GripHorizontal } from "lucide-react";
+import { Subtitles, X, GripHorizontal, ChevronUp, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -35,7 +35,6 @@ const LANGUAGES = [
   { code: 'ar', name: 'العربية', flag: '🇸🇦' },
 ];
 
-// Load saved language from localStorage
 const loadSavedLanguage = (): string => {
   try {
     return localStorage.getItem('captions_target_lang') || 'ru';
@@ -44,7 +43,6 @@ const loadSavedLanguage = (): string => {
   }
 };
 
-// Save language to localStorage
 const saveLanguage = (lang: string) => {
   try {
     localStorage.setItem('captions_target_lang', lang);
@@ -58,6 +56,7 @@ export function CaptionsOverlay({
   onToggle,
 }: CaptionsOverlayProps) {
   const [targetLang, setTargetLang] = useState(loadSavedLanguage);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   // Drag state
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -74,7 +73,7 @@ export function CaptionsOverlay({
   const handleLanguageChange = (lang: string) => {
     setTargetLang(lang);
     saveLanguage(lang);
-    clearCaptions(); // Clear captions when language changes
+    clearCaptions();
   };
 
   // Unified drag start (mouse + touch)
@@ -132,11 +131,14 @@ export function CaptionsOverlay({
     };
   }, [isDragging]);
 
-  // Get last 4 captions for display
-  const displayCaptions = captions.slice(-4);
+  // Issue 3: Only show latest caption by default; show last 4 when expanded
+  const committedCaptions = captions.filter(c => !c.isPartial);
+  const latestCaption = committedCaptions.length > 0 ? committedCaptions[committedCaptions.length - 1] : null;
+  const historyCaptions = isExpanded ? committedCaptions.slice(-6) : [];
+  const partialCaption = captions.find(c => c.isPartial);
+  
   const selectedLang = LANGUAGES.find(l => l.code === targetLang);
 
-  // Don't render if not enabled
   if (!isEnabled) return null;
 
   const overlayContent = (
@@ -153,47 +155,57 @@ export function CaptionsOverlay({
       }}
     >
       <div className="flex flex-col items-center gap-2">
-        {/* Captions display */}
+        {/* Expanded history panel */}
+        {isExpanded && historyCaptions.length > 1 && (
+          <div className="w-full rounded-2xl bg-black/50 backdrop-blur-xl border border-white/[0.06] p-3 max-h-[200px] overflow-y-auto">
+            <div className="space-y-1.5">
+              {historyCaptions.slice(0, -1).map((caption) => (
+                <div key={caption.id} className="flex flex-col gap-0.5 text-white/50">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-medium text-primary/60">{caption.speakerName}</span>
+                    {caption.originalText !== caption.translatedText && (
+                      <span className="text-[9px] italic truncate max-w-[150px]">({caption.originalText})</span>
+                    )}
+                  </div>
+                  <p className="text-xs leading-relaxed">{caption.translatedText}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Current caption display - always shows ONLY the latest */}
         <div 
           className={cn(
             "w-full rounded-2xl bg-black/60 backdrop-blur-2xl border border-white/[0.08]",
             "transition-all duration-300 shadow-[0_0_1px_rgba(255,255,255,0.1)]",
-            displayCaptions.length > 0 ? "p-4" : "p-2"
+            (latestCaption || partialCaption) ? "p-4" : "p-2"
           )}
         >
-          {displayCaptions.length > 0 ? (
-            <div className="space-y-2">
-              {displayCaptions.map((caption, index) => (
-                <div 
-                  key={caption.id}
-                  className={cn(
-                    "flex flex-col gap-0.5 animate-fade-in",
-                    index === displayCaptions.length - 1 && "text-white",
-                    index !== displayCaptions.length - 1 && "text-white/70"
-                  )}
-                >
+          {(latestCaption || partialCaption) ? (
+            <div className="space-y-1">
+              {/* Show latest committed caption */}
+              {latestCaption && (
+                <div className="flex flex-col gap-0.5 animate-fade-in text-white">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium text-primary/80">
-                      {caption.speakerName}
-                    </span>
-                    {caption.originalText !== caption.translatedText && (
+                    <span className="text-xs font-medium text-primary/80">{latestCaption.speakerName}</span>
+                    {latestCaption.originalText !== latestCaption.translatedText && (
                       <span className="text-[10px] text-muted-foreground/60 italic truncate max-w-[200px]">
-                        ({caption.originalText})
+                        ({latestCaption.originalText})
                       </span>
                     )}
                   </div>
-                  <p className={cn(
-                    "text-sm leading-relaxed",
-                    index === displayCaptions.length - 1 && "text-base font-medium"
-                  )}>
-                    {caption.translatedText}
-                  </p>
+                  <p className="text-base font-medium leading-relaxed">{latestCaption.translatedText}</p>
                 </div>
-              ))}
+              )}
+              {/* Show partial (typing indicator) below */}
+              {partialCaption && (
+                <p className="text-sm text-white/50 italic animate-pulse">{partialCaption.translatedText}</p>
+              )}
             </div>
           ) : (
             <div className="flex items-center justify-center gap-3 text-muted-foreground py-1">
-              {/* VAD indicator - green pulsing dot when voice detected */}
+              {/* VAD indicator */}
               <div className="relative">
                 <div className={cn(
                   "w-3 h-3 rounded-full transition-all duration-200",
@@ -228,7 +240,19 @@ export function CaptionsOverlay({
             <GripHorizontal className="w-4 h-4 text-white/40" />
           </div>
 
-          {/* Language selector with label */}
+          {/* Expand/collapse history button */}
+          {committedCaptions.length > 1 && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="h-8 w-8 rounded-full bg-black/50 border border-white/20 hover:bg-white/20 backdrop-blur-md"
+            >
+              {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+            </Button>
+          )}
+
+          {/* Language selector */}
           <div className="flex items-center gap-1.5">
             <span className="text-[10px] text-white/50">Переводить на:</span>
             <Select value={targetLang} onValueChange={handleLanguageChange}>
@@ -240,21 +264,21 @@ export function CaptionsOverlay({
                   </span>
                 </SelectValue>
               </SelectTrigger>
-            <SelectContent className="bg-black/90 border-white/20 backdrop-blur-xl rounded-xl">
-              {LANGUAGES.map((lang) => (
-                <SelectItem 
-                  key={lang.code} 
-                  value={lang.code}
-                  className="text-sm hover:bg-white/10 cursor-pointer"
-                >
-                  <span className="flex items-center gap-2">
-                    <span>{lang.flag}</span>
-                    <span>{lang.name}</span>
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+              <SelectContent className="bg-black/90 border-white/20 backdrop-blur-xl rounded-xl">
+                {LANGUAGES.map((lang) => (
+                  <SelectItem 
+                    key={lang.code} 
+                    value={lang.code}
+                    className="text-sm hover:bg-white/10 cursor-pointer"
+                  >
+                    <span className="flex items-center gap-2">
+                      <span>{lang.flag}</span>
+                      <span>{lang.name}</span>
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Close button */}
@@ -271,7 +295,6 @@ export function CaptionsOverlay({
     </div>
   );
 
-  // Use portal to render outside the LiveKit container
   if (typeof window !== 'undefined') {
     return createPortal(overlayContent, document.body);
   }
