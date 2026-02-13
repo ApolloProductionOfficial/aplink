@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Room, RoomEvent } from 'livekit-client';
+import { useDataChannelMessage } from '@/hooks/useDataChannel';
 import { Pencil, Eraser, Trash2, X, Circle, Download, FileText, Minus, MoveRight, Square, Film, Loader2, RotateCcw, GripHorizontal, Maximize2, Minimize2 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
@@ -489,11 +490,11 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
     }
   }, [isExportingGif]);
 
-  // Listen for incoming data + Issue 9: sync request protocol
+  // Listen for incoming data + Issue 9: sync request protocol via centralized data channel
+  // Issue 9: Send sync request when whiteboard opens (late-joiner)
   useEffect(() => {
     if (!room || !isOpen) return;
-
-    // Issue 9: Send sync request when whiteboard opens (late-joiner)
+    
     if (!hasSentSyncRef.current) {
       hasSentSyncRef.current = true;
       setTimeout(() => {
@@ -506,73 +507,62 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
         } catch {}
       }, 500);
     }
+    
+    return () => { hasSentSyncRef.current = false; };
+  }, [room, isOpen, participantName]);
 
-    const handleData = (payload: Uint8Array) => {
-      try {
-        const message = JSON.parse(new TextDecoder().decode(payload));
-        
-        // Issue 9: Respond to sync requests with cached strokes
-        if (message.type === 'WHITEBOARD_SYNC_REQUEST' && message.sender !== participantName && strokeCacheRef.current.length > 0) {
-          console.log('[Whiteboard] Responding to sync request with', strokeCacheRef.current.length, 'cached items');
-          const syncData = JSON.stringify({
-            type: 'WHITEBOARD_SYNC_RESPONSE',
-            items: strokeCacheRef.current,
-            sender: participantName,
-          });
-          room.localParticipant.publishData(new TextEncoder().encode(syncData), { reliable: true });
-          return;
-        }
-        
-        // Issue 9: Apply sync response (replay all cached strokes)
-        if (message.type === 'WHITEBOARD_SYNC_RESPONSE' && message.sender !== participantName && message.items) {
-          console.log('[Whiteboard] Received sync with', message.items.length, 'items');
-          for (const item of message.items) {
-            if (item.type === 'stroke') drawStroke(item.data);
-            else if (item.type === 'shape') drawShape(item.data);
-          }
-          return;
-        }
-        
-        if (message.type === 'WHITEBOARD_STROKE' && message.sender !== participantName) {
-          drawStroke(message.stroke);
-          strokeCacheRef.current.push({ type: 'stroke', data: message.stroke });
-        } else if (message.type === 'WHITEBOARD_SHAPE' && message.sender !== participantName) {
-          drawShape(message.shape);
-          strokeCacheRef.current.push({ type: 'shape', data: message.shape });
-        } else if (message.type === 'WHITEBOARD_CLEAR') {
-          const clearId = message.clearId;
-          const sender = message.sender;
-          
-          if (!clearId || processedClearsRef.current.has(clearId) || sender === participantName) return;
-          
-          processedClearsRef.current.add(clearId);
-          if (processedClearsRef.current.size > 50) {
-            processedClearsRef.current = new Set(Array.from(processedClearsRef.current).slice(-30));
-          }
-          
-          // Clear stroke cache too
-          strokeCacheRef.current = [];
-          
-          queueMicrotask(() => {
-            const canvas = canvasRef.current;
-            const ctx = contextRef.current;
-            if (canvas && ctx) {
-              ctx.clearRect(0, 0, canvas.width, canvas.height);
-              console.log('[Whiteboard] Canvas cleared by remote:', sender);
-            }
-          });
-        }
-      } catch {
-        // Ignore non-JSON data
+  useDataChannelMessage(room, ['WHITEBOARD_SYNC_REQUEST', 'WHITEBOARD_SYNC_RESPONSE', 'WHITEBOARD_STROKE', 'WHITEBOARD_SHAPE', 'WHITEBOARD_CLEAR'], useCallback((message: any) => {
+    if (!isOpen) return;
+    
+    if (message.type === 'WHITEBOARD_SYNC_REQUEST' && message.sender !== participantName && strokeCacheRef.current.length > 0) {
+      console.log('[Whiteboard] Responding to sync request with', strokeCacheRef.current.length, 'cached items');
+      const syncData = JSON.stringify({
+        type: 'WHITEBOARD_SYNC_RESPONSE',
+        items: strokeCacheRef.current,
+        sender: participantName,
+      });
+      room?.localParticipant.publishData(new TextEncoder().encode(syncData), { reliable: true });
+      return;
+    }
+    
+    if (message.type === 'WHITEBOARD_SYNC_RESPONSE' && message.sender !== participantName && message.items) {
+      console.log('[Whiteboard] Received sync with', message.items.length, 'items');
+      for (const item of message.items) {
+        if (item.type === 'stroke') drawStroke(item.data);
+        else if (item.type === 'shape') drawShape(item.data);
       }
-    };
-
-    room.on(RoomEvent.DataReceived, handleData);
-    return () => { 
-      room.off(RoomEvent.DataReceived, handleData);
-      hasSentSyncRef.current = false;
-    };
-  }, [room, isOpen, drawStroke, drawShape, participantName]);
+      return;
+    }
+    
+    if (message.type === 'WHITEBOARD_STROKE' && message.sender !== participantName) {
+      drawStroke(message.stroke);
+      strokeCacheRef.current.push({ type: 'stroke', data: message.stroke });
+    } else if (message.type === 'WHITEBOARD_SHAPE' && message.sender !== participantName) {
+      drawShape(message.shape);
+      strokeCacheRef.current.push({ type: 'shape', data: message.shape });
+    } else if (message.type === 'WHITEBOARD_CLEAR') {
+      const clearId = message.clearId;
+      const sender = message.sender;
+      
+      if (!clearId || processedClearsRef.current.has(clearId) || sender === participantName) return;
+      
+      processedClearsRef.current.add(clearId);
+      if (processedClearsRef.current.size > 50) {
+        processedClearsRef.current = new Set(Array.from(processedClearsRef.current).slice(-30));
+      }
+      
+      strokeCacheRef.current = [];
+      
+      queueMicrotask(() => {
+        const canvas = canvasRef.current;
+        const ctx = contextRef.current;
+        if (canvas && ctx) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          console.log('[Whiteboard] Canvas cleared by remote:', sender);
+        }
+      });
+    }
+  }, [isOpen, drawStroke, drawShape, participantName, room]));
 
   // Get position relative to canvas
   const getPosition = useCallback((e: React.MouseEvent<HTMLCanvasElement>): { x: number; y: number } => {

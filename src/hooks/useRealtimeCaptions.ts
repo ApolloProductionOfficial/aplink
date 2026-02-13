@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Room, RoomEvent } from "livekit-client";
+import { useDataChannelMessage } from '@/hooks/useDataChannel';
 import { supabase } from "@/integrations/supabase/client";
 import { getCachedTranscription, setCachedTranscription } from "@/utils/transcriptionCache";
 
@@ -774,32 +775,19 @@ export const useRealtimeCaptions = ({
     console.log('[Captions] Capture stopped');
   }, []);
 
-  // Listen for incoming captions from other participants
-  useEffect(() => {
-    if (!room || !enabled) return;
+  // Listen for incoming captions via centralized data channel
+  useDataChannelMessage(room, 'realtime_caption', useCallback((message: any) => {
+    if (!enabled) return;
+    if (message.caption) {
+      const caption = message.caption as Caption;
+      if (caption.speakerName === participantName) return;
 
-    const handleDataReceived = (payload: Uint8Array) => {
-      try {
-        const decoder = new TextDecoder();
-        const message = JSON.parse(decoder.decode(payload));
-
-        if (message.type === 'realtime_caption' && message.caption) {
-          const caption = message.caption as Caption;
-          if (caption.speakerName === participantName) return;
-
-          setCaptions(prev => [...prev.slice(-9), {
-            ...caption,
-            id: `received-${caption.id}`,
-          }]);
-        }
-      } catch {
-        // Not a caption message
-      }
-    };
-
-    room.on(RoomEvent.DataReceived, handleDataReceived);
-    return () => { room.off(RoomEvent.DataReceived, handleDataReceived); };
-  }, [room, enabled, participantName]);
+      setCaptions(prev => [...prev.slice(-9), {
+        ...caption,
+        id: `received-${caption.id}`,
+      }]);
+    }
+  }, [enabled, participantName]));
 
   // Start/stop based on enabled state - STARTS IMMEDIATELY when enabled
   const roomIdentityRef = useRef<string | null>(null);

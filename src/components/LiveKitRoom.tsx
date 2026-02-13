@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
+import { useDataChannelMessage } from '@/hooks/useDataChannel';
 import {
   LiveKitRoom as LKRoom,
   RoomAudioRenderer,
@@ -1141,52 +1142,26 @@ function LiveKitContent({
   useEffect(() => { showWhiteboardRef.current = showWhiteboard; }, [showWhiteboard]);
   useEffect(() => { showDrawingOverlayRef.current = showDrawingOverlay; }, [showDrawingOverlay]);
 
-  // Listen for whiteboard/drawing overlay open events from other participants
+  // Listen for whiteboard/drawing overlay open events via centralized data channel
   // Issue 5 FIX: Uses refs instead of state to prevent handler re-registration on toggle
-  useEffect(() => {
-    if (!room) return;
-    
-    const handleRemoteWhiteboardEvents = (payload: Uint8Array) => {
-      try {
-        const message = JSON.parse(new TextDecoder().decode(payload));
-        
-        // Auto-open whiteboard when another participant opens it
-        if (message.type === 'WHITEBOARD_OPEN' && message.sender !== participantName) {
-          setRemoteWhiteboardSender(message.sender);
-          if (!isMobile && !showWhiteboardRef.current) {
-            // Desktop: auto-open whiteboard
-            setShowWhiteboard(true);
-          // Issue 4: Removed non-critical whiteboard toast
-          } else if (isMobile) {
-            // Issue 4: Removed non-critical whiteboard toast for mobile
-          }
-        }
-        
-        // Drawing overlay is personal — only notify
-        if (message.type === 'DRAWING_OVERLAY_OPEN' && message.sender !== participantName) {
-          console.log('[LiveKitRoom] Remote participant opened drawing overlay (local-only):', message.sender);
-          // Issue 4: Removed non-critical drawing overlay toast
-        }
-        
-        // Close whiteboard when all participants close it
-        if (message.type === 'WHITEBOARD_CLOSE' && message.sender !== participantName) {
-          setRemoteWhiteboardSender(null);
-          console.log('[LiveKitRoom] Remote participant closed whiteboard:', message.sender);
-        }
-        
-        if (message.type === 'DRAWING_OVERLAY_CLOSE' && message.sender !== participantName) {
-          console.log('[LiveKitRoom] Remote participant closed drawing overlay:', message.sender);
-        }
-      } catch {
-        // Not a whiteboard/overlay message
+  useDataChannelMessage(room, ['WHITEBOARD_OPEN', 'WHITEBOARD_CLOSE', 'DRAWING_OVERLAY_OPEN', 'DRAWING_OVERLAY_CLOSE'], useCallback((message: any) => {
+    if (message.type === 'WHITEBOARD_OPEN' && message.sender !== participantName) {
+      setRemoteWhiteboardSender(message.sender);
+      if (!isMobile && !showWhiteboardRef.current) {
+        setShowWhiteboard(true);
       }
-    };
-    
-    room.on(RoomEvent.DataReceived, handleRemoteWhiteboardEvents);
-    return () => {
-      room.off(RoomEvent.DataReceived, handleRemoteWhiteboardEvents);
-    };
-  }, [room, participantName, isMobile]); // Issue 5: Removed showWhiteboard, showDrawingOverlay from deps
+    }
+    if (message.type === 'DRAWING_OVERLAY_OPEN' && message.sender !== participantName) {
+      console.log('[LiveKitRoom] Remote participant opened drawing overlay (local-only):', message.sender);
+    }
+    if (message.type === 'WHITEBOARD_CLOSE' && message.sender !== participantName) {
+      setRemoteWhiteboardSender(null);
+      console.log('[LiveKitRoom] Remote participant closed whiteboard:', message.sender);
+    }
+    if (message.type === 'DRAWING_OVERLAY_CLOSE' && message.sender !== participantName) {
+      console.log('[LiveKitRoom] Remote participant closed drawing overlay:', message.sender);
+    }
+  }, [participantName, isMobile]));
 
   // Notify parent when room is ready and try to enable audio proactively
   useEffect(() => {
@@ -2052,40 +2027,26 @@ function LiveKitContent({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [room, participantName, localParticipant]);
 
-  // Listen for raise hand events for voice notifications + screenshot notifications
-  useEffect(() => {
-    if (!room) return;
-
-    const handleData = (payload: Uint8Array) => {
-      try {
-        const message = JSON.parse(new TextDecoder().decode(payload));
-        if (message.type === 'RAISE_HAND' && message.raised && message.participantIdentity !== localParticipant?.identity) {
-          announceHandRaised(message.participantName);
-        }
-        // Screenshot notification from another participant
-        if (message.type === 'SCREENSHOT_TAKEN' && message.participantIdentity !== localParticipant?.identity) {
-          setShowScreenshotFlash(true);
-          const shutterSound = new Audio('/audio/camera-shutter.mp3');
-          shutterSound.volume = 0.35;
-          shutterSound.play().catch(() => {});
-          toast.info(`📸 ${message.participantName} сделал скриншот`);
-          setTimeout(() => setShowScreenshotFlash(false), 350);
-        }
-        // PARTICIPANT_KICKED: show toast and disconnect gracefully
-        if (message.type === 'PARTICIPANT_KICKED' && message.kickedIdentity === localParticipant?.identity) {
-          toast.error('Вас удалили из звонка', { duration: 5000 });
-          setTimeout(() => {
-            room?.disconnect();
-          }, 1500);
-        }
-      } catch {
-        // Ignore non-JSON messages
-      }
-    };
-
-    room.on(RoomEvent.DataReceived, handleData);
-    return () => { room.off(RoomEvent.DataReceived, handleData); };
-  }, [room, announceHandRaised, localParticipant]);
+  // Listen for raise hand, screenshot, and kick events via centralized data channel
+  useDataChannelMessage(room, ['RAISE_HAND', 'SCREENSHOT_TAKEN', 'PARTICIPANT_KICKED'], useCallback((message: any) => {
+    if (message.type === 'RAISE_HAND' && message.raised && message.participantIdentity !== localParticipant?.identity) {
+      announceHandRaised(message.participantName);
+    }
+    if (message.type === 'SCREENSHOT_TAKEN' && message.participantIdentity !== localParticipant?.identity) {
+      setShowScreenshotFlash(true);
+      const shutterSound = new Audio('/audio/camera-shutter.mp3');
+      shutterSound.volume = 0.35;
+      shutterSound.play().catch(() => {});
+      toast.info(`📸 ${message.participantName} сделал скриншот`);
+      setTimeout(() => setShowScreenshotFlash(false), 350);
+    }
+    if (message.type === 'PARTICIPANT_KICKED' && message.kickedIdentity === localParticipant?.identity) {
+      toast.error('Вас удалили из звонка', { duration: 5000 });
+      setTimeout(() => {
+        room?.disconnect();
+      }, 1500);
+    }
+  }, [announceHandRaised, localParticipant, room]));
 
   useEffect(() => {
     if (!room) return;

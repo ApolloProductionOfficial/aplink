@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Room, RoomEvent } from "livekit-client";
+import { useDataChannelMessage } from '@/hooks/useDataChannel';
 import { MessageCircle, Send, X, GripHorizontal, Smile, Mic, Square, Play, Pause, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -107,64 +108,46 @@ export function InCallChat({ room, participantName, isOpen, onToggle, buttonOnly
     }
   }, []);
 
-  // Receive messages from other participants
-  useEffect(() => {
-    if (!room) return;
+  // Receive messages via centralized data channel
+  useDataChannelMessage(room, ['chat_message', 'voice_message'], useCallback((message: any) => {
+    if (message.type === 'chat_message') {
+      const newMessage: ChatMessage = {
+        id: `${Date.now()}-${Math.random()}`,
+        senderName: message.senderName,
+        senderIdentity: message.senderIdentity,
+        text: message.text,
+        timestamp: new Date(message.timestamp),
+        isLocal: false,
+        type: 'text',
+      };
 
-    const handleDataReceived = (payload: Uint8Array, participant: any) => {
-      try {
-        const decoder = new TextDecoder();
-        const message = JSON.parse(decoder.decode(payload));
-
-        if (message.type === 'chat_message') {
-          const newMessage: ChatMessage = {
-            id: `${Date.now()}-${Math.random()}`,
-            senderName: message.senderName,
-            senderIdentity: message.senderIdentity,
-            text: message.text,
-            timestamp: new Date(message.timestamp),
-            isLocal: false,
-            type: 'text',
-          };
-
-          setMessages(prev => [...prev, newMessage]);
-          
-          // Play sound and increment unread if chat is closed
-          if (!isOpen) {
-            setUnreadCount(prev => prev + 1);
-            playMessageSound();
-          }
-        } else if (message.type === 'voice_message') {
-          const newMessage: ChatMessage = {
-            id: `${Date.now()}-${Math.random()}`,
-            senderName: message.senderName,
-            senderIdentity: message.senderIdentity,
-            timestamp: new Date(message.timestamp),
-            isLocal: false,
-            type: 'voice',
-            audioData: message.audioData, // Legacy base64
-            audioUrl: message.audioUrl, // New URL-based
-            audioDuration: message.duration,
-          };
-
-          setMessages(prev => [...prev, newMessage]);
-          
-          if (!isOpen) {
-            setUnreadCount(prev => prev + 1);
-            playMessageSound();
-          }
-        }
-      } catch {
-        // Not a chat message
+      setMessages(prev => [...prev, newMessage]);
+      
+      if (!isOpen) {
+        setUnreadCount(prev => prev + 1);
+        playMessageSound();
       }
-    };
+    } else if (message.type === 'voice_message') {
+      const newMessage: ChatMessage = {
+        id: `${Date.now()}-${Math.random()}`,
+        senderName: message.senderName,
+        senderIdentity: message.senderIdentity,
+        timestamp: new Date(message.timestamp),
+        isLocal: false,
+        type: 'voice',
+        audioData: message.audioData,
+        audioUrl: message.audioUrl,
+        audioDuration: message.duration,
+      };
 
-    room.on(RoomEvent.DataReceived, handleDataReceived);
-
-    return () => {
-      room.off(RoomEvent.DataReceived, handleDataReceived);
-    };
-  }, [room, isOpen, playMessageSound]);
+      setMessages(prev => [...prev, newMessage]);
+      
+      if (!isOpen) {
+        setUnreadCount(prev => prev + 1);
+        playMessageSound();
+      }
+    }
+  }, [isOpen, playMessageSound]));
 
   // Clear unread count when chat opens
   useEffect(() => {
