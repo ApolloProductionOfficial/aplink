@@ -438,21 +438,24 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose, onCanva
         laserAnimationRef.current = null;
       }
       
-      // Issue 6 FIX: When switching FROM laser, restore canvas from history
-      // using requestAnimationFrame barrier to ensure laser loop has fully stopped
+      // Issue 10 FIX: Double-rAF barrier when switching FROM laser to ensure loop fully stopped
       if (prevTool === 'laser') {
         baseImageDataRef.current = null;
         
+        // First rAF: cancel any pending laser frame
         requestAnimationFrame(() => {
-          const ctx = contextRef.current;
-          const canvas = canvasRef.current;
-          if (ctx && canvas && historyRef.current.length > 0) {
-            const lastState = historyRef.current[historyRef.current.length - 1];
-            if (lastState) {
-              ctx.putImageData(lastState, 0, 0);
-              console.log('[DrawingOverlay] Canvas restored from history after laser exit');
+          // Second rAF: now it's truly safe to restore canvas
+          requestAnimationFrame(() => {
+            const ctx = contextRef.current;
+            const canvas = canvasRef.current;
+            if (ctx && canvas && historyRef.current.length > 0) {
+              const lastState = historyRef.current[historyRef.current.length - 1];
+              if (lastState) {
+                ctx.putImageData(lastState, 0, 0);
+                console.log('[DrawingOverlay] Canvas restored from history after laser exit (double-rAF)');
+              }
             }
-          }
+          });
         });
         
         console.log('[DrawingOverlay] Laser mode DISABLED - switched to:', tool);
@@ -1214,12 +1217,12 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose, onCanva
         }
       }}
     >
-      {/* Transparent canvas overlay */}
+      {/* Transparent canvas overlay - Issue 10: dynamic cursor based on tool */}
       <canvas 
         ref={canvasRef}
         data-preserve-cursor
-        className="absolute inset-0 cursor-crosshair touch-none"
-        style={{ cursor: 'crosshair' }}
+        className="absolute inset-0 touch-none"
+        style={{ cursor: tool === 'laser' ? 'none' : tool === 'eraser' ? 'cell' : 'crosshair' }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMoveWithPanel}
         onMouseUp={handleMouseUp}
@@ -1228,6 +1231,24 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose, onCanva
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       />
+
+      {/* Issue 10: DOM-based laser cursor ring (visible when tool is laser) */}
+      {tool === 'laser' && (
+        <div
+          className="pointer-events-none fixed z-[99997] transition-opacity duration-100"
+          style={{
+            width: 28,
+            height: 28,
+            borderRadius: '50%',
+            border: `2px solid ${color}`,
+            boxShadow: `0 0 12px ${color}80, inset 0 0 6px ${color}40`,
+            transform: 'translate(-50%, -50%)',
+            left: laserPointsRef.current.length > 0 ? laserPointsRef.current[laserPointsRef.current.length - 1].x : -100,
+            top: laserPointsRef.current.length > 0 ? laserPointsRef.current[laserPointsRef.current.length - 1].y : -100,
+            opacity: laserPointsRef.current.length > 0 ? 1 : 0,
+          }}
+        />
+      )}
 
       {/* ALWAYS VISIBLE floating close button - REDUCED SIZE to not exceed frame */}
       <Button

@@ -62,18 +62,18 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
   const [color, setColor] = useState('#ffffff');
   const [brushSize, setBrushSize] = useState(3);
   const [tool, setTool] = useState<Tool>('pen');
-  const [isClearing, setIsClearing] = useState(false); // UI blocking during clear
+  const [isClearing, setIsClearing] = useState(false);
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
   const shapeStartRef = useRef<{ x: number; y: number } | null>(null);
   const contextRef = useRef<CanvasRenderingContext2D | null>(null);
-  // Store canvas state for shape preview
   const savedImageDataRef = useRef<ImageData | null>(null);
-  // Track processed clear IDs to prevent loops
   const processedClearsRef = useRef<Set<string>>(new Set());
-  // Debounce ref to prevent multiple clears
   const clearDebounceRef = useRef<boolean>(false);
-  // Track if we broadcasted open state
   const hasAnnounceOpenRef = useRef(false);
+  
+  // Issue 9: Stroke cache for sync — stores all strokes/shapes for late-joiners
+  const strokeCacheRef = useRef<Array<{ type: string; data: any }>>([]);
+  const hasSentSyncRef = useRef(false);
   
   // Mobile detection
   const isMobile = useIsMobile();
@@ -317,9 +317,12 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   }, []);
 
-  // Broadcast stroke to other participants
+  // Broadcast stroke to other participants + cache for sync
   const broadcastStroke = useCallback((stroke: Stroke) => {
     if (!room) return;
+    strokeCacheRef.current.push({ type: 'stroke', data: stroke });
+    // Keep cache manageable
+    if (strokeCacheRef.current.length > 500) strokeCacheRef.current = strokeCacheRef.current.slice(-300);
     const data = JSON.stringify({ 
       type: 'WHITEBOARD_STROKE', 
       stroke,
@@ -331,9 +334,10 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
     );
   }, [room, participantName]);
 
-  // Broadcast shape to other participants
+  // Broadcast shape to other participants + cache
   const broadcastShape = useCallback((shape: Shape) => {
     if (!room) return;
+    strokeCacheRef.current.push({ type: 'shape', data: shape });
     const data = JSON.stringify({ 
       type: 'WHITEBOARD_SHAPE', 
       shape,
@@ -455,49 +459,70 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
     }
   }, [isExportingGif]);
 
-  // Listen for incoming data
+  // Listen for incoming data + Issue 9: sync request protocol
   useEffect(() => {
     if (!room || !isOpen) return;
+
+    // Issue 9: Send sync request when whiteboard opens (late-joiner)
+    if (!hasSentSyncRef.current) {
+      hasSentSyncRef.current = true;
+      setTimeout(() => {
+        try {
+          room.localParticipant.publishData(
+            new TextEncoder().encode(JSON.stringify({ type: 'WHITEBOARD_SYNC_REQUEST', sender: participantName })),
+            { reliable: true }
+          );
+          console.log('[Whiteboard] Sent sync request');
+        } catch {}
+      }, 500);
+    }
 
     const handleData = (payload: Uint8Array) => {
       try {
         const message = JSON.parse(new TextDecoder().decode(payload));
+        
+        // Issue 9: Respond to sync requests with cached strokes
+        if (message.type === 'WHITEBOARD_SYNC_REQUEST' && message.sender !== participantName && strokeCacheRef.current.length > 0) {
+          console.log('[Whiteboard] Responding to sync request with', strokeCacheRef.current.length, 'cached items');
+          const syncData = JSON.stringify({
+            type: 'WHITEBOARD_SYNC_RESPONSE',
+            items: strokeCacheRef.current,
+            sender: participantName,
+          });
+          room.localParticipant.publishData(new TextEncoder().encode(syncData), { reliable: true });
+          return;
+        }
+        
+        // Issue 9: Apply sync response (replay all cached strokes)
+        if (message.type === 'WHITEBOARD_SYNC_RESPONSE' && message.sender !== participantName && message.items) {
+          console.log('[Whiteboard] Received sync with', message.items.length, 'items');
+          for (const item of message.items) {
+            if (item.type === 'stroke') drawStroke(item.data);
+            else if (item.type === 'shape') drawShape(item.data);
+          }
+          return;
+        }
+        
         if (message.type === 'WHITEBOARD_STROKE' && message.sender !== participantName) {
           drawStroke(message.stroke);
+          strokeCacheRef.current.push({ type: 'stroke', data: message.stroke });
         } else if (message.type === 'WHITEBOARD_SHAPE' && message.sender !== participantName) {
           drawShape(message.shape);
+          strokeCacheRef.current.push({ type: 'shape', data: message.shape });
         } else if (message.type === 'WHITEBOARD_CLEAR') {
           const clearId = message.clearId;
           const sender = message.sender;
           
-          // Multiple checks to prevent infinite loop
-          if (!clearId) {
-            console.warn('[Whiteboard] Clear without clearId, ignoring');
-            return;
-          }
+          if (!clearId || processedClearsRef.current.has(clearId) || sender === participantName) return;
           
-          // Check if already processed FIRST
-          if (processedClearsRef.current.has(clearId)) {
-            console.log('[Whiteboard] Already processed clear:', clearId);
-            return;
-          }
-          
-          // Check if it's our own message
-          if (sender === participantName) {
-            console.log('[Whiteboard] Ignoring own clear message');
-            return;
-          }
-          
-          // Add clearId to processed IMMEDIATELY
           processedClearsRef.current.add(clearId);
-          
-          // Limit Set size
           if (processedClearsRef.current.size > 50) {
-            const arr = Array.from(processedClearsRef.current);
-            processedClearsRef.current = new Set(arr.slice(-30));
+            processedClearsRef.current = new Set(Array.from(processedClearsRef.current).slice(-30));
           }
           
-          // Clear canvas using queueMicrotask to avoid blocking React render cycle
+          // Clear stroke cache too
+          strokeCacheRef.current = [];
+          
           queueMicrotask(() => {
             const canvas = canvasRef.current;
             const ctx = contextRef.current;
@@ -513,7 +538,10 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
     };
 
     room.on(RoomEvent.DataReceived, handleData);
-    return () => { room.off(RoomEvent.DataReceived, handleData); };
+    return () => { 
+      room.off(RoomEvent.DataReceived, handleData);
+      hasSentSyncRef.current = false;
+    };
   }, [room, isOpen, drawStroke, drawShape, participantName]);
 
   // Get position relative to canvas
