@@ -110,3 +110,6 @@ verify_jwt = false
 
 [functions.openrouter-ai]
 verify_jwt = false
+
+[functions.kick-participant]
+verify_jwt = false

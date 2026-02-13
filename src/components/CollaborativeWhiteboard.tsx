@@ -71,6 +71,9 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
   const clearDebounceRef = useRef<boolean>(false);
   const hasAnnounceOpenRef = useRef(false);
   
+  // Undo history
+  const historyRef = useRef<ImageData[]>([]);
+  
   // Issue 9: Stroke cache for sync — stores all strokes/shapes for late-joiners
   const strokeCacheRef = useRef<Array<{ type: string; data: any }>>([]);
   const hasSentSyncRef = useRef(false);
@@ -228,12 +231,15 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
     if (!canvasRef.current || !isOpen) return;
     
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
     if (!ctx) return;
     
     contextRef.current = ctx;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
+    
+    // Save initial state for undo
+    historyRef.current = [ctx.getImageData(0, 0, canvas.width, canvas.height)];
   }, [isOpen]);
 
   // Draw a stroke on canvas
@@ -315,6 +321,30 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
     const ctx = contextRef.current;
     if (!canvas || !ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    historyRef.current = [ctx.getImageData(0, 0, canvas.width, canvas.height)];
+  }, []);
+
+  // Save to history for undo
+  const saveToHistory = useCallback(() => {
+    const ctx = contextRef.current;
+    const canvas = canvasRef.current;
+    if (!ctx || !canvas) return;
+    historyRef.current.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+    if (historyRef.current.length > 20) {
+      historyRef.current.shift();
+    }
+  }, []);
+
+  // Undo last action
+  const undoAction = useCallback(() => {
+    const canvas = canvasRef.current;
+    const ctx = contextRef.current;
+    if (!ctx || !canvas || historyRef.current.length <= 1) return;
+    historyRef.current.pop();
+    const lastState = historyRef.current[historyRef.current.length - 1];
+    if (lastState) {
+      ctx.putImageData(lastState, 0, 0);
+    }
   }, []);
 
   // Broadcast stroke to other participants + cache for sync
@@ -637,7 +667,8 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
     lastPointRef.current = null;
     shapeStartRef.current = null;
     savedImageDataRef.current = null;
-  }, [isDrawing, tool, color, brushSize, getPosition, drawShape, broadcastShape]);
+    saveToHistory();
+  }, [isDrawing, tool, color, brushSize, getPosition, drawShape, broadcastShape, saveToHistory]);
 
   // Direct clear without confirmation dialog to prevent freezing
   const handleClear = useCallback(() => {
@@ -804,6 +835,15 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
 
           {/* Actions */}
           <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={undoAction}
+              className="w-8 h-8 rounded-full hover:bg-primary/20 hover:border-primary/50"
+              title="Отменить (Ctrl+Z)"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </Button>
             <Button
               variant="outline"
               size="icon"
@@ -996,6 +1036,17 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
                   );
                 })}
                 
+                {/* Undo */}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={undoAction}
+                  className="w-9 h-9 rounded-full"
+                  title="Отменить"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                </Button>
+                
                 {/* Clear */}
                 <Button
                   variant="outline"
@@ -1069,6 +1120,17 @@ export function CollaborativeWhiteboard({ room, participantName, isOpen, onClose
                     </Button>
                   );
                 })}
+
+                {/* Undo button */}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={undoAction}
+                  className="w-10 h-10 rounded-full hover:bg-primary/20 hover:border-primary/50"
+                  title="Отменить (Ctrl+Z)"
+                >
+                  <RotateCcw className="w-4 h-4 text-primary" />
+                </Button>
 
                 {/* Clear button */}
                 <Button

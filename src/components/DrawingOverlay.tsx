@@ -384,6 +384,10 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose, onCanva
     const lastState = historyRef.current[historyRef.current.length - 1];
     if (lastState) {
       ctx.putImageData(lastState, 0, 0);
+      // CRITICAL FIX: Update baseImageDataRef after undo
+      if (isLaserActiveRef.current) {
+        baseImageDataRef.current = lastState;
+      }
       console.log('[DrawingOverlay] Undo applied, history length:', historyRef.current.length);
     }
   }, []);
@@ -725,10 +729,15 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose, onCanva
     const canvas = canvasRef.current;
     if (!ctx || !canvas) return;
     
-    historyRef.current.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    historyRef.current.push(imageData);
     // Keep only last 20 states
     if (historyRef.current.length > 20) {
       historyRef.current.shift();
+    }
+    // CRITICAL FIX: Update baseImageDataRef so laser loop never restores stale state
+    if (isLaserActiveRef.current) {
+      baseImageDataRef.current = imageData;
     }
   }, []);
 
@@ -803,6 +812,10 @@ export function DrawingOverlay({ room, participantName, isOpen, onClose, onCanva
         if (message.type === 'DRAWING_OVERLAY_STROKE') {
           if (isOpen && contextRef.current) {
             drawStroke(message.stroke);
+            // CRITICAL FIX: Update baseImageDataRef after remote stroke so laser doesn't erase it
+            if (isLaserActiveRef.current && canvasRef.current && contextRef.current) {
+              baseImageDataRef.current = contextRef.current.getImageData(0, 0, canvasRef.current.width, canvasRef.current.height);
+            }
           } else {
             // Store for later when overlay opens
             pendingStrokesRef.current.push(message.stroke);

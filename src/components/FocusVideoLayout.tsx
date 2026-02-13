@@ -1,7 +1,7 @@
 import { useMemo, useState, useCallback } from 'react';
-import { Track, LocalParticipant, RemoteParticipant } from 'livekit-client';
+import { Track, LocalParticipant, RemoteParticipant, ConnectionQuality } from 'livekit-client';
 import { VideoTrack, useParticipants, useTracks, TrackReferenceOrPlaceholder } from '@livekit/components-react';
-import { User, VideoOff, Mic, MicOff, Pin } from 'lucide-react';
+import { User, VideoOff, Mic, MicOff, Pin, UserX, Signal, SignalLow, SignalMedium, SignalHigh, SignalZero } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DraggablePiP } from '@/components/DraggablePiP';
 import { useAudioLevelMeter } from '@/hooks/useAudioLevelMeter';
@@ -21,6 +21,7 @@ interface FocusVideoLayoutProps {
   speakingParticipant?: string;
   pinnedParticipant?: string;
   onPinParticipant?: (identity: string | null) => void;
+  onKickParticipant?: (identity: string) => void;
 }
 
 /**
@@ -39,6 +40,7 @@ export function FocusVideoLayout({
   speakingParticipant,
   pinnedParticipant,
   onPinParticipant,
+  onKickParticipant,
 }: FocusVideoLayoutProps) {
   const participants = useParticipants();
   const tracks = useTracks([
@@ -200,6 +202,15 @@ export function FocusVideoLayout({
                     <Pin className="w-4 h-4 mr-2" />
                     {isRemotePinned ? 'Открепить' : 'Закрепить'}
                   </ContextMenuItem>
+                  {onKickParticipant && (
+                    <ContextMenuItem 
+                      onClick={() => onKickParticipant(mainRemoteParticipant.identity)}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <UserX className="w-4 h-4 mr-2" />
+                      Удалить из звонка
+                    </ContextMenuItem>
+                  )}
                 </ContextMenuContent>
               )}
             </ContextMenu>
@@ -315,6 +326,15 @@ export function FocusVideoLayout({
               <Pin className="w-4 h-4 mr-2" />
               {isRemotePinned ? 'Открепить' : 'Закрепить'}
             </ContextMenuItem>
+            {onKickParticipant && (
+              <ContextMenuItem 
+                onClick={() => onKickParticipant(mainRemoteParticipant.identity)}
+                className="text-destructive focus:text-destructive"
+              >
+                <UserX className="w-4 h-4 mr-2" />
+                Удалить из звонка
+              </ContextMenuItem>
+            )}
           </ContextMenuContent>
         )}
       </ContextMenu>
