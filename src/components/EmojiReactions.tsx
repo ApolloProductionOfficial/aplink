@@ -351,7 +351,7 @@ const CUSTOM_REACTIONS: CustomReaction[] = [
     id: 'toy',
     label: 'Игрушка',
     svg: (
-      <img src="/images/emoji-toy.svg" alt="Toy" className="w-full h-full object-contain" />
+      <img src="/images/emoji-toy.svg?v=2" alt="Toy" className="w-full h-full object-contain" style={{ filter: 'invert(1) hue-rotate(180deg)' }} />
     ),
     glowColor: 'rgba(139, 113, 187, 0.7)',
     animationClass: 'emoji-eggplant-animate',
