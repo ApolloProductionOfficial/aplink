@@ -347,15 +347,6 @@ const CUSTOM_REACTIONS: CustomReaction[] = [
     glowColor: 'rgba(255, 180, 180, 0.7)',
     animationClass: 'emoji-peach-animate',
   },
-  {
-    id: 'toy',
-    label: 'Игрушка',
-    svg: (
-      <img src="/images/emoji-toy.svg" alt="Toy" className="w-full h-full object-contain" />
-    ),
-    glowColor: 'rgba(139, 113, 187, 0.7)',
-    animationClass: 'emoji-eggplant-animate',
-  },
 ];
 
 interface EmojiReaction {
