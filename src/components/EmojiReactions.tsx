@@ -342,7 +342,32 @@ const CUSTOM_REACTIONS: CustomReaction[] = [
     id: 'toy',
     label: 'Игрушка',
     svg: (
-      <img src="/images/emoji-toy.png" alt="Toy" className="w-full h-full object-contain" style={{ mixBlendMode: 'screen' }} />
+      <svg viewBox="0 0 48 48" className="w-full h-full">
+        <defs>
+          <linearGradient id="toy-grad" x1="50%" y1="0%" x2="50%" y2="100%">
+            <stop offset="0%" stopColor="#4a3a4a"/>
+            <stop offset="100%" stopColor="#2d1f2d"/>
+          </linearGradient>
+        </defs>
+        {/* Main body */}
+        <rect x="18" y="4" width="14" height="34" rx="7" fill="url(#toy-grad)"/>
+        {/* Side part */}
+        <ellipse cx="14" cy="24" rx="6" ry="10" fill="url(#toy-grad)" transform="rotate(-20 14 24)"/>
+        {/* Ridges */}
+        <path d="M18 18 Q16 19 16 20" stroke="#6b5b6b" strokeWidth="1.5" fill="none"/>
+        <path d="M18 22 Q16 23 16 24" stroke="#6b5b6b" strokeWidth="1.5" fill="none"/>
+        <path d="M18 26 Q16 27 16 28" stroke="#6b5b6b" strokeWidth="1.5" fill="none"/>
+        {/* Face base */}
+        <rect x="18" y="32" width="14" height="12" rx="7" fill="#fdd5c8"/>
+        {/* Eyes */}
+        <circle cx="22" cy="38" r="1.5" fill="#2d1f2d"/>
+        <circle cx="28" cy="38" r="1.5" fill="#2d1f2d"/>
+        {/* Smile */}
+        <path d="M23 41 Q25 43 27 41" stroke="#2d1f2d" strokeWidth="1" fill="none" strokeLinecap="round"/>
+        {/* Cheeks */}
+        <circle cx="21" cy="40" r="1.5" fill="#f5a0a0" opacity="0.5"/>
+        <circle cx="29" cy="40" r="1.5" fill="#f5a0a0" opacity="0.5"/>
+      </svg>
     ),
     glowColor: 'rgba(100, 60, 100, 0.7)',
     animationClass: 'emoji-eggplant-animate',
@@ -351,7 +376,22 @@ const CUSTOM_REACTIONS: CustomReaction[] = [
     id: 'boobs',
     label: 'Сиськи',
     svg: (
-      <img src="/images/emoji-boobs.png" alt="Boobs" className="w-full h-full object-contain" style={{ mixBlendMode: 'screen' }} />
+      <svg viewBox="0 0 48 36" className="w-full h-full">
+        {/* Left */}
+        <ellipse cx="17" cy="22" rx="13" ry="12" fill="#fdd5c8" stroke="#2d1f2d" strokeWidth="2"/>
+        {/* Right */}
+        <ellipse cx="31" cy="22" rx="13" ry="12" fill="#fdd5c8" stroke="#2d1f2d" strokeWidth="2"/>
+        {/* Left nipple */}
+        <circle cx="17" cy="22" r="4" fill="#f5a0a0"/>
+        <circle cx="16" cy="21" r="1" fill="#2d1f2d"/>
+        <circle cx="18.5" cy="21" r="1" fill="#2d1f2d"/>
+        <path d="M15.5 23.5 Q17 25 18.5 23.5" stroke="#2d1f2d" strokeWidth="0.8" fill="none" strokeLinecap="round"/>
+        {/* Right nipple */}
+        <circle cx="31" cy="22" r="4" fill="#f5a0a0"/>
+        <circle cx="30" cy="21" r="1" fill="#2d1f2d"/>
+        <circle cx="32.5" cy="21" r="1" fill="#2d1f2d"/>
+        <path d="M29.5 23.5 Q31 25 32.5 23.5" stroke="#2d1f2d" strokeWidth="0.8" fill="none" strokeLinecap="round"/>
+      </svg>
     ),
     glowColor: 'rgba(255, 180, 180, 0.7)',
     animationClass: 'emoji-peach-animate',
