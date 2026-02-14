@@ -338,6 +338,15 @@ const CUSTOM_REACTIONS: CustomReaction[] = [
     ),
     glowColor: 'rgba(0, 191, 255, 0.8)'
   },
+  {
+    id: 'boobs',
+    label: 'Сиськи',
+    svg: (
+      <img src="/images/emoji-boobs.svg" alt="Boobs" className="w-full h-full object-contain" />
+    ),
+    glowColor: 'rgba(255, 180, 180, 0.7)',
+    animationClass: 'emoji-peach-animate',
+  },
 ];
 
 interface EmojiReaction {
