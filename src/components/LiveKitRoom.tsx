@@ -548,10 +548,14 @@ export function LiveKitRoom({
           channelCount: 1, // Mono for iOS stability
         },
         publishDefaults: {
-          simulcast: false, // Disable simulcast to reduce renegotiations
-          videoCodec: 'vp8' as const, // VP8 is more stable on iOS Safari
+          simulcast: false,
+          videoCodec: 'vp8' as const,
           dtx: true,
           red: true,
+          screenShareEncoding: {
+            maxBitrate: 2_000_000,
+            maxFramerate: 10,
+          },
         },
       };
     }
@@ -594,6 +598,11 @@ export function LiveKitRoom({
         videoSimulcastLayers: isMac
           ? [VideoPresets.h360, VideoPresets.h720]  // Fewer layers on Mac
           : [VideoPresets.h360, VideoPresets.h540, VideoPresets.h1080],
+        screenShareEncoding: {
+          maxBitrate: 3_000_000,
+          maxFramerate: 15,
+        },
+        screenShareSimulcastLayers: [],
       },
       // Keep tracks alive across reconnections to prevent re-negotiation failures
       stopLocalTrackOnUnpublish: false,
@@ -1559,7 +1568,24 @@ function LiveKitContent({
 
       isTogglingMediaRef.current = true;
       const currentState = localParticipant?.isScreenShareEnabled ?? false;
-      await localParticipant?.setScreenShareEnabled(!currentState);
+      
+      if (!currentState) {
+        // Enable screen share with explicit options for reliable publishing
+        await localParticipant?.setScreenShareEnabled(true, {
+          audio: true,
+          video: true,
+          resolution: { width: 1920, height: 1080, frameRate: 15 },
+          contentHint: 'detail',
+        });
+        console.log('[LiveKitRoom] Screen share enabled, track publications:', 
+          Array.from(localParticipant?.trackPublications.values() ?? [])
+            .filter(t => t.source === Track.Source.ScreenShare)
+            .map(t => ({ sid: t.trackSid, subscribed: t.isSubscribed, muted: t.isMuted }))
+        );
+      } else {
+        await localParticipant?.setScreenShareEnabled(false);
+        console.log('[LiveKitRoom] Screen share disabled');
+      }
     } catch (err: any) {
       // Handle user cancellation (not an error - user just closed the picker)
       if (err?.name === 'NotAllowedError' || err?.message?.includes('cancelled') || err?.message?.includes('canceled')) {
@@ -1581,8 +1607,12 @@ function LiveKitContent({
         onNegotiationError?.(err);
         await new Promise(r => setTimeout(r, 600));
         try {
-          const currentState = localParticipant?.isScreenShareEnabled ?? false;
-          await localParticipant?.setScreenShareEnabled(!currentState);
+          await localParticipant?.setScreenShareEnabled(true, {
+            audio: true,
+            video: true,
+            resolution: { width: 1920, height: 1080, frameRate: 15 },
+            contentHint: 'detail',
+          });
         } catch (retryErr) {
           console.error('Failed to toggle screen share after retry:', retryErr);
           toast.error('Не удалось включить демонстрацию экрана');
