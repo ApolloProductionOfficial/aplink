@@ -1,12 +1,13 @@
 import { useEffect, useCallback, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { createPortal } from 'react-dom';
-import { Room, RoomEvent } from 'livekit-client';
+import { Room, RoomEvent, Track } from 'livekit-client';
 import { useDataChannelMessage } from '@/hooks/useDataChannel';
 import { toast } from 'sonner';
 import { useActiveCall } from '@/contexts/ActiveCallContext';
 import { LiveKitRoom } from '@/components/LiveKitRoom';
 import { MinimizedCallWidget } from '@/components/MinimizedCallWidget';
+import { DocumentPiPWindow } from '@/components/DocumentPiPWindow';
 import { CaptionsOverlay } from '@/components/CaptionsOverlay';
 import { RealtimeTranslator } from '@/components/RealtimeTranslator';
 import ParticipantsIPPanel from '@/components/ParticipantsIPPanel';
@@ -102,6 +103,56 @@ export function GlobalActiveCall() {
   // Navigation tracking refs
   const wasMinimizedRef = useRef(isMinimized);
   const didNavigateRef = useRef(false);
+
+  // Document PiP: track media states from liveKitRoom
+  const [docPipMicMuted, setDocPipMicMuted] = useState(false);
+  const [docPipCamMuted, setDocPipCamMuted] = useState(false);
+  const [docPipScreenShare, setDocPipScreenShare] = useState(false);
+
+  // Sync media states from liveKitRoom for Document PiP
+  useEffect(() => {
+    if (!liveKitRoom) return;
+    const lp = liveKitRoom.localParticipant;
+    const sync = () => {
+      setDocPipMicMuted(lp.getTrackPublication(Track.Source.Microphone)?.isMuted ?? true);
+      setDocPipCamMuted(lp.getTrackPublication(Track.Source.Camera)?.isMuted ?? true);
+      setDocPipScreenShare(lp.isScreenShareEnabled);
+    };
+    sync();
+    const interval = setInterval(sync, 1000);
+    lp.on('trackMuted', sync);
+    lp.on('trackUnmuted', sync);
+    return () => {
+      clearInterval(interval);
+      lp.off('trackMuted', sync);
+      lp.off('trackUnmuted', sync);
+    };
+  }, [liveKitRoom]);
+
+  // Document PiP control callbacks
+  const handleDocPipToggleMic = useCallback(async () => {
+    if (!liveKitRoom) return;
+    const lp = liveKitRoom.localParticipant;
+    const micPub = lp.getTrackPublication(Track.Source.Microphone);
+    if (micPub) {
+      await lp.setMicrophoneEnabled(micPub.isMuted);
+    }
+  }, [liveKitRoom]);
+
+  const handleDocPipToggleCam = useCallback(async () => {
+    if (!liveKitRoom) return;
+    const lp = liveKitRoom.localParticipant;
+    const camPub = lp.getTrackPublication(Track.Source.Camera);
+    if (camPub) {
+      await lp.setCameraEnabled(camPub.isMuted);
+    }
+  }, [liveKitRoom]);
+
+  const handleDocPipToggleScreen = useCallback(async () => {
+    if (!liveKitRoom) return;
+    const lp = liveKitRoom.localParticipant;
+    await lp.setScreenShareEnabled(!lp.isScreenShareEnabled);
+  }, [liveKitRoom]);
 
   // Generate stable key when call starts - with deduplication
   useEffect(() => {
@@ -545,7 +596,24 @@ export function GlobalActiveCall() {
         />
       </div>
 
-      {/* Minimize animation overlay */}
+      {/* Document Picture-in-Picture — Google Meet style popup on tab switch */}
+      <DocumentPiPWindow
+        room={liveKitRoom}
+        isActive={isActive && !isMinimized}
+        onBackToTab={() => {
+          // Focus the tab
+          window.focus();
+        }}
+        onEndCall={handleEndCall}
+        onToggleMic={handleDocPipToggleMic}
+        onToggleCamera={handleDocPipToggleCam}
+        onToggleScreenShare={handleDocPipToggleScreen}
+        isMicMuted={docPipMicMuted}
+        isCameraMuted={docPipCamMuted}
+        isScreenSharing={docPipScreenShare}
+        participantName={participantName}
+      />
+
       {isAnimatingOut &&
         createPortal(
           <div 
