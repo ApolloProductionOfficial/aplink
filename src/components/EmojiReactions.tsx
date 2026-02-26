@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { Room, RoomEvent } from "livekit-client";
+import { Room } from "livekit-client";
 import { useDataChannelMessage } from '@/hooks/useDataChannel';
 import { Smile } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,479 +14,246 @@ import { cn } from "@/lib/utils";
 interface CustomReaction {
   id: string;
   label: string;
+  category: 'faces' | 'hands' | 'hearts' | 'objects' | 'brand';
   svg: React.ReactNode;
   glowColor: string;
   animationClass?: string;
+  wide?: boolean;
 }
 
-// Google Meet-style reactions (first row) + Custom neon reactions
+/* ───────────────────────────────────────────────
+   PROFESSIONALLY DESIGNED SVG REACTIONS
+   Organised: Faces → Hands → Hearts → Objects → Brand
+   ─────────────────────────────────────────────── */
+
 const CUSTOM_REACTIONS: CustomReaction[] = [
-  // === Google Meet-style reactions ===
+  // ═══════ FACES ═══════
   {
-    id: 'heart',
-    label: '❤️',
+    id: 'laugh', category: 'faces', label: '😂',
     svg: (
-      <svg viewBox="0 0 48 48" className="w-full h-full">
-        <defs>
-          <linearGradient id="heart-meet-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#ff4d6d"/>
-            <stop offset="100%" stopColor="#c9184a"/>
-          </linearGradient>
-        </defs>
-        <path d="M24 42C24 42 6 30 6 18C6 12 10 6 16 6C20 6 23 8 24 11C25 8 28 6 32 6C38 6 42 12 42 18C42 30 24 42 24 42Z" fill="url(#heart-meet-grad)"/>
-        <path d="M16 14C14 14 12 16 12 19" stroke="white" strokeWidth="1.5" strokeLinecap="round" opacity="0.4"/>
-      </svg>
+      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><radialGradient id="face-g" cx="40%" cy="35%"><stop offset="0%" stopColor="#ffe066"/><stop offset="100%" stopColor="#f9a825"/></radialGradient></defs><circle cx="24" cy="24" r="21" fill="url(#face-g)"/><path d="M13.5 19c0-1 1.5-3 3.5-1.5" stroke="#5d4037" strokeWidth="2.5" strokeLinecap="round" fill="none"/><path d="M34.5 19c0-1-1.5-3-3.5-1.5" stroke="#5d4037" strokeWidth="2.5" strokeLinecap="round" fill="none"/><path d="M13 29q11 13 22 0" fill="#5d4037"/><path d="M13 29q11-3 22 0" fill="white"/><circle cx="12" cy="25" r="3.5" fill="#ff8a65" opacity="0.25"/><circle cx="36" cy="25" r="3.5" fill="#ff8a65" opacity="0.25"/></svg>
     ),
-    glowColor: 'rgba(255, 77, 109, 0.7)',
+    glowColor: 'rgba(255,214,0,0.6)',
+  },
+  {
+    id: 'wink', category: 'faces', label: '😉',
+    svg: (
+      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><radialGradient id="wink-g" cx="40%" cy="35%"><stop offset="0%" stopColor="#ffe066"/><stop offset="100%" stopColor="#f9a825"/></radialGradient></defs><circle cx="24" cy="24" r="21" fill="url(#wink-g)"/><circle cx="16" cy="20" r="2.8" fill="#5d4037"/><path d="M29 19.5l5 2" stroke="#5d4037" strokeWidth="2.5" strokeLinecap="round"/><path d="M14 31q10 9 20 0" stroke="#5d4037" strokeWidth="2.2" fill="none" strokeLinecap="round"/></svg>
+    ),
+    glowColor: 'rgba(255,214,0,0.6)',
+  },
+  {
+    id: 'surprised', category: 'faces', label: '😮',
+    svg: (
+      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><radialGradient id="surp-g" cx="40%" cy="35%"><stop offset="0%" stopColor="#ffe066"/><stop offset="100%" stopColor="#f9a825"/></radialGradient></defs><circle cx="24" cy="24" r="21" fill="url(#surp-g)"/><circle cx="16" cy="19" r="3.2" fill="white"/><circle cx="16" cy="19" r="1.8" fill="#5d4037"/><circle cx="32" cy="19" r="3.2" fill="white"/><circle cx="32" cy="19" r="1.8" fill="#5d4037"/><path d="M14 14l3.5 2.5" stroke="#5d4037" strokeWidth="2" strokeLinecap="round"/><path d="M34 14l-3.5 2.5" stroke="#5d4037" strokeWidth="2" strokeLinecap="round"/><ellipse cx="24" cy="35" rx="5" ry="6" fill="#5d4037"/></svg>
+    ),
+    glowColor: 'rgba(255,214,0,0.6)',
+  },
+  {
+    id: 'tongue', category: 'faces', label: '😛',
+    svg: (
+      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><radialGradient id="tng-g" cx="40%" cy="35%"><stop offset="0%" stopColor="#ffe066"/><stop offset="100%" stopColor="#f9a825"/></radialGradient></defs><circle cx="24" cy="24" r="21" fill="url(#tng-g)"/><circle cx="16" cy="20" r="2.8" fill="#5d4037"/><circle cx="32" cy="20" r="2.8" fill="#5d4037"/><path d="M15 31q9 7 18 0" stroke="#5d4037" strokeWidth="2" fill="none" strokeLinecap="round"/><path d="M20 33q4 10 8 0" fill="#ef5350"/></svg>
+    ),
+    glowColor: 'rgba(255,214,0,0.6)',
+  },
+
+  // ═══════ HANDS ═══════
+  {
+    id: 'thumbs_up', category: 'hands', label: '👍',
+    svg: (
+      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><linearGradient id="thu-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#42a5f5"/><stop offset="100%" stopColor="#1e88e5"/></linearGradient></defs><path d="M14 44V22l8-16s4 0 4 6v8h14c2 0 3.5 2 3 4l-4 18c-.5 2-2 2-3 2H14z" fill="url(#thu-g)" opacity="0.9"/><rect x="4" y="22" width="8" height="22" rx="3" fill="#1565c0" opacity="0.5"/><path d="M14 44V22l8-16s4 0 4 6v8h14c2 0 3.5 2 3 4l-4 18c-.5 2-2 2-3 2H14z" stroke="#90caf9" strokeWidth="1.2" fill="none"/></svg>
+    ),
+    glowColor: 'rgba(66,165,245,0.7)',
     animationClass: 'emoji-thumbs-up-animate',
   },
   {
-    id: 'clap',
-    label: '👏',
+    id: 'thumbs_down', category: 'hands', label: '👎',
     svg: (
-      <svg viewBox="0 0 48 48" className="w-full h-full">
-        <defs>
-          <linearGradient id="clap-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#ffb74d"/>
-            <stop offset="100%" stopColor="#e8953a"/>
-          </linearGradient>
-        </defs>
-        <path d="M18 28L12 18C11 16 12 14 14 14C15 14 16 15 16.5 16L20 22" fill="url(#clap-grad)" stroke="#d48b35" strokeWidth="1"/>
-        <path d="M20 22L16 14C15 12 16 10 18 10C19 10 20 11 20.5 12L24 20" fill="url(#clap-grad)" stroke="#d48b35" strokeWidth="1"/>
-        <path d="M24 20L21 13C20 11 21 9 23 9C24 9 25 10 25.5 11L28 18" fill="url(#clap-grad)" stroke="#d48b35" strokeWidth="1"/>
-        <path d="M28 18L26 13C25.5 11 26.5 9.5 28 9.5C29 9.5 30 10.5 30 11.5L31 18" fill="url(#clap-grad)" stroke="#d48b35" strokeWidth="1"/>
-        <path d="M18 28C16 32 17 36 20 39C24 43 30 42 33 38C36 34 35 28 31 18" fill="url(#clap-grad)" stroke="#d48b35" strokeWidth="1"/>
-        <line x1="10" y1="8" x2="12" y2="11" stroke="#ffd700" strokeWidth="1.5" strokeLinecap="round" opacity="0.8"/>
-        <line x1="36" y1="6" x2="34" y2="9" stroke="#ffd700" strokeWidth="1.5" strokeLinecap="round" opacity="0.8"/>
-        <line x1="38" y1="14" x2="35" y2="14" stroke="#ffd700" strokeWidth="1.5" strokeLinecap="round" opacity="0.6"/>
-      </svg>
+      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><linearGradient id="thd-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#ef5350"/><stop offset="100%" stopColor="#c62828"/></linearGradient></defs><path d="M34 4V26l-8 16s-4 0-4-6v-8H8c-2 0-3.5-2-3-4l4-18c.5-2 2-2 3-2h22z" fill="url(#thd-g)" opacity="0.9"/><rect x="36" y="4" width="8" height="22" rx="3" fill="#b71c1c" opacity="0.5"/><path d="M34 4V26l-8 16s-4 0-4-6v-8H8c-2 0-3.5-2-3-4l4-18c.5-2 2-2 3-2h22z" stroke="#ef9a9a" strokeWidth="1.2" fill="none"/></svg>
     ),
-    glowColor: 'rgba(255, 183, 77, 0.7)',
-    animationClass: 'emoji-thumbs-up-animate',
-  },
-  {
-    id: 'laugh',
-    label: '😂',
-    svg: (
-      <svg viewBox="0 0 48 48" className="w-full h-full">
-        <circle cx="24" cy="24" r="20" fill="#ffd600"/>
-        <circle cx="24" cy="24" r="20" fill="url(#laugh-shadow)" opacity="0.15"/>
-        <defs><radialGradient id="laugh-shadow" cx="30%" cy="30%"><stop offset="0%" stopColor="white"/><stop offset="100%" stopColor="#b8860b"/></radialGradient></defs>
-        <path d="M12 20C12 20 14 16 17 18" stroke="#5d4037" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
-        <path d="M36 20C36 20 34 16 31 18" stroke="#5d4037" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
-        <path d="M14 28Q24 40 34 28" fill="#5d4037"/>
-        <path d="M14 28Q24 26 34 28" fill="white"/>
-        <circle cx="14" cy="24" r="3" fill="#ff7043" opacity="0.3"/>
-        <circle cx="34" cy="24" r="3" fill="#ff7043" opacity="0.3"/>
-      </svg>
-    ),
-    glowColor: 'rgba(255, 214, 0, 0.7)',
-    animationClass: 'emoji-thumbs-up-animate',
-  },
-  {
-    id: 'party',
-    label: '🎉',
-    svg: (
-      <svg viewBox="0 0 48 48" className="w-full h-full">
-        <defs>
-          <linearGradient id="party-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#ff6b6b"/>
-            <stop offset="50%" stopColor="#ffd93d"/>
-            <stop offset="100%" stopColor="#6bcb77"/>
-          </linearGradient>
-        </defs>
-        <path d="M8 42L16 14L36 32Z" fill="url(#party-grad)" opacity="0.9"/>
-        <path d="M8 42L16 14" stroke="#e64980" strokeWidth="2"/>
-        <path d="M8 42L36 32" stroke="#e64980" strokeWidth="2"/>
-        <circle cx="22" cy="8" r="2" fill="#ff6b6b"/>
-        <circle cx="38" cy="12" r="1.5" fill="#4dabf7"/>
-        <circle cx="40" cy="24" r="2" fill="#ffd93d"/>
-        <rect x="28" y="6" width="3" height="3" fill="#6bcb77" transform="rotate(30 29 7)"/>
-        <rect x="34" y="18" width="2.5" height="2.5" fill="#e599f7" transform="rotate(15 35 19)"/>
-        <path d="M18 10L20 6" stroke="#4dabf7" strokeWidth="1.5" strokeLinecap="round"/>
-        <path d="M36 8L38 4" stroke="#ffd93d" strokeWidth="1.5" strokeLinecap="round"/>
-        <path d="M42 20L44 18" stroke="#ff6b6b" strokeWidth="1.5" strokeLinecap="round"/>
-      </svg>
-    ),
-    glowColor: 'rgba(255, 107, 107, 0.7)',
-  },
-  {
-    id: 'wave',
-    label: '👋',
-    svg: (
-      <svg viewBox="0 0 48 48" className="w-full h-full">
-        <defs>
-          <linearGradient id="wave-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#ffcc80"/>
-            <stop offset="100%" stopColor="#e8a850"/>
-          </linearGradient>
-        </defs>
-        <path d="M30 8C30 6 32 5 33.5 6.5L36 12" fill="url(#wave-grad)" stroke="#d4903a" strokeWidth="1"/>
-        <path d="M26 10C26 8 28 7 29.5 8.5L32 14" fill="url(#wave-grad)" stroke="#d4903a" strokeWidth="1"/>
-        <path d="M22 12C22 10 24 9 25.5 10.5L28 16" fill="url(#wave-grad)" stroke="#d4903a" strokeWidth="1"/>
-        <path d="M18 16C18 14 20 13 21.5 14.5L24 20" fill="url(#wave-grad)" stroke="#d4903a" strokeWidth="1"/>
-        <path d="M14 22C12 18 14 16 16 16L18 16C18 16 16 20 18 28C20 36 26 40 32 38C38 36 38 28 36 22L36 12" fill="url(#wave-grad)" stroke="#d4903a" strokeWidth="1"/>
-        <path d="M37 10L39 7" stroke="#4dabf7" strokeWidth="1.5" strokeLinecap="round" opacity="0.6"/>
-        <path d="M40 14L43 12" stroke="#4dabf7" strokeWidth="1.5" strokeLinecap="round" opacity="0.6"/>
-        <path d="M40 18L42 17" stroke="#4dabf7" strokeWidth="1" strokeLinecap="round" opacity="0.4"/>
-      </svg>
-    ),
-    glowColor: 'rgba(255, 204, 128, 0.7)',
-  },
-  {
-    id: 'surprised',
-    label: '😮',
-    svg: (
-      <svg viewBox="0 0 48 48" className="w-full h-full">
-        <circle cx="24" cy="24" r="20" fill="#ffd600"/>
-        <circle cx="16" cy="20" r="3.5" fill="white"/>
-        <circle cx="16" cy="20" r="2" fill="#5d4037"/>
-        <circle cx="32" cy="20" r="3.5" fill="white"/>
-        <circle cx="32" cy="20" r="2" fill="#5d4037"/>
-        <path d="M14 14L18 16" stroke="#5d4037" strokeWidth="2" strokeLinecap="round"/>
-        <path d="M34 14L30 16" stroke="#5d4037" strokeWidth="2" strokeLinecap="round"/>
-        <ellipse cx="24" cy="35" rx="5" ry="6" fill="#5d4037"/>
-      </svg>
-    ),
-    glowColor: 'rgba(255, 214, 0, 0.7)',
-  },
-  // === Original custom reactions ===
-  {
-    id: 'thumbs_up',
-    label: '+',
-    svg: (
-      <svg viewBox="0 0 48 48" fill="none" className="w-full h-full">
-        <path d="M14 44V22L22 6C22 6 26 6 26 12V20H40C42 20 43.5 22 43 24L39 42C38.5 44 37 44 36 44H14Z" 
-              stroke="hsl(var(--primary))" strokeWidth="2" fill="hsl(var(--primary)/0.15)"/>
-        <rect x="4" y="22" width="8" height="22" rx="2" fill="hsl(var(--primary)/0.3)" stroke="hsl(var(--primary))" strokeWidth="1.5"/>
-      </svg>
-    ),
-    glowColor: 'hsl(var(--primary) / 0.7)',
-    animationClass: 'emoji-thumbs-up-animate',
-  },
-  {
-    id: 'thumbs_down',
-    label: '−',
-    svg: (
-      <svg viewBox="0 0 48 48" fill="none" className="w-full h-full">
-        <path d="M34 4V26L26 42C26 42 22 42 22 36V28H8C6 28 4.5 26 5 24L9 6C9.5 4 11 4 12 4H34Z" 
-              stroke="#ef4444" strokeWidth="2" fill="rgba(239,68,68,0.15)"/>
-        <rect x="36" y="4" width="8" height="22" rx="2" fill="rgba(239,68,68,0.3)" stroke="#ef4444" strokeWidth="1.5"/>
-      </svg>
-    ),
-    glowColor: 'rgba(239, 68, 68, 0.7)',
+    glowColor: 'rgba(239,83,80,0.7)',
     animationClass: 'emoji-thumbs-down-animate',
   },
   {
-    id: 'money',
-    label: 'Деньги',
+    id: 'clap', category: 'hands', label: '👏',
     svg: (
-      <svg viewBox="0 0 48 48" fill="none" className="w-full h-full">
-        <circle cx="24" cy="24" r="18" stroke="#00ff88" strokeWidth="1.5" fill="none" opacity="0.5"/>
-        <text x="24" y="31" textAnchor="middle" fill="#00ff88" fontSize="22" fontWeight="bold" fontFamily="Arial">$</text>
-      </svg>
+      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><linearGradient id="clp-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#ffcc80"/><stop offset="100%" stopColor="#e8953a"/></linearGradient></defs><path d="M18 28l-6-10c-1-2 0-4 2-4s3 1 3.5 2l3.5 6" fill="url(#clp-g)" stroke="#d48b35" strokeWidth="0.8"/><path d="M20 22l-4-8c-1-2 0-4 2-4s3 1 3.5 2l3.5 8" fill="url(#clp-g)" stroke="#d48b35" strokeWidth="0.8"/><path d="M24 20l-3-7c-1-2 0-4 2-3.5s2.5 1.5 3 2.5l2.5 5" fill="url(#clp-g)" stroke="#d48b35" strokeWidth="0.8"/><path d="M28 18l-2-5c-.5-2 .5-3.5 2-3.5s2.5 1.5 2.5 2.5l.5 6" fill="url(#clp-g)" stroke="#d48b35" strokeWidth="0.8"/><path d="M18 28c-2 4-1 8 2 11s8 4 11 1 5-6 3-16" fill="url(#clp-g)" stroke="#d48b35" strokeWidth="0.8"/><line x1="10" y1="8" x2="12" y2="12" stroke="#ffd54f" strokeWidth="1.5" strokeLinecap="round" opacity="0.7"/><line x1="36" y1="6" x2="34" y2="10" stroke="#ffd54f" strokeWidth="1.5" strokeLinecap="round" opacity="0.7"/><line x1="38" y1="15" x2="35" y2="15" stroke="#ffd54f" strokeWidth="1.5" strokeLinecap="round" opacity="0.5"/></svg>
     ),
-    glowColor: 'rgba(0, 255, 136, 0.6)'
+    glowColor: 'rgba(255,183,77,0.7)',
   },
   {
-    id: 'fire',
-    label: 'Огонь',
+    id: 'wave', category: 'hands', label: '👋',
     svg: (
-      <svg viewBox="0 0 48 48" className="w-full h-full">
-        <defs>
-          <linearGradient id="fire-grad-main" x1="50%" y1="100%" x2="50%" y2="0%">
-            <stop offset="0%" stopColor="#ff4400"/>
-            <stop offset="60%" stopColor="#ff8800"/>
-            <stop offset="100%" stopColor="#ffcc00"/>
-          </linearGradient>
-        </defs>
-        <path d="M24 6 C19 14 12 20 12 29 C12 38 17 44 24 44 C31 44 36 38 36 29 C36 20 29 14 24 6" 
-              fill="url(#fire-grad-main)" stroke="none"/>
-        <path d="M24 20 C22 25 18 28 18 33 C18 38 20 42 24 42 C28 42 30 38 30 33 C30 28 26 25 24 20" 
-              fill="#ffe066" opacity="0.7"/>
-      </svg>
+      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><linearGradient id="wav-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#ffcc80"/><stop offset="100%" stopColor="#e8a850"/></linearGradient></defs><path d="M30 8c0-2 2-3 3.5-1.5L36 12M26 10c0-2 2-3 3.5-1.5L32 14M22 12c0-2 2-3 3.5-1.5L28 16M18 16c0-2 2-3 3.5-1.5L24 20" fill="url(#wav-g)" stroke="#d4903a" strokeWidth="0.8"/><path d="M14 22c-2-4 0-6 2-6h2s-2 4 0 12c2 8 8 12 14 10s6-10 4-16l-2-10" fill="url(#wav-g)" stroke="#d4903a" strokeWidth="0.8"/><line x1="37" y1="9" x2="40" y2="6" stroke="#80cbc4" strokeWidth="1.5" strokeLinecap="round" opacity="0.5"/><line x1="40" y1="14" x2="43" y2="12" stroke="#80cbc4" strokeWidth="1.5" strokeLinecap="round" opacity="0.4"/></svg>
     ),
-    glowColor: 'rgba(255, 136, 0, 0.7)'
+    glowColor: 'rgba(255,204,128,0.7)',
+  },
+
+  // ═══════ HEARTS ═══════
+  {
+    id: 'heart', category: 'hearts', label: '❤️',
+    svg: (
+      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><linearGradient id="hrt-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#ff5252"/><stop offset="100%" stopColor="#c62828"/></linearGradient></defs><path d="M24 42C24 42 6 30 6 18 6 12 10 6 16 6c4 0 7 2 8 5 1-3 4-5 8-5 6 0 10 6 10 12 0 12-18 24-18 24z" fill="url(#hrt-g)"/><path d="M15 14c-2 0-4 2.5-4 5" stroke="white" strokeWidth="1.5" strokeLinecap="round" opacity="0.35"/></svg>
+    ),
+    glowColor: 'rgba(255,82,82,0.7)',
+    animationClass: 'emoji-thumbs-up-animate',
   },
   {
-    id: 'peach',
-    label: 'Персик',
+    id: 'kiss', category: 'hearts', label: '💋',
     svg: (
-      <svg viewBox="0 0 48 48" className="w-full h-full emoji-peach-animate">
-        <defs>
-          <linearGradient id="peach-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#ffb6c1"/>
-            <stop offset="100%" stopColor="#ff6b8a"/>
-          </linearGradient>
-        </defs>
-        <ellipse cx="24" cy="28" rx="14" ry="16" fill="url(#peach-grad)"/>
-        <ellipse cx="20" cy="28" rx="10" ry="14" fill="#ff8fa3" opacity="0.4"/>
-        <path d="M24 12 Q28 8 26 4" stroke="#4ade80" strokeWidth="2" fill="none" strokeLinecap="round"/>
-        <ellipse cx="25" cy="6" rx="3" ry="2" fill="#4ade80" opacity="0.7"/>
-      </svg>
+      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><linearGradient id="ks-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#ff6b8a"/><stop offset="100%" stopColor="#c62828"/></linearGradient></defs><path d="M24 6c-6 0-11 6-11 12 0 4 2 7 5 10l6 8 6-8c3-3 5-6 5-10 0-6-5-12-11-12z" fill="url(#ks-g)"/><path d="M20 22c0-3 4-5 4-2s4 1 4 2" stroke="#ffcdd2" strokeWidth="1.2" fill="none" strokeLinecap="round" opacity="0.6"/></svg>
     ),
-    glowColor: 'rgba(255, 107, 138, 0.6)',
+    glowColor: 'rgba(255,107,138,0.7)',
+  },
+
+  // ═══════ OBJECTS ═══════
+  {
+    id: 'fire', category: 'objects', label: '🔥',
+    svg: (
+      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><linearGradient id="fir-g" x1="50%" y1="100%" x2="50%" y2="0%"><stop offset="0%" stopColor="#e65100"/><stop offset="50%" stopColor="#ff9800"/><stop offset="100%" stopColor="#ffeb3b"/></linearGradient></defs><path d="M24 4c-5 8-12 14-12 23 0 9 5 17 12 17s12-8 12-17c0-9-7-15-12-23z" fill="url(#fir-g)"/><path d="M24 18c-2 5-6 8-6 13 0 5 2 9 6 9s6-4 6-9c0-5-4-8-6-13z" fill="#fff9c4" opacity="0.6"/></svg>
+    ),
+    glowColor: 'rgba(255,152,0,0.7)',
+  },
+  {
+    id: 'party', category: 'objects', label: '🎉',
+    svg: (
+      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><linearGradient id="pty-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#ff6b6b"/><stop offset="50%" stopColor="#ffd93d"/><stop offset="100%" stopColor="#6bcb77"/></linearGradient></defs><path d="M8 42l8-28 20 18z" fill="url(#pty-g)" opacity="0.85"/><path d="M8 42l8-28M8 42l20-10" stroke="#d32f2f" strokeWidth="1.5"/><circle cx="22" cy="8" r="2" fill="#ff5252"/><circle cx="38" cy="12" r="1.5" fill="#42a5f5"/><circle cx="40" cy="24" r="2" fill="#ffd54f"/><rect x="28" y="5" width="3" height="3" rx="0.5" fill="#66bb6a" transform="rotate(30 29 6)"/><rect x="34" y="17" width="2.5" height="2.5" rx="0.5" fill="#ce93d8" transform="rotate(15 35 18)"/></svg>
+    ),
+    glowColor: 'rgba(255,107,107,0.7)',
+  },
+  {
+    id: 'rocket', category: 'objects', label: '🚀',
+    svg: (
+      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><linearGradient id="rkt-g" x1="50%" y1="0" x2="50%" y2="1"><stop offset="0%" stopColor="#eceff1"/><stop offset="100%" stopColor="#90a4ae"/></linearGradient></defs><path d="M24 4l-6 14-4 4 2 10 6-4h4l6 4 2-10-4-4z" fill="url(#rkt-g)" stroke="#78909c" strokeWidth="0.8"/><circle cx="24" cy="16" r="3" fill="#42a5f5"/><path d="M20 32l4 12 4-12" fill="#ff9800" opacity="0.85"/><path d="M22 32l2 8 2-8" fill="#ffeb3b" opacity="0.7"/></svg>
+    ),
+    glowColor: 'rgba(144,164,174,0.6)',
+  },
+  {
+    id: 'star', category: 'objects', label: '⭐',
+    svg: (
+      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><linearGradient id="str-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#ffd54f"/><stop offset="100%" stopColor="#f9a825"/></linearGradient></defs><path d="M24 4l5 14h16l-12 10 4 16-13-9-13 9 4-16L3 18h16z" fill="url(#str-g)"/><path d="M24 10l3 8h8l-6 5 2 9-7-5-7 5 2-9-6-5h8z" fill="#fff9c4" opacity="0.35"/></svg>
+    ),
+    glowColor: 'rgba(255,213,79,0.7)',
+  },
+  {
+    id: 'crown', category: 'objects', label: '👑',
+    svg: (
+      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><linearGradient id="crn-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#ffd54f"/><stop offset="100%" stopColor="#f9a825"/></linearGradient></defs><path d="M8 36l4-22 6 10 6-16 6 16 6-10 4 22z" fill="url(#crn-g)"/><circle cx="24" cy="8" r="2.5" fill="#fff9c4"/><circle cx="12" cy="14" r="2" fill="#fff9c4"/><circle cx="36" cy="14" r="2" fill="#fff9c4"/><rect x="10" y="34" width="28" height="3" rx="1.5" fill="#f9a825"/></svg>
+    ),
+    glowColor: 'rgba(255,213,79,0.7)',
+  },
+  {
+    id: 'diamond', category: 'objects', label: '💎',
+    svg: (
+      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><linearGradient id="dmd-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#4dd0e1"/><stop offset="50%" stopColor="#00acc1"/><stop offset="100%" stopColor="#00838f"/></linearGradient></defs><path d="M12 16l12-12 12 12-12 30z" fill="url(#dmd-g)"/><path d="M12 16l12 8 12-8" stroke="#b2ebf2" strokeWidth="0.8" fill="none"/><path d="M24 24v22" stroke="#b2ebf2" strokeWidth="0.8"/><polygon points="16,16 24,4 24,24" fill="#b2ebf2" opacity="0.2"/></svg>
+    ),
+    glowColor: 'rgba(0,172,193,0.6)',
+  },
+  {
+    id: 'lightning', category: 'objects', label: '⚡',
+    svg: (
+      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><linearGradient id="ltn-g" x1="50%" y1="0" x2="50%" y2="1"><stop offset="0%" stopColor="#ffeb3b"/><stop offset="100%" stopColor="#f9a825"/></linearGradient></defs><path d="M28 4l-14 22h8l-2 18 14-22h-8z" fill="url(#ltn-g)" stroke="#f57f17" strokeWidth="0.8"/></svg>
+    ),
+    glowColor: 'rgba(255,235,59,0.7)',
+  },
+  {
+    id: 'money', category: 'objects', label: '💰',
+    svg: (
+      <svg viewBox="0 0 48 48" className="w-full h-full"><circle cx="24" cy="24" r="18" fill="none" stroke="#66bb6a" strokeWidth="1.5" opacity="0.5"/><text x="24" y="31" textAnchor="middle" fill="#66bb6a" fontSize="22" fontWeight="bold" fontFamily="Arial">$</text></svg>
+    ),
+    glowColor: 'rgba(102,187,106,0.6)',
+  },
+  {
+    id: 'peach', category: 'objects', label: '🍑',
+    svg: (
+      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><linearGradient id="pch-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#ffab91"/><stop offset="100%" stopColor="#ff6e40"/></linearGradient></defs><ellipse cx="24" cy="28" rx="14" ry="16" fill="url(#pch-g)"/><ellipse cx="20" cy="28" rx="10" ry="14" fill="#ff8a65" opacity="0.3"/><path d="M24 12q4-4 2-8" stroke="#66bb6a" strokeWidth="2" fill="none" strokeLinecap="round"/><ellipse cx="25" cy="6" rx="3" ry="2" fill="#66bb6a" opacity="0.65"/></svg>
+    ),
+    glowColor: 'rgba(255,110,64,0.6)',
     animationClass: 'emoji-peach-animate',
   },
   {
-    id: 'eggplant',
-    label: 'Баклажан',
+    id: 'eggplant', category: 'objects', label: '🍆',
     svg: (
-      <svg viewBox="0 0 48 48" className="w-full h-full emoji-eggplant-animate">
-        <defs>
-          <linearGradient id="eggplant-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#a855f7"/>
-            <stop offset="100%" stopColor="#6b21a8"/>
-          </linearGradient>
-        </defs>
-        <ellipse cx="24" cy="30" rx="11" ry="15" fill="url(#eggplant-grad)" transform="rotate(-15 24 30)"/>
-        <ellipse cx="22" cy="28" rx="5" ry="9" fill="#c084fc" opacity="0.25" transform="rotate(-15 22 28)"/>
-        <path d="M24 15 L21 9 M24 15 L27 9 M24 15 L24 7" stroke="#4ade80" strokeWidth="2" strokeLinecap="round"/>
-        <circle cx="24" cy="7" r="2.5" fill="#4ade80"/>
-      </svg>
+      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><linearGradient id="egg-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#ab47bc"/><stop offset="100%" stopColor="#6a1b9a"/></linearGradient></defs><ellipse cx="24" cy="30" rx="11" ry="15" fill="url(#egg-g)" transform="rotate(-15 24 30)"/><ellipse cx="22" cy="28" rx="5" ry="9" fill="#ce93d8" opacity="0.2" transform="rotate(-15 22 28)"/><path d="M24 15l-3-6m3 6l3-6m-3 6v-8" stroke="#66bb6a" strokeWidth="2" strokeLinecap="round"/><circle cx="24" cy="7" r="2.5" fill="#66bb6a"/></svg>
     ),
-    glowColor: 'rgba(168, 85, 247, 0.6)',
+    glowColor: 'rgba(171,71,188,0.6)',
     animationClass: 'emoji-eggplant-animate',
   },
   {
-    id: 'rocket',
-    label: 'Ракета',
+    id: 'cherry', category: 'objects', label: '🍒',
     svg: (
-      <svg viewBox="0 0 48 48" className="w-full h-full">
-        <defs>
-          <linearGradient id="rocket-grad" x1="50%" y1="0%" x2="50%" y2="100%">
-            <stop offset="0%" stopColor="#e0e7ff"/>
-            <stop offset="100%" stopColor="#a5b4fc"/>
-          </linearGradient>
-        </defs>
-        <path d="M24 4 L18 18 L14 22 L16 32 L22 28 L26 28 L32 32 L34 22 L30 18 Z" 
-              fill="url(#rocket-grad)" stroke="#818cf8" strokeWidth="1"/>
-        <circle cx="24" cy="16" r="3" fill="#818cf8"/>
-        <path d="M20 32 L24 44 L28 32" fill="#ff8800" opacity="0.8"/>
-      </svg>
+      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><linearGradient id="chr-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#ef5350"/><stop offset="100%" stopColor="#b71c1c"/></linearGradient></defs><circle cx="18" cy="32" r="10" fill="url(#chr-g)"/><circle cx="32" cy="34" r="9" fill="url(#chr-g)"/><ellipse cx="15" cy="28" rx="3.5" ry="4.5" fill="#ff8a80" opacity="0.25"/><path d="M18 22q2-12 10-16M32 25q-2-13-4-19" stroke="#66bb6a" strokeWidth="2" fill="none" strokeLinecap="round"/><ellipse cx="28" cy="6" rx="4" ry="2.5" fill="#66bb6a" opacity="0.7"/></svg>
     ),
-    glowColor: 'rgba(129, 140, 248, 0.6)'
+    glowColor: 'rgba(239,83,80,0.6)',
   },
   {
-    id: 'cherry',
-    label: 'Вишенка',
+    id: 'hot_pepper', category: 'objects', label: '🌶️',
     svg: (
-      <svg viewBox="0 0 48 48" className="w-full h-full">
-        <defs>
-          <linearGradient id="cherry-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#ff1744"/>
-            <stop offset="100%" stopColor="#c51162"/>
-          </linearGradient>
-        </defs>
-        <circle cx="18" cy="32" r="10" fill="url(#cherry-grad)"/>
-        <circle cx="32" cy="34" r="9" fill="url(#cherry-grad)"/>
-        <ellipse cx="15" cy="28" rx="4" ry="5" fill="#ff5252" opacity="0.3"/>
-        <path d="M18 22 Q20 10 28 6 M32 25 Q30 12 28 6" stroke="#4ade80" strokeWidth="2" fill="none" strokeLinecap="round"/>
-        <ellipse cx="28" cy="6" rx="4" ry="2.5" fill="#4ade80" opacity="0.8"/>
-      </svg>
+      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><linearGradient id="ppr-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#f44336"/><stop offset="50%" stopColor="#ff5722"/><stop offset="100%" stopColor="#ff9800"/></linearGradient></defs><path d="M24 8c-6 0-12 6-14 14s-2 16 4 20 10 0 12-4c2-4 4-10 6-16s0-14-8-14z" fill="url(#ppr-g)"/><path d="M24 8q2-4 0-6m0 6q-2-4-4-5" stroke="#66bb6a" strokeWidth="2" fill="none" strokeLinecap="round"/><path d="M16 20c2-2 4 0 6 4" stroke="#ffcc80" strokeWidth="1.2" fill="none" opacity="0.35"/></svg>
     ),
-    glowColor: 'rgba(255, 23, 68, 0.6)',
+    glowColor: 'rgba(255,87,34,0.7)',
+  },
+
+  // ═══════ BRAND ═══════
+  {
+    id: 'oscar', category: 'brand', label: 'OSCAR', wide: true,
+    svg: (
+      <svg viewBox="0 0 80 48" className="w-full h-full"><defs><linearGradient id="osc-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#ffd54f"/><stop offset="50%" stopColor="#fff9c4"/><stop offset="100%" stopColor="#ffd54f"/></linearGradient></defs><text x="40" y="32" textAnchor="middle" fill="url(#osc-g)" fontSize="18" fontWeight="900" fontFamily="Arial Black,sans-serif">OSCAR</text></svg>
+    ),
+    glowColor: 'rgba(255,215,0,0.8)',
   },
   {
-    id: 'hot_pepper',
-    label: 'Перчик',
+    id: 'apollo', category: 'brand', label: 'APOLLO', wide: true,
     svg: (
-      <svg viewBox="0 0 48 48" className="w-full h-full">
-        <defs>
-          <linearGradient id="pepper-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#ff1744"/>
-            <stop offset="50%" stopColor="#ff5722"/>
-            <stop offset="100%" stopColor="#ff9100"/>
-          </linearGradient>
-        </defs>
-        <path d="M24 8 C18 8 12 14 10 22 C8 30 10 38 16 42 C20 44 24 42 26 38 C28 34 30 28 32 22 C34 16 30 8 24 8" 
-              fill="url(#pepper-grad)"/>
-        <path d="M24 8 Q26 4 24 2 M24 8 Q22 4 20 3" stroke="#4ade80" strokeWidth="2" fill="none" strokeLinecap="round"/>
-        <path d="M16 20 C18 18 20 20 22 24" stroke="#ffcc00" strokeWidth="1.5" fill="none" opacity="0.4"/>
-      </svg>
+      <svg viewBox="0 0 120 48" className="w-full h-full"><defs><linearGradient id="apo-g" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stopColor="#ce93d8"/><stop offset="50%" stopColor="#f48fb1"/><stop offset="100%" stopColor="#ce93d8"/></linearGradient></defs><text x="60" y="22" textAnchor="middle" fill="url(#apo-g)" fontSize="12" fontWeight="900" fontFamily="Arial Black,sans-serif">APOLLO</text><text x="60" y="38" textAnchor="middle" fill="url(#apo-g)" fontSize="10" fontWeight="700" fontFamily="Arial,sans-serif">PRODUCTION</text></svg>
     ),
-    glowColor: 'rgba(255, 87, 34, 0.7)',
+    glowColor: 'rgba(206,147,216,0.8)',
   },
   {
-    id: 'wink',
-    label: 'Подмигивание',
+    id: 'onlyfans_text', category: 'brand', label: 'ONLYFANS', wide: true,
     svg: (
-      <svg viewBox="0 0 48 48" className="w-full h-full">
-        <circle cx="24" cy="24" r="20" fill="#ffd600" stroke="#ffab00" strokeWidth="1"/>
-        <circle cx="16" cy="20" r="3" fill="#5d4037"/>
-        <path d="M30 18 L34 22" stroke="#5d4037" strokeWidth="2.5" strokeLinecap="round"/>
-        <path d="M16 32 Q24 40 32 32" stroke="#5d4037" strokeWidth="2" fill="none" strokeLinecap="round"/>
-      </svg>
+      <svg viewBox="0 0 100 48" className="w-full h-full"><defs><linearGradient id="of-g" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stopColor="#4dd0e1"/><stop offset="50%" stopColor="#80deea"/><stop offset="100%" stopColor="#4dd0e1"/></linearGradient></defs><text x="50" y="32" textAnchor="middle" fill="url(#of-g)" fontSize="14" fontWeight="900" fontFamily="Arial Black,sans-serif">ONLYFANS</text></svg>
     ),
-    glowColor: 'rgba(255, 214, 0, 0.6)',
+    glowColor: 'rgba(77,208,225,0.8)',
   },
   {
-    id: 'tongue',
-    label: 'Язычок',
-    svg: (
-      <svg viewBox="0 0 48 48" className="w-full h-full">
-        <circle cx="24" cy="24" r="20" fill="#ffd600" stroke="#ffab00" strokeWidth="1"/>
-        <circle cx="16" cy="20" r="3" fill="#5d4037"/>
-        <circle cx="32" cy="20" r="3" fill="#5d4037"/>
-        <path d="M16 32 Q24 38 32 32" stroke="#5d4037" strokeWidth="2" fill="none"/>
-        <path d="M20 34 Q24 44 28 34" fill="#ff5252"/>
-      </svg>
-    ),
-    glowColor: 'rgba(255, 82, 82, 0.6)',
-  },
-  {
-    id: 'crown',
-    label: 'Корона',
-    svg: (
-      <svg viewBox="0 0 48 48" className="w-full h-full">
-        <defs>
-          <linearGradient id="crown-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#ffd700"/>
-            <stop offset="100%" stopColor="#ffaa00"/>
-          </linearGradient>
-        </defs>
-        <path d="M8 36 L12 14 L18 24 L24 8 L30 24 L36 14 L40 36 Z" 
-              fill="url(#crown-grad)" stroke="#ffd700" strokeWidth="1"/>
-        <circle cx="24" cy="8" r="2.5" fill="#fff5cc"/>
-        <circle cx="12" cy="14" r="2" fill="#fff5cc"/>
-        <circle cx="36" cy="14" r="2" fill="#fff5cc"/>
-        <rect x="10" y="34" width="28" height="3" rx="1" fill="#ffcc00"/>
-      </svg>
-    ),
-    glowColor: 'rgba(255, 215, 0, 0.6)'
-  },
-  {
-    id: 'diamond',
-    label: 'Алмаз',
-    svg: (
-      <svg viewBox="0 0 48 48" className="w-full h-full">
-        <defs>
-          <linearGradient id="diamond-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#67e8f9"/>
-            <stop offset="50%" stopColor="#06b6d4"/>
-            <stop offset="100%" stopColor="#0891b2"/>
-          </linearGradient>
-        </defs>
-        <path d="M12 16 L24 4 L36 16 L24 46 Z" fill="url(#diamond-grad)" stroke="#22d3ee" strokeWidth="1"/>
-        <path d="M12 16 L24 24 L36 16" stroke="#a5f3fc" strokeWidth="1" fill="none"/>
-        <path d="M24 24 L24 46" stroke="#a5f3fc" strokeWidth="1"/>
-        <polygon points="16,16 24,4 24,24" fill="#a5f3fc" opacity="0.25"/>
-      </svg>
-    ),
-    glowColor: 'rgba(6, 182, 212, 0.6)'
-  },
-  {
-    id: 'kiss',
-    label: 'Поцелуй',
-    svg: (
-      <svg viewBox="0 0 48 48" className="w-full h-full">
-        <defs>
-          <linearGradient id="kiss-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#ff6b8a"/>
-            <stop offset="100%" stopColor="#ff1744"/>
-          </linearGradient>
-        </defs>
-        <path d="M24 44 C8 32 4 20 12 12 C18 6 24 10 24 16 C24 10 30 6 36 12 C44 20 40 32 24 44" 
-              fill="url(#kiss-grad)"/>
-      </svg>
-    ),
-    glowColor: 'rgba(255, 23, 68, 0.6)'
-  },
-  {
-    id: 'star',
-    label: 'Звезда',
-    svg: (
-      <svg viewBox="0 0 48 48" className="w-full h-full">
-        <path d="M24 4 L28 18 L44 18 L32 28 L36 44 L24 34 L12 44 L16 28 L4 18 L20 18 Z" 
-              fill="#facc15" stroke="#fde047" strokeWidth="1"/>
-        <path d="M24 10 L26 18 L34 18 L28 24 L30 32 L24 28 L18 32 L20 24 L14 18 L22 18 Z" 
-              fill="#fef9c3" opacity="0.4"/>
-      </svg>
-    ),
-    glowColor: 'rgba(250, 204, 21, 0.6)'
-  },
-  {
-    id: 'lightning',
-    label: 'Молния',
-    svg: (
-      <svg viewBox="0 0 48 48" className="w-full h-full">
-        <path d="M28 4 L14 26 L22 26 L20 44 L34 22 L26 22 Z" 
-              fill="#f59e0b" stroke="#fde047" strokeWidth="1"/>
-      </svg>
-    ),
-    glowColor: 'rgba(245, 158, 11, 0.6)'
-  },
-  {
-    id: 'oscar',
-    label: 'OSCAR',
-    svg: (
-      <svg viewBox="0 0 80 48" className="w-full h-full">
-        <defs>
-          <linearGradient id="oscar-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#ffd700"/>
-            <stop offset="50%" stopColor="#ffec8b"/>
-            <stop offset="100%" stopColor="#ffd700"/>
-          </linearGradient>
-        </defs>
-        <text x="40" y="32" textAnchor="middle" fill="url(#oscar-grad)" fontSize="18" fontWeight="900" fontFamily="Arial Black, sans-serif">OSCAR</text>
-      </svg>
-    ),
-    glowColor: 'rgba(255, 215, 0, 0.8)'
-  },
-  {
-    id: 'apollo',
-    label: 'APOLLO',
-    svg: (
-      <svg viewBox="0 0 120 48" className="w-full h-full">
-        <defs>
-          <linearGradient id="apollo-text-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#c084fc"/>
-            <stop offset="50%" stopColor="#e879f9"/>
-            <stop offset="100%" stopColor="#c084fc"/>
-          </linearGradient>
-        </defs>
-        <text x="60" y="22" textAnchor="middle" fill="url(#apollo-text-grad)" fontSize="12" fontWeight="900" fontFamily="Arial Black, sans-serif">APOLLO</text>
-        <text x="60" y="38" textAnchor="middle" fill="url(#apollo-text-grad)" fontSize="10" fontWeight="700" fontFamily="Arial, sans-serif">PRODUCTION</text>
-      </svg>
-    ),
-    glowColor: 'rgba(192, 132, 252, 0.8)'
-  },
-  {
-    id: 'onlyfans_text',
-    label: 'ONLYFANS',
-    svg: (
-      <svg viewBox="0 0 100 48" className="w-full h-full">
-        <defs>
-          <linearGradient id="of-text-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#00bfff"/>
-            <stop offset="50%" stopColor="#00e5ff"/>
-            <stop offset="100%" stopColor="#00bfff"/>
-          </linearGradient>
-        </defs>
-        <text x="50" y="32" textAnchor="middle" fill="url(#of-text-grad)" fontSize="14" fontWeight="900" fontFamily="Arial Black, sans-serif">ONLYFANS</text>
-      </svg>
-    ),
-    glowColor: 'rgba(0, 191, 255, 0.8)'
-  },
-  {
-    id: 'boobs',
-    label: 'Сиськи',
-    svg: (
-      <img src="/images/emoji-boobs.svg" alt="Boobs" className="w-full h-full object-contain" />
-    ),
-    glowColor: 'rgba(255, 180, 180, 0.7)',
+    id: 'boobs', category: 'brand', label: 'Сиськи',
+    svg: (<img src="/images/emoji-boobs.svg" alt="Boobs" className="w-full h-full object-contain" />),
+    glowColor: 'rgba(255,180,180,0.7)',
     animationClass: 'emoji-peach-animate',
   },
   {
-    id: 'toy',
-    label: 'Игрушка',
-    svg: (
-      <img src="/images/emoji-toy.svg?v=2" alt="Toy" className="w-full h-full object-contain" style={{ filter: 'invert(1) hue-rotate(180deg)' }} />
-    ),
-    glowColor: 'rgba(139, 113, 187, 0.7)',
+    id: 'toy', category: 'brand', label: 'Игрушка',
+    svg: (<img src="/images/emoji-toy.svg?v=2" alt="Toy" className="w-full h-full object-contain" style={{ filter: 'invert(1) hue-rotate(180deg)' }} />),
+    glowColor: 'rgba(139,113,187,0.7)',
     animationClass: 'emoji-eggplant-animate',
   },
 ];
+
+const CATEGORY_ORDER = ['faces', 'hands', 'hearts', 'objects', 'brand'] as const;
+const CATEGORY_LABELS: Record<string, string> = {
+  faces: '😊 Лица',
+  hands: '👋 Жесты',
+  hearts: '❤️ Сердца',
+  objects: '✨ Объекты',
+  brand: '🏷️ Бренд',
+};
+
+// Recently used storage
+const RECENT_KEY = 'aplink_recent_reactions';
+const MAX_RECENT = 8;
+
+function getRecentReactions(): string[] {
+  try {
+    return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]');
+  } catch { return []; }
+}
+
+function addRecentReaction(id: string) {
+  const recent = getRecentReactions().filter(r => r !== id);
+  recent.unshift(id);
+  localStorage.setItem(RECENT_KEY, JSON.stringify(recent.slice(0, MAX_RECENT)));
+}
 
 interface EmojiReaction {
   id: string;
@@ -505,106 +272,75 @@ interface EmojiReactionsProps {
 export function EmojiReactions({ room, participantName }: EmojiReactionsProps) {
   const [reactions, setReactions] = useState<EmojiReaction[]>([]);
   const [isOpen, setIsOpen] = useState(false);
+  const [recentIds, setRecentIds] = useState(getRecentReactions);
 
-  // Remove reactions after animation completes
+  const reactionMap = useMemo(() => new Map(CUSTOM_REACTIONS.map(r => [r.id, r])), []);
+
   useEffect(() => {
     if (reactions.length === 0) return;
-    
     const timer = setTimeout(() => {
       setReactions(prev => prev.filter(r => Date.now() - r.timestamp < 4000));
     }, 4000);
-
     return () => clearTimeout(timer);
   }, [reactions]);
 
-  // Listen for incoming reactions via centralized data channel
   useDataChannelMessage(room, 'emoji_reaction', useCallback((message: any) => {
-    const newReaction: EmojiReaction = {
+    setReactions(prev => [...prev, {
       id: `${Date.now()}-${Math.random()}`,
       reactionId: message.reactionId,
       senderName: message.senderName,
       x: Math.random() > 0.5 ? (5 + Math.random() * 25) : (70 + Math.random() * 25),
       y: 20 + Math.random() * 25,
       timestamp: Date.now(),
-    };
-
-    setReactions(prev => [...prev, newReaction]);
+    }]);
   }, []));
 
-  // Send reaction
   const sendReaction = useCallback(async (reactionId: string) => {
     if (!room) return;
-
-    const reactionData = {
-      type: 'emoji_reaction',
-      reactionId,
-      senderName: participantName,
-      timestamp: Date.now(),
-    };
-
     try {
-      const encoder = new TextEncoder();
-      const data = encoder.encode(JSON.stringify(reactionData));
-      
+      const data = new TextEncoder().encode(JSON.stringify({
+        type: 'emoji_reaction', reactionId, senderName: participantName, timestamp: Date.now(),
+      }));
       await room.localParticipant.publishData(data, { reliable: true });
-
-      // Also show locally - avoid center area
-      const localReaction: EmojiReaction = {
-        id: `${Date.now()}-local`,
-        reactionId,
-        senderName: participantName,
+      setReactions(prev => [...prev, {
+        id: `${Date.now()}-local`, reactionId, senderName: participantName,
         x: Math.random() > 0.5 ? (5 + Math.random() * 25) : (70 + Math.random() * 25),
-        y: 15 + Math.random() * 30,
-        timestamp: Date.now(),
-      };
-
-      setReactions(prev => [...prev, localReaction]);
+        y: 15 + Math.random() * 30, timestamp: Date.now(),
+      }]);
+      addRecentReaction(reactionId);
+      setRecentIds(getRecentReactions());
       setIsOpen(false);
-    } catch (err) {
-      console.error('Failed to send reaction:', err);
-    }
+    } catch (err) { console.error('Failed to send reaction:', err); }
   }, [room, participantName]);
 
-  // Get reaction config by id
-  const getReactionConfig = (reactionId: string) => {
-    return CUSTOM_REACTIONS.find(r => r.id === reactionId);
-  };
+  // Group reactions by category
+  const grouped = useMemo(() => {
+    const map = new Map<string, CustomReaction[]>();
+    for (const cat of CATEGORY_ORDER) map.set(cat, []);
+    for (const r of CUSTOM_REACTIONS) map.get(r.category)?.push(r);
+    return map;
+  }, []);
 
-  // Fullscreen emoji overlay rendered via Portal
+  // Recent reactions
+  const recentReactions = useMemo(() =>
+    recentIds.map(id => reactionMap.get(id)).filter(Boolean) as CustomReaction[],
+  [recentIds, reactionMap]);
+
+  // Floating emoji overlay
   const emojiOverlay = reactions.length > 0 && typeof window !== 'undefined' && createPortal(
-    <div 
-      className="fixed inset-0 pointer-events-none overflow-hidden"
-      style={{ zIndex: 99999 }}
-    >
+    <div className="fixed inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 99999 }}>
       {reactions.map((reaction) => {
-        const config = getReactionConfig(reaction.reactionId);
+        const config = reactionMap.get(reaction.reactionId);
         if (!config) return null;
-        
-        // Determine if it's a text-based emoji (wider)
-        const isTextEmoji = ['oscar', 'apollo', 'onlyfans_text'].includes(reaction.reactionId);
-        
         return (
           <div
             key={reaction.id}
-            className={cn(
-              "absolute animate-emoji-float-fullscreen",
-              config.animationClass
-            )}
-            style={{ 
-              left: `${reaction.x}%`, 
-              bottom: `${reaction.y}%`,
-            }}
+            className={cn("absolute animate-emoji-float-fullscreen", config.animationClass)}
+            style={{ left: `${reaction.x}%`, bottom: `${reaction.y}%` }}
           >
             <div className="flex flex-col items-center">
-              <div 
-                className={cn(
-                  "h-20",
-                  isTextEmoji ? "w-40" : "w-24"
-                )}
-                style={{ 
-                  filter: `drop-shadow(0 0 15px ${config.glowColor}) drop-shadow(0 0 30px ${config.glowColor})`,
-                }}
-              >
+              <div className={cn("h-20", config.wide ? "w-40" : "w-24")}
+                style={{ filter: `drop-shadow(0 0 15px ${config.glowColor}) drop-shadow(0 0 30px ${config.glowColor})` }}>
                 {config.svg}
               </div>
               <span className="text-xs text-white/90 bg-black/50 px-2.5 py-0.5 rounded-full backdrop-blur-xl mt-1.5 font-medium border border-white/10">
@@ -618,12 +354,25 @@ export function EmojiReactions({ room, participantName }: EmojiReactionsProps) {
     document.body
   );
 
+  const renderReactionBtn = (reaction: CustomReaction) => (
+    <button
+      key={reaction.id}
+      onClick={() => sendReaction(reaction.id)}
+      className={cn(
+        "p-1.5 rounded-xl transition-all hover:bg-white/20 hover:scale-110 active:scale-95",
+        reaction.wide ? "col-span-2 w-24 h-12" : "w-11 h-11"
+      )}
+      title={reaction.label}
+      style={{ filter: `drop-shadow(0 0 4px ${reaction.glowColor})` }}
+    >
+      {reaction.svg}
+    </button>
+  );
+
   return (
     <>
-      {/* Portal emoji overlay - renders on entire viewport */}
       {emojiOverlay}
 
-      {/* Emoji picker button */}
       <Popover open={isOpen} onOpenChange={setIsOpen}>
         <PopoverTrigger asChild>
           <Button
@@ -634,31 +383,36 @@ export function EmojiReactions({ room, participantName }: EmojiReactionsProps) {
             <Smile className="w-5 h-5" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent 
-          className="w-auto p-3 glass-dark border-white/10 rounded-2xl" 
+        <PopoverContent
+          className="w-auto max-w-[320px] max-h-[400px] overflow-y-auto p-3 glass-dark border-white/10 rounded-2xl scrollbar-thin scrollbar-thumb-white/10"
           side="top"
           align="center"
           sideOffset={12}
         >
-          <div className="grid grid-cols-5 gap-2">
-            {CUSTOM_REACTIONS.map((reaction) => {
-              const isTextEmoji = ['oscar', 'apollo', 'onlyfans_text'].includes(reaction.id);
+          <div className="space-y-3">
+            {/* Recently Used */}
+            {recentReactions.length > 0 && (
+              <div>
+                <p className="text-[10px] text-white/40 font-medium uppercase tracking-wider mb-1.5 px-0.5">Недавние</p>
+                <div className="grid grid-cols-6 gap-1">
+                  {recentReactions.map(renderReactionBtn)}
+                </div>
+              </div>
+            )}
+
+            {/* Categories */}
+            {CATEGORY_ORDER.map(cat => {
+              const items = grouped.get(cat);
+              if (!items || items.length === 0) return null;
               return (
-                <button
-                  key={reaction.id}
-                  onClick={() => sendReaction(reaction.id)}
-                  className={cn(
-                    "p-1.5 rounded-xl transition-all",
-                    "hover:bg-white/20 hover:scale-110 active:scale-95",
-                    isTextEmoji ? "col-span-2 w-24 h-12" : "w-12 h-12"
-                  )}
-                  title={reaction.label}
-                  style={{
-                    filter: `drop-shadow(0 0 4px ${reaction.glowColor})`,
-                  }}
-                >
-                  {reaction.svg}
-                </button>
+                <div key={cat}>
+                  <p className="text-[10px] text-white/40 font-medium uppercase tracking-wider mb-1.5 px-0.5">
+                    {CATEGORY_LABELS[cat]}
+                  </p>
+                  <div className="grid grid-cols-6 gap-1">
+                    {items.map(renderReactionBtn)}
+                  </div>
+                </div>
               );
             })}
           </div>

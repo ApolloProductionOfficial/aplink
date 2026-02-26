@@ -26,6 +26,11 @@ serve(async (req) => {
       if (!key) throw new Error("OPENROUTER_API_KEY is not configured");
       apiUrl = "https://openrouter.ai/api/v1/chat/completions";
       apiKey = key;
+    } else if (useProvider === 'huggingface') {
+      const key = Deno.env.get("HUGGINGFACE_API_KEY");
+      if (!key) throw new Error("HUGGINGFACE_API_KEY is not configured");
+      apiUrl = `https://router.huggingface.co/hf-inference/models/${useModel}/v1/chat/completions`;
+      apiKey = key;
     } else {
       const key = Deno.env.get("LOVABLE_API_KEY");
       if (!key) throw new Error("LOVABLE_API_KEY is not configured");

@@ -1,11 +1,10 @@
 import { useState } from 'react';
-import { Brain, Zap, Crown, Sparkles, Check, ChevronDown } from 'lucide-react';
+import { Brain, Zap, Crown, Sparkles, Check, ChevronDown, Gift } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import { useAIModelSettings, OPENROUTER_MODELS, LOVABLE_MODELS, RECOMMENDED_MODELS, type AIModelConfig } from '@/hooks/useAIModelSettings';
+import { useAIModelSettings, OPENROUTER_MODELS, LOVABLE_MODELS, HUGGINGFACE_MODELS, RECOMMENDED_MODELS, type AIModelConfig } from '@/hooks/useAIModelSettings';
 import { toast } from 'sonner';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
@@ -25,9 +24,18 @@ const categoryColor = (cat: string) => {
     case 'balanced': return 'bg-blue-500/20 text-blue-300 border-blue-500/30';
     case 'quality': return 'bg-purple-500/20 text-purple-300 border-purple-500/30';
     case 'premium': return 'bg-amber-500/20 text-amber-300 border-amber-500/30';
+    case 'free': return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30';
     default: return 'bg-muted text-muted-foreground';
   }
 };
+
+type ProviderKey = 'lovable' | 'openrouter' | 'huggingface';
+
+const PROVIDERS: { key: ProviderKey; label: string; desc: string; icon: React.ReactNode }[] = [
+  { key: 'lovable', label: 'Lovable AI', desc: 'Встроенный • GPT-5 & Gemini', icon: <Sparkles className="w-4 h-4 text-primary" /> },
+  { key: 'openrouter', label: 'OpenRouter', desc: '100+ моделей • Ваш ключ', icon: <Brain className="w-4 h-4 text-blue-400" /> },
+  { key: 'huggingface', label: 'HuggingFace', desc: 'Бесплатные модели • Без лимитов', icon: <Gift className="w-4 h-4 text-emerald-400" /> },
+];
 
 export function AIModelSettings() {
   const { config, save, loading } = useAIModelSettings();
@@ -35,19 +43,24 @@ export function AIModelSettings() {
 
   if (loading) return null;
 
-  const isOpenRouter = config.provider === 'openrouter';
-  const models = isOpenRouter ? OPENROUTER_MODELS : LOVABLE_MODELS;
+  const models = config.provider === 'openrouter' ? OPENROUTER_MODELS 
+    : config.provider === 'huggingface' ? HUGGINGFACE_MODELS 
+    : LOVABLE_MODELS;
 
-  const handleProviderToggle = (checked: boolean) => {
-    const newProvider = checked ? 'openrouter' : 'lovable';
-    const defaultModel = newProvider === 'openrouter' ? 'openai/gpt-4o-mini' : 'google/gemini-2.5-flash';
-    save({ provider: newProvider as AIModelConfig['provider'], model: defaultModel });
-    toast.success(checked ? 'OpenRouter AI активирован' : 'Lovable AI активирован');
+  const handleProviderSelect = (provider: ProviderKey) => {
+    const defaults: Record<ProviderKey, string> = {
+      lovable: 'google/gemini-2.5-flash',
+      openrouter: 'openai/gpt-4o-mini',
+      huggingface: 'mistralai/Mistral-7B-Instruct-v0.3',
+    };
+    save({ provider, model: defaults[provider] });
+    const p = PROVIDERS.find(p => p.key === provider);
+    toast.success(`${p?.label} активирован`);
   };
 
   const handleModelSelect = (modelId: string) => {
     save({ ...config, model: modelId });
-    const m = models.find(m => m.id === modelId);
+    const m = [...OPENROUTER_MODELS, ...LOVABLE_MODELS, ...HUGGINGFACE_MODELS].find(m => m.id === modelId);
     toast.success(`Модель: ${m?.name || modelId}`);
   };
 
@@ -60,35 +73,48 @@ export function AIModelSettings() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Provider toggle */}
-        <div className="flex items-center justify-between">
-          <div className="space-y-0.5">
-            <Label className="text-sm font-medium">OpenRouter AI</Label>
-            <p className="text-xs text-muted-foreground">
-              {isOpenRouter ? '100+ моделей • Ваш ключ' : 'Lovable AI • Встроенный'}
-            </p>
+        {/* Provider selector */}
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">Провайдер</Label>
+          <div className="grid grid-cols-3 gap-1.5">
+            {PROVIDERS.map(p => (
+              <button
+                key={p.key}
+                onClick={() => handleProviderSelect(p.key)}
+                className={cn(
+                  "flex flex-col items-center gap-1 p-2 rounded-lg border transition-all text-center",
+                  config.provider === p.key 
+                    ? "bg-primary/10 border-primary/40" 
+                    : "bg-muted/30 border-border/30 hover:bg-muted/50"
+                )}
+              >
+                {p.icon}
+                <span className="text-[10px] font-medium leading-tight">{p.label}</span>
+              </button>
+            ))}
           </div>
-          <Switch checked={isOpenRouter} onCheckedChange={handleProviderToggle} />
         </div>
 
         {/* Current model */}
         <div className="p-2 rounded-lg bg-muted/50 border border-border/50">
           <p className="text-xs text-muted-foreground mb-1">Активная модель</p>
           <div className="flex items-center gap-2">
-            {speedIcon(models.find(m => m.id === config.model)?.speed || 'fast')}
+            {speedIcon(([...OPENROUTER_MODELS, ...LOVABLE_MODELS, ...HUGGINGFACE_MODELS] as any[]).find(m => m.id === config.model)?.speed || 'fast')}
             <span className="text-sm font-medium">
-              {models.find(m => m.id === config.model)?.name || config.model}
+              {([...OPENROUTER_MODELS, ...LOVABLE_MODELS, ...HUGGINGFACE_MODELS] as any[]).find(m => m.id === config.model)?.name || config.model}
             </span>
           </div>
         </div>
 
-        {/* Auto-recommendations info */}
+        {/* Auto-recommendations */}
         <div className="p-2 rounded-lg bg-muted/30 border border-border/30">
           <p className="text-xs text-muted-foreground mb-1.5">🤖 Авто-выбор по задаче</p>
           <div className="grid grid-cols-2 gap-1">
             {Object.entries(RECOMMENDED_MODELS).map(([task, rec]) => {
-              const modelId = isOpenRouter ? rec.openrouter : rec.lovable;
-              const allModels = [...OPENROUTER_MODELS, ...LOVABLE_MODELS];
+              const modelId = config.provider === 'openrouter' ? rec.openrouter 
+                : config.provider === 'huggingface' ? rec.huggingface 
+                : rec.lovable;
+              const allModels = [...OPENROUTER_MODELS, ...LOVABLE_MODELS, ...HUGGINGFACE_MODELS] as any[];
               const m = allModels.find(m => m.id === modelId);
               return (
                 <div key={task} className="flex items-center gap-1 text-[10px] text-muted-foreground">
@@ -108,7 +134,7 @@ export function AIModelSettings() {
           </CollapsibleTrigger>
           <CollapsibleContent>
             <div className="space-y-1.5 mt-2 max-h-[300px] overflow-y-auto pr-1">
-              {models.map((m) => (
+              {(models as readonly any[]).map((m) => (
                 <button
                   key={m.id}
                   onClick={() => handleModelSelect(m.id)}

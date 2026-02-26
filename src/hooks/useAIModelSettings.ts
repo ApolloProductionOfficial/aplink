@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
 export interface AIModelConfig {
-  provider: 'lovable' | 'openrouter';
+  provider: 'lovable' | 'openrouter' | 'huggingface';
   model: string;
 }
 
@@ -35,14 +35,21 @@ export const LOVABLE_MODELS = [
   { id: 'openai/gpt-5', name: 'GPT-5', speed: 'medium', category: 'quality' },
 ] as const;
 
+export const HUGGINGFACE_MODELS = [
+  { id: 'mistralai/Mistral-7B-Instruct-v0.3', name: 'Mistral 7B (Free)', speed: 'fast', category: 'free' },
+  { id: 'microsoft/Phi-3-mini-4k-instruct', name: 'Phi-3 Mini (Free)', speed: 'fast', category: 'free' },
+  { id: 'HuggingFaceH4/zephyr-7b-beta', name: 'Zephyr 7B (Free)', speed: 'fast', category: 'free' },
+  { id: 'google/gemma-2-2b-it', name: 'Gemma 2 2B (Free)', speed: 'fastest', category: 'free' },
+] as const;
+
 // Recommended models per use case — fast models for real-time tasks, smart models for analysis
-export const RECOMMENDED_MODELS: Record<string, { openrouter: string; lovable: string; label: string; icon: string }> = {
-  chat:        { openrouter: 'openai/gpt-4o-mini',          lovable: 'google/gemini-2.5-flash',      label: 'Чат',           icon: '💬' },
-  translation: { openrouter: 'google/gemini-2.5-flash-lite', lovable: 'google/gemini-2.5-flash-lite', label: 'Перевод',       icon: '🌍' },
-  captions:    { openrouter: 'google/gemini-2.5-flash-lite', lovable: 'google/gemini-2.5-flash-lite', label: 'Субтитры',      icon: '📝' },
-  summarize:   { openrouter: 'anthropic/claude-sonnet-4',    lovable: 'google/gemini-2.5-pro',        label: 'Саммари',       icon: '📊' },
-  transcribe:  { openrouter: 'google/gemini-2.5-flash',     lovable: 'google/gemini-2.5-flash',      label: 'Транскрипция',  icon: '🎙️' },
-  analysis:    { openrouter: 'openai/gpt-4o',               lovable: 'google/gemini-2.5-pro',        label: 'Анализ',        icon: '🧠' },
+export const RECOMMENDED_MODELS: Record<string, { openrouter: string; lovable: string; huggingface: string; label: string; icon: string }> = {
+  chat:        { openrouter: 'openai/gpt-4o-mini',          lovable: 'google/gemini-2.5-flash',      huggingface: 'mistralai/Mistral-7B-Instruct-v0.3', label: 'Чат',           icon: '💬' },
+  translation: { openrouter: 'google/gemini-2.5-flash-lite', lovable: 'google/gemini-2.5-flash-lite', huggingface: 'mistralai/Mistral-7B-Instruct-v0.3', label: 'Перевод',       icon: '🌍' },
+  captions:    { openrouter: 'google/gemini-2.5-flash-lite', lovable: 'google/gemini-2.5-flash-lite', huggingface: 'google/gemma-2-2b-it',               label: 'Субтитры',      icon: '📝' },
+  summarize:   { openrouter: 'anthropic/claude-sonnet-4',    lovable: 'google/gemini-2.5-pro',        huggingface: 'mistralai/Mistral-7B-Instruct-v0.3', label: 'Саммари',       icon: '📊' },
+  transcribe:  { openrouter: 'google/gemini-2.5-flash',     lovable: 'google/gemini-2.5-flash',      huggingface: 'mistralai/Mistral-7B-Instruct-v0.3', label: 'Транскрипция',  icon: '🎙️' },
+  analysis:    { openrouter: 'openai/gpt-4o',               lovable: 'google/gemini-2.5-pro',        huggingface: 'mistralai/Mistral-7B-Instruct-v0.3', label: 'Анализ',        icon: '🧠' },
 };
 
 export type AITask = keyof typeof RECOMMENDED_MODELS;
@@ -104,7 +111,9 @@ export function useAIModelSettings() {
     }
 
     // Auto-pick optimal model for this task
-    const optimalModel = config.provider === 'openrouter' ? rec.openrouter : rec.lovable;
+    const optimalModel = config.provider === 'openrouter' ? rec.openrouter 
+      : config.provider === 'huggingface' ? rec.huggingface 
+      : rec.lovable;
     return { provider: config.provider, model: optimalModel };
   }, [config]);
 
