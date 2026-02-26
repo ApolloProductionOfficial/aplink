@@ -19,8 +19,138 @@ interface CustomReaction {
   animationClass?: string;
 }
 
-// Custom neon SVG reactions
+// Google Meet-style reactions (first row) + Custom neon reactions
 const CUSTOM_REACTIONS: CustomReaction[] = [
+  // === Google Meet-style reactions ===
+  {
+    id: 'heart',
+    label: '❤️',
+    svg: (
+      <svg viewBox="0 0 48 48" className="w-full h-full">
+        <defs>
+          <linearGradient id="heart-meet-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#ff4d6d"/>
+            <stop offset="100%" stopColor="#c9184a"/>
+          </linearGradient>
+        </defs>
+        <path d="M24 42C24 42 6 30 6 18C6 12 10 6 16 6C20 6 23 8 24 11C25 8 28 6 32 6C38 6 42 12 42 18C42 30 24 42 24 42Z" fill="url(#heart-meet-grad)"/>
+        <path d="M16 14C14 14 12 16 12 19" stroke="white" strokeWidth="1.5" strokeLinecap="round" opacity="0.4"/>
+      </svg>
+    ),
+    glowColor: 'rgba(255, 77, 109, 0.7)',
+    animationClass: 'emoji-thumbs-up-animate',
+  },
+  {
+    id: 'clap',
+    label: '👏',
+    svg: (
+      <svg viewBox="0 0 48 48" className="w-full h-full">
+        <defs>
+          <linearGradient id="clap-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#ffb74d"/>
+            <stop offset="100%" stopColor="#e8953a"/>
+          </linearGradient>
+        </defs>
+        <path d="M18 28L12 18C11 16 12 14 14 14C15 14 16 15 16.5 16L20 22" fill="url(#clap-grad)" stroke="#d48b35" strokeWidth="1"/>
+        <path d="M20 22L16 14C15 12 16 10 18 10C19 10 20 11 20.5 12L24 20" fill="url(#clap-grad)" stroke="#d48b35" strokeWidth="1"/>
+        <path d="M24 20L21 13C20 11 21 9 23 9C24 9 25 10 25.5 11L28 18" fill="url(#clap-grad)" stroke="#d48b35" strokeWidth="1"/>
+        <path d="M28 18L26 13C25.5 11 26.5 9.5 28 9.5C29 9.5 30 10.5 30 11.5L31 18" fill="url(#clap-grad)" stroke="#d48b35" strokeWidth="1"/>
+        <path d="M18 28C16 32 17 36 20 39C24 43 30 42 33 38C36 34 35 28 31 18" fill="url(#clap-grad)" stroke="#d48b35" strokeWidth="1"/>
+        <line x1="10" y1="8" x2="12" y2="11" stroke="#ffd700" strokeWidth="1.5" strokeLinecap="round" opacity="0.8"/>
+        <line x1="36" y1="6" x2="34" y2="9" stroke="#ffd700" strokeWidth="1.5" strokeLinecap="round" opacity="0.8"/>
+        <line x1="38" y1="14" x2="35" y2="14" stroke="#ffd700" strokeWidth="1.5" strokeLinecap="round" opacity="0.6"/>
+      </svg>
+    ),
+    glowColor: 'rgba(255, 183, 77, 0.7)',
+    animationClass: 'emoji-thumbs-up-animate',
+  },
+  {
+    id: 'laugh',
+    label: '😂',
+    svg: (
+      <svg viewBox="0 0 48 48" className="w-full h-full">
+        <circle cx="24" cy="24" r="20" fill="#ffd600"/>
+        <circle cx="24" cy="24" r="20" fill="url(#laugh-shadow)" opacity="0.15"/>
+        <defs><radialGradient id="laugh-shadow" cx="30%" cy="30%"><stop offset="0%" stopColor="white"/><stop offset="100%" stopColor="#b8860b"/></radialGradient></defs>
+        <path d="M12 20C12 20 14 16 17 18" stroke="#5d4037" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+        <path d="M36 20C36 20 34 16 31 18" stroke="#5d4037" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+        <path d="M14 28Q24 40 34 28" fill="#5d4037"/>
+        <path d="M14 28Q24 26 34 28" fill="white"/>
+        <circle cx="14" cy="24" r="3" fill="#ff7043" opacity="0.3"/>
+        <circle cx="34" cy="24" r="3" fill="#ff7043" opacity="0.3"/>
+      </svg>
+    ),
+    glowColor: 'rgba(255, 214, 0, 0.7)',
+    animationClass: 'emoji-thumbs-up-animate',
+  },
+  {
+    id: 'party',
+    label: '🎉',
+    svg: (
+      <svg viewBox="0 0 48 48" className="w-full h-full">
+        <defs>
+          <linearGradient id="party-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#ff6b6b"/>
+            <stop offset="50%" stopColor="#ffd93d"/>
+            <stop offset="100%" stopColor="#6bcb77"/>
+          </linearGradient>
+        </defs>
+        <path d="M8 42L16 14L36 32Z" fill="url(#party-grad)" opacity="0.9"/>
+        <path d="M8 42L16 14" stroke="#e64980" strokeWidth="2"/>
+        <path d="M8 42L36 32" stroke="#e64980" strokeWidth="2"/>
+        <circle cx="22" cy="8" r="2" fill="#ff6b6b"/>
+        <circle cx="38" cy="12" r="1.5" fill="#4dabf7"/>
+        <circle cx="40" cy="24" r="2" fill="#ffd93d"/>
+        <rect x="28" y="6" width="3" height="3" fill="#6bcb77" transform="rotate(30 29 7)"/>
+        <rect x="34" y="18" width="2.5" height="2.5" fill="#e599f7" transform="rotate(15 35 19)"/>
+        <path d="M18 10L20 6" stroke="#4dabf7" strokeWidth="1.5" strokeLinecap="round"/>
+        <path d="M36 8L38 4" stroke="#ffd93d" strokeWidth="1.5" strokeLinecap="round"/>
+        <path d="M42 20L44 18" stroke="#ff6b6b" strokeWidth="1.5" strokeLinecap="round"/>
+      </svg>
+    ),
+    glowColor: 'rgba(255, 107, 107, 0.7)',
+  },
+  {
+    id: 'wave',
+    label: '👋',
+    svg: (
+      <svg viewBox="0 0 48 48" className="w-full h-full">
+        <defs>
+          <linearGradient id="wave-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#ffcc80"/>
+            <stop offset="100%" stopColor="#e8a850"/>
+          </linearGradient>
+        </defs>
+        <path d="M30 8C30 6 32 5 33.5 6.5L36 12" fill="url(#wave-grad)" stroke="#d4903a" strokeWidth="1"/>
+        <path d="M26 10C26 8 28 7 29.5 8.5L32 14" fill="url(#wave-grad)" stroke="#d4903a" strokeWidth="1"/>
+        <path d="M22 12C22 10 24 9 25.5 10.5L28 16" fill="url(#wave-grad)" stroke="#d4903a" strokeWidth="1"/>
+        <path d="M18 16C18 14 20 13 21.5 14.5L24 20" fill="url(#wave-grad)" stroke="#d4903a" strokeWidth="1"/>
+        <path d="M14 22C12 18 14 16 16 16L18 16C18 16 16 20 18 28C20 36 26 40 32 38C38 36 38 28 36 22L36 12" fill="url(#wave-grad)" stroke="#d4903a" strokeWidth="1"/>
+        <path d="M37 10L39 7" stroke="#4dabf7" strokeWidth="1.5" strokeLinecap="round" opacity="0.6"/>
+        <path d="M40 14L43 12" stroke="#4dabf7" strokeWidth="1.5" strokeLinecap="round" opacity="0.6"/>
+        <path d="M40 18L42 17" stroke="#4dabf7" strokeWidth="1" strokeLinecap="round" opacity="0.4"/>
+      </svg>
+    ),
+    glowColor: 'rgba(255, 204, 128, 0.7)',
+  },
+  {
+    id: 'surprised',
+    label: '😮',
+    svg: (
+      <svg viewBox="0 0 48 48" className="w-full h-full">
+        <circle cx="24" cy="24" r="20" fill="#ffd600"/>
+        <circle cx="16" cy="20" r="3.5" fill="white"/>
+        <circle cx="16" cy="20" r="2" fill="#5d4037"/>
+        <circle cx="32" cy="20" r="3.5" fill="white"/>
+        <circle cx="32" cy="20" r="2" fill="#5d4037"/>
+        <path d="M14 14L18 16" stroke="#5d4037" strokeWidth="2" strokeLinecap="round"/>
+        <path d="M34 14L30 16" stroke="#5d4037" strokeWidth="2" strokeLinecap="round"/>
+        <ellipse cx="24" cy="35" rx="5" ry="6" fill="#5d4037"/>
+      </svg>
+    ),
+    glowColor: 'rgba(255, 214, 0, 0.7)',
+  },
+  // === Original custom reactions ===
   {
     id: 'thumbs_up',
     label: '+',

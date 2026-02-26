@@ -202,7 +202,7 @@ serve(async (req) => {
     // Detect source language from transcription if available
     const detectedLanguage = transcription.language_code || sourceLanguage || 'unknown';
 
-    // Step 2: Translate using free APIs (Lingva first = best quality, MyMemory fallback)
+    // Step 2: Translate using cascading free APIs (Lingva → MyMemory → HuggingFace)
     console.log("Step 2: Translating text...");
     
     const srcLangCode = sourceLanguage || detectedLanguage || 'en';
@@ -243,9 +243,52 @@ serve(async (req) => {
                 !mmText.includes('PLEASE SELECT') && !mmText.includes('MYMEMORY WARNING')) {
               translatedText = mmText;
               translated = true;
+              console.log('MyMemory OK');
             }
           }
         } catch (e) { console.warn("MyMemory failed:", e); }
+      }
+      
+      // Fallback: HuggingFace (free translation models)
+      if (!translated) {
+        const HUGGINGFACE_API_KEY = Deno.env.get('HUGGINGFACE_API_KEY');
+        if (HUGGINGFACE_API_KEY) {
+          try {
+            const hfModels: Record<string, string> = {
+              'en-ru': 'Helsinki-NLP/opus-mt-en-ru',
+              'ru-en': 'Helsinki-NLP/opus-mt-ru-en',
+              'en-uk': 'Helsinki-NLP/opus-mt-en-uk',
+              'uk-en': 'Helsinki-NLP/opus-mt-uk-en',
+              'en-de': 'Helsinki-NLP/opus-mt-en-de',
+              'de-en': 'Helsinki-NLP/opus-mt-de-en',
+              'en-fr': 'Helsinki-NLP/opus-mt-en-fr',
+              'fr-en': 'Helsinki-NLP/opus-mt-fr-en',
+              'en-es': 'Helsinki-NLP/opus-mt-en-es',
+              'es-en': 'Helsinki-NLP/opus-mt-es-en',
+            };
+            const pair = `${srcLangCode}-${targetLanguage}`;
+            const model = hfModels[pair];
+            if (model) {
+              const hfResp = await fetch(`https://router.huggingface.co/hf-inference/models/${model}`, {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${HUGGINGFACE_API_KEY}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ inputs: originalText }),
+                signal: AbortSignal.timeout(15000),
+              });
+              if (hfResp.ok) {
+                const hfData = await hfResp.json();
+                if (hfData[0]?.translation_text) {
+                  translatedText = hfData[0].translation_text;
+                  translated = true;
+                  console.log('HuggingFace OK');
+                }
+              }
+            }
+          } catch (e) { console.warn("HuggingFace failed:", e); }
+        }
       }
       
       if (!translated) {

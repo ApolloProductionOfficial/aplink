@@ -113,3 +113,6 @@ verify_jwt = false
 
 [functions.kick-participant]
 verify_jwt = false
+
+[functions.huggingface-ai]
+verify_jwt = false
