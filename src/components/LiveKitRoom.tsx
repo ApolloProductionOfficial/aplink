@@ -1613,9 +1613,8 @@ function LiveKitContent({
         try {
           await localParticipant?.setScreenShareEnabled(true, {
             audio: true,
-            video: true,
-            resolution: { width: 1920, height: 1080, frameRate: 15 },
             contentHint: 'detail',
+            resolution: { width: 1920, height: 1080, frameRate: 15 },
           });
         } catch (retryErr) {
           console.error('Failed to toggle screen share after retry:', retryErr);
