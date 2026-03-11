@@ -46,7 +46,7 @@ export function FocusVideoLayout({
   const tracks = useTracks([
     { source: Track.Source.Camera, withPlaceholder: true },
     { source: Track.Source.ScreenShare, withPlaceholder: false },
-  ]);
+  ], { onlySubscribed: false });
 
   // State for swapping main/pip view - store identity instead of boolean
   const [swappedToIdentity, setSwappedToIdentity] = useState<string | null>(null);
