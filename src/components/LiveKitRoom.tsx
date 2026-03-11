@@ -1570,18 +1570,22 @@ function LiveKitContent({
       const currentState = localParticipant?.isScreenShareEnabled ?? false;
       
       if (!currentState) {
-        // Enable screen share with explicit options for reliable publishing
+        // Enable screen share - use simple options for maximum compatibility
         await localParticipant?.setScreenShareEnabled(true, {
           audio: true,
-          video: true,
-          resolution: { width: 1920, height: 1080, frameRate: 15 },
           contentHint: 'detail',
+          resolution: { width: 1920, height: 1080, frameRate: 15 },
         });
-        console.log('[LiveKitRoom] Screen share enabled, track publications:', 
-          Array.from(localParticipant?.trackPublications.values() ?? [])
-            .filter(t => t.source === Track.Source.ScreenShare)
-            .map(t => ({ sid: t.trackSid, subscribed: t.isSubscribed, muted: t.isMuted }))
+        // Log track state for debugging
+        const screenPubs = Array.from(localParticipant?.trackPublications.values() ?? [])
+          .filter(t => t.source === Track.Source.ScreenShare);
+        console.log('[LiveKitRoom] Screen share enabled, publications:', screenPubs.length,
+          screenPubs.map(t => ({ sid: t.trackSid, subscribed: t.isSubscribed, muted: t.isMuted, trackName: t.trackName }))
         );
+        if (screenPubs.length === 0) {
+          console.warn('[LiveKitRoom] Screen share track was NOT published! Check LiveKit server logs.');
+          toast.warning('Демонстрация экрана может быть не видна другим участникам');
+        }
       } else {
         await localParticipant?.setScreenShareEnabled(false);
         console.log('[LiveKitRoom] Screen share disabled');
@@ -1609,9 +1613,8 @@ function LiveKitContent({
         try {
           await localParticipant?.setScreenShareEnabled(true, {
             audio: true,
-            video: true,
-            resolution: { width: 1920, height: 1080, frameRate: 15 },
             contentHint: 'detail',
+            resolution: { width: 1920, height: 1080, frameRate: 15 },
           });
         } catch (retryErr) {
           console.error('Failed to toggle screen share after retry:', retryErr);
