@@ -175,7 +175,7 @@ export function DocumentPiPWindow({
     if (pipWindowRef.current && !pipWindowRef.current.closed) return;
     isOpeningRef.current = true;
     try {
-      const pipWindow = await (window as any).documentPictureInPicture.requestWindow({ width: 500, height: 300 });
+      const pipWindow = await (window as any).documentPictureInPicture.requestWindow({ width: 520, height: 380 });
       pipWindowRef.current = pipWindow;
       setIsPiPOpen(true);
       pipWindow.addEventListener('pagehide', () => {
