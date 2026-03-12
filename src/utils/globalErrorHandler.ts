@@ -11,6 +11,7 @@ export function initGlobalErrorHandlers() {
   // --- window.onerror ---
   window.onerror = (message, source, lineno, colno, error) => {
     const errorMessage = String(message || error?.message || 'Unknown error');
+    const sourceStr = String(source || '');
 
     // Filter out noise (browser extensions, non-app errors)
     if (
@@ -22,6 +23,14 @@ export function initGlobalErrorHandlers() {
       errorMessage.includes('chrome-extension://') ||
       errorMessage.includes('moz-extension://') ||
       errorMessage.includes('safari-extension://') ||
+      sourceStr.includes('chrome-extension://') ||
+      sourceStr.includes('moz-extension://') ||
+      sourceStr.includes('safari-extension://') ||
+      sourceStr.includes('extensionPageScript') ||
+      errorMessage.includes('registerSolanaInjectedWallet') ||
+      errorMessage.includes('initSolanaConnect') ||
+      errorMessage.includes('inpage.js') ||
+      errorMessage.includes('solana.js') ||
       errorMessage.includes('TooltipProvider') ||
       errorMessage.includes('Tooltip') ||
       errorMessage.includes('grammarly') ||
