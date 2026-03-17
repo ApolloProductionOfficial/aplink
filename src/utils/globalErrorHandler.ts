@@ -230,6 +230,7 @@ export function initGlobalErrorHandlers() {
       fullMessage.includes('"reasonName":"Cancelled"') ||
       fullMessage.includes('"reason":3')
     ) {
+      recordFiltered('globalErrorHandler:console.error');
       return;
     }
 
