@@ -167,15 +167,15 @@ export function DocumentPiPWindow({
     controls.style.cssText = `display:flex;align-items:center;justify-content:center;gap:10px;padding:10px;background:rgba(0,0,0,0.5);backdrop-filter:blur(8px);min-height:56px;flex-shrink:0;`;
 
     if (onToggleMic) {
-      controls.appendChild(createButton(doc, isMicMuted ? SVG_ICONS.micOff : SVG_ICONS.micOn, onToggleMic, isMicMuted));
+      controls.appendChild(createButton(doc, isMicMuted ? SVG_ICONS.micOff : SVG_ICONS.micOn, isMicMuted ? 'Unmute' : 'Mute', onToggleMic, isMicMuted));
     }
     if (onToggleCamera) {
-      controls.appendChild(createButton(doc, isCameraMuted ? SVG_ICONS.camOff : SVG_ICONS.camOn, onToggleCamera, isCameraMuted));
+      controls.appendChild(createButton(doc, isCameraMuted ? SVG_ICONS.camOff : SVG_ICONS.camOn, isCameraMuted ? 'Cam On' : 'Cam Off', onToggleCamera, isCameraMuted));
     }
     if (onToggleScreenShare) {
-      controls.appendChild(createButton(doc, isScreenSharing ? SVG_ICONS.screenShareActive : SVG_ICONS.screenShare, onToggleScreenShare, isScreenSharing));
+      controls.appendChild(createButton(doc, isScreenSharing ? SVG_ICONS.screenShareActive : SVG_ICONS.screenShare, isScreenSharing ? 'Stop' : 'Share', onToggleScreenShare, isScreenSharing));
     }
-    controls.appendChild(createButton(doc, SVG_ICONS.endCall, () => { onEndCall(); closePiP(); }, false, true));
+    controls.appendChild(createButton(doc, SVG_ICONS.endCall, 'End', () => { onEndCall(); closePiP(); }, false, true));
 
     doc.body.appendChild(controls);
   }, [room, participantName, isMicMuted, isCameraMuted, isScreenSharing, onToggleMic, onToggleCamera, onToggleScreenShare, onEndCall, onBackToTab, closePiP, cleanupVideos, createParticipantCard, createButton]);
