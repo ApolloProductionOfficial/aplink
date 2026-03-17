@@ -110,6 +110,7 @@ export function initGlobalErrorHandlers() {
       // Filter out NegotiationError - these are handled by app-level recovery
       (errorMessage.includes('NegotiationError') && !errorMessage.includes('critical'))
     ) {
+      recordFiltered('globalErrorHandler:unhandledrejection');
       return;
     }
 
