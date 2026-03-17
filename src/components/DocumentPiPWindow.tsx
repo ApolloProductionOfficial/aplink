@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Room, Track } from 'livekit-client';
+import { Room, Track, ConnectionState } from 'livekit-client';
 
 interface DocumentPiPWindowProps {
   room: Room | null;
@@ -12,6 +12,8 @@ interface DocumentPiPWindowProps {
   isMicMuted?: boolean;
   isCameraMuted?: boolean;
   isScreenSharing?: boolean;
+  isRecording?: boolean;
+  connectionState?: ConnectionState;
   participantName?: string;
 }
 
@@ -39,6 +41,8 @@ export function DocumentPiPWindow({
   isMicMuted = false,
   isCameraMuted = false,
   isScreenSharing = false,
+  isRecording = false,
+  connectionState,
   participantName,
 }: DocumentPiPWindowProps) {
   const pipWindowRef = useRef<Window | null>(null);
@@ -126,13 +130,47 @@ export function DocumentPiPWindow({
     const topBar = doc.createElement('div');
     topBar.style.cssText = `display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:rgba(0,0,0,0.4);backdrop-filter:blur(8px);`;
 
+    const leftGroup = doc.createElement('div');
+    leftGroup.style.cssText = `display:flex;align-items:center;gap:6px;`;
+
     const backBtn = doc.createElement('button');
     backBtn.innerHTML = `${SVG_ICONS.backArrow} <span style="margin-left:4px">Back</span>`;
     backBtn.onclick = () => { onBackToTab(); closePiP(); };
     backBtn.style.cssText = `background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);color:white;padding:5px 12px;border-radius:20px;cursor:pointer;font-size:12px;font-family:system-ui;display:flex;align-items:center;gap:2px;transition:all 0.2s;`;
     backBtn.onmouseenter = () => { backBtn.style.background = 'rgba(255,255,255,0.15)'; };
     backBtn.onmouseleave = () => { backBtn.style.background = 'rgba(255,255,255,0.08)'; };
-    topBar.appendChild(backBtn);
+    leftGroup.appendChild(backBtn);
+    topBar.appendChild(leftGroup);
+
+    // Status indicators (center)
+    const statusGroup = doc.createElement('div');
+    statusGroup.style.cssText = `display:flex;align-items:center;gap:8px;`;
+
+    // Connection status
+    const connState = connectionState || room?.state;
+    const isConnected = connState === 'connected';
+    const isReconnecting = connState === 'reconnecting';
+    const connDot = doc.createElement('div');
+    const dotColor = isConnected ? '#22c55e' : isReconnecting ? '#eab308' : '#ef4444';
+    const connLabel = isConnected ? 'Connected' : isReconnecting ? 'Reconnecting...' : 'Disconnected';
+    connDot.innerHTML = `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${dotColor};margin-right:4px;${isReconnecting ? 'animation:blink 1s infinite;' : ''}"></span><span>${connLabel}</span>`;
+    connDot.style.cssText = `display:flex;align-items:center;font-size:10px;color:rgba(255,255,255,0.7);font-family:system-ui,-apple-system,sans-serif;`;
+    statusGroup.appendChild(connDot);
+
+    // Recording indicator
+    if (isRecording) {
+      const recBadge = doc.createElement('div');
+      recBadge.innerHTML = `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#ef4444;margin-right:4px;animation:blink 1s infinite;"></span><span>REC</span>`;
+      recBadge.style.cssText = `display:flex;align-items:center;font-size:10px;color:#ef4444;font-weight:600;font-family:system-ui,-apple-system,sans-serif;`;
+      statusGroup.appendChild(recBadge);
+    }
+
+    topBar.appendChild(statusGroup);
+
+    // Add blink animation
+    const style = doc.createElement('style');
+    style.textContent = `@keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0.3; } }`;
+    doc.head.appendChild(style);
 
     const closeBtn = doc.createElement('button');
     closeBtn.innerHTML = SVG_ICONS.close;
@@ -233,7 +271,7 @@ export function DocumentPiPWindow({
     controls.appendChild(createButton(doc, SVG_ICONS.endCall, 'End', () => { onEndCall(); closePiP(); }, false, true));
 
     doc.body.appendChild(controls);
-  }, [room, participantName, isMicMuted, isCameraMuted, isScreenSharing, onToggleMic, onToggleCamera, onToggleScreenShare, onEndCall, onBackToTab, closePiP, cleanupVideos, createParticipantCard, createButton]);
+  }, [room, participantName, isMicMuted, isCameraMuted, isScreenSharing, isRecording, connectionState, onToggleMic, onToggleCamera, onToggleScreenShare, onEndCall, onBackToTab, closePiP, cleanupVideos, createParticipantCard, createButton]);
 
   const openPiP = useCallback(async () => {
     if (!isSupported || !room || isOpeningRef.current) return;
@@ -256,7 +294,7 @@ export function DocumentPiPWindow({
 
   useEffect(() => {
     if (isPiPOpen && pipWindowRef.current && !pipWindowRef.current.closed) buildPiPContent();
-  }, [isPiPOpen, isMicMuted, isCameraMuted, isScreenSharing, buildPiPContent]);
+  }, [isPiPOpen, isMicMuted, isCameraMuted, isScreenSharing, isRecording, connectionState, buildPiPContent]);
 
   useEffect(() => {
     if (!isActive || !isSupported || !room) return;
