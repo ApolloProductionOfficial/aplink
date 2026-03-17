@@ -118,6 +118,7 @@ export function GlobalActiveCall() {
       setDocPipMicMuted(lp.getTrackPublication(Track.Source.Microphone)?.isMuted ?? true);
       setDocPipCamMuted(lp.getTrackPublication(Track.Source.Camera)?.isMuted ?? true);
       setDocPipScreenShare(lp.isScreenShareEnabled);
+      setDocPipConnectionState(liveKitRoom.state);
     };
     sync();
     const interval = setInterval(sync, 1000);
