@@ -614,6 +614,8 @@ export function GlobalActiveCall() {
         isMicMuted={docPipMicMuted}
         isCameraMuted={docPipCamMuted}
         isScreenSharing={docPipScreenShare}
+        isRecording={isCallRecording}
+        connectionState={docPipConnectionState as any}
         participantName={participantName}
       />
 
