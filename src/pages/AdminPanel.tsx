@@ -32,6 +32,7 @@ import UXAnomaliesPanel from '@/components/UXAnomaliesPanel';
 import LiveKitMonitor from '@/components/LiveKitMonitor';
 import ContactRequestsPanel from '@/components/ContactRequestsPanel';
 import { AvatarCropDialog } from '@/components/AvatarCropDialog';
+import ErrorFilterStatsPanel from '@/components/ErrorFilterStatsPanel';
 
 interface MeetingTranscript {
   id: string;
