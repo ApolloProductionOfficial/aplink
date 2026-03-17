@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Room, Track } from 'livekit-client';
+import { Room, Track, ConnectionState } from 'livekit-client';
 
 interface DocumentPiPWindowProps {
   room: Room | null;
@@ -12,6 +12,8 @@ interface DocumentPiPWindowProps {
   isMicMuted?: boolean;
   isCameraMuted?: boolean;
   isScreenSharing?: boolean;
+  isRecording?: boolean;
+  connectionState?: ConnectionState;
   participantName?: string;
 }
 
