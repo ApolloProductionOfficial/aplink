@@ -1,4 +1,5 @@
 import { sendErrorNotification } from './errorNotification';
+import { recordFiltered } from './errorFilterStats';
 
 // Dedupe: track errors to prevent spam (5 min window)
 const sentErrors = new Set<string>();
