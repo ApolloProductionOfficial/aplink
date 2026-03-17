@@ -164,7 +164,7 @@ export function DocumentPiPWindow({
 
     // Control bar
     const controls = doc.createElement('div');
-    controls.style.cssText = `display:flex;align-items:center;justify-content:center;gap:10px;padding:10px;background:rgba(0,0,0,0.5);backdrop-filter:blur(8px);min-height:56px;flex-shrink:0;`;
+    controls.style.cssText = `display:flex;align-items:center;justify-content:center;gap:16px;padding:12px 16px;background:rgba(0,0,0,0.5);backdrop-filter:blur(8px);min-height:72px;flex-shrink:0;`;
 
     if (onToggleMic) {
       controls.appendChild(createButton(doc, isMicMuted ? SVG_ICONS.micOff : SVG_ICONS.micOn, isMicMuted ? 'Unmute' : 'Mute', onToggleMic, isMicMuted));
