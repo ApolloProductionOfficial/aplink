@@ -92,17 +92,27 @@ export function DocumentPiPWindow({
   }, []);
 
   const createButton = useCallback((
-    doc: Document, svgIcon: string, onClick: () => void, isActiveState: boolean = false, isDanger: boolean = false,
+    doc: Document, svgIcon: string, label: string, onClick: () => void, isActiveState: boolean = false, isDanger: boolean = false,
   ) => {
+    const wrapper = doc.createElement('div');
+    wrapper.style.cssText = `display:flex;flex-direction:column;align-items:center;gap:4px;`;
+
     const btn = doc.createElement('button');
     btn.innerHTML = svgIcon;
     btn.onclick = onClick;
-    const bg = isDanger ? '#ef4444' : isActiveState ? '#ef4444' : 'rgba(255,255,255,0.1)';
-    const hoverBg = isDanger ? '#dc2626' : isActiveState ? '#dc2626' : 'rgba(255,255,255,0.2)';
-    btn.style.cssText = `width:40px;height:40px;border-radius:50%;border:none;background:${bg};color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;`;
-    btn.onmouseenter = () => { btn.style.background = hoverBg; btn.style.transform = 'scale(1.1)'; };
+    const bg = isDanger ? '#ef4444' : isActiveState ? '#ef4444' : 'rgba(255,255,255,0.12)';
+    const hoverBg = isDanger ? '#dc2626' : isActiveState ? '#dc2626' : 'rgba(255,255,255,0.25)';
+    btn.style.cssText = `width:48px;height:48px;border-radius:50%;border:none;background:${bg};color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;`;
+    btn.onmouseenter = () => { btn.style.background = hoverBg; btn.style.transform = 'scale(1.08)'; };
     btn.onmouseleave = () => { btn.style.background = bg; btn.style.transform = 'scale(1)'; };
-    return btn;
+
+    const txt = doc.createElement('span');
+    txt.textContent = label;
+    txt.style.cssText = `font-size:10px;color:rgba(255,255,255,0.7);font-family:system-ui,-apple-system,sans-serif;white-space:nowrap;`;
+
+    wrapper.appendChild(btn);
+    wrapper.appendChild(txt);
+    return wrapper;
   }, []);
 
   const buildPiPContent = useCallback(() => {
@@ -154,18 +164,18 @@ export function DocumentPiPWindow({
 
     // Control bar
     const controls = doc.createElement('div');
-    controls.style.cssText = `display:flex;align-items:center;justify-content:center;gap:10px;padding:10px;background:rgba(0,0,0,0.5);backdrop-filter:blur(8px);min-height:56px;flex-shrink:0;`;
+    controls.style.cssText = `display:flex;align-items:center;justify-content:center;gap:16px;padding:12px 16px;background:rgba(0,0,0,0.5);backdrop-filter:blur(8px);min-height:72px;flex-shrink:0;`;
 
     if (onToggleMic) {
-      controls.appendChild(createButton(doc, isMicMuted ? SVG_ICONS.micOff : SVG_ICONS.micOn, onToggleMic, isMicMuted));
+      controls.appendChild(createButton(doc, isMicMuted ? SVG_ICONS.micOff : SVG_ICONS.micOn, isMicMuted ? 'Unmute' : 'Mute', onToggleMic, isMicMuted));
     }
     if (onToggleCamera) {
-      controls.appendChild(createButton(doc, isCameraMuted ? SVG_ICONS.camOff : SVG_ICONS.camOn, onToggleCamera, isCameraMuted));
+      controls.appendChild(createButton(doc, isCameraMuted ? SVG_ICONS.camOff : SVG_ICONS.camOn, isCameraMuted ? 'Cam On' : 'Cam Off', onToggleCamera, isCameraMuted));
     }
     if (onToggleScreenShare) {
-      controls.appendChild(createButton(doc, isScreenSharing ? SVG_ICONS.screenShareActive : SVG_ICONS.screenShare, onToggleScreenShare, isScreenSharing));
+      controls.appendChild(createButton(doc, isScreenSharing ? SVG_ICONS.screenShareActive : SVG_ICONS.screenShare, isScreenSharing ? 'Stop' : 'Share', onToggleScreenShare, isScreenSharing));
     }
-    controls.appendChild(createButton(doc, SVG_ICONS.endCall, () => { onEndCall(); closePiP(); }, false, true));
+    controls.appendChild(createButton(doc, SVG_ICONS.endCall, 'End', () => { onEndCall(); closePiP(); }, false, true));
 
     doc.body.appendChild(controls);
   }, [room, participantName, isMicMuted, isCameraMuted, isScreenSharing, onToggleMic, onToggleCamera, onToggleScreenShare, onEndCall, onBackToTab, closePiP, cleanupVideos, createParticipantCard, createButton]);
@@ -175,7 +185,7 @@ export function DocumentPiPWindow({
     if (pipWindowRef.current && !pipWindowRef.current.closed) return;
     isOpeningRef.current = true;
     try {
-      const pipWindow = await (window as any).documentPictureInPicture.requestWindow({ width: 520, height: 380 });
+      const pipWindow = await (window as any).documentPictureInPicture.requestWindow({ width: 560, height: 420 });
       pipWindowRef.current = pipWindow;
       setIsPiPOpen(true);
       pipWindow.addEventListener('pagehide', () => {
