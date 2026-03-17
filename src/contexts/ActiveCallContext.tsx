@@ -106,6 +106,7 @@ const defaultState: ActiveCallState = {
   showIPPanel: false,
   isAdmin: false,
   isRoomReconnecting: false,
+  isCallRecording: false,
   guestIdentity: null,
   useFallbackVideoProfile: false,
   // Issue 8
