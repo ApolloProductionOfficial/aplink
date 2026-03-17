@@ -271,7 +271,7 @@ export function DocumentPiPWindow({
     controls.appendChild(createButton(doc, SVG_ICONS.endCall, 'End', () => { onEndCall(); closePiP(); }, false, true));
 
     doc.body.appendChild(controls);
-  }, [room, participantName, isMicMuted, isCameraMuted, isScreenSharing, onToggleMic, onToggleCamera, onToggleScreenShare, onEndCall, onBackToTab, closePiP, cleanupVideos, createParticipantCard, createButton]);
+  }, [room, participantName, isMicMuted, isCameraMuted, isScreenSharing, isRecording, connectionState, onToggleMic, onToggleCamera, onToggleScreenShare, onEndCall, onBackToTab, closePiP, cleanupVideos, createParticipantCard, createButton]);
 
   const openPiP = useCallback(async () => {
     if (!isSupported || !room || isOpeningRef.current) return;
