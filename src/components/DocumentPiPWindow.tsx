@@ -294,7 +294,7 @@ export function DocumentPiPWindow({
 
   useEffect(() => {
     if (isPiPOpen && pipWindowRef.current && !pipWindowRef.current.closed) buildPiPContent();
-  }, [isPiPOpen, isMicMuted, isCameraMuted, isScreenSharing, buildPiPContent]);
+  }, [isPiPOpen, isMicMuted, isCameraMuted, isScreenSharing, isRecording, connectionState, buildPiPContent]);
 
   useEffect(() => {
     if (!isActive || !isSupported || !room) return;
