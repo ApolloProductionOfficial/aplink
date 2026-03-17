@@ -86,6 +86,53 @@ const shouldIgnore = (params: {
   return IGNORED_PATTERNS.some((pattern) => haystack.includes(pattern.toLowerCase()));
 };
 
+// Patterns that are only warnings (log but don't email)
+const WARNING_PATTERNS = [
+  'Audio play failed',
+  'Translation error: {}',
+  'timeout',
+  'CORS',
+];
+
+// Patterns that are critical (always email)
+const CRITICAL_PATTERNS = [
+  'auth',
+  'payment',
+  'security',
+  'unauthorized',
+  'forbidden',
+  'database',
+];
+
+// Rate limiting: track last send time and queue
+let lastSendTime = 0;
+const MIN_INTERVAL_MS = 2000; // 2 seconds between requests
+let pendingNotification: ErrorNotificationParams | null = null;
+let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+// Determine severity based on error message patterns
+const determineSeverity = (errorMessage: string, errorType: string): SeverityLevel => {
+  const msgLower = errorMessage.toLowerCase();
+  const typeLower = errorType.toLowerCase();
+
+  // Check for critical patterns
+  if (CRITICAL_PATTERNS.some((p) => msgLower.includes(p) || typeLower.includes(p))) {
+    return 'critical';
+  }
+
+  // Check for warning patterns
+  if (WARNING_PATTERNS.some((p) => msgLower.includes(p))) {
+    return 'warning';
+  }
+
+  // Default based on error type
+  if (typeLower.includes('error') || typeLower === 'react_error') {
+    return 'error';
+  }
+
+  return 'warning';
+};
+
 // Should this error send an email notification?
 const shouldNotify = (severity: SeverityLevel): boolean => {
   return severity === 'error' || severity === 'critical';
