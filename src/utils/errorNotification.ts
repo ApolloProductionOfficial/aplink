@@ -48,7 +48,43 @@ const IGNORED_PATTERNS = [
   // Tooltip context errors (WebKit)
   'TooltipProvider',
   'Tooltip',
+  // Solana wallet extension noise
+  'registerSolanaInjectedWallet',
+  'initSolanaConnect',
+  'inpage.js',
+  'solana.js',
+  'extensionPageScript.js',
 ];
+
+const toSafeString = (value: unknown): string => {
+  if (typeof value === 'string') return value;
+  if (value === null || value === undefined) return '';
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+};
+
+// Should this error be ignored completely?
+const shouldIgnore = (params: {
+  errorMessage: string;
+  source: string;
+  details?: Record<string, unknown>;
+}): boolean => {
+  const haystack = [
+    params.errorMessage,
+    params.source,
+    toSafeString(params.details?.source),
+    toSafeString(params.details?.filename),
+    toSafeString(params.details?.stack),
+    toSafeString(params.details?.fullMessage),
+  ]
+    .join(' ')
+    .toLowerCase();
+
+  return IGNORED_PATTERNS.some((pattern) => haystack.includes(pattern.toLowerCase()));
+};
 
 // Patterns that are only warnings (log but don't email)
 const WARNING_PATTERNS = [
@@ -78,28 +114,23 @@ let timeoutId: ReturnType<typeof setTimeout> | null = null;
 const determineSeverity = (errorMessage: string, errorType: string): SeverityLevel => {
   const msgLower = errorMessage.toLowerCase();
   const typeLower = errorType.toLowerCase();
-  
+
   // Check for critical patterns
-  if (CRITICAL_PATTERNS.some(p => msgLower.includes(p) || typeLower.includes(p))) {
+  if (CRITICAL_PATTERNS.some((p) => msgLower.includes(p) || typeLower.includes(p))) {
     return 'critical';
   }
-  
+
   // Check for warning patterns
-  if (WARNING_PATTERNS.some(p => msgLower.includes(p))) {
+  if (WARNING_PATTERNS.some((p) => msgLower.includes(p))) {
     return 'warning';
   }
-  
+
   // Default based on error type
   if (typeLower.includes('error') || typeLower === 'react_error') {
     return 'error';
   }
-  
-  return 'warning';
-};
 
-// Should this error be ignored completely?
-const shouldIgnore = (errorMessage: string): boolean => {
-  return IGNORED_PATTERNS.some(p => errorMessage.includes(p));
+  return 'warning';
 };
 
 // Should this error send an email notification?
@@ -157,7 +188,7 @@ export const sendErrorNotification = async ({
   severity: explicitSeverity,
 }: ErrorNotificationParams): Promise<boolean> => {
   // Check if this error should be ignored
-  if (shouldIgnore(errorMessage)) {
+  if (shouldIgnore({ errorMessage, source, details })) {
     return true; // Pretend success but do nothing
   }
   

@@ -134,8 +134,51 @@ export function initGlobalErrorHandlers() {
     originalConsoleError.apply(console, args);
 
     const fullMessage = args
-      .map((arg) => (typeof arg === 'object' ? JSON.stringify(arg) : String(arg)))
+      .map((arg) => {
+        if (arg instanceof Error) {
+          return `${arg.name}: ${arg.message}\n${arg.stack || ''}`;
+        }
+        if (typeof arg === 'object') {
+          try {
+            return JSON.stringify(arg);
+          } catch {
+            return String(arg);
+          }
+        }
+        return String(arg);
+      })
       .join(' ');
+
+    const hasExtensionTrace = args.some((arg) => {
+      if (arg instanceof Error) {
+        const blob = `${arg.message} ${arg.stack || ''}`.toLowerCase();
+        return (
+          blob.includes('chrome-extension://') ||
+          blob.includes('moz-extension://') ||
+          blob.includes('safari-extension://') ||
+          blob.includes('registersolanainjectedwallet') ||
+          blob.includes('initsolanaconnect') ||
+          blob.includes('inpage.js') ||
+          blob.includes('solana.js')
+        );
+      }
+
+      if (arg && typeof arg === 'object') {
+        const anyArg = arg as Record<string, unknown>;
+        const blob = `${String(anyArg.filename || '')} ${String(anyArg.source || '')} ${String(anyArg.stack || '')}`.toLowerCase();
+        return (
+          blob.includes('chrome-extension://') ||
+          blob.includes('moz-extension://') ||
+          blob.includes('safari-extension://') ||
+          blob.includes('registersolanainjectedwallet') ||
+          blob.includes('initsolanaconnect') ||
+          blob.includes('inpage.js') ||
+          blob.includes('solana.js')
+        );
+      }
+
+      return false;
+    });
 
     // Only report actual errors, not debug logs
     const lowerMessage = fullMessage.toLowerCase();
@@ -145,6 +188,7 @@ export function initGlobalErrorHandlers() {
 
     // Filter out noise (extensions, devtools, non-app errors, handled LiveKit issues)
     if (
+      hasExtensionTrace ||
       fullMessage.includes('DevTools') ||
       fullMessage.includes('favicon') ||
       fullMessage.includes('ResizeObserver') ||
