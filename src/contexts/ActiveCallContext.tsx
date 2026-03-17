@@ -295,6 +295,7 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
         setShowIPPanel,
         setIsAdmin,
         setIsRoomReconnecting,
+        setIsCallRecording,
         setGuestIdentity,
         setUseFallbackVideoProfile,
         forceReconnectKey,
