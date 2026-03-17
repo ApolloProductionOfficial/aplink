@@ -41,6 +41,8 @@ export function DocumentPiPWindow({
   isMicMuted = false,
   isCameraMuted = false,
   isScreenSharing = false,
+  isRecording = false,
+  connectionState,
   participantName,
 }: DocumentPiPWindowProps) {
   const pipWindowRef = useRef<Window | null>(null);
