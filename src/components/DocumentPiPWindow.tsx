@@ -143,10 +143,64 @@ export function DocumentPiPWindow({
     topBar.appendChild(closeBtn);
     doc.body.appendChild(topBar);
 
-    // Video grid
+    // Video grid - check for screen share first
     const grid = doc.createElement('div');
-    grid.style.cssText = `flex:1;display:flex;gap:4px;padding:4px;min-height:0;`;
+    grid.style.cssText = `flex:1;display:flex;flex-direction:column;gap:4px;padding:4px;min-height:0;`;
     cleanupVideos();
+
+    // Check for active screen share tracks
+    let screenShareTrack: any = null;
+    let screenShareName = '';
+    let screenShareIdentity = '';
+    let screenShareIsLocal = false;
+
+    // Check remote participants for screen share
+    for (const p of Array.from(room.remoteParticipants.values())) {
+      const screenPub = p.getTrackPublication(Track.Source.ScreenShare);
+      if (screenPub?.track && !screenPub.isMuted) {
+        screenShareTrack = screenPub.track;
+        screenShareName = p.name || p.identity;
+        screenShareIdentity = p.identity;
+        break;
+      }
+    }
+
+    // Check local participant for screen share
+    if (!screenShareTrack) {
+      const localScreenPub = room.localParticipant.getTrackPublication(Track.Source.ScreenShare);
+      if (localScreenPub?.track && !localScreenPub.isMuted) {
+        screenShareTrack = localScreenPub.track;
+        screenShareName = participantName || room.localParticipant.name || 'You';
+        screenShareIdentity = room.localParticipant.identity;
+        screenShareIsLocal = true;
+      }
+    }
+
+    // If screen share is active, show it prominently
+    if (screenShareTrack) {
+      const screenRow = doc.createElement('div');
+      screenRow.style.cssText = `flex:3;display:flex;min-height:0;position:relative;`;
+
+      const screenCard = doc.createElement('div');
+      screenCard.style.cssText = `flex:1;border-radius:10px;overflow:hidden;background:#000;position:relative;`;
+
+      const screenVideo = doc.createElement('video');
+      screenVideo.autoplay = true; screenVideo.playsInline = true; screenVideo.muted = true;
+      screenVideo.style.cssText = `width:100%;height:100%;object-fit:contain;`;
+      try { screenShareTrack.attach(screenVideo); videoElementsRef.current.set('screen_' + screenShareIdentity, screenVideo); } catch {}
+      screenCard.appendChild(screenVideo);
+
+      const screenLabel = doc.createElement('div');
+      screenLabel.textContent = `🖥 ${screenShareName}`;
+      screenLabel.style.cssText = `position:absolute;top:6px;left:6px;color:white;font-size:11px;font-weight:500;background:rgba(0,0,0,0.6);padding:2px 8px;border-radius:6px;font-family:system-ui,-apple-system,sans-serif;`;
+      screenCard.appendChild(screenLabel);
+      screenRow.appendChild(screenCard);
+      grid.appendChild(screenRow);
+    }
+
+    // Camera thumbnails row
+    const camRow = doc.createElement('div');
+    camRow.style.cssText = `${screenShareTrack ? 'flex:1;' : 'flex:1;'}display:flex;gap:4px;min-height:0;`;
 
     const allParticipants: Array<{ name: string; track: any; isLocal: boolean; identity: string }> = [];
     const localCam = room.localParticipant.getTrackPublication(Track.Source.Camera);
@@ -158,8 +212,9 @@ export function DocumentPiPWindow({
     }
 
     for (const p of allParticipants) {
-      grid.appendChild(createParticipantCard(doc, p.name, p.track, p.isLocal, p.identity));
+      camRow.appendChild(createParticipantCard(doc, p.name, p.track, p.isLocal, p.identity));
     }
+    grid.appendChild(camRow);
     doc.body.appendChild(grid);
 
     // Control bar
