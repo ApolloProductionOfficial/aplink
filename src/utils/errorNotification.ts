@@ -188,7 +188,7 @@ export const sendErrorNotification = async ({
   severity: explicitSeverity,
 }: ErrorNotificationParams): Promise<boolean> => {
   // Check if this error should be ignored
-  if (shouldIgnore(errorMessage)) {
+  if (shouldIgnore({ errorMessage, source, details })) {
     return true; // Pretend success but do nothing
   }
   
