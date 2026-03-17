@@ -199,6 +199,7 @@ export const sendErrorNotification = async ({
   }
   
   // Determine severity
+  recordForwarded();
   const severity = explicitSeverity || determineSeverity(errorMessage, errorType);
   
   const now = Date.now();
