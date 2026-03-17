@@ -92,17 +92,27 @@ export function DocumentPiPWindow({
   }, []);
 
   const createButton = useCallback((
-    doc: Document, svgIcon: string, onClick: () => void, isActiveState: boolean = false, isDanger: boolean = false,
+    doc: Document, svgIcon: string, label: string, onClick: () => void, isActiveState: boolean = false, isDanger: boolean = false,
   ) => {
+    const wrapper = doc.createElement('div');
+    wrapper.style.cssText = `display:flex;flex-direction:column;align-items:center;gap:4px;`;
+
     const btn = doc.createElement('button');
     btn.innerHTML = svgIcon;
     btn.onclick = onClick;
-    const bg = isDanger ? '#ef4444' : isActiveState ? '#ef4444' : 'rgba(255,255,255,0.1)';
-    const hoverBg = isDanger ? '#dc2626' : isActiveState ? '#dc2626' : 'rgba(255,255,255,0.2)';
-    btn.style.cssText = `width:40px;height:40px;border-radius:50%;border:none;background:${bg};color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;`;
-    btn.onmouseenter = () => { btn.style.background = hoverBg; btn.style.transform = 'scale(1.1)'; };
+    const bg = isDanger ? '#ef4444' : isActiveState ? '#ef4444' : 'rgba(255,255,255,0.12)';
+    const hoverBg = isDanger ? '#dc2626' : isActiveState ? '#dc2626' : 'rgba(255,255,255,0.25)';
+    btn.style.cssText = `width:48px;height:48px;border-radius:50%;border:none;background:${bg};color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;`;
+    btn.onmouseenter = () => { btn.style.background = hoverBg; btn.style.transform = 'scale(1.08)'; };
     btn.onmouseleave = () => { btn.style.background = bg; btn.style.transform = 'scale(1)'; };
-    return btn;
+
+    const txt = doc.createElement('span');
+    txt.textContent = label;
+    txt.style.cssText = `font-size:10px;color:rgba(255,255,255,0.7);font-family:system-ui,-apple-system,sans-serif;white-space:nowrap;`;
+
+    wrapper.appendChild(btn);
+    wrapper.appendChild(txt);
+    return wrapper;
   }, []);
 
   const buildPiPContent = useCallback(() => {
