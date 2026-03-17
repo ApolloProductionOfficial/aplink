@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { recordFiltered, recordForwarded } from "./errorFilterStats";
 
 interface ErrorNotificationParams {
   errorType: string;
@@ -83,7 +84,12 @@ const shouldIgnore = (params: {
     .join(' ')
     .toLowerCase();
 
-  return IGNORED_PATTERNS.some((pattern) => haystack.includes(pattern.toLowerCase()));
+  const matched = IGNORED_PATTERNS.find((pattern) => haystack.includes(pattern.toLowerCase()));
+  if (matched) {
+    recordFiltered(matched);
+    return true;
+  }
+  return false;
 };
 
 // Patterns that are only warnings (log but don't email)
@@ -193,6 +199,7 @@ export const sendErrorNotification = async ({
   }
   
   // Determine severity
+  recordForwarded();
   const severity = explicitSeverity || determineSeverity(errorMessage, errorType);
   
   const now = Date.now();

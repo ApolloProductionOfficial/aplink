@@ -1,4 +1,5 @@
 import { sendErrorNotification } from './errorNotification';
+import { recordFiltered } from './errorFilterStats';
 
 // Dedupe: track errors to prevent spam (5 min window)
 const sentErrors = new Set<string>();
@@ -45,6 +46,7 @@ export function initGlobalErrorHandlers() {
       errorMessage.includes('Loading chunk') ||
       errorMessage.includes('dynamically imported module')
     ) {
+      recordFiltered('globalErrorHandler:window.onerror');
       return false;
     }
 
@@ -108,6 +110,7 @@ export function initGlobalErrorHandlers() {
       // Filter out NegotiationError - these are handled by app-level recovery
       (errorMessage.includes('NegotiationError') && !errorMessage.includes('critical'))
     ) {
+      recordFiltered('globalErrorHandler:unhandledrejection');
       return;
     }
 
@@ -227,6 +230,7 @@ export function initGlobalErrorHandlers() {
       fullMessage.includes('"reasonName":"Cancelled"') ||
       fullMessage.includes('"reason":3')
     ) {
+      recordFiltered('globalErrorHandler:console.error');
       return;
     }
 
