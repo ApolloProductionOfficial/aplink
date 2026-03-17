@@ -157,7 +157,8 @@ const MeetingRoomContent = ({ roomId, userName }: MeetingRoomContentProps) => {
 
   useEffect(() => {
     isRecordingRef.current = isRecording;
-  }, [isRecording]);
+    setIsCallRecording(isRecording);
+  }, [isRecording, setIsCallRecording]);
   
   useEffect(() => {
     connectionStatusRef.current = connectionStatus;

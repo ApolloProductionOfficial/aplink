@@ -108,6 +108,7 @@ export function GlobalActiveCall() {
   const [docPipMicMuted, setDocPipMicMuted] = useState(false);
   const [docPipCamMuted, setDocPipCamMuted] = useState(false);
   const [docPipScreenShare, setDocPipScreenShare] = useState(false);
+  const [docPipConnectionState, setDocPipConnectionState] = useState<string | undefined>(undefined);
 
   // Sync media states from liveKitRoom for Document PiP
   useEffect(() => {
