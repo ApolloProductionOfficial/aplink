@@ -54,6 +54,7 @@ export function GlobalActiveCall() {
     showCaptions,
     showIPPanel,
     isAdmin,
+    isCallRecording,
     setShowTranslator,
     setShowCaptions,
     setShowIPPanel,
