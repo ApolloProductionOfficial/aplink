@@ -84,7 +84,12 @@ const shouldIgnore = (params: {
     .join(' ')
     .toLowerCase();
 
-  return IGNORED_PATTERNS.some((pattern) => haystack.includes(pattern.toLowerCase()));
+  const matched = IGNORED_PATTERNS.find((pattern) => haystack.includes(pattern.toLowerCase()));
+  if (matched) {
+    recordFiltered(matched);
+    return true;
+  }
+  return false;
 };
 
 // Patterns that are only warnings (log but don't email)
