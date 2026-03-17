@@ -46,6 +46,7 @@ export function initGlobalErrorHandlers() {
       errorMessage.includes('Loading chunk') ||
       errorMessage.includes('dynamically imported module')
     ) {
+      recordFiltered('globalErrorHandler:window.onerror');
       return false;
     }
 
