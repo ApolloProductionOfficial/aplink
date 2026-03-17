@@ -49,6 +49,8 @@ interface ActiveCallState {
   isAdmin: boolean;
   // Reconnection state
   isRoomReconnecting: boolean;
+  // Recording state for PiP
+  isCallRecording: boolean;
   guestIdentity: string | null;
   useFallbackVideoProfile: boolean;
   // Issue 8: Translation history
