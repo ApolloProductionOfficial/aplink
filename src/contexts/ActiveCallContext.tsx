@@ -246,6 +246,10 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
     setState(prev => ({ ...prev, isRoomReconnecting: isReconnecting }));
   }, []);
 
+  const setIsCallRecording = useCallback((isRecording: boolean) => {
+    setState(prev => ({ ...prev, isCallRecording: isRecording }));
+  }, []);
+
   const setGuestIdentity = useCallback((identity: string | null) => {
     setState(prev => ({ ...prev, guestIdentity: identity }));
   }, []);
