@@ -143,6 +143,7 @@ const MeetingRoomContent = ({ roomId, userName }: MeetingRoomContentProps) => {
     setShowCaptions,
     setShowIPPanel,
     setIsAdmin,
+    setIsCallRecording,
   } = useActiveCall();
 
   // Derived values - safe to compute, no hooks
