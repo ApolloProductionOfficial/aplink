@@ -49,6 +49,8 @@ interface ActiveCallState {
   isAdmin: boolean;
   // Reconnection state
   isRoomReconnecting: boolean;
+  // Recording state for PiP
+  isCallRecording: boolean;
   guestIdentity: string | null;
   useFallbackVideoProfile: boolean;
   // Issue 8: Translation history
@@ -76,6 +78,7 @@ interface ActiveCallContextType extends ActiveCallState {
   setShowIPPanel: (show: boolean) => void;
   setIsAdmin: (isAdmin: boolean) => void;
   setIsRoomReconnecting: (isReconnecting: boolean) => void;
+  setIsCallRecording: (isRecording: boolean) => void;
   setGuestIdentity: (identity: string | null) => void;
   setUseFallbackVideoProfile: (useFallback: boolean) => void;
   forceReconnectKey: number;
@@ -103,6 +106,7 @@ const defaultState: ActiveCallState = {
   showIPPanel: false,
   isAdmin: false,
   isRoomReconnecting: false,
+  isCallRecording: false,
   guestIdentity: null,
   useFallbackVideoProfile: false,
   // Issue 8
@@ -242,6 +246,10 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
     setState(prev => ({ ...prev, isRoomReconnecting: isReconnecting }));
   }, []);
 
+  const setIsCallRecording = useCallback((isRecording: boolean) => {
+    setState(prev => ({ ...prev, isCallRecording: isRecording }));
+  }, []);
+
   const setGuestIdentity = useCallback((identity: string | null) => {
     setState(prev => ({ ...prev, guestIdentity: identity }));
   }, []);
@@ -291,6 +299,7 @@ export function ActiveCallProvider({ children }: { children: ReactNode }) {
         setShowIPPanel,
         setIsAdmin,
         setIsRoomReconnecting,
+        setIsCallRecording,
         setGuestIdentity,
         setUseFallbackVideoProfile,
         forceReconnectKey,

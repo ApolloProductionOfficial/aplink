@@ -143,6 +143,7 @@ const MeetingRoomContent = ({ roomId, userName }: MeetingRoomContentProps) => {
     setShowCaptions,
     setShowIPPanel,
     setIsAdmin,
+    setIsCallRecording,
   } = useActiveCall();
 
   // Derived values - safe to compute, no hooks
@@ -156,7 +157,8 @@ const MeetingRoomContent = ({ roomId, userName }: MeetingRoomContentProps) => {
 
   useEffect(() => {
     isRecordingRef.current = isRecording;
-  }, [isRecording]);
+    setIsCallRecording(isRecording);
+  }, [isRecording, setIsCallRecording]);
   
   useEffect(() => {
     connectionStatusRef.current = connectionStatus;

@@ -54,6 +54,7 @@ export function GlobalActiveCall() {
     showCaptions,
     showIPPanel,
     isAdmin,
+    isCallRecording,
     setShowTranslator,
     setShowCaptions,
     setShowIPPanel,
@@ -108,6 +109,7 @@ export function GlobalActiveCall() {
   const [docPipMicMuted, setDocPipMicMuted] = useState(false);
   const [docPipCamMuted, setDocPipCamMuted] = useState(false);
   const [docPipScreenShare, setDocPipScreenShare] = useState(false);
+  const [docPipConnectionState, setDocPipConnectionState] = useState<string | undefined>(undefined);
 
   // Sync media states from liveKitRoom for Document PiP
   useEffect(() => {
@@ -117,6 +119,7 @@ export function GlobalActiveCall() {
       setDocPipMicMuted(lp.getTrackPublication(Track.Source.Microphone)?.isMuted ?? true);
       setDocPipCamMuted(lp.getTrackPublication(Track.Source.Camera)?.isMuted ?? true);
       setDocPipScreenShare(lp.isScreenShareEnabled);
+      setDocPipConnectionState(liveKitRoom.state);
     };
     sync();
     const interval = setInterval(sync, 1000);
@@ -611,6 +614,8 @@ export function GlobalActiveCall() {
         isMicMuted={docPipMicMuted}
         isCameraMuted={docPipCamMuted}
         isScreenSharing={docPipScreenShare}
+        isRecording={isCallRecording}
+        connectionState={docPipConnectionState as any}
         participantName={participantName}
       />
 
