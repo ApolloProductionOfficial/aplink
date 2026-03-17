@@ -78,6 +78,7 @@ interface ActiveCallContextType extends ActiveCallState {
   setShowIPPanel: (show: boolean) => void;
   setIsAdmin: (isAdmin: boolean) => void;
   setIsRoomReconnecting: (isReconnecting: boolean) => void;
+  setIsCallRecording: (isRecording: boolean) => void;
   setGuestIdentity: (identity: string | null) => void;
   setUseFallbackVideoProfile: (useFallback: boolean) => void;
   forceReconnectKey: number;
