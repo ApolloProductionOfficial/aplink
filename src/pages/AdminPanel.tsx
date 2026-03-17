@@ -1214,6 +1214,9 @@ const AdminPanel = () => {
                     
                     {/* UX Anomalies Panel */}
                     <UXAnomaliesPanel />
+
+                    {/* Error filter noise stats */}
+                    <ErrorFilterStatsPanel />
                     
                     <DataBackupsManager />
                   </>
