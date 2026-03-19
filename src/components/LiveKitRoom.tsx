@@ -1288,6 +1288,9 @@ function LiveKitContent({
   // Track media toggle lock to prevent NegotiationError on iOS
   const isTogglingMediaRef = useRef(false);
   const toggleLockTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // Separate lock for screen share so it's never blocked by mic/camera toggles
+  const isTogglingScreenShareRef = useRef(false);
+  const screenShareLockTimerRef = useRef<NodeJS.Timeout | null>(null);
   // iOS needs longer lock duration to prevent race conditions during SDP negotiation
   const isIOSSafeModeLocal = useMemo(() => detectIsIOSOrMobileSafari(), []);
   const TOGGLE_LOCK_DURATION_MS = isIOSSafeModeLocal ? 2000 : 800;
@@ -1301,6 +1304,16 @@ function LiveKitContent({
         isTogglingMediaRef.current = false;
       }
     }, 3000);
+  }, []);
+
+  const releaseScreenShareLock = useCallback(() => {
+    if (screenShareLockTimerRef.current) clearTimeout(screenShareLockTimerRef.current);
+    screenShareLockTimerRef.current = setTimeout(() => {
+      if (isTogglingScreenShareRef.current) {
+        console.warn('[LiveKitRoom] Screen share lock was stuck, releasing');
+        isTogglingScreenShareRef.current = false;
+      }
+    }, 5000); // longer timeout — getDisplayMedia picker can take a while
   }, []);
 
   // iOS Safe Mode detection for this component
@@ -1544,7 +1557,7 @@ function LiveKitContent({
     }
   }, [localParticipant, isRoomReconnecting, onNegotiationError, isIOSSafeModeLive, diagnostics, isMobileToggle, releaseToggleLock]);
 
-  // Toggle screen share with lock
+  // Toggle screen share with SEPARATE lock (not shared with mic/camera)
   const toggleScreenShare = useCallback(async () => {
     // Block if reconnecting
     if (isRoomReconnecting) {
@@ -1552,12 +1565,12 @@ function LiveKitContent({
       toast.info("Подождите завершения переподключения");
       return;
     }
-    if (isTogglingMediaRef.current) {
-      console.log('[LiveKitRoom] Media toggle in progress, skipping screen share toggle');
+    if (isTogglingScreenShareRef.current) {
+      console.log('[LiveKitRoom] Screen share toggle already in progress, skipping');
       return;
     }
     try {
-      // Issue 2: Check for mobile browser support
+      // Check for mobile browser support
       if (isMobile && !/Android/i.test(navigator.userAgent)) {
         toast.info("Демонстрация экрана недоступна", {
           description: "На мобильных устройствах функция ограничена (поддерживается на Android Chrome)",
@@ -1566,17 +1579,36 @@ function LiveKitContent({
         return;
       }
 
-      isTogglingMediaRef.current = true;
-      releaseToggleLock(); // Safety: auto-release if stuck
+      isTogglingScreenShareRef.current = true;
+      releaseScreenShareLock(); // Safety: auto-release if stuck
       const currentState = localParticipant?.isScreenShareEnabled ?? false;
       
       if (!currentState) {
-        // Enable screen share - use simple options for maximum compatibility
-        await localParticipant?.setScreenShareEnabled(true, {
-          audio: true,
-          contentHint: 'detail',
-          resolution: { width: 1920, height: 1080, frameRate: 15 },
-        });
+        // Enable screen share with retry logic for multi-participant rooms
+        const attemptScreenShare = async (attempt: number): Promise<void> => {
+          try {
+            await localParticipant?.setScreenShareEnabled(true, {
+              audio: true,
+              contentHint: 'detail',
+              resolution: { width: 1920, height: 1080, frameRate: 15 },
+            });
+          } catch (err: any) {
+            // User cancelled — don't retry
+            if (err?.name === 'NotAllowedError' || err?.message?.includes('cancelled') || err?.message?.includes('canceled')) {
+              throw err;
+            }
+            // NegotiationError — retry with backoff (common with many participants)
+            if ((err?.code === 13 || err?.name === 'NegotiationError') && attempt < 3) {
+              console.warn(`[LiveKitRoom] NegotiationError on screen share attempt ${attempt + 1}, retrying...`);
+              await new Promise(r => setTimeout(r, 800 * (attempt + 1)));
+              return attemptScreenShare(attempt + 1);
+            }
+            throw err;
+          }
+        };
+
+        await attemptScreenShare(0);
+
         // Log track state for debugging
         const screenPubs = Array.from(localParticipant?.trackPublications.values() ?? [])
           .filter(t => t.source === Track.Source.ScreenShare);
@@ -1592,10 +1624,10 @@ function LiveKitContent({
         console.log('[LiveKitRoom] Screen share disabled');
       }
     } catch (err: any) {
-      // Handle user cancellation (not an error - user just closed the picker)
+      // Handle user cancellation (not an error)
       if (err?.name === 'NotAllowedError' || err?.message?.includes('cancelled') || err?.message?.includes('canceled')) {
         console.log('[LiveKitRoom] Screen share cancelled by user');
-        return; // Silent exit, not an error
+        return;
       }
       
       // Handle security/permission errors
@@ -1607,36 +1639,18 @@ function LiveKitContent({
         return;
       }
       
-      if ((err?.code === 13 || err?.name === 'NegotiationError') && !isRoomReconnecting) {
-        console.warn('[LiveKitRoom] NegotiationError on screen share, retrying...');
-        onNegotiationError?.(err);
-        await new Promise(r => setTimeout(r, 600));
-        try {
-          await localParticipant?.setScreenShareEnabled(true, {
-            audio: true,
-            contentHint: 'detail',
-            resolution: { width: 1920, height: 1080, frameRate: 15 },
-          });
-        } catch (retryErr) {
-          console.error('Failed to toggle screen share after retry:', retryErr);
-          toast.error('Не удалось включить демонстрацию экрана');
-        }
-      } else {
-        // Log with more details for debugging
-        console.error('Failed to toggle screen share:', {
-          name: err?.name,
-          message: err?.message,
-          code: err?.code,
-          stack: err?.stack
-        });
-        toast.error('Ошибка демонстрации экрана', {
-          description: err?.message || 'Попробуйте ещё раз'
-        });
-      }
+      console.error('Failed to toggle screen share:', {
+        name: err?.name,
+        message: err?.message,
+        code: err?.code,
+      });
+      toast.error('Ошибка демонстрации экрана', {
+        description: err?.message || 'Попробуйте ещё раз'
+      });
     } finally {
-      setTimeout(() => { isTogglingMediaRef.current = false; }, TOGGLE_LOCK_DURATION_MS);
+      setTimeout(() => { isTogglingScreenShareRef.current = false; }, TOGGLE_LOCK_DURATION_MS);
     }
-  }, [localParticipant, isRoomReconnecting, onNegotiationError, releaseToggleLock]);
+  }, [localParticipant, isRoomReconnecting, releaseScreenShareLock, TOGGLE_LOCK_DURATION_MS]);
 
   // Voice commands hook - must be after toggle functions are defined
   const { isListening: isVoiceCommandsActive, toggleListening: toggleVoiceCommands, isSupported: voiceCommandsSupported } = useVoiceCommands({
