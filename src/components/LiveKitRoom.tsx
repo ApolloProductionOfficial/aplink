@@ -1615,7 +1615,7 @@ function LiveKitContent({
         const { LocalVideoTrack, LocalAudioTrack } = await import('livekit-client');
         
         for (const track of stream.getVideoTracks()) {
-          const lvTrack = new LocalVideoTrack(track, { loggerName: 'screen-share' });
+          const lvTrack = new LocalVideoTrack(track);
           lvTrack.source = Track.Source.ScreenShare;
           await localParticipant?.publishTrack(lvTrack, {
             source: Track.Source.ScreenShare,
