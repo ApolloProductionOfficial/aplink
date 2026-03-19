@@ -1580,13 +1580,12 @@ function LiveKitContent({
       try {
         stream = await navigator.mediaDevices.getDisplayMedia({
           video: { 
-            cursor: 'always' as any,
             width: { ideal: 1920 },
             height: { ideal: 1080 },
             frameRate: { ideal: 15 },
           },
           audio: true,
-        });
+        } as any);
       } catch (err: any) {
         // User cancelled the picker — not an error
         if (err?.name === 'NotAllowedError' || err?.message?.includes('cancel')) {
