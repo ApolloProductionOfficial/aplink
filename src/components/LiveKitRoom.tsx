@@ -1567,6 +1567,7 @@ function LiveKitContent({
       }
 
       isTogglingMediaRef.current = true;
+      releaseToggleLock(); // Safety: auto-release if stuck
       const currentState = localParticipant?.isScreenShareEnabled ?? false;
       
       if (!currentState) {
