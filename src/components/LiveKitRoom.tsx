@@ -1091,9 +1091,11 @@ function LiveKitContent({
   useEffect(() => {
     // Check if anyone is screen sharing (remote or local)
     const someoneScreenSharing = participants.some(p => {
-      const tracks = p.getTrackPublications();
-      return Array.from(tracks.values()).some(t => t.source === Track.Source.ScreenShare && t.isSubscribed);
-    }) || isScreenShareEnabled;
+      const trackPublications = p.getTrackPublications();
+      return Array.from(trackPublications.values()).some(t =>
+        t.source === Track.Source.ScreenShare && (!!t.track || t.isSubscribed)
+      );
+    }) || !!localParticipant?.getTrackPublication(Track.Source.ScreenShare)?.track || isScreenShareEnabled;
     
     const wasScreenSharing = prevScreenShareRef.current;
     prevScreenShareRef.current = someoneScreenSharing;
@@ -1122,7 +1124,7 @@ function LiveKitContent({
         clearTimeout(screenShareDebounceRef.current);
       }
     };
-  }, [participants, isScreenShareEnabled, layoutMode]);
+  }, [participants, localParticipant, isScreenShareEnabled, layoutMode]);
   
   // Track active speaker (keep the handler in a separate effect)
   const [speakingParticipantState, setSpeakingParticipant] = useState<string | undefined>(undefined);
@@ -1565,93 +1567,62 @@ function LiveKitContent({
       toast.info("Подождите завершения переподключения");
       return;
     }
-    if (isTogglingScreenShareRef.current) {
-      console.log('[LiveKitRoom] Screen share toggle already in progress, force-releasing stuck lock');
-      // Force release stuck lock instead of silently returning
-      isTogglingScreenShareRef.current = false;
-    }
-    
-    const currentState = localParticipant?.isScreenShareEnabled ?? false;
 
-    if (!currentState) {
-      // === START screen share ===
-      // CRITICAL: Call getDisplayMedia DIRECTLY from user gesture — no awaits before this!
-      let stream: MediaStream;
+    if (isTogglingScreenShareRef.current) {
+      console.log('[LiveKitRoom] Screen share toggle already in progress, skipping');
+      return;
+    }
+
+    const screenSharePublication = localParticipant?.getTrackPublication(Track.Source.ScreenShare);
+    const currentState = (localParticipant?.isScreenShareEnabled ?? false) || (!!screenSharePublication?.track && !screenSharePublication.isMuted);
+
+    isTogglingScreenShareRef.current = true;
+    releaseScreenShareLock();
+
+    const startScreenShare = async (attempt = 1): Promise<void> => {
       try {
-        stream = await navigator.mediaDevices.getDisplayMedia({
-          video: { 
+        // IMPORTANT: call directly from click chain to preserve browser gesture requirement
+        await localParticipant?.setScreenShareEnabled(true, {
+          audio: true,
+          video: {
             width: { ideal: 1920 },
             height: { ideal: 1080 },
             frameRate: { ideal: 15 },
           },
-          audio: true,
         } as any);
+        console.log('[LiveKitRoom] Screen share enabled');
       } catch (err: any) {
-        // User cancelled the picker — not an error
-        if (err?.name === 'NotAllowedError' || err?.message?.includes('cancel')) {
+        // User closed picker/cancelled selection
+        if (err?.name === 'NotAllowedError' || err?.message?.toLowerCase?.().includes('cancel')) {
           console.log('[LiveKitRoom] Screen share cancelled by user');
           return;
         }
-        console.error('[LiveKitRoom] getDisplayMedia failed:', err?.name, err?.message);
+
+        const isNegotiationError = err?.code === 13 || err?.name === 'NegotiationError';
+        if (isNegotiationError && attempt < 3) {
+          const retryDelay = 500 * attempt;
+          console.warn(`[LiveKitRoom] Screen share negotiation failed, retry ${attempt}/2 in ${retryDelay}ms`);
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+          return startScreenShare(attempt + 1);
+        }
+
+        console.error('[LiveKitRoom] Failed to start screen share:', err?.name, err?.message);
         toast.error('Не удалось запустить демонстрацию', {
           description: err?.message || 'Проверьте разрешения браузера',
         });
-        return;
       }
+    };
 
-      // Handle user stopping share via browser UI ("Stop sharing" button)
-      const videoTrack = stream.getVideoTracks()[0];
-      if (videoTrack) {
-        videoTrack.onended = () => {
-          console.log('[LiveKitRoom] Screen share stopped via browser UI');
-          localParticipant?.setScreenShareEnabled(false).catch(() => {});
-        };
-      }
-
-      // Now publish the already-captured stream to LiveKit
-      isTogglingScreenShareRef.current = true;
-      try {
-        // Publish each track from the captured stream
-        const { LocalVideoTrack, LocalAudioTrack } = await import('livekit-client');
-        
-        for (const track of stream.getVideoTracks()) {
-          const lvTrack = new LocalVideoTrack(track);
-          lvTrack.source = Track.Source.ScreenShare;
-          await localParticipant?.publishTrack(lvTrack, {
-            source: Track.Source.ScreenShare,
-            videoCodec: 'vp9',
-          });
-        }
-        
-        for (const track of stream.getAudioTracks()) {
-          const lvTrack = new LocalAudioTrack(track);
-          lvTrack.source = Track.Source.ScreenShareAudio;
-          await localParticipant?.publishTrack(lvTrack, {
-            source: Track.Source.ScreenShareAudio,
-          });
-        }
-
-        console.log('[LiveKitRoom] Screen share published successfully');
-      } catch (err: any) {
-        console.error('[LiveKitRoom] Failed to publish screen share:', err?.name, err?.message);
-        // Stop the captured stream since we failed to publish
-        stream.getTracks().forEach(t => t.stop());
-        toast.error('Ошибка публикации демонстрации', {
-          description: err?.message || 'Попробуйте ещё раз',
-        });
-      } finally {
-        isTogglingScreenShareRef.current = false;
-      }
-    } else {
-      // === STOP screen share ===
-      isTogglingScreenShareRef.current = true;
-      try {
+    try {
+      if (!currentState) {
+        await startScreenShare();
+      } else {
         // Collect tracks BEFORE disabling
         const screenPubs = Array.from(localParticipant?.trackPublications.values() ?? [])
           .filter(t => t.source === Track.Source.ScreenShare || t.source === Track.Source.ScreenShareAudio);
-        
+
         await localParticipant?.setScreenShareEnabled(false);
-        
+
         // Force-stop any lingering MediaStreamTracks so browser releases the capture indicator
         for (const pub of screenPubs) {
           const track = pub.track?.mediaStreamTrack;
@@ -1660,14 +1631,15 @@ function LiveKitContent({
             track.stop();
           }
         }
+
         console.log('[LiveKitRoom] Screen share disabled, all tracks stopped');
-      } catch (err: any) {
-        console.error('[LiveKitRoom] Error stopping screen share:', err);
-      } finally {
-        isTogglingScreenShareRef.current = false;
       }
+    } catch (err: any) {
+      console.error('[LiveKitRoom] Error toggling screen share:', err);
+    } finally {
+      isTogglingScreenShareRef.current = false;
     }
-  }, [localParticipant, isRoomReconnecting]);
+  }, [localParticipant, isRoomReconnecting, releaseScreenShareLock]);
 
   // Voice commands hook - must be after toggle functions are defined
   const { isListening: isVoiceCommandsActive, toggleListening: toggleVoiceCommands, isSupported: voiceCommandsSupported } = useVoiceCommands({
