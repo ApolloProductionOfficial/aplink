@@ -1624,7 +1624,7 @@ function LiveKitContent({
         }
         
         for (const track of stream.getAudioTracks()) {
-          const lvTrack = new LocalAudioTrack(track, { loggerName: 'screen-share-audio' });
+          const lvTrack = new LocalAudioTrack(track);
           lvTrack.source = Track.Source.ScreenShareAudio;
           await localParticipant?.publishTrack(lvTrack, {
             source: Track.Source.ScreenShareAudio,
