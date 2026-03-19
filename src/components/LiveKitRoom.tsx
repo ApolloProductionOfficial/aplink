@@ -1288,6 +1288,9 @@ function LiveKitContent({
   // Track media toggle lock to prevent NegotiationError on iOS
   const isTogglingMediaRef = useRef(false);
   const toggleLockTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // Separate lock for screen share so it's never blocked by mic/camera toggles
+  const isTogglingScreenShareRef = useRef(false);
+  const screenShareLockTimerRef = useRef<NodeJS.Timeout | null>(null);
   // iOS needs longer lock duration to prevent race conditions during SDP negotiation
   const isIOSSafeModeLocal = useMemo(() => detectIsIOSOrMobileSafari(), []);
   const TOGGLE_LOCK_DURATION_MS = isIOSSafeModeLocal ? 2000 : 800;
@@ -1301,6 +1304,16 @@ function LiveKitContent({
         isTogglingMediaRef.current = false;
       }
     }, 3000);
+  }, []);
+
+  const releaseScreenShareLock = useCallback(() => {
+    if (screenShareLockTimerRef.current) clearTimeout(screenShareLockTimerRef.current);
+    screenShareLockTimerRef.current = setTimeout(() => {
+      if (isTogglingScreenShareRef.current) {
+        console.warn('[LiveKitRoom] Screen share lock was stuck, releasing');
+        isTogglingScreenShareRef.current = false;
+      }
+    }, 5000); // longer timeout — getDisplayMedia picker can take a while
   }, []);
 
   // iOS Safe Mode detection for this component
