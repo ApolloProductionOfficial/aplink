@@ -1620,8 +1620,21 @@ function LiveKitContent({
           toast.warning('Демонстрация экрана может быть не видна другим участникам');
         }
       } else {
+        // Stop all screen share tracks to release browser capture
+        const screenPubs = Array.from(localParticipant?.trackPublications.values() ?? [])
+          .filter(t => t.source === Track.Source.ScreenShare || t.source === Track.Source.ScreenShareAudio);
+        
         await localParticipant?.setScreenShareEnabled(false);
-        console.log('[LiveKitRoom] Screen share disabled');
+        
+        // Force-stop any lingering MediaStreamTracks so browser releases the capture indicator
+        for (const pub of screenPubs) {
+          const track = pub.track?.mediaStreamTrack;
+          if (track && track.readyState === 'live') {
+            console.log('[LiveKitRoom] Force-stopping lingering screen share track:', track.kind);
+            track.stop();
+          }
+        }
+        console.log('[LiveKitRoom] Screen share disabled, all tracks stopped');
       }
     } catch (err: any) {
       // Handle user cancellation (not an error)
