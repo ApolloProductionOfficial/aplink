@@ -1636,7 +1636,7 @@ function LiveKitContent({
     } finally {
       setTimeout(() => { isTogglingMediaRef.current = false; }, TOGGLE_LOCK_DURATION_MS);
     }
-  }, [localParticipant, isRoomReconnecting, onNegotiationError]);
+  }, [localParticipant, isRoomReconnecting, onNegotiationError, releaseToggleLock]);
 
   // Voice commands hook - must be after toggle functions are defined
   const { isListening: isVoiceCommandsActive, toggleListening: toggleVoiceCommands, isSupported: voiceCommandsSupported } = useVoiceCommands({
