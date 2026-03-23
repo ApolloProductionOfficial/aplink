@@ -354,7 +354,10 @@ serve(async (req) => {
     const telegramToken = Deno.env.get("REPORTS_BOT_TOKEN");
     const adminChatId = "2061785720";
 
-    if (telegramToken) {
+    // Only send Telegram notification if there are errors or warnings (skip routine "all OK" reports)
+    const hasProblems = errorCount > 0 || warningCount > 0;
+    
+    if (telegramToken && (hasProblems || action === "fix")) {
       const statusEmoji =
         errorCount > 0 ? "🔴" : warningCount > 0 ? "🟡" : "🟢";
       const scheduledLabel = scheduled ? " (⏰ по расписанию)" : "";
