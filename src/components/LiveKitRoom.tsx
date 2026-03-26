@@ -1579,43 +1579,81 @@ function LiveKitContent({
     isTogglingScreenShareRef.current = true;
     releaseScreenShareLock();
 
-    const startScreenShare = async (attempt = 1): Promise<void> => {
-      try {
-        // IMPORTANT: call directly from click chain to preserve browser gesture requirement
-        await localParticipant?.setScreenShareEnabled(true, {
-          audio: true,
-          video: {
-            width: { ideal: 1920 },
-            height: { ideal: 1080 },
-            frameRate: { ideal: 15 },
-          },
-        } as any);
-        console.log('[LiveKitRoom] Screen share enabled');
-      } catch (err: any) {
-        // User closed picker/cancelled selection
-        if (err?.name === 'NotAllowedError' || err?.message?.toLowerCase?.().includes('cancel')) {
+    try {
+      if (!currentState) {
+        // Step 1: Capture IMMEDIATELY in user gesture chain
+        let stream: MediaStream;
+        try {
+          stream = await navigator.mediaDevices.getDisplayMedia({
+            video: { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 15 } },
+            audio: true,
+          });
+        } catch (err: any) {
+          // User cancelled picker
           console.log('[LiveKitRoom] Screen share cancelled by user');
+          isTogglingScreenShareRef.current = false;
           return;
         }
 
-        const isNegotiationError = err?.code === 13 || err?.name === 'NegotiationError';
-        if (isNegotiationError && attempt < 3) {
-          const retryDelay = 500 * attempt;
-          console.warn(`[LiveKitRoom] Screen share negotiation failed, retry ${attempt}/2 in ${retryDelay}ms`);
-          await new Promise(resolve => setTimeout(resolve, retryDelay));
-          return startScreenShare(attempt + 1);
+        // Step 2: Wrap captured tracks and publish with retry
+        const { LocalVideoTrack, LocalAudioTrack } = await import('livekit-client');
+        const videoMediaTrack = stream.getVideoTracks()[0];
+        const audioMediaTrack = stream.getAudioTracks()[0];
+
+        if (!videoMediaTrack) {
+          console.error('[LiveKitRoom] No video track from getDisplayMedia');
+          stream.getTracks().forEach(t => t.stop());
+          isTogglingScreenShareRef.current = false;
+          return;
         }
 
-        console.error('[LiveKitRoom] Failed to start screen share:', err?.name, err?.message);
-        toast.error('Не удалось запустить демонстрацию', {
-          description: err?.message || 'Проверьте разрешения браузера',
-        });
-      }
-    };
+        // Listen for native "Stop sharing" button
+        videoMediaTrack.onended = () => {
+          console.log('[LiveKitRoom] Screen share stopped via browser UI');
+          localParticipant?.unpublishTrack(videoMediaTrack);
+          if (audioMediaTrack) localParticipant?.unpublishTrack(audioMediaTrack);
+          stream.getTracks().forEach(t => t.stop());
+        };
 
-    try {
-      if (!currentState) {
-        await startScreenShare();
+        const publishWithRetry = async (attempt = 1): Promise<boolean> => {
+          try {
+            const lvVideoTrack = new LocalVideoTrack(videoMediaTrack);
+            await localParticipant?.publishTrack(lvVideoTrack, {
+              source: Track.Source.ScreenShare,
+              videoCodec: 'vp8',
+            });
+
+            if (audioMediaTrack) {
+              const lvAudioTrack = new LocalAudioTrack(audioMediaTrack);
+              await localParticipant?.publishTrack(lvAudioTrack, {
+                source: Track.Source.ScreenShareAudio,
+              });
+            }
+
+            console.log('[LiveKitRoom] Screen share published successfully');
+            return true;
+          } catch (err: any) {
+            const isNegotiationError = err?.code === 13 || err?.name === 'NegotiationError';
+            if (isNegotiationError && attempt < 4) {
+              const retryDelay = 600 * attempt;
+              console.warn(`[LiveKitRoom] Screen share publish retry ${attempt}/3 in ${retryDelay}ms`);
+              await new Promise(resolve => setTimeout(resolve, retryDelay));
+              return publishWithRetry(attempt + 1);
+            }
+            throw err;
+          }
+        };
+
+        try {
+          await publishWithRetry();
+        } catch (err: any) {
+          console.error('[LiveKitRoom] Failed to publish screen share:', err?.name, err?.message);
+          // Release browser capture indicator
+          stream.getTracks().forEach(t => t.stop());
+          toast.error('Не удалось запустить демонстрацию', {
+            description: 'Попробуйте ещё раз',
+          });
+        }
       } else {
         // Collect tracks BEFORE disabling
         const screenPubs = Array.from(localParticipant?.trackPublications.values() ?? [])

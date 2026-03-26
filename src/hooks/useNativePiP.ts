@@ -162,7 +162,7 @@ export function useNativePiP(room: Room | null, autoPiPOnTabSwitch: boolean = tr
 
       console.log('[useNativePiP] No video available for PiP');
     } catch (err) {
-      console.error('[useNativePiP] Failed to request PiP:', err);
+      console.warn('[useNativePiP] PiP request failed (expected without user gesture):', err?.name);
     }
   }, [isPiPSupported]);
 
@@ -187,37 +187,8 @@ export function useNativePiP(room: Room | null, autoPiPOnTabSwitch: boolean = tr
     }
   }, [isPiPActive, exitPiP, requestPiP]);
 
-  // Issue 1 FIX: Auto PiP on tab switch using REFS (no stale closures)
-  // Resets userExitedPiPRef when returning to tab so PiP re-triggers
-  useEffect(() => {
-    if (!autoPiPOnTabSwitch || !isPiPSupported || isIOS.current) return;
-
-    const handleVisibility = async () => {
-      if (document.visibilityState === 'hidden') {
-        // Tab hidden → auto-enter PiP
-        if (roomRef.current && !isPiPActiveRef.current && !userExitedPiPRef.current) {
-          try {
-            await requestPiP();
-          } catch {
-            // Browser may block without user gesture
-          }
-        }
-      } else if (document.visibilityState === 'visible') {
-        // Tab visible → auto-exit PiP and RESET manual exit flag
-        if (isPiPActiveRef.current) {
-          try {
-            await exitPiP();
-          } catch {}
-        }
-        // Issue 1 FIX: Always reset so next tab switch triggers PiP again
-        userExitedPiPRef.current = false;
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibility);
-    return () => document.removeEventListener('visibilitychange', handleVisibility);
-  }, [autoPiPOnTabSwitch, isPiPSupported, requestPiP, exitPiP]);
-  // NOTE: Removed isPiPActive and room from deps — using refs instead
+  // Auto PiP on tab switch DISABLED — browsers block programmatic PiP without user gesture.
+  // Document PiP handles the tab-switch scenario instead.
 
   // Reset user-exited flag on new room
   useEffect(() => {
