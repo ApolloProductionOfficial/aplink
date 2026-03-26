@@ -1612,7 +1612,7 @@ function LiveKitContent({
           console.log('[LiveKitRoom] Screen share stopped via browser UI');
           localParticipant?.unpublishTrack(videoMediaTrack);
           if (audioMediaTrack) localParticipant?.unpublishTrack(audioMediaTrack);
-          setIsScreenShareEnabled(false);
+          stream.getTracks().forEach(t => t.stop());
         };
 
         const publishWithRetry = async (attempt = 1): Promise<boolean> => {
