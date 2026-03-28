@@ -1585,7 +1585,7 @@ function LiveKitContent({
         let stream: MediaStream;
         try {
           stream = await navigator.mediaDevices.getDisplayMedia({
-            video: { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 15 } },
+            video: { width: { ideal: 1280, max: 1280 }, height: { ideal: 720, max: 720 }, frameRate: { ideal: 12, max: 15 } },
             audio: true,
           });
         } catch (err: any) {
@@ -1607,6 +1607,11 @@ function LiveKitContent({
           return;
         }
 
+        // Set content hint for efficient encoding of screen content
+        if ('contentHint' in videoMediaTrack) {
+          videoMediaTrack.contentHint = 'detail';
+        }
+
         // Listen for native "Stop sharing" button
         videoMediaTrack.onended = () => {
           console.log('[LiveKitRoom] Screen share stopped via browser UI');
@@ -1621,6 +1626,8 @@ function LiveKitContent({
             await localParticipant?.publishTrack(lvVideoTrack, {
               source: Track.Source.ScreenShare,
               videoCodec: 'vp8',
+              simulcast: false,
+              videoEncoding: { maxBitrate: 1_500_000, maxFramerate: 15 },
             });
 
             if (audioMediaTrack) {
@@ -1633,10 +1640,10 @@ function LiveKitContent({
             console.log('[LiveKitRoom] Screen share published successfully');
             return true;
           } catch (err: any) {
-            const isNegotiationError = err?.code === 13 || err?.name === 'NegotiationError';
-            if (isNegotiationError && attempt < 4) {
-              const retryDelay = 600 * attempt;
-              console.warn(`[LiveKitRoom] Screen share publish retry ${attempt}/3 in ${retryDelay}ms`);
+            const isNegErr = err?.code === 13 || err?.name === 'NegotiationError';
+            if (isNegErr && attempt < 5) {
+              const retryDelay = 800 * Math.pow(1.5, attempt - 1);
+              console.warn(`[LiveKitRoom] Screen share publish retry ${attempt}/4 in ${Math.round(retryDelay)}ms`);
               await new Promise(resolve => setTimeout(resolve, retryDelay));
               return publishWithRetry(attempt + 1);
             }
