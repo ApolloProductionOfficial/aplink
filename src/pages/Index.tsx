@@ -595,6 +595,9 @@ const Index = () => {
             {!user && <FeatureCards features={features} />}
           </div>
           
+          {/* Roadmap Timeline - only for non-authenticated users */}
+          {!user && <RoadmapTimeline />}
+          
           {/* How It Works Section - only for non-authenticated users */}
           {!user && <HowItWorks />}
         </main>
