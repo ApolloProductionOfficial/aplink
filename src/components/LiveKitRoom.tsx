@@ -1585,7 +1585,7 @@ function LiveKitContent({
         let stream: MediaStream;
         try {
           stream = await navigator.mediaDevices.getDisplayMedia({
-            video: { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 15 } },
+            video: { width: { ideal: 1280, max: 1280 }, height: { ideal: 720, max: 720 }, frameRate: { ideal: 12, max: 15 } },
             audio: true,
           });
         } catch (err: any) {
