@@ -19,6 +19,7 @@ import FavoritesSheet from "@/components/FavoritesSheet";
 import SplashScreen from "@/components/SplashScreen";
 import HowItWorks from "@/components/HowItWorks";
 import FeatureCards from "@/components/FeatureCards";
+import RoadmapTimeline from "@/components/RoadmapTimeline";
 import PerformanceMonitor from "@/components/PerformanceMonitor";
 import apolloLogo from "@/assets/apollo-logo.mp4";
 import {
@@ -593,6 +594,9 @@ const Index = () => {
             {/* Feature Cards with animations - only for non-authenticated users */}
             {!user && <FeatureCards features={features} />}
           </div>
+          
+          {/* Roadmap Timeline - only for non-authenticated users */}
+          {!user && <RoadmapTimeline />}
           
           {/* How It Works Section - only for non-authenticated users */}
           {!user && <HowItWorks />}
