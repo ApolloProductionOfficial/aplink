@@ -1,51 +1,42 @@
 
 
-# Fix: Native PiP errors + Screen share in group calls
+# Интеграция RadialOrbitalTimeline на Landing Page
 
-## Problem 1: PiP NotAllowedError (repeating every few minutes)
+## Что делаем
 
-The `useNativePiP` hook tries to call `requestPictureInPicture()` automatically when the tab becomes hidden (visibilitychange event). Browsers require a direct **user gesture** for this API — programmatic calls from visibilitychange are always blocked.
+Добавляем орбитальный таймлайн как секцию "Roadmap проекта" на главную страницу (Index), между FeatureCards и HowItWorks. Показывается только для неавторизованных пользователей — как презентация этапов развития APLink.
 
-Since you already have **Document PiP** (the custom HTML window with buttons), the native PiP auto-trigger on tab switch is redundant and just generates errors.
+## Данные таймлайна
 
-**Fix**: Remove the auto-PiP-on-tab-switch logic from `useNativePiP`. Keep native PiP only for manual button clicks (which have user gesture). The Document PiP handles the tab-switch scenario.
+Вместо демо-данных — реальные этапы проекта APLink:
 
-**File**: `src/hooks/useNativePiP.ts`
-- Remove the `visibilitychange` event listener (lines 190-219)
-- Keep `requestPiP`, `exitPiP`, `togglePiP` for manual use only
-- Silence the error log to `console.warn` level for any remaining edge cases
+| ID | Название | Статус | Описание |
+|----|----------|--------|----------|
+| 1 | Запуск платформы | completed | Видеозвонки, комнаты, базовый UI |
+| 2 | AI интеграция | completed | HuggingFace, перевод, субтитры |
+| 3 | Google Meet фичи | in-progress | Реакции, PiP, демонстрация экрана |
+| 4 | Автоматизация | in-progress | Telegram бот, уведомления, аналитика |
+| 5 | Монетизация | pending | Маркетплейс, партнёрская программа |
+| 6 | Масштабирование | pending | Глобальное расширение, enterprise |
 
----
+## Файлы
 
-## Problem 2: Screen share fails with 3+ participants
+| Файл | Действие |
+|------|----------|
+| `src/components/ui/radial-orbital-timeline.tsx` | Создать — компонент (адаптированный под цвета проекта: cyan primary вместо indigo) |
+| `src/index.css` | Добавить `.bg-gradient-orbital` и `.shadow-orbital` (остальные утилиты уже есть через Tailwind) |
+| `src/pages/Index.tsx` | Добавить секцию между FeatureCards и HowItWorks |
 
-When multiple participants are in the room, SDP negotiation gets congested. `setScreenShareEnabled(true)` bundles both `getDisplayMedia` and publishing into one call — if publishing fails, the captured stream is lost.
+## Адаптация под дизайн-систему
 
-**Fix**: Decouple capture from publishing in `toggleScreenShare`:
+- Заменить фиксированные цвета (indigo/blue/teal) на `hsl(var(--primary))` (cyan)
+- Статусы: completed = primary, in-progress = white, pending = muted
+- Использовать существующие `glass` / `glass-dark` классы для карточек
+- Не трогать Badge/Button/Card — уже есть в проекте
 
-**File**: `src/components/LiveKitRoom.tsx`
+## Не нужно
 
-1. Call `navigator.mediaDevices.getDisplayMedia()` **first** (preserves user gesture)
-2. Then publish tracks manually using `LocalVideoTrack` / `LocalAudioTrack` with retry logic
-3. If publishing fails after retries, stop the captured stream to release the browser indicator
-4. Add `onended` listener on the video track to sync state when user clicks native "Stop sharing"
-
-```text
-Step 1: getDisplayMedia()        ← immediate, in gesture chain
-Step 2: new LocalVideoTrack()    ← wrap captured track
-Step 3: publishTrack() with      ← retry up to 3x with backoff
-        source: ScreenShare
-Step 4: on error → stream.stop() ← cleanup
-```
-
-This approach is resilient to negotiation failures because the stream is already captured — retries only re-attempt the publish step.
-
----
-
-## Files changed
-
-| File | Change |
-|------|--------|
-| `src/hooks/useNativePiP.ts` | Remove auto-PiP on visibilitychange, keep manual-only |
-| `src/components/LiveKitRoom.tsx` | Rewrite `toggleScreenShare` to capture first, publish with retries |
+- NPM зависимости уже установлены (lucide-react, class-variance-authority, @radix-ui/react-slot)
+- Badge, Button, Card уже есть — не перезаписывать
+- Большинство CSS утилитов из предложенного globals.css уже покрыты Tailwind — добавляем только 2 кастомных класса
 
