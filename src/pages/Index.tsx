@@ -19,6 +19,7 @@ import FavoritesSheet from "@/components/FavoritesSheet";
 import SplashScreen from "@/components/SplashScreen";
 import HowItWorks from "@/components/HowItWorks";
 import FeatureCards from "@/components/FeatureCards";
+import RoadmapTimeline from "@/components/RoadmapTimeline";
 import PerformanceMonitor from "@/components/PerformanceMonitor";
 import apolloLogo from "@/assets/apollo-logo.mp4";
 import {

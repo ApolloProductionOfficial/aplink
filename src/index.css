@@ -719,6 +719,14 @@ All colors MUST be HSL.
   animation: emoji-bounce 2.5s ease-in-out infinite;
 }
 
+.bg-gradient-orbital {
+  background: linear-gradient(to bottom right, hsl(var(--primary)), hsl(190 80% 35%), hsl(190 60% 25%));
+}
+
+.shadow-orbital {
+  box-shadow: 0 0 15px hsl(var(--primary) / 0.15);
+}
+
 .animate-nav-wave-1 {
   animation: nav-wave 6s ease-in-out infinite;
   animation-delay: 0s;
