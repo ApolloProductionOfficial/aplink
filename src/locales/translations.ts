@@ -36,7 +36,30 @@ export const translations = {
         groupCalls: "Групповые звонки",
         groupCallsDesc: "До 100 участников в одной комнате"
       },
-      footer: "© 2025 APLink by"
+      footer: "© 2025 APLink by",
+      roadmap: {
+        title: "Roadmap проекта",
+        subtitle: "Этапы развития APLink — от идеи до глобальной платформы",
+        stages: {
+          launch: "Запуск платформы",
+          launchDesc: "Видеозвонки, создание комнат, базовый интерфейс и мгновенное подключение без регистрации.",
+          ai: "AI интеграция",
+          aiDesc: "Реальный перевод речи, AI-субтитры, конспекты встреч и голосовые уведомления.",
+          calls: "Расширенные звонки",
+          callsDesc: "Реакции, PiP-режим, демонстрация экрана, виртуальные фоны и запись звонков.",
+          automation: "Автоматизация",
+          automationDesc: "Telegram бот, push-уведомления, аналитика и автоматические напоминания.",
+          monetization: "Монетизация",
+          monetizationDesc: "Маркетплейс услуг, партнёрская программа и премиум-функции.",
+          scaling: "Масштабирование",
+          scalingDesc: "Глобальное расширение, enterprise-решения и мультиплатформенность."
+        },
+        statusDone: "ГОТОВО",
+        statusInProgress: "В РАБОТЕ",
+        statusPending: "ПЛАНЫ",
+        progress: "Прогресс",
+        relatedStages: "Связанные этапы"
+      }
     },
     // Meeting Room buttons
     meetingRoom: {
@@ -947,7 +970,30 @@ export const translations = {
         groupCalls: "Group Calls",
         groupCallsDesc: "Up to 100 participants in one room"
       },
-      footer: "© 2025 APLink by"
+      footer: "© 2025 APLink by",
+      roadmap: {
+        title: "Project Roadmap",
+        subtitle: "APLink development stages — from idea to global platform",
+        stages: {
+          launch: "Platform Launch",
+          launchDesc: "Video calls, room creation, basic interface and instant connection without registration.",
+          ai: "AI Integration",
+          aiDesc: "Real-time speech translation, AI subtitles, meeting summaries and voice notifications.",
+          calls: "Enhanced Calls",
+          callsDesc: "Reactions, PiP mode, screen sharing, virtual backgrounds and call recording.",
+          automation: "Automation",
+          automationDesc: "Telegram bot, push notifications, analytics and automatic reminders.",
+          monetization: "Monetization",
+          monetizationDesc: "Service marketplace, partner program and premium features.",
+          scaling: "Scaling",
+          scalingDesc: "Global expansion, enterprise solutions and cross-platform support."
+        },
+        statusDone: "COMPLETE",
+        statusInProgress: "IN PROGRESS",
+        statusPending: "PLANNED",
+        progress: "Progress",
+        relatedStages: "Related Stages"
+      }
     },
     // Meeting Room buttons
     meetingRoom: {
@@ -1858,7 +1904,30 @@ export const translations = {
         groupCalls: "Групові дзвінки",
         groupCallsDesc: "До 100 учасників в одній кімнаті"
       },
-      footer: "© 2025 APLink by"
+      footer: "© 2025 APLink by",
+      roadmap: {
+        title: "Дорожня карта проєкту",
+        subtitle: "Етапи розвитку APLink — від ідеї до глобальної платформи",
+        stages: {
+          launch: "Запуск платформи",
+          launchDesc: "Відеодзвінки, створення кімнат, базовий інтерфейс та миттєве підключення без реєстрації.",
+          ai: "AI інтеграція",
+          aiDesc: "Переклад мовлення в реальному часі, AI-субтитри, конспекти зустрічей та голосові сповіщення.",
+          calls: "Розширені дзвінки",
+          callsDesc: "Реакції, PiP-режим, демонстрація екрану, віртуальні фони та запис дзвінків.",
+          automation: "Автоматизація",
+          automationDesc: "Telegram бот, push-сповіщення, аналітика та автоматичні нагадування.",
+          monetization: "Монетизація",
+          monetizationDesc: "Маркетплейс послуг, партнерська програма та преміум-функції.",
+          scaling: "Масштабування",
+          scalingDesc: "Глобальне розширення, enterprise-рішення та мультиплатформність."
+        },
+        statusDone: "ГОТОВО",
+        statusInProgress: "В РОБОТІ",
+        statusPending: "ПЛАНИ",
+        progress: "Прогрес",
+        relatedStages: "Пов'язані етапи"
+      }
     },
     // Meeting Room buttons
     meetingRoom: {
