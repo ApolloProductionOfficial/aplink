@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import CustomCursor from '@/components/CustomCursor';
-import AnimatedBackground from '@/components/AnimatedBackground';
+
 import TwoFactorSetup from '@/components/TwoFactorSetup';
 import apolloLogo from '@/assets/apollo-logo.mp4';
 import { generateMeetingDocx } from '@/utils/generateMeetingDocx';
@@ -885,16 +885,14 @@ const AdminPanel = () => {
   return (
     <div className="min-h-screen bg-background cursor-none relative overflow-hidden">
       <CustomCursor />
-      <AnimatedBackground />
       
-      {/* Glassmorphism background layers */}
-      <div className="fixed inset-0 -z-5 pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[100px]" />
-        <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-primary/3 rounded-full blur-[120px]" />
+      {/* Lightweight gradient bg instead of AnimatedBackground + blur orbs */}
+      <div className="fixed inset-0 -z-10 pointer-events-none">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-primary/10" />
       </div>
       
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-background/60 backdrop-blur-2xl border-b border-border/30 shadow-[0_4px_30px_rgba(0,0,0,0.1)]">
+      <header className="sticky top-0 z-50 bg-background/95 border-b border-border/30 shadow-[0_4px_30px_rgba(0,0,0,0.1)]">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button
@@ -1035,7 +1033,7 @@ const AdminPanel = () => {
                   <>
                     {/* Stats cards */}
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                      <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+                      <Card className="bg-card/80 border-border/50">
                         <CardContent className="pt-6">
                           <div className="flex items-center gap-3">
                             <div className="p-2 rounded-lg bg-blue-500/20">
@@ -1049,7 +1047,7 @@ const AdminPanel = () => {
                         </CardContent>
                       </Card>
                       
-                      <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+                      <Card className="bg-card/80 border-border/50">
                         <CardContent className="pt-6">
                           <div className="flex items-center gap-3">
                             <div className="p-2 rounded-lg bg-green-500/20">
@@ -1063,7 +1061,7 @@ const AdminPanel = () => {
                         </CardContent>
                       </Card>
                       
-                      <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+                      <Card className="bg-card/80 border-border/50">
                         <CardContent className="pt-6">
                           <div className="flex items-center gap-3">
                             <div className="p-2 rounded-lg bg-purple-500/20">
@@ -1077,7 +1075,7 @@ const AdminPanel = () => {
                         </CardContent>
                       </Card>
                       
-                      <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+                      <Card className="bg-card/80 border-border/50">
                         <CardContent className="pt-6">
                           <div className="flex items-center gap-3">
                             <div className="p-2 rounded-lg bg-amber-500/20">
@@ -1091,7 +1089,7 @@ const AdminPanel = () => {
                         </CardContent>
                       </Card>
                       
-                      <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+                      <Card className="bg-card/80 border-border/50">
                         <CardContent className="pt-6">
                           <div className="flex items-center gap-3">
                             <div className="p-2 rounded-lg bg-cyan-500/20">
@@ -1108,7 +1106,7 @@ const AdminPanel = () => {
 
                     <div className="grid md:grid-cols-2 gap-6">
                       {/* Top pages */}
-                      <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+                      <Card className="bg-card/80 border-border/50">
                         <CardHeader>
                           <CardTitle className="text-lg flex items-center gap-2">
                             <Eye className="w-5 h-5 text-primary" />
@@ -1132,7 +1130,7 @@ const AdminPanel = () => {
                       </Card>
 
                       {/* Translations by language */}
-                      <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+                      <Card className="bg-card/80 border-border/50">
                         <CardHeader>
                           <CardTitle className="text-lg flex items-center gap-2">
                             <Languages className="w-5 h-5 text-primary" />
@@ -1157,7 +1155,7 @@ const AdminPanel = () => {
                     </div>
 
                     {/* Recent events */}
-                    <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+                    <Card className="bg-card/80 border-border/50">
                       <CardHeader>
                         <CardTitle className="text-lg flex items-center gap-2">
                           <Clock className="w-5 h-5 text-primary" />
@@ -1182,7 +1180,7 @@ const AdminPanel = () => {
                     </Card>
                   </>
                 ) : (
-                  <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+                  <Card className="bg-card/80 border-border/50">
                     <CardContent className="py-12 text-center text-muted-foreground">
                       <BarChart3 className="w-12 h-12 mx-auto mb-4 opacity-50" />
                       <p>Нет данных аналитики</p>
@@ -1298,7 +1296,7 @@ const AdminPanel = () => {
             </div>
             
             {filteredTranscripts.length === 0 ? (
-              <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+              <Card className="bg-card/80 border-border/50">
                 <CardContent className="py-12 text-center text-muted-foreground">
                   <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
                   <p>{searchQuery || dateFilter !== 'all' ? 'Ничего не найдено' : 'Пока нет записей созвонов'}</p>
@@ -1307,7 +1305,7 @@ const AdminPanel = () => {
             ) : (
               <div className="grid gap-4">
                 {filteredTranscripts.map((transcript) => (
-                  <Card key={transcript.id} className="bg-card/50 backdrop-blur-sm border-border/50">
+                  <Card key={transcript.id} className="bg-card/80 border-border/50">
                     <CardHeader>
                       <div className="flex items-start justify-between flex-wrap gap-3">
                         <div>
@@ -1581,7 +1579,7 @@ const AdminPanel = () => {
                     <Loader2 className="w-8 h-8 animate-spin text-primary" />
                   </div>
                 ) : registeredUsers.length === 0 ? (
-                  <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+                  <Card className="bg-card/80 border-border/50">
                     <CardContent className="py-12 text-center text-muted-foreground">
                       <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
                       <p>Пока нет зарегистрированных пользователей</p>
@@ -1590,7 +1588,7 @@ const AdminPanel = () => {
                 ) : (
                   <div className="grid gap-4">
                     {registeredUsers.map((u) => (
-                      <Card key={u.id} className="bg-card/50 backdrop-blur-sm border-border/50">
+                      <Card key={u.id} className="bg-card/80 border-border/50">
                         <CardContent className="py-4">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
@@ -1627,7 +1625,7 @@ const AdminPanel = () => {
             {usersIpSubTab === 'ip' && (
               <>
                 {participants.length === 0 ? (
-                  <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+                  <Card className="bg-card/80 border-border/50">
                     <CardContent className="py-12 text-center text-muted-foreground">
                       <Globe className="w-12 h-12 mx-auto mb-4 opacity-50" />
                       <p>Пока нет данных об участниках</p>
@@ -1638,7 +1636,7 @@ const AdminPanel = () => {
                     {participants.map((participant) => {
                       const geo = geoData.get(participant.id);
                       return (
-                        <Card key={participant.id} className="bg-card/50 backdrop-blur-sm border-border/50">
+                        <Card key={participant.id} className="bg-card/80 border-border/50">
                           <CardContent className="py-4">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-4">
@@ -1688,7 +1686,7 @@ const AdminPanel = () => {
           </div>
         ) : activeTab === 'profile' ? (
           <div className="max-w-md mx-auto">
-            <Card className="bg-background/40 backdrop-blur-2xl border-border/30 shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
+            <Card className="bg-background/95 border-border/30 shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <User className="w-5 h-5 text-primary" />

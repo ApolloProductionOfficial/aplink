@@ -19,8 +19,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import AnimatedBackground from '@/components/AnimatedBackground';
-import StarField from '@/components/StarField';
 import CustomCursor from '@/components/CustomCursor';
 import TwoFactorVerify from '@/components/TwoFactorVerify';
 import apolloLogo from '@/assets/apollo-logo.mp4';
@@ -331,12 +329,12 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden cursor-none">
-      <AnimatedBackground />
-      <StarField />
+      {/* Lightweight gradient bg instead of heavy AnimatedBackground + StarField */}
+      <div className="fixed inset-0 -z-10 bg-gradient-to-br from-primary/5 via-background to-primary/10" />
       <CustomCursor />
       
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/50">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 border-b border-border/50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <button
             onClick={() => navigate('/')}
