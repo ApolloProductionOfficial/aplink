@@ -2,8 +2,6 @@ import { Link, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { Video, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import AnimatedBackground from "@/components/AnimatedBackground";
-import StarField from "@/components/StarField";
 
 const NotFound = () => {
   const location = useLocation();
@@ -14,8 +12,7 @@ const NotFound = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground relative overflow-hidden flex items-center justify-center">
-      <AnimatedBackground />
-      <StarField />
+      <div className="fixed inset-0 -z-10 bg-gradient-to-br from-primary/5 via-background to-primary/10" />
       
       <div className="relative z-10 text-center px-4">
         <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center mx-auto mb-8 animate-pulse-glow">
