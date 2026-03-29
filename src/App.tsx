@@ -49,7 +49,7 @@ function App() {
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </ActiveCallProvider>
-            </BrowserRouter>
+            </Router>
           </SafeTooltipProvider>
         </ErrorBoundary>
       </LanguageProvider>
