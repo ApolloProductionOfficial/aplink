@@ -303,7 +303,6 @@ const Index = () => {
                     playsInline
                     preload="metadata"
                     className="absolute inset-0 w-full h-full object-cover scale-[1.3] origin-center"
-                    style={{ willChange: 'transform' }}
                   />
                 </div>
               </div>
