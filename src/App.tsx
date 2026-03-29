@@ -2,7 +2,7 @@ import React from "react";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { SafeTooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, HashRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ActiveCallProvider } from "@/contexts/ActiveCallContext";
 import { GlobalActiveCall } from "@/components/GlobalActiveCall";
@@ -21,6 +21,10 @@ import Refresh from "./pages/Refresh";
 
 const queryClient = new QueryClient();
 
+// Use HashRouter for Electron (file:// protocol), BrowserRouter for web
+const isElectron = window.location.protocol === 'file:';
+const Router = isElectron ? HashRouter : BrowserRouter;
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -28,7 +32,7 @@ function App() {
         <ErrorBoundary>
           <SafeTooltipProvider delayDuration={300}>
             <Sonner />
-            <BrowserRouter>
+            <Router>
               <ActiveCallProvider>
                 <AnalyticsRouteTracker />
                 <GlobalActiveCall />
@@ -45,7 +49,7 @@ function App() {
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </ActiveCallProvider>
-            </BrowserRouter>
+            </Router>
           </SafeTooltipProvider>
         </ErrorBoundary>
       </LanguageProvider>
