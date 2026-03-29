@@ -21,6 +21,10 @@ import Refresh from "./pages/Refresh";
 
 const queryClient = new QueryClient();
 
+// Use HashRouter for Electron (file:// protocol), BrowserRouter for web
+const isElectron = window.location.protocol === 'file:';
+const Router = isElectron ? HashRouter : BrowserRouter;
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
