@@ -100,6 +100,9 @@ export function initGlobalErrorHandlers() {
       errorMessage.includes('credits exhausted') ||
       errorMessage.includes('payment_required') ||
       errorMessage.includes('Edge function returned 402') ||
+      // Filter out stale auth token errors (guest users on /room/)
+      errorMessage.includes('Invalid Refresh Token') ||
+      errorMessage.includes('Refresh Token Not Found') ||
       // Filter out expected LiveKit disconnection reasons
       errorMessage.includes('"reason":3') ||
       errorMessage.includes('"reasonName":"Cancelled"') ||

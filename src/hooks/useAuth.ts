@@ -58,7 +58,14 @@ export const useAuth = () => {
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      // If there's a session but no valid refresh token, clear stale auth state
+      if (session && !session.refresh_token) {
+        await supabase.auth.signOut({ scope: 'local' });
+        setState(prev => ({ ...prev, user: null, session: null, isAdmin: false, isLoading: false }));
+        return;
+      }
+
       setState(prev => ({
         ...prev,
         session,
@@ -72,6 +79,10 @@ export const useAuth = () => {
       } else {
         setState(prev => ({ ...prev, isLoading: false }));
       }
+    }).catch(() => {
+      // If session retrieval fails (e.g. invalid refresh token), clear local state
+      supabase.auth.signOut({ scope: 'local' });
+      setState(prev => ({ ...prev, user: null, session: null, isAdmin: false, isLoading: false }));
     });
 
     return () => subscription.unsubscribe();
