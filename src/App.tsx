@@ -32,7 +32,7 @@ function App() {
         <ErrorBoundary>
           <SafeTooltipProvider delayDuration={300}>
             <Sonner />
-            <BrowserRouter>
+            <Router>
               <ActiveCallProvider>
                 <AnalyticsRouteTracker />
                 <GlobalActiveCall />
