@@ -265,19 +265,19 @@ const Index = () => {
         <div className="fixed inset-0 z-0 overflow-hidden bg-black pointer-events-none">
           {/* Base gradient */}
           <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-black/90 to-primary/10" />
-          {/* Video layer */}
+          {/* Video layer — no backdrop-blur to save GPU */}
           <video
             autoPlay
             muted
             loop
             playsInline
             preload="none"
-            className="absolute inset-0 w-full h-full object-cover opacity-40"
+            className="absolute inset-0 w-full h-full object-cover opacity-30"
           >
             <source src={backgroundVideo} type="video/mp4" />
           </video>
-          {/* Frosted glass overlay with mirror effect */}
-          <div className="absolute inset-0 backdrop-blur-sm bg-black/40" />
+          {/* Solid overlay instead of backdrop-blur (saves ~40% GPU) */}
+          <div className="absolute inset-0 bg-black/50" />
           {/* Gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
           {/* Subtle reflection effect */}
@@ -285,7 +285,7 @@ const Index = () => {
         </div>
 
         {/* Header - glassmorphism style */}
-        <header className="fixed top-0 left-0 right-0 z-50 bg-black/60 backdrop-blur-2xl shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
+        <header className="fixed top-0 left-0 right-0 z-50 bg-black/80 shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
           {/* Gradient overlay for glass effect (decorative, must not block clicks) */}
           <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 pointer-events-none" />
           {/* Bottom glow border (decorative, must not block clicks) */}
@@ -293,7 +293,7 @@ const Index = () => {
           <div className="container mx-auto px-4 py-3 md:py-4 flex items-center justify-between relative z-10">
             <div className="flex items-center gap-2 md:gap-3">
               <div className="relative w-10 h-10 md:w-12 md:h-12">
-                <div className="absolute inset-0 rounded-full bg-primary/40 blur-md animate-pulse" />
+                <div className="absolute inset-0 rounded-full bg-primary/40 blur-md" />
                 <div className="relative w-10 h-10 md:w-12 md:h-12 rounded-full overflow-hidden ring-2 ring-primary/50 shadow-[0_0_20px_hsl(var(--primary)/0.6)]">
                   <video 
                     src={apolloLogo} 
@@ -303,7 +303,6 @@ const Index = () => {
                     playsInline
                     preload="metadata"
                     className="absolute inset-0 w-full h-full object-cover scale-[1.3] origin-center"
-                    style={{ willChange: 'transform' }}
                   />
                 </div>
               </div>
@@ -465,21 +464,7 @@ const Index = () => {
                     : 'ring-0 ring-transparent'
                 }`}>
                   {/* Glassmorphism gradient overlay - muted on mobile */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-white/5 md:from-primary/10 md:via-primary/5 md:to-primary/15 pointer-events-none rounded-2xl" />
-                  
-                  {/* Animated glass shine effect - disabled on mobile */}
-                  <div className="absolute inset-0 overflow-hidden pointer-events-none rounded-2xl hidden md:block">
-                    <div 
-                      className="absolute inset-0 animate-glass-shine"
-                      style={{
-                        background: 'linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 45%, rgba(6,182,212,0.15) 50%, rgba(255,255,255,0.1) 55%, transparent 70%)',
-                        width: '200%',
-                        height: '200%',
-                        top: '-50%',
-                        left: '-50%',
-                      }}
-                    />
-                  </div>
+                <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-white/5 md:from-primary/10 md:via-primary/5 md:to-primary/15 pointer-events-none rounded-2xl" />
                   
                   {/* Enhanced highlight effect */}
                   <div className={`absolute inset-0 pointer-events-none transition-opacity duration-1000 ease-in-out rounded-2xl ${

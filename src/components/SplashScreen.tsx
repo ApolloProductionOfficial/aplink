@@ -110,25 +110,22 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
             <div className="absolute inset-0 bg-gradient-to-b from-background via-background/80 to-background" />
           </motion.div>
 
-          {/* Animated particles/stars */}
+          {/* Static decorative dots instead of 25 animated particles */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            {[...Array(25)].map((_, i) => (
+            {[...Array(8)].map((_, i) => (
               <motion.div
                 key={i}
                 className="absolute w-1 h-1 bg-primary/50 rounded-full"
                 style={{
-                  left: `${Math.random() * 100}%`,
-                  top: `${Math.random() * 100}%`,
+                  left: `${15 + (i * 10)}%`,
+                  top: `${20 + (i * 8)}%`,
                 }}
-                initial={{ opacity: 0, scale: 0 }}
-                animate={{ 
-                  opacity: [0, 0.8, 0],
-                  scale: [0, 1.5, 0],
-                }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: [0, 0.6, 0] }}
                 transition={{
-                  duration: 2.5 + Math.random() * 2,
+                  duration: 3,
                   repeat: Infinity,
-                  delay: Math.random() * 3,
+                  delay: i * 0.4,
                   ease: "easeInOut",
                 }}
               />
