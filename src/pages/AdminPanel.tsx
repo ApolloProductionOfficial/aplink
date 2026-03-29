@@ -1686,7 +1686,7 @@ const AdminPanel = () => {
           </div>
         ) : activeTab === 'profile' ? (
           <div className="max-w-md mx-auto">
-            <Card className="bg-background/40 backdrop-blur-2xl border-border/30 shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
+            <Card className="bg-background/95 border-border/30 shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <User className="w-5 h-5 text-primary" />
