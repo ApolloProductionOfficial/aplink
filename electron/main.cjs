@@ -133,10 +133,6 @@ function createWindow() {
 
   loadMainContent();
 
-  mainWindow.once('ready-to-show', () => {
-    showMainWindow();
-  });
-
   mainWindow.on('closed', () => {
     clearTimeout(revealTimeout);
     mainWindow = null;
