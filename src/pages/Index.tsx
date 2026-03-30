@@ -21,7 +21,7 @@ import HowItWorks from "@/components/HowItWorks";
 import FeatureCards from "@/components/FeatureCards";
 import RoadmapTimeline from "@/components/RoadmapTimeline";
 import PerformanceMonitor from "@/components/PerformanceMonitor";
-import apolloLogo from "@/assets/apollo-logo.mp4";
+import aplinkNeonLogo from "@/assets/aplink-logo-neon.png";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -295,14 +295,10 @@ const Index = () => {
               <div className="relative w-10 h-10 md:w-12 md:h-12">
                 <div className="absolute inset-0 rounded-full bg-primary/40 blur-md" />
                 <div className="relative w-10 h-10 md:w-12 md:h-12 rounded-full overflow-hidden ring-2 ring-primary/50 shadow-[0_0_20px_hsl(var(--primary)/0.6)]">
-                  <video 
-                    src={apolloLogo} 
-                    autoPlay 
-                    loop 
-                    muted 
-                    playsInline
-                    preload="metadata"
-                    className="absolute inset-0 w-full h-full object-cover scale-[1.3] origin-center"
+                  <img 
+                    src={aplinkNeonLogo} 
+                    alt="APLink"
+                    className="absolute inset-0 w-full h-full object-contain p-1.5 drop-shadow-[0_0_8px_rgba(6,182,228,0.6)]"
                   />
                 </div>
               </div>

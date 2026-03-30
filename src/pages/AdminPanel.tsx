@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 import CustomCursor from '@/components/CustomCursor';
 
 import TwoFactorSetup from '@/components/TwoFactorSetup';
-import apolloLogo from '@/assets/apollo-logo.mp4';
+import aplinkNeonLogo from '@/assets/aplink-logo-neon.png';
 import { generateMeetingDocx } from '@/utils/generateMeetingDocx';
 import TelegramSetupCard from '@/components/TelegramSetupCard';
 import TelegramActivityChart from '@/components/TelegramActivityChart';
@@ -902,13 +902,10 @@ const AdminPanel = () => {
               className="gap-2"
             >
               <ArrowLeft className="w-4 h-4" />
-              <video 
-                src={apolloLogo} 
-                autoPlay 
-                loop 
-                muted 
-                playsInline
-                className="w-8 h-8 object-cover rounded-full"
+              <img 
+                src={aplinkNeonLogo} 
+                alt="APLink"
+                className="w-8 h-8 object-contain rounded-full bg-background/60 p-1 drop-shadow-[0_0_6px_rgba(6,182,228,0.5)]"
               />
               <span className="font-semibold">APLink</span>
             </Button>
