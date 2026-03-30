@@ -2482,7 +2482,7 @@ function LiveKitContent({
         onTouchStart={(e) => { e.stopPropagation(); lastTouchRef.current = Date.now(); }}
         onClick={(e) => { e.stopPropagation(); lastTouchRef.current = Date.now(); }}
       >
-        <div className="flex items-center justify-center gap-1 sm:gap-2.5 px-2 sm:px-5 py-2 sm:py-3.5 rounded-2xl sm:rounded-[2.5rem] bg-background/40 backdrop-blur-2xl border border-border/20 shadow-[0_8px_32px_hsl(var(--background)/0.4)] flex-wrap sm:flex-nowrap max-w-full overflow-visible">
+        <div className="flex items-center justify-center gap-1.5 sm:gap-3 px-3 sm:px-6 py-2.5 sm:py-4 rounded-2xl sm:rounded-[2.5rem] bg-background/50 backdrop-blur-2xl border border-primary/10 shadow-[0_8px_40px_hsl(var(--background)/0.5),0_0_20px_hsl(var(--primary)/0.08)] flex-wrap sm:flex-nowrap max-w-full overflow-visible">
           {/* Camera toggle */}
           <Tooltip>
             <TooltipTrigger asChild>
@@ -2491,16 +2491,16 @@ function LiveKitContent({
                 variant={isCameraEnabled ? "outline" : "secondary"}
                 size="icon"
                 className={cn(
-                  "w-8 h-8 sm:w-12 sm:h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg border-border/40",
+                  "w-10 h-10 sm:w-12 sm:h-12 rounded-full transition-all duration-300 hover:scale-110 border",
                   isCameraEnabled 
-                    ? "bg-foreground/15 hover:bg-foreground/25" 
-                    : "bg-destructive/40 border-destructive/60 hover:bg-destructive/50"
+                    ? "bg-foreground/10 hover:bg-foreground/20 border-primary/20 hover:border-primary/40 hover:shadow-[0_0_16px_hsl(var(--primary)/0.25)]" 
+                    : "bg-destructive/30 border-destructive/50 hover:bg-destructive/40 shadow-[0_0_12px_hsl(var(--destructive)/0.2)]"
                 )}
               >
                 {isCameraEnabled ? (
-                  <Video className="w-4 h-4 sm:w-5 sm:h-5 stroke-[1.8] drop-shadow-[0_0_3px_hsl(var(--foreground)/0.5)]" />
+                  <Video className="w-5 h-5 stroke-[1.8] text-foreground drop-shadow-[0_0_4px_hsl(var(--primary)/0.4)]" />
                 ) : (
-                  <VideoOff className="w-4 h-4 sm:w-5 sm:h-5 stroke-[1.8] text-destructive drop-shadow-[0_0_3px_hsl(var(--foreground)/0.4)]" />
+                  <VideoOff className="w-5 h-5 stroke-[1.8] text-destructive drop-shadow-[0_0_4px_hsl(var(--destructive)/0.5)]" />
                 )}
               </Button>
             </TooltipTrigger>
