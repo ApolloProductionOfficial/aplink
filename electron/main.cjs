@@ -144,6 +144,10 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  if (process.platform === 'darwin' && fs.existsSync(APP_ICON_PATH) && app.dock?.setIcon) {
+    app.dock.setIcon(APP_ICON_PATH);
+  }
+
   createSplashWindow();
   createWindow();
 
