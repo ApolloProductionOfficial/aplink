@@ -2687,9 +2687,9 @@ function LiveKitContent({
                     <Button
                       variant="outline"
                       size="icon"
-                      className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-foreground/15 hover:bg-foreground/25 border-border/40 transition-all hover:scale-105 hover:shadow-lg"
+                      className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-foreground/10 hover:bg-foreground/20 border-primary/20 hover:border-primary/40 transition-all duration-300 hover:scale-110 hover:shadow-[0_0_16px_hsl(var(--primary)/0.25)]"
                     >
-                      <MoreHorizontal className="w-4 h-4 sm:w-5 sm:h-5 stroke-[1.8] drop-shadow-[0_0_3px_hsl(var(--foreground)/0.5)]" />
+                      <MoreHorizontal className="w-5 h-5 stroke-[1.8] drop-shadow-[0_0_4px_hsl(var(--primary)/0.4)]" />
                     </Button>
                 </PopoverTrigger>
               </TooltipTrigger>
