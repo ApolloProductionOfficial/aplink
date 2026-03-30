@@ -2852,13 +2852,13 @@ function LiveKitContent({
                 variant="outline"
                 size="icon"
                 className={cn(
-                  "w-10 h-10 sm:w-12 sm:h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg border-border/40",
+                  "w-10 h-10 sm:w-12 sm:h-12 rounded-full transition-all duration-300 hover:scale-110 border",
                   isHandRaised 
-                    ? "bg-warning/30 border-warning/50 animate-pulse" 
-                    : "bg-foreground/15 hover:bg-foreground/25"
+                    ? "bg-warning/25 border-warning/50 shadow-[0_0_16px_hsl(var(--warning)/0.3)] animate-pulse" 
+                    : "bg-foreground/10 hover:bg-foreground/20 border-primary/20 hover:border-primary/40 hover:shadow-[0_0_16px_hsl(var(--primary)/0.25)]"
                 )}
               >
-                <Hand className={cn("w-4 h-4 sm:w-5 sm:h-5", isHandRaised && "text-warning")} />
+                <Hand className={cn("w-5 h-5", isHandRaised && "text-warning")} />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="top" className="bg-background/80 border-border/20">
