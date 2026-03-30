@@ -341,13 +341,10 @@ const Auth = () => {
             className="flex items-center gap-3 hover:opacity-80 transition-opacity"
           >
             <ArrowLeft className="w-5 h-5" />
-            <video 
-              src={apolloLogo} 
-              autoPlay 
-              loop 
-              muted 
-              playsInline
-              className="w-10 h-10 object-cover rounded-full"
+            <img 
+              src={aplinkNeonLogo} 
+              alt="APLink"
+              className="w-10 h-10 object-contain rounded-full bg-background/60 p-1 drop-shadow-[0_0_6px_rgba(6,182,228,0.5)]"
             />
             <span className="text-2xl font-bold bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent">
               APLink
