@@ -110,10 +110,18 @@ function createWindow() {
     }
   }, 15000);
 
-  mainWindow.webContents.once('did-finish-load', () => {
+  const handleDidFinishLoad = () => {
+    const currentUrl = mainWindow?.webContents.getURL();
+    if (!currentUrl || currentUrl === 'about:blank') {
+      return;
+    }
+
     clearTimeout(revealTimeout);
     showMainWindow();
-  });
+    mainWindow?.webContents.removeListener('did-finish-load', handleDidFinishLoad);
+  };
+
+  mainWindow.webContents.on('did-finish-load', handleDidFinishLoad);
 
   mainWindow.webContents.on('did-fail-load', (_event, code, message, validatedURL) => {
     console.error('[electron] did-fail-load:', { code, message, validatedURL });
