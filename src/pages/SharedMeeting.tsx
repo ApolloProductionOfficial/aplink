@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { generateMeetingDocx } from '@/utils/generateMeetingDocx';
-import apolloLogo from '@/assets/apollo-logo.mp4';
+import aplinkNeonLogo from '@/assets/aplink-logo-neon.png';
 
 interface MeetingTranscript {
   id: string;
