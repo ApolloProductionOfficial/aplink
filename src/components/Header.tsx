@@ -11,7 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import apolloLogo from "@/assets/apollo-logo.mp4";
+import aplinkNeonLogo from "@/assets/aplink-logo-neon.png";
 
 const Header = () => {
   const { playClickSound } = useButtonSound();
