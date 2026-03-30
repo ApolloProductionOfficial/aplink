@@ -2518,16 +2518,16 @@ function LiveKitContent({
                     variant={isMicrophoneEnabled ? "outline" : "secondary"}
                     size="icon"
                     className={cn(
-                      "w-8 h-8 sm:w-12 sm:h-12 rounded-full transition-all hover:scale-105 hover:shadow-lg border-border/40",
+                      "w-10 h-10 sm:w-12 sm:h-12 rounded-full transition-all duration-300 hover:scale-110 border",
                       isMicrophoneEnabled 
-                        ? "bg-foreground/15 hover:bg-foreground/25" 
-                        : "bg-destructive/40 border-destructive/60 hover:bg-destructive/50"
+                        ? "bg-foreground/10 hover:bg-foreground/20 border-primary/20 hover:border-primary/40 hover:shadow-[0_0_16px_hsl(var(--primary)/0.25)]" 
+                        : "bg-destructive/30 border-destructive/50 hover:bg-destructive/40 shadow-[0_0_12px_hsl(var(--destructive)/0.2)]"
                     )}
                   >
                     {isMicrophoneEnabled ? (
-                      <Mic className="w-4 h-4 sm:w-5 sm:h-5 stroke-[1.8] drop-shadow-[0_0_3px_hsl(var(--foreground)/0.5)]" />
+                      <Mic className="w-5 h-5 stroke-[1.8] text-foreground drop-shadow-[0_0_4px_hsl(var(--primary)/0.4)]" />
                     ) : (
-                      <MicOff className="w-4 h-4 sm:w-5 sm:h-5 stroke-[1.8] text-destructive drop-shadow-[0_0_3px_hsl(var(--foreground)/0.4)]" />
+                      <MicOff className="w-5 h-5 stroke-[1.8] text-destructive drop-shadow-[0_0_4px_hsl(var(--destructive)/0.5)]" />
                     )}
                   </Button>
                 </PopoverTrigger>
