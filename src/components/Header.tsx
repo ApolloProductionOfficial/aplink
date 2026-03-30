@@ -68,16 +68,11 @@ const Header = () => {
       <div className="container mx-auto px-6 md:px-8 lg:px-4 py-3">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-shrink-0">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-primary/30 shadow-lg shadow-primary/20">
-              <video 
-                src={apolloLogo} 
-                autoPlay 
-                loop 
-                muted 
-                playsInline
-                preload="auto"
-                poster=""
-                className="w-full h-full object-cover scale-110"
+            <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-primary/30 shadow-lg shadow-primary/20 bg-background/60 flex items-center justify-center">
+              <img 
+                src={aplinkNeonLogo} 
+                alt="APLink logo"
+                className="w-[85%] h-[85%] object-contain drop-shadow-[0_0_8px_rgba(6,182,228,0.6)]"
               />
             </div>
             <div className="flex flex-col min-w-0">
