@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import CustomCursor from '@/components/CustomCursor';
 import TwoFactorVerify from '@/components/TwoFactorVerify';
-import apolloLogo from '@/assets/apollo-logo.mp4';
+import aplinkNeonLogo from '@/assets/aplink-logo-neon.png';
 
 const Auth = () => {
   const [searchParams] = useSearchParams();
