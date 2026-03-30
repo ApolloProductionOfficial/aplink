@@ -15,7 +15,7 @@ import CustomCursor from '@/components/CustomCursor';
 import TwoFactorSetup from '@/components/TwoFactorSetup';
 import CallStatistics from '@/components/CallStatistics';
 import MissedCallsHistory from '@/components/MissedCallsHistory';
-import apolloLogo from '@/assets/apollo-logo.mp4';
+import aplinkNeonLogo from '@/assets/aplink-logo-neon.png';
 import { generateMeetingDocx } from '@/utils/generateMeetingDocx';
 import { invokeBackendFunctionKeepalive } from '@/utils/invokeBackendFunctionKeepalive';
 import { AvatarCropDialog } from '@/components/AvatarCropDialog';
