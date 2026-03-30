@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 import CustomCursor from '@/components/CustomCursor';
 
 import TwoFactorSetup from '@/components/TwoFactorSetup';
-import apolloLogo from '@/assets/apollo-logo.mp4';
+import aplinkNeonLogo from '@/assets/aplink-logo-neon.png';
 import { generateMeetingDocx } from '@/utils/generateMeetingDocx';
 import TelegramSetupCard from '@/components/TelegramSetupCard';
 import TelegramActivityChart from '@/components/TelegramActivityChart';
