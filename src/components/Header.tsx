@@ -71,7 +71,8 @@ const Header = () => {
             <img 
               src={aplinkNeonLogo} 
               alt="APLink"
-              className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 object-contain flex-shrink-0 drop-shadow-[0_0_10px_rgba(6,182,228,0.6)]"
+              className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 object-contain flex-shrink-0 drop-shadow-[0_0_12px_rgba(6,182,228,0.7)]"
+              style={{ background: 'none', borderRadius: 0, border: 'none', boxShadow: 'none' }}
             />
             <div className="flex flex-col min-w-0">
               <span className="text-sm sm:text-base md:text-lg font-bold bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent">
