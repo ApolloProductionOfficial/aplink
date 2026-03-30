@@ -2872,9 +2872,9 @@ function LiveKitContent({
           {/* Leave button */}
           <Tooltip>
             <TooltipTrigger asChild>
-              <DisconnectButton className="flex items-center justify-center gap-2 px-3 sm:px-5 py-2 sm:py-3 rounded-full bg-destructive/90 hover:bg-destructive text-destructive-foreground transition-all hover:scale-105 hover:shadow-lg border border-destructive/60 shadow-[0_0_15px_hsl(var(--destructive)/0.3)]">
-                <PhoneOff className="w-4 h-4 sm:w-5 sm:h-5 stroke-[1.8] drop-shadow-[0_0_3px_hsl(var(--foreground)/0.5)]" />
-                <span className="text-xs sm:text-sm font-medium tracking-wide">Выйти</span>
+              <DisconnectButton className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-full bg-destructive/80 hover:bg-destructive text-destructive-foreground transition-all duration-300 hover:scale-110 border border-destructive/60 shadow-[0_0_20px_hsl(var(--destructive)/0.35)]">
+                <PhoneOff className="w-5 h-5 stroke-[1.8] drop-shadow-[0_0_4px_hsl(var(--foreground)/0.5)]" />
+                <span className="text-xs sm:text-sm font-semibold tracking-wide">Выйти</span>
               </DisconnectButton>
             </TooltipTrigger>
             <TooltipContent side="top" className="bg-background/80 border-border/20">
