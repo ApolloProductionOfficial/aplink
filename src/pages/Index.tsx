@@ -292,16 +292,11 @@ const Index = () => {
           <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent pointer-events-none" />
           <div className="container mx-auto px-4 py-3 md:py-4 flex items-center justify-between relative z-10">
             <div className="flex items-center gap-2 md:gap-3">
-              <div className="relative w-10 h-10 md:w-12 md:h-12">
-                <div className="absolute inset-0 rounded-full bg-primary/40 blur-md" />
-                <div className="relative w-10 h-10 md:w-12 md:h-12 rounded-full overflow-hidden ring-2 ring-primary/50 shadow-[0_0_20px_hsl(var(--primary)/0.6)]">
-                  <img 
-                    src={aplinkNeonLogo} 
-                    alt="APLink"
-                    className="absolute inset-0 w-full h-full object-contain p-1.5 drop-shadow-[0_0_8px_rgba(6,182,228,0.6)]"
-                  />
-                </div>
-              </div>
+              <img 
+                src={aplinkNeonLogo} 
+                alt="APLink"
+                className="w-12 h-12 md:w-14 md:h-14 object-contain flex-shrink-0 drop-shadow-[0_0_12px_rgba(6,182,228,0.7)]"
+              />
               <div className="flex flex-col">
                 <span className="text-lg md:text-2xl font-bold bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent">
                   APLink
