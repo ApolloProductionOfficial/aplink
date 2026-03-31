@@ -1151,7 +1151,15 @@ button.lk-button[aria-label*="fullscreen" i] {
     @apply border-border;
   }
 
+  html,
+  body,
+  #root {
+    min-height: 100%;
+    background-color: hsl(var(--background));
+  }
+
   body {
     @apply bg-background text-foreground;
+    margin: 0;
   }
 }

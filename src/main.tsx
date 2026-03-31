@@ -4,6 +4,20 @@ import App from "./App.tsx";
 import "./index.css";
 import { initGlobalErrorHandlers } from "./utils/globalErrorHandler";
 
+const isElectronRuntime = window.location.protocol === "file:";
+
+const ensureTelegramWebAppScript = () => {
+  if (isElectronRuntime) return;
+  if (document.querySelector('script[data-telegram-webapp="true"]')) return;
+
+  const script = document.createElement("script");
+  script.src = "https://telegram.org/js/telegram-web-app.js";
+  script.async = true;
+  script.defer = true;
+  script.setAttribute("data-telegram-webapp", "true");
+  document.head.appendChild(script);
+};
+
 // Clean up auth hash fragments ONLY on meeting room routes.
 // Jitsi can misinterpret access tokens in the URL hash, but password recovery/OAuth
 // flows rely on that hash to create an auth session.
@@ -30,6 +44,9 @@ const cleanupOAuthHash = () => {
 
 // Run cleanup immediately
 cleanupOAuthHash();
+
+// Avoid blocking first paint in Electron with external scripts
+ensureTelegramWebAppScript();
 
 // Initialize global error handlers for email notifications
 initGlobalErrorHandlers();
