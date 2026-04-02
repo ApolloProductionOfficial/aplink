@@ -28,7 +28,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import backgroundVideo from "@/assets/background-video-new.mp4";
+import heroBg from "@/assets/hero-bg.png";
 
 const Index = () => {
   const [searchParams] = useSearchParams();
@@ -261,26 +261,15 @@ const Index = () => {
       >
         <CustomCursor />
       
-        {/* Video Background - optimized with enhanced glassmorphism */}
+        {/* Static Background Image */}
         <div className="fixed inset-0 z-0 overflow-hidden bg-black pointer-events-none">
-          {/* Base gradient */}
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-black/90 to-primary/10" />
-          {/* Video layer — no backdrop-blur to save GPU */}
-          <video
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="none"
-            className="absolute inset-0 w-full h-full object-cover opacity-30"
-          >
-            <source src={backgroundVideo} type="video/mp4" />
-          </video>
-          {/* Solid overlay instead of backdrop-blur (saves ~40% GPU) */}
+          <img
+            src={heroBg}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover opacity-40"
+          />
           <div className="absolute inset-0 bg-black/50" />
-          {/* Gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
-          {/* Subtle reflection effect */}
           <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-primary/10 mix-blend-overlay" />
         </div>
 
