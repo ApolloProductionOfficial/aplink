@@ -5,7 +5,13 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  base: "./",
+  // Web (Vercel) is served from the domain root with client-side routing, so
+  // assets MUST be referenced with an absolute base ("/") — otherwise deep
+  // links like /room/:id resolve "./assets/*" to "/room/assets/*", get the SPA
+  // fallback (index.html, text/html) and the app fails to boot with a MIME
+  // error. Electron loads via file:// and needs the relative "./" base, so it
+  // opts in explicitly via ELECTRON_BUILD=1.
+  base: process.env.ELECTRON_BUILD === "1" ? "./" : "/",
   build: {
     rollupOptions: {
       output: {
