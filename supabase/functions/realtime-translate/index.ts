@@ -88,7 +88,6 @@ serve(async (req) => {
     const previewText = formData.get("previewText") as string | null;
 
     const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
     if (!ELEVENLABS_API_KEY) {
       throw new Error("ELEVENLABS_API_KEY is not configured");
@@ -148,7 +147,7 @@ serve(async (req) => {
       throw new Error("No audio file provided");
     }
 
-    // LOVABLE_API_KEY no longer needed - using free MyMemory API for translation
+    // Translation uses free cascading APIs (Lingva → MyMemory → HuggingFace) — no paid LLM key needed
 
     console.log(`Received audio file: ${audioFile.name}, size: ${audioFile.size}`);
     console.log(`Target language: ${targetLanguage}, Source language: ${sourceLanguage || 'auto'}, Voice: ${voiceKey || 'default'}`);
@@ -233,7 +232,7 @@ serve(async (req) => {
       if (!translated) {
         try {
           const langPair = `${srcLangCode}|${targetLanguage}`;
-          const mmUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(originalText)}&langpair=${langPair}&de=aplink@lovable.app`;
+          const mmUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(originalText)}&langpair=${langPair}&de=aplink@apolloproduction.studio`;
           const mmResp = await fetch(mmUrl, { signal: AbortSignal.timeout(5000) });
           if (mmResp.ok) {
             const mmData = await mmResp.json();
