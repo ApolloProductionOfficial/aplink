@@ -1,4 +1,4 @@
-import { Grid, AtSign } from "lucide-react";
+import { Grid, AtSign, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useButtonSound } from "@/hooks/useButtonSound";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -23,19 +23,29 @@ const Footer = () => {
       platform: "Telegram",
       username: "@Apollo_Production",
       description: "Owner",
-      url: "https://t.me/Apollo_Production"
+      url: "https://t.me/Apollo_Production",
+      icon: "telegram" as const
     },
     {
       platform: "Telegram",
       username: "@osckelly",
       description: "Managing Director",
-      url: "https://t.me/osckelly"
+      url: "https://t.me/osckelly",
+      icon: "telegram" as const
     },
     {
       platform: "Telegram",
       username: "Only4riends",
       description: "Telegram Group",
-      url: "https://t.me/MenuOnly4Friends"
+      url: "https://t.me/MenuOnly4Friends",
+      icon: "telegram" as const
+    },
+    {
+      platform: "Email",
+      username: "only4riends@apolloproduction.studio",
+      description: "Почта",
+      url: "mailto:only4riends@apolloproduction.studio",
+      icon: "email" as const
     }
   ];
 
@@ -97,31 +107,34 @@ const Footer = () => {
               {t.footer.contactTitle}
             </h3>
             <div className="space-y-4">
-              {contacts.map((contact, i) => (
-                <div 
-                  key={i} 
-                  className="group relative overflow-hidden rounded-lg border border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10 p-4 hover:border-primary/40 transition-all duration-300 hover:shadow-lg hover:shadow-primary/20"
-                >
-                  <button
-                    onClick={() => handleClick(contact.url)}
-                    className="w-full text-left"
+              {contacts.map((contact, i) => {
+                const IconComponent = contact.icon === "email" ? Mail : AtSign;
+                return (
+                  <div
+                    key={i}
+                    className="group relative overflow-hidden rounded-lg border border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10 p-4 hover:border-primary/40 transition-all duration-300 hover:shadow-lg hover:shadow-primary/20"
                   >
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center group-hover:bg-primary/30 transition-colors">
-                        <AtSign className="h-5 w-5 text-primary group-hover:scale-110 transition-transform" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="font-medium text-foreground group-hover:text-primary transition-colors">
-                          {contact.username}
+                    <button
+                      onClick={() => handleClick(contact.url)}
+                      className="w-full text-left"
+                    >
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center group-hover:bg-primary/30 transition-colors">
+                          <IconComponent className="h-5 w-5 text-primary group-hover:scale-110 transition-transform" />
                         </div>
-                        <div className="text-xs text-muted-foreground">
-                          {contact.description}
+                        <div className="flex-1">
+                          <div className="font-medium text-foreground group-hover:text-primary transition-colors break-all">
+                            {contact.username}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {contact.description}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </button>
-                </div>
-              ))}
+                    </button>
+                  </div>
+                );
+              })}
             </div>
             <div className="pt-2">
               <Button

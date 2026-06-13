@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Video, Users, Globe, Shield, ArrowRight, ExternalLink, User, LogOut, UserPlus, Check, Languages, Send } from "lucide-react";
+import { Video, Users, Globe, Shield, ArrowRight, ExternalLink, User, LogOut, UserPlus, Check, Languages, Send, Mail } from "lucide-react";
 import GoogleIcon from "@/components/icons/GoogleIcon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,8 +39,13 @@ const Index = () => {
   const languages = {
     ru: { label: 'Русский', flag: '🇷🇺' },
     en: { label: 'English', flag: '🇬🇧' },
+    es: { label: 'Español', flag: '🇪🇸' },
+    pt: { label: 'Português', flag: '🇧🇷' },
+    de: { label: 'Deutsch', flag: '🇩🇪' },
+    fr: { label: 'Français', flag: '🇫🇷' },
     uk: { label: 'Українська', flag: '🇺🇦' }
-  };
+  } as const;
+  type LangCode = keyof typeof languages;
   const [roomName, setRoomName] = useState(roomFromUrl);
   const [userName, setUserName] = useState("");
   const [userUsername, setUserUsername] = useState<string | null>(null);
@@ -298,18 +303,26 @@ const Index = () => {
             <div className="flex items-center gap-1.5 md:gap-3">
               {/* External links - desktop only */}
               <div className="hidden md:flex items-center gap-1">
-                <a 
-                  href="https://t.me/Apollo_Production" 
-                  target="_blank" 
+                <a
+                  href="https://t.me/Apollo_Production"
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors text-sm p-2 rounded-lg hover:bg-primary/10"
                 >
                   <Send className="w-4 h-4" />
                   <span>{t.aplink?.telegram || 'Telegram'}</span>
                 </a>
-                <a 
-                  href="https://apolloproduction.studio" 
-                  target="_blank" 
+                <a
+                  href="mailto:only4riends@apolloproduction.studio"
+                  className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors text-sm p-2 rounded-lg hover:bg-primary/10"
+                  title="only4riends@apolloproduction.studio"
+                >
+                  <Mail className="w-4 h-4" />
+                  <span>{(t.aplink as any)?.email || 'Почта'}</span>
+                </a>
+                <a
+                  href="https://apolloproduction.studio"
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors text-sm p-2 rounded-lg hover:bg-primary/10"
                 >
@@ -381,7 +394,7 @@ const Index = () => {
                   {Object.entries(languages).map(([code, { label, flag }]) => (
                     <DropdownMenuItem
                       key={code}
-                      onClick={() => setLanguage(code as 'ru' | 'en' | 'uk')}
+                      onClick={() => setLanguage(code as LangCode)}
                       className={`${language === code ? 'bg-primary/20 border-l-2 border-primary' : ''} hover:bg-primary/10 cursor-pointer`}
                     >
                       <span className="mr-2 text-lg">{flag}</span>
@@ -569,16 +582,25 @@ const Index = () => {
 
         {/* Footer */}
         <footer className="relative z-10 py-6 md:py-8 pb-24 md:pb-8 border-t border-border/30">
-          <div className="container mx-auto px-4 text-center">
+          <div className="container mx-auto px-4 text-center space-y-2">
             <p className="text-muted-foreground text-xs md:text-sm">
               {t.aplink?.footer || '© 2025 APLink by'}{" "}
-              <a 
-                href="https://apolloproduction.studio" 
-                target="_blank" 
+              <a
+                href="https://apolloproduction.studio"
+                target="_blank"
                 rel="noopener noreferrer"
                 className="text-primary hover:underline"
               >
                 Apollo Production
+              </a>
+            </p>
+            <p className="text-muted-foreground/70 text-xs flex items-center justify-center gap-1.5">
+              <Mail className="w-3 h-3" />
+              <a
+                href="mailto:only4riends@apolloproduction.studio"
+                className="hover:text-primary transition-colors"
+              >
+                only4riends@apolloproduction.studio
               </a>
             </p>
           </div>

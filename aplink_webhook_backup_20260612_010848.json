@@ -1,0 +1,1 @@
+{"ok":true,"result":{"url":"https://qnnvmdgrufsrvbcqkggo.supabase.co/functions/v1/telegram-bot-webhook","has_custom_certificate":false,"pending_update_count":0,"max_connections":40,"ip_address":"172.64.149.246","allowed_updates":["message","callback_query","my_chat_member"]}}

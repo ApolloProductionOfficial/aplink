@@ -224,7 +224,7 @@ const SystemStatusDashboard = ({ errorLogs, errorStats, onClearOldLogs, clearing
     const fullReport = `# Отчёт об ошибках APLink\nВсего: ${errorLogs.length}\n\n${errorsSummary}`;
 
     navigator.clipboard.writeText(fullReport);
-    toast.success("📋 Скопировано для Lovable!");
+    toast.success("📋 Скопировано!");
   };
 
   const getOverallStatus = () => {

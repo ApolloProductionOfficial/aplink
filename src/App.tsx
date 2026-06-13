@@ -4,6 +4,7 @@ import { SafeTooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, HashRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import LanguageRouter from "@/components/LanguageRouter";
 import { ActiveCallProvider } from "@/contexts/ActiveCallContext";
 import { GlobalActiveCall } from "@/components/GlobalActiveCall";
 import ErrorBoundary from "@/components/ErrorBoundary";
@@ -33,6 +34,7 @@ function App() {
           <SafeTooltipProvider delayDuration={300}>
             <Sonner />
             <Router>
+              <LanguageRouter>
               <ActiveCallProvider>
                 <AnalyticsRouteTracker />
                 <GlobalActiveCall />
@@ -49,6 +51,7 @@ function App() {
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </ActiveCallProvider>
+              </LanguageRouter>
             </Router>
           </SafeTooltipProvider>
         </ErrorBoundary>

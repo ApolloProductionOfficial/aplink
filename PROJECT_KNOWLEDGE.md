@@ -193,7 +193,7 @@
 - **Vite** - сборка
 - **Tailwind CSS** - стилизация
 - **Framer Motion** - анимации
-- **Supabase** - бэкенд (через Lovable Cloud)
+- **Supabase** - бэкенд (через Apollo Supabase)
 - **Shadcn/UI** - UI компоненты
 - **React Query** - запросы данных
 

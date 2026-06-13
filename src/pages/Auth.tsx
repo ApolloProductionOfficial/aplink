@@ -59,8 +59,13 @@ const Auth = () => {
   const languages = {
     ru: { label: 'Русский', flag: '🇷🇺' },
     en: { label: 'English', flag: '🇬🇧' },
+    es: { label: 'Español', flag: '🇪🇸' },
+    pt: { label: 'Português', flag: '🇧🇷' },
+    de: { label: 'Deutsch', flag: '🇩🇪' },
+    fr: { label: 'Français', flag: '🇫🇷' },
     uk: { label: 'Українська', flag: '🇺🇦' }
-  };
+  } as const;
+  type LangCode = keyof typeof languages;
 
   // Redirect if already logged in (except for reset mode)
   useEffect(() => {
@@ -367,7 +372,7 @@ const Auth = () => {
               {Object.entries(languages).map(([code, { label, flag }]) => (
                 <DropdownMenuItem
                   key={code}
-                  onClick={() => setLanguage(code as 'ru' | 'en' | 'uk')}
+                  onClick={() => setLanguage(code as LangCode)}
                   className={`${language === code ? 'bg-primary/20 border-l-2 border-primary' : ''} hover:bg-primary/10 cursor-pointer`}
                 >
                   <span className="mr-2 text-lg">{flag}</span>

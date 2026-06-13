@@ -13,13 +13,11 @@
     <meta property="og:title" content="APLink - Видеозвонки без границ" />
     <meta property="og:description" content="Приватные видеозвонки с коллегами и партнерами без ограничений по IP. Работает из любой страны." />
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://aplink.live/" />
-    <meta property="og:site_name" content="APLink — Apollo Production" />
-    <meta property="og:image" content="https://aplink.live/app-icon.png" />
+    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@ApolloProduction" />
-    <meta name="twitter:image" content="https://aplink.live/app-icon.png" />
+    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
 
     <!-- hreflang alternates for SEO (RU canonical, EN/ES/PT/DE/FR alternates) -->
     <link rel="alternate" hreflang="ru" href="https://aplink.live/" />

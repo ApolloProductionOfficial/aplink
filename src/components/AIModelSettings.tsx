@@ -32,7 +32,7 @@ const categoryColor = (cat: string) => {
 type ProviderKey = 'lovable' | 'openrouter' | 'huggingface';
 
 const PROVIDERS: { key: ProviderKey; label: string; desc: string; icon: React.ReactNode }[] = [
-  { key: 'lovable', label: 'Lovable AI', desc: 'Встроенный • GPT-5 & Gemini', icon: <Sparkles className="w-4 h-4 text-primary" /> },
+  { key: 'lovable', label: 'Apollo AI', desc: 'Встроенный • GPT-5 & Gemini', icon: <Sparkles className="w-4 h-4 text-primary" /> },
   { key: 'openrouter', label: 'OpenRouter', desc: '100+ моделей • Ваш ключ', icon: <Brain className="w-4 h-4 text-blue-400" /> },
   { key: 'huggingface', label: 'HuggingFace', desc: 'Бесплатные модели • Без лимитов', icon: <Gift className="w-4 h-4 text-emerald-400" /> },
 ];

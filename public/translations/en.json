@@ -1,0 +1,905 @@
+{
+  "aplink": {
+    "badge": "Next Generation Video Calls",
+    "title": "Calls Without Borders",
+    "description": "Private video calls with colleagues and partners from anywhere in the world. No IP restrictions — works everywhere. Every call is automatically saved with AI-powered summaries of key moments. Real-time translator — communicate in any language without barriers!",
+    "yourName": "Your name",
+    "roomName": "Room name (or leave empty)",
+    "createRoom": "Create Room",
+    "joinRoom": "Join",
+    "telegram": "Telegram",
+    "website": "Our Website",
+    "admin": "Admin",
+    "cabinet": "Dashboard",
+    "createAccount": "Create an Account",
+    "createAccountDesc": "Save call recordings, get AI meeting summaries, and sync history across all devices",
+    "register": "Register",
+    "yourUsername": "Your @username",
+    "clickToCopy": "Click to copy",
+    "addUsername": "Add @username",
+    "addUsernameDesc": "So others can find and add you to contacts",
+    "save": "Save",
+    "saving": "Saving...",
+    "usernameHint": "3-20 characters: letters, numbers, underscore",
+    "noIPRestrictions": "No IP Restrictions",
+    "aiMeetingSummaries": "AI Meeting Summaries",
+    "realtimeTranslator": "Real-time Translator",
+    "features": {
+      "noBorders": "No Borders",
+      "noBordersDesc": "Works from any country in the world, including Russia",
+      "privacy": "Privacy",
+      "privacyDesc": "Secure calls only for you and your colleagues",
+      "hdQuality": "HD Quality",
+      "hdQualityDesc": "Crystal clear audio and excellent video",
+      "groupCalls": "Group Calls",
+      "groupCallsDesc": "Up to 100 participants in one room"
+    },
+    "footer": "© 2025 APLink by",
+    "roadmap": {
+      "title": "Project Roadmap",
+      "subtitle": "APLink development stages — from idea to global platform",
+      "stages": {
+        "launch": "Platform Launch",
+        "launchDesc": "Video calls, room creation, basic interface and instant connection without registration.",
+        "ai": "AI Integration",
+        "aiDesc": "Real-time speech translation, AI subtitles, meeting summaries and voice notifications.",
+        "calls": "Enhanced Calls",
+        "callsDesc": "Reactions, PiP mode, screen sharing, virtual backgrounds and call recording.",
+        "automation": "Automation",
+        "automationDesc": "Telegram bot, push notifications, analytics and automatic reminders.",
+        "monetization": "Monetization",
+        "monetizationDesc": "Service marketplace, partner program and premium features.",
+        "scaling": "Scaling",
+        "scalingDesc": "Global expansion, enterprise solutions and cross-platform support."
+      },
+      "statusDone": "COMPLETE",
+      "statusInProgress": "IN PROGRESS",
+      "statusPending": "PLANNED",
+      "progress": "Progress",
+      "relatedStages": "Related Stages"
+    }
+  },
+  "meetingRoom": {
+    "record": "Record",
+    "stop": "Stop",
+    "translate": "Translate",
+    "link": "Link",
+    "done": "Done",
+    "ip": "IP",
+    "report": "Report",
+    "recordTooltip": "Start call recording with AI transcription",
+    "stopRecordTooltip": "Stop recording and save transcription",
+    "translateTooltip": "Real-time translator for 100+ languages",
+    "linkTooltip": "Copy link to invite participants",
+    "ipTooltip": "Show participants' IP addresses",
+    "reportTooltip": "Copy diagnostics for support",
+    "linkCopied": "Link copied!",
+    "linkCopiedDesc": "Send it to participants to join",
+    "recordStarted": "Recording started",
+    "recordStartedDesc": "Recording call audio",
+    "recordStopped": "Recording stopped",
+    "transcribing": "Transcribing call...",
+    "transcriptionReady": "Transcription ready",
+    "transcriptionError": "Transcription error",
+    "transcriptionErrorDesc": "Could not transcribe audio",
+    "recordError": "Could not start recording",
+    "recordProcessing": "Processing recording",
+    "diagnosticsCopied": "Report copied",
+    "diagnosticsCopiedDesc": "Send it to the developer",
+    "registerHint": "Record your calls!",
+    "registerHintDesc": "Register to get AI summaries after each call",
+    "register": "Register",
+    "recording": "Recording in progress",
+    "error": "Error",
+    "copyLinkError": "Could not copy link",
+    "connecting": "Connecting...",
+    "connectingToRoom": "Connecting to room...",
+    "reconnecting": "Reconnecting...",
+    "reconnectingAttempt": "Attempt {attempt} of {max}",
+    "disconnected": "Disconnected",
+    "reconnect": "Reconnect"
+  },
+  "registrationBanner": {
+    "title": "Register",
+    "description": "Create an account to record calls",
+    "benefits": "✓ AI call summaries\n✓ Meeting history\n✓ Sync across devices",
+    "registerButton": "Register",
+    "googleSignIn": "Sign in with Google"
+  },
+  "adminPanel": {
+    "title": "Admin Panel",
+    "analytics": "Analytics",
+    "transcripts": "Transcripts",
+    "ipChecker": "IP Checker",
+    "users": "Users",
+    "profile": "Profile",
+    "siteAnalytics": "Site Analytics",
+    "pageViews": "Page Views",
+    "translations": "Translations",
+    "clicks": "Clicks",
+    "roomJoins": "Room Joins",
+    "sessions": "Sessions",
+    "popularPages": "Popular Pages",
+    "translationsByLang": "Translations by Language",
+    "recentEvents": "Recent Events",
+    "noData": "No data",
+    "noTranslationData": "No translation data",
+    "noAnalyticsData": "No analytics data",
+    "allCalls": "All Calls",
+    "noRecordings": "No call recordings yet",
+    "participants": "participants",
+    "completed": "Completed",
+    "briefSummary": "Brief Summary",
+    "keyPoints": "Key Points",
+    "actionItems": "Action Items",
+    "decisions": "Decisions Made",
+    "fullTranscript": "Full Transcript",
+    "onlineTotal": "online · total",
+    "profileSaved": "Profile saved",
+    "profileSaveError": "Save error:",
+    "twoFADisabled": "2FA disabled",
+    "twoFADisableError": "Could not disable 2FA",
+    "selectImage": "Please select an image",
+    "maxFileSize": "Maximum file size is 2MB",
+    "avatarUploadError": "Could not upload avatar",
+    "avatarUpdateError": "Could not update profile",
+    "avatarUpdated": "Avatar updated",
+    "loadAnalyticsError": "Could not load analytics",
+    "loadUsersError": "Could not load users"
+  },
+  "toast": {
+    "error": "Error",
+    "success": "Success",
+    "saved": "Saved",
+    "copied": "Copied",
+    "copiedToClipboard": "copied to clipboard",
+    "usernameMinLength": "Username must be at least 3 characters",
+    "usernameTaken": "This username is already taken",
+    "usernameSaveError": "Could not save username",
+    "yourUsername": "Your @username",
+    "loginSuccess": "You have successfully logged in"
+  },
+  "twoFactor": {
+    "title": "Two-Factor Authentication",
+    "description": "Enter the 6-digit code from your authenticator app",
+    "enterCode": "Enter code",
+    "verify": "Verify",
+    "cancel": "Cancel",
+    "factorNotFound": "2FA factor not found",
+    "invalidCode": "Invalid code. Please try again.",
+    "success": "Success",
+    "loginSuccess": "You have successfully logged in"
+  },
+  "favorites": {
+    "title": "Favorite Contacts",
+    "addContact": "Add Contact",
+    "noContacts": "No favorite contacts",
+    "userNotFound": "User not found",
+    "userNotFoundDesc": "User @{username} not found",
+    "alreadyAdded": "Contact already added",
+    "contactAdded": "Contact added",
+    "contactRemoved": "Contact removed",
+    "linkCopied": "Link copied",
+    "sendTo": "Send it to",
+    "username": "username",
+    "nickname": "Nickname (optional)",
+    "add": "Add",
+    "adding": "Adding...",
+    "online": "Online",
+    "offline": "Offline",
+    "inRoom": "In room",
+    "user": "User",
+    "error": "Error"
+  },
+  "header": {
+    "title": "APOLLO PRODUCTION — OnlyFans Management Agency",
+    "about": "About",
+    "traffic": "Traffic Sources",
+    "services": "Services",
+    "infrastructure": "Infrastructure",
+    "redditSite": "Reddit Site"
+  },
+  "topBanner": {
+    "project": "Reddit Project:",
+    "link": "onlyreddit.com"
+  },
+  "hero": {
+    "badge": "OnlyFans Management Agency",
+    "title": "Managing Model and Agency Growth on OnlyFans",
+    "description": "5 years working in the OnlyFans industry. During this time, we've helped launch and establish dozens of agencies worldwide, accumulated vast experience in model management, traffic generation, and monetization. We manage model growth on all major platforms and help agencies develop, applying all our accumulated expertise to achieve maximum results.",
+    "startButton": "Get Started",
+    "formButton": "Fill Application",
+    "calculator": {
+      "title": "Income Calculator",
+      "subscribers": "Subscribers",
+      "price": "Price per subscription ($)",
+      "monthly": "Monthly Revenue",
+      "commission": "Agency Fee (20%)",
+      "yourIncome": "Your Monthly Income",
+      "yearly": "Yearly"
+    }
+  },
+  "nav": {
+    "home": "Home",
+    "services": "Services",
+    "news": "News"
+  },
+  "earnings": {
+    "badge": "Model Income Growth",
+    "title": "Your path to",
+    "titleAmount": "$20,000+",
+    "description": "Average income growth of our models in the first year",
+    "start": "Start",
+    "months6": "6 months",
+    "months12": "12 months",
+    "month": "Month"
+  },
+  "trafficSources": {
+    "title": "Traffic Sources",
+    "more": "Learn More",
+    "tiktok": {
+      "title": "TikTok (farms)",
+      "description": "UGC networks, Spark Ads, systematic creative and vertical testing."
+    },
+    "instagram": {
+      "title": "Instagram (mobile farms)",
+      "description": "Mobile farms, reels, warm-up, auto-funnels and secure setups."
+    },
+    "twitter": {
+      "title": "X (Twitter)",
+      "description": "NSFW-friendly: threads, media, audience growth and warm-up."
+    },
+    "telegram": {
+      "title": "Telegram",
+      "description": "Chat leads, fast sales, SFS and advertising networks."
+    },
+    "dating": {
+      "title": "Dating (Tinder etc.)",
+      "description": "Dating conversions to offers and warm dialogues with high monetization."
+    },
+    "ppc": {
+      "title": "PPC",
+      "description": "Google/Meta (where possible), pre-landing, retargeting and attribution."
+    },
+    "seo": {
+      "title": "Microsites / SEO",
+      "description": "Landing pages, indexing, search traffic and content clusters."
+    },
+    "influencers": {
+      "title": "Influencers / Collabs",
+      "description": "Collaborations, mutual warm-ups and cross traffic."
+    },
+    "reddit": {
+      "title": "Reddit",
+      "description": "All information transferred — visit onlyreddit.com."
+    }
+  },
+  "sidebar": {
+    "themes": "Themes",
+    "more": "Learn More",
+    "cryptoUnlock": {
+      "title": "Crypto Unlock",
+      "description": "Unlocking cryptocurrency payments on Fansly. 70+ successful cases. Unlock within 24 hours with guarantee."
+    },
+    "trafficSources": {
+      "title": "Traffic Sources",
+      "description": "Full range of traffic sources for OnlyFans: TikTok, Instagram, X/Twitter, Telegram, Dating, PPC, SEO and others."
+    },
+    "modelVerification": {
+      "title": "RF/CIS Model Verification",
+      "description": "Ready OnlyFans with crypto withdrawal. Assistance with OF + SKRILL + PAXUM verification from home."
+    },
+    "partnership": {
+      "title": "Partnership Program",
+      "description": "40% from each video. $300 first month | $1,000+ after 3 months. Automated passive income."
+    },
+    "dubaiResidency": {
+      "title": "Dubai Residency",
+      "description": "ID Dubai processing in 10-14 days. Full process support from A to Z. 100% guarantee."
+    },
+    "webcamServices": {
+      "title": "Webcam Services",
+      "description": "Work on 7 sites with personal operator. Relocation to Georgia. Payments twice a month."
+    },
+    "instagramAutomation": {
+      "title": "Automation and Software",
+      "description": "Instagram farms for OnlyFans traffic. 200-400+ accounts / device. AI live 24/7."
+    },
+    "marketplace": {
+      "title": "Marketplace | Only4riend",
+      "description": "Platform for buying and selling model contacts. 14-day guarantee. Model statuses. Secure transactions."
+    }
+  },
+  "services": {
+    "title": "Our Services",
+    "allServices": "All Services",
+    "subtitle": "Full range of services for successful work on OnlyFans",
+    "howItWorks": "How it Works",
+    "step1": "Consultation",
+    "step1Desc": "Free consultation and selection of optimal service package",
+    "step2": "Setup",
+    "step2Desc": "We set up all necessary systems and tools",
+    "step3": "Launch",
+    "step3Desc": "Launch campaigns and start working",
+    "step4": "Growth",
+    "step4Desc": "Continuous optimization and scaling",
+    "readyToStart": "Ready to Start?",
+    "contactDesc": "Contact us for a free consultation",
+    "partnership": {
+      "title": "Partnership Program",
+      "description": "40% from each video. Automated passive income"
+    },
+    "crypto": {
+      "title": "Crypto Unlock",
+      "description": "Fansly/OnlyFans unlock within 24 hours"
+    },
+    "verification": {
+      "title": "Model Verification",
+      "description": "Ready OnlyFans with crypto withdrawal"
+    },
+    "dubai": {
+      "title": "Dubai Residency",
+      "description": "ID Dubai processing in 10-14 days"
+    },
+    "webcam": {
+      "title": "Webcam Services",
+      "description": "Work on 7 sites with personal operator"
+    },
+    "automation": {
+      "title": "Automation",
+      "description": "Instagram farms with AI live 24/7"
+    }
+  },
+  "common": {
+    "back": "Back",
+    "learnMore": "Learn More",
+    "contactTelegram": "Contact on Telegram"
+  },
+  "chatbot": {
+    "title": "AI Assistant",
+    "subtitle": "Site Navigation",
+    "placeholder": "Type a message...",
+    "welcome": "Hello! I'll help you find information on the site.",
+    "welcomeDetails": "Ask me about our services, prices or contacts.",
+    "disclaimer": "If I can't answer - I'll direct you to Telegram"
+  },
+  "footer": {
+    "rights": "All rights reserved.",
+    "contactTitle": "Get in Touch"
+  },
+  "rightSidebar": {
+    "title": "Top Offers in High Demand",
+    "partnership40": "Partnership — 40% passive income",
+    "cryptoUnlock": "Fansly Crypto Withdrawal Unlock",
+    "verificationRF": "OF Verification for RF & CIS (even with FACEBAN)",
+    "modelRecruitment": "Looking for models for multi-platform work",
+    "marketplace": "Marketplace | Only4riend",
+    "telegram": "Telegram",
+    "launch": "Launch",
+    "modelForm": "Application for New Models",
+    "ctaText": "Fill out the form and start earning with us",
+    "ctaButton": "Fill Application"
+  },
+  "cta": {
+    "badge": "Start Earning",
+    "title": "Ready to Increase Your Income?",
+    "description": "Fill out the application and our team will contact you within 24 hours",
+    "button": "Fill Application"
+  },
+  "testimonials": {
+    "badge": "Success Stories",
+    "title": "Real Results from Real Models",
+    "subtitle": "See how our models transformed their income",
+    "before": "Before",
+    "after": "After",
+    "period": "in",
+    "months": "months",
+    "feedback1": "Apollo Production transformed my career. In 6 months, my income increased 15x!",
+    "feedback2": "Professional team, excellent traffic sources, and constant support. Best decision I made!",
+    "feedback3": "The agency handles everything - I just focus on content. Results speak for themselves!"
+  },
+  "cryptoUnlock": {
+    "back": "Back",
+    "title": "Cryptocurrency Unlock",
+    "subtitle": "Professional cryptocurrency payment unlock on Fansly. Fast, secure, with guarantee.",
+    "features": {
+      "timing": {
+        "title": "24 Hours",
+        "description": "Unlock within 24 hours from request"
+      },
+      "cases": {
+        "title": "70+ Cases",
+        "description": "Over 70 successful cryptocurrency payment unlocks"
+      },
+      "guarantee": {
+        "title": "Guarantee",
+        "description": "100% unlock guarantee or money back"
+      },
+      "fansly": {
+        "title": "Fansly",
+        "description": "Specialization in Fansly platform"
+      }
+    },
+    "howItWorks": {
+      "title": "How it Works",
+      "step1": {
+        "number": "1",
+        "title": "Contact",
+        "description": "Contact us via Telegram and describe your situation"
+      },
+      "step2": {
+        "number": "2",
+        "title": "Analysis",
+        "description": "We'll analyze your situation and offer a solution"
+      },
+      "step3": {
+        "number": "3",
+        "title": "Unlock",
+        "description": "We'll perform the unlock within 24 hours"
+      },
+      "step4": {
+        "number": "4",
+        "title": "Verification",
+        "description": "We'll make sure everything works correctly"
+      }
+    },
+    "pricing": {
+      "title": "Service Cost",
+      "price": "$150",
+      "description": "Fixed price for unlock. No hidden fees."
+    },
+    "whyUs": {
+      "title": "Why Choose Us",
+      "items": [
+        "Over 70 successful unlock cases",
+        "Average solution time — up to 24 hours",
+        "100% guarantee or money back",
+        "Data confidentiality and security",
+        "24/7 support via Telegram",
+        "Experience with Fansly and OnlyFans"
+      ]
+    },
+    "cta": {
+      "title": "Ready to Unlock Cryptocurrency?",
+      "description": "Contact us on Telegram and get help within 24 hours",
+      "telegram": "Message on Telegram",
+      "form": "Fill Form"
+    }
+  },
+  "modelVerification": {
+    "back": "Back",
+    "title": "RF and CIS Model Verification",
+    "subtitle": "Ready OnlyFans with crypto withdrawal for models from Russia and CIS. We do everything turnkey!",
+    "whatYouGet": "What You Get",
+    "features": {
+      "consultation": {
+        "title": "Free Consultation",
+        "description": "Video chat or text consultation to confirm all details"
+      },
+      "faceban": {
+        "title": "FACEBAN Problem Solving",
+        "description": "Help with account unlock and solving blocking issues"
+      },
+      "verification": {
+        "title": "Full Verification",
+        "description": "Assistance with OF + SKRILL + PAXUM verification from home"
+      }
+    },
+    "benefits": {
+      "title": "Bonuses and Guarantees",
+      "items": [
+        "Any popular guarantors for transaction security",
+        "We guide you through verification from start to finish",
+        "No need to go anywhere - everything done at home in comfort and safety",
+        "Help with reliable agencies making $10-50k monthly on new models"
+      ]
+    },
+    "cta": {
+      "title": "Ready to Start?",
+      "description": "Contact us for a free consultation",
+      "telegram": "Message on Telegram",
+      "form": "Fill Application"
+    }
+  },
+  "modelRecruitment": {
+    "title": "Recruiting Models for Multi-Platform Work",
+    "subtitle": "Work on the best adult content platforms with professional support and high income",
+    "platformsTitle": "Platforms for Work",
+    "loyalfans": {
+      "title": "LoyalFans — Platform for Dominant Models",
+      "description": "Platform for models with dominant work style",
+      "tasksTitle": "Your Tasks",
+      "tasks": [
+        "Photos/videos according to content plan",
+        "Custom content for fans",
+        "Streams optionally (+additional income)"
+      ],
+      "conditionsTitle": "Conditions",
+      "conditions": [
+        "20% for you (+5% for streams)",
+        "Payments 2 times/month in USDT",
+        "Country blocking for safety"
+      ]
+    },
+    "manyvids": {
+      "title": "ManyVids — Focus on Custom Videos",
+      "description": "Specialty: bringing fans' fantasies to life",
+      "conditionsTitle": "Conditions",
+      "conditions": [
+        "20% for you",
+        "Weekly payments to Paxum",
+        "$10-25 per minute of customs",
+        "Independent withdrawal to crypto"
+      ]
+    },
+    "fourbased": {
+      "title": "4based — German Audience",
+      "description": "On the 4based platform, oriented towards German audience, models have the opportunity to sell their content. Each content set costs $300-$500, and agencies plan to make such purchases regularly.",
+      "verification": "To participate, you need to complete verification through the provided link",
+      "traffic": "Traffic is attracted only internally, without using social networks, and is oriented towards German audience",
+      "contentPlanTitle": "Content Plan Includes",
+      "contentPlan": [
+        "50 non-nude videos (15-30 seconds)",
+        "200 non-nude photos",
+        "10 breast photos",
+        "10 close-up pussy photos",
+        "10 butt photos",
+        "10 toe photos",
+        "10 mirror photos",
+        "10 full photos",
+        "10 photos in different poses",
+        "5 close-up butt photos",
+        "5 doggy-style butt photos",
+        "10 masturbation videos 5-10 minutes each",
+        "10 anal videos 5-10 minutes each",
+        "10 partner videos with a guy",
+        "Dildo blowjob video, 5 minutes"
+      ],
+      "importantTitle": "Most Important",
+      "scriptInfo": "5 different sexting scripts, each scenario with minimum 3-5 photos and 2-3 videos 3-5 minutes long",
+      "scripts": [
+        "Teacher (schoolgirl)",
+        "Gym",
+        "Shower",
+        "Dominant (BDSM)",
+        "Kitchen"
+      ]
+    },
+    "f2f": {
+      "title": "F2F & FanCentro — European Audience",
+      "description": "Work opportunity on F2F and FanCentro platforms (audience from Europe, mainly from Netherlands). Agency managers are English-speaking, based in Cyprus",
+      "income": "Model receives 20% of earnings (average earnings 1-5k$)",
+      "content": "Only ready content needed, 300+ files. No additional shooting required, this will be almost passive income",
+      "traffic": "Internal traffic only, no social networks"
+    },
+    "keyPoints": {
+      "title": "Key Points",
+      "points": [
+        "Model percentage: 20% everywhere",
+        "Currency: USDT (LoyalFans) / Paxum (ManyVids)",
+        "Specialization: dominance (LoyalFans) / customs (ManyVids)",
+        "Safety: country blocking",
+        "Ready content for passive income (F2F/FanCentro)",
+        "Work on multiple platforms simultaneously"
+      ]
+    },
+    "cta": "Contact on Telegram"
+  },
+  "partnership": {
+    "back": "Back",
+    "badge": "Limited Spots",
+    "title": "Join Closed Partnership",
+    "subtitle": "Official platform partners with guaranteed promotion in recommendations",
+    "features": {
+      "commission": {
+        "title": "40% per Video",
+        "description": "High percentage from each uploaded video"
+      },
+      "income": {
+        "title": "Stable Growth",
+        "description": "$300 first month | $1,000+ after 3 months"
+      },
+      "passive": {
+        "title": "Passive Income",
+        "description": "Automated income after uploading content"
+      }
+    },
+    "whyOfficial": "Why We're Official Partners",
+    "advantages": {
+      "recommendations": {
+        "title": "Forced Recommendations Placement",
+        "description": "Not 'maybe' or 'if lucky' - guaranteed. We have direct access to promotion"
+      },
+      "reach": {
+        "title": "5x Higher Reach Than PornHub",
+        "description": "Proven on real models. Facts, not promises"
+      },
+      "competition": {
+        "title": "Almost No Competition",
+        "description": "Platform is new - getting to TOP is easy now. In six months there'll be crowds, you'll be late"
+      },
+      "bonus": {
+        "title": "Double Monetization",
+        "description": "We insert your links (OF, TG, Fansly) - double monetization from single content"
+      }
+    },
+    "requirements": {
+      "title": "What We Need From You",
+      "items": [
+        "Platform verification",
+        "5-10 starter videos (quality not critical)",
+        "Everything else (editing, thumbnails, SEO, algorithms) - our work"
+      ]
+    },
+    "limited": {
+      "title": "⚡ Strictly Limited: 15 Models",
+      "description": "Goal: reach platform TOP-30 in 2 months and stay there. Application-based selection - we don't take everyone"
+    },
+    "cta": {
+      "title": "Want to Join the Program?",
+      "description": "Submit application and we'll contact you to discuss details",
+      "apply": "Submit Application",
+      "questions": "Ask Question"
+    }
+  },
+  "dubaiResidency": {
+    "back": "Back",
+    "badge": "ID Dubai by APOLLO PRODUCTION",
+    "title": "Dubai Residency",
+    "subtitle": "ID Dubai processing in 10-14 days with full process support",
+    "mainInfo": {
+      "title": "Main Information",
+      "timing": {
+        "title": "Processing Time",
+        "description": "10-14 days from document submission"
+      },
+      "cost": {
+        "title": "Service Cost",
+        "description": "$1750 - complete support package from A to Z"
+      },
+      "validity": {
+        "title": "Validity Period",
+        "description": "1 year with renewal option"
+      },
+      "renewal": {
+        "title": "Renewal",
+        "description": "Border crossing required every 6 months"
+      }
+    },
+    "requirements": {
+      "title": "What You Need",
+      "items": [
+        "Passport scan",
+        "Photo in required format (we'll provide instructions)",
+        "Fly to Dubai after approval"
+      ]
+    },
+    "included": {
+      "title": "What's Included",
+      "items": [
+        "Full process support",
+        "Detailed instructions: navigation, savings, communication",
+        "Guaranteed document approval (100%) for OnlyFans registration"
+      ]
+    },
+    "additionalCosts": {
+      "title": "Additional Costs",
+      "items": [
+        "Medical tests: ~$200 (paid in Dubai)",
+        "Accommodation and meals: ~$1000 for 5-6 days (includes housing, 3 meals daily, taxi and living expenses)"
+      ]
+    },
+    "trip": {
+      "title": "Trip to Dubai",
+      "description": "Required stay: 5-6 days. We'll advise where to stay and how to save money."
+    },
+    "afterReceiving": {
+      "title": "After Receiving Document",
+      "items": [
+        "Dubai SIM card registration",
+        "OnlyFans (100% verification pass)",
+        "Paxum and Skrill for withdrawals",
+        "Dubai bank account (discussed individually)"
+      ]
+    },
+    "cta": {
+      "title": "Ready to Get ID Dubai?",
+      "description": "Contact us for consultation and to start the processing",
+      "telegram": "Message on Telegram",
+      "form": "Fill Application"
+    }
+  },
+  "webcam": {
+    "backButton": "Back",
+    "title": "Webcam Services",
+    "subtitle": "Professional support and high income for webcam models",
+    "conditionsTitle": "Work Conditions",
+    "conditions": {
+      "baseRate": "Base Rate",
+      "baseRateDesc": "30% of earnings",
+      "totals": "Monthly Totals",
+      "totalsDesc": "From $5k-15k monthly",
+      "payments": "Payments",
+      "paymentsDesc": "Twice a month in cryptocurrency",
+      "topModels": "For Top Models",
+      "topModelsDesc": "40/60 or 50/50 for models with their own equipment"
+    },
+    "servicesTitle": "What We Offer",
+    "services": {
+      "multiSite": "Work on 7 Sites",
+      "multiSiteDesc": "With personal operator on each platform",
+      "management": "Account Management",
+      "managementDesc": "Full management of your Fansly and OnlyFans accounts",
+      "support": "Technical Support",
+      "supportDesc": "24/7 support for any questions",
+      "schedule": "Flexible Schedule",
+      "scheduleDesc": "Work at your convenient time"
+    },
+    "relocationTitle": "Relocation to Georgia",
+    "relocation": {
+      "package": "Full Package",
+      "packageDesc": "Housing + equipment for work",
+      "documents": "Documents",
+      "documentsDesc": "Insurance, bank account, residence permit",
+      "benefits": "Benefits",
+      "benefitsDesc": "Low taxes, high quality of life"
+    },
+    "ctaTitle": "Ready to Start Earning?",
+    "ctaDescription": "Contact us for consultation and to start cooperation",
+    "contactButton": "Contact Us"
+  },
+  "marketplace": {
+    "back": "Back",
+    "title": "Marketplace | Only4riend",
+    "subtitle": "Official platform for buying and selling model contacts. Guarantee up to 14 days. Secure transactions.",
+    "statusesTitle": "Model Statuses",
+    "statuses": {
+      "active": "Available, waiting for agency",
+      "reserve": "Reserved, awaiting decision",
+      "auction": "Bidding between multiple agencies",
+      "sold": "Sold, page transferred"
+    },
+    "purchaseTitle": "Purchase",
+    "purchase": {
+      "steps": [
+        "Full payment (guarantor welcomed) → create chat → provide keys, contacts, starter content",
+        "14 days to check OF page, email, payment methods",
+        "After 14 days guarantee closes"
+      ],
+      "guaranteeNote": "14-day guarantee applies to model contacts worth more than $1,000 USD. 10-day guarantee applies to contracts worth less than $1,000 USD"
+    },
+    "obligationsTitle": "Agency Obligations",
+    "obligations": {
+      "items": [
+        "Contact model within 24 hours",
+        "Communicate correctly, without pressure or insults",
+        "Upon model complaints, market access may be restricted"
+      ]
+    },
+    "guaranteeTitle": "14-Day Guarantee",
+    "guarantee": {
+      "coverageTitle": "Refund or replacement if:",
+      "coverage": [
+        "Model disappeared (no response for more than 3 days)",
+        "Gives extremely sluggish response, delays launch",
+        "Provided data turned out to be inaccurate",
+        "Model refuses to sign contract (if needed)"
+      ],
+      "requirementsTitle": "To claim guarantee you need:",
+      "requirements": "Full chat log and video call recording (if there was one). No recording → minus 50% from refund amount.",
+      "exclusionsTitle": "Guarantee does not apply if:",
+      "exclusions": [
+        "Agency showed incompetence or unprofessionalism",
+        "Violated agreements or applied pressure",
+        "Model left due to weak offer or lack of earnings",
+        "Model saw that agency 'doesn't know how'"
+      ]
+    },
+    "afterSaleTitle": "After Sale",
+    "afterSale": {
+      "description": "Model's page is sent to #Sold status"
+    },
+    "payment": {
+      "title": "Payment",
+      "method": "Cryptocurrency USDT TRC-20"
+    },
+    "telegramGroup": "Join marketplace group"
+  },
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "forgotPassword": "Forgot Password",
+    "resetPassword": "New Password",
+    "loginDescription": "Sign in to save call recordings",
+    "registerDescription": "Create an account to record calls",
+    "forgotDescription": "Enter your email to reset password",
+    "resetDescription": "Enter your new password",
+    "continueWithGoogle": "Continue with Google",
+    "or": "or",
+    "namePlaceholder": "Your name",
+    "password": "Password",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm password",
+    "loginButton": "Join",
+    "registerButton": "Register",
+    "sendResetLink": "Send Reset Link",
+    "updatePassword": "Save Password",
+    "forgotPasswordLink": "Forgot password?",
+    "noAccount": "Don't have an account? Sign up",
+    "hasAccount": "Already have an account? Sign in",
+    "backToLogin": "Back to login",
+    "errors": {
+      "invalidEmail": "Invalid email format",
+      "passwordMin": "Password must be at least 6 characters",
+      "nameMin": "Name must be at least 2 characters",
+      "nameMax": "Name is too long",
+      "passwordMismatch": "Passwords don't match",
+      "loginError": "Login Error",
+      "invalidCredentials": "Invalid email or password",
+      "error": "Error",
+      "registerError": "Registration Error",
+      "emailExists": "This email is already registered",
+      "googleError": "Failed to sign in with Google"
+    },
+    "success": {
+      "welcome": "Welcome!",
+      "loginSuccess": "You have successfully logged in",
+      "accountCreated": "Account created!",
+      "welcomeToApp": "Welcome to APLink",
+      "emailSent": "Email sent!",
+      "checkEmail": "Check your email for password recovery",
+      "passwordUpdated": "Password updated!",
+      "canLoginNow": "You can now log in with your new password"
+    }
+  },
+  "translator": {
+    "title": "Translator",
+    "tabTranslate": "Translate",
+    "tabHistory": "History",
+    "autoDetect": "Auto",
+    "voice": "Voice",
+    "previewVoice": "Preview voice",
+    "femaleVoices": "Female",
+    "maleVoices": "Male",
+    "neutralVoices": "Neutral",
+    "modeAuto": "Auto",
+    "modeSpace": "Space",
+    "micSettings": "Mic Settings",
+    "speaking": "Speaking",
+    "level": "Level",
+    "sensitivity": "Sensitivity",
+    "sensitivityTooltip": "Minimum audio level to detect speech. Lower = more sensitive (catches quiet speech), higher = needs louder voice.",
+    "pause": "Pause",
+    "pauseTooltip": "How long to wait after you stop speaking before translating. Longer = waits for longer pauses.",
+    "holdSpaceToRecord": "Hold Space to record",
+    "releaseToTranslate": "Release to translate",
+    "recording": "Recording...",
+    "stop": "Stop",
+    "startTranslation": "Start Translation",
+    "listening": "Listening... speak clearly",
+    "pressStart": "Press \"Start Translation\"",
+    "clear": "Clear",
+    "export": "Export",
+    "signInToViewHistory": "Sign in to view translation history",
+    "noHistory": "No translation history",
+    "clearHistory": "Clear",
+    "exportCsv": "Export CSV",
+    "pttActivated": "Push-to-talk mode: hold Space and speak",
+    "vadActivated": "VAD activated — speak and translation will start automatically",
+    "micError": "Could not access microphone",
+    "historyCleared": "History cleared",
+    "historyExported": "History exported",
+    "noDataToExport": "No data to export",
+    "loadHistoryError": "Failed to load history",
+    "clearHistoryError": "Error clearing history",
+    "voicePreviewError": "Failed to play voice",
+    "myLanguage": "I speak",
+    "partnerLanguage": "Partner",
+    "detected": "Auto",
+    "waitingForPartner": "Waiting...",
+    "orSelectManually": "Or select manually:",
+    "symmetricMode": "Two-way translation",
+    "incomingTranslation": "Incoming translation",
+    "outgoingTranslation": "Outgoing translation"
+  }
+}

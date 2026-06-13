@@ -1,0 +1,4639 @@
+{
+  "_meta": {
+    "model": "qwen3-235b-a22b-instruct-2507",
+    "updatedAt": "2026-05-22T03:42:14.486Z"
+  },
+  "strings": {
+    "93b7f758a906": {
+      "en": "Next Generation Video Calls",
+      "uk": "Відеодзвінки нового покоління",
+      "es": "Videoconferencias de nueva generación",
+      "pt": "Videochamadas de nova geração",
+      "de": "Videoanrufe der nächsten Generation",
+      "fr": "Appels vidéo de nouvelle génération"
+    },
+    "ab53c44a3374": {
+      "en": "Calls Without Borders",
+      "uk": "Дзвінки без кордонів",
+      "es": "Conexiones sin límites",
+      "pt": "Conexões sem fronteiras",
+      "de": "Anrufe ohne Grenzen",
+      "fr": "Appels sans limites"
+    },
+    "46eae7324561": {
+      "en": "Private video calls with colleagues and partners from anywhere in the world. No IP restrictions — works everywhere. Every call is automatically saved with AI-powered summaries of key moments. Real-time translator — communicate in any language without barriers!",
+      "uk": "Приватні відеодзвінки з колегами та партнерами з будь-якої точки світу. Без обмежень по IP — працює скрізь.",
+      "es": "Sin restricciones por IP  |  Resúmenes de reuniones con IA  |  Traductor en tiempo real",
+      "pt": "Sem restrições de IP  |  Transcrições com IA  |  Tradução em tempo real",
+      "de": "Keine IP-Beschränkungen | AI-Meeting-Zusammenfassungen | Echtzeit-Übersetzer",
+      "fr": "Pas de restrictions IP  |  Résumés des réunions par IA  |  Traducteur en temps réel"
+    },
+    "1459ccaadaf8": {
+      "en": "Your name",
+      "uk": "Ваше ім'я",
+      "es": "Tu nombre",
+      "pt": "Seu nome",
+      "de": "Ihr Name",
+      "fr": "Votre nom"
+    },
+    "29ddb16216e9": {
+      "en": "Room name (or leave empty)",
+      "uk": "Назва кімнати (або залиште порожнім)",
+      "es": "Nombre de la sala (o déjalo en blanco)",
+      "pt": "Nome da sala (ou deixe em branco)",
+      "de": "Raumname (oder leer lassen)",
+      "fr": "Nom de la salle (ou laissez vide)"
+    },
+    "3643850b0a09": {
+      "en": "Create Room",
+      "uk": "Створити кімнату",
+      "es": "Crear sala",
+      "pt": "Criar sala",
+      "de": "Raum erstellen",
+      "fr": "Créer une salle"
+    },
+    "939e95a11ddd": {
+      "en": "Join",
+      "uk": "Увійти",
+      "es": "Iniciar sesión",
+      "pt": "Entrar",
+      "de": "Einloggen",
+      "fr": "Se connecter"
+    },
+    "baeec86ee0a9": {
+      "en": "Our Website",
+      "es": "Nuestro sitio web",
+      "pt": "Nosso site",
+      "de": "Unsere Website",
+      "fr": "Notre site"
+    },
+    "2a709d82fc37": {
+      "en": "Admin",
+      "uk": "Адмін",
+      "es": "Administrador",
+      "pt": "Admin",
+      "de": "Admin",
+      "fr": "Admin"
+    },
+    "46c7be08ddbc": {
+      "en": "Dashboard",
+      "uk": "Кабінет",
+      "es": "Panel",
+      "pt": "Painel",
+      "de": "Konto",
+      "fr": "Tableau de bord"
+    },
+    "9671d9b6fb29": {
+      "en": "Create an Account",
+      "uk": "Створіть акаунт",
+      "es": "Crea una cuenta",
+      "pt": "Crie uma conta",
+      "de": "Erstellen Sie ein Konto",
+      "fr": "Créez un compte"
+    },
+    "679f6f9259a7": {
+      "en": "Save call recordings, get AI meeting summaries, and sync history across all devices",
+      "uk": "Зберігайте записи дзвінків, отримуйте AI-конспекти зустрічей та синхронізуйте історію на всіх пристроях",
+      "es": "Guarda grabaciones de llamadas, obtén resúmenes con IA y sincroniza tu historial en todos los dispositivos",
+      "pt": "Salve gravações de chamadas, obtenha transcrições com IA e sincronize o histórico em todos os dispositivos",
+      "de": "Speichern Sie Anrufaufzeichnungen, erhalten Sie AI-Meeting-Zusammenfassungen und synchronisieren Sie den Verlauf auf allen Geräten",
+      "fr": "Enregistrez vos appels, obtenez des résumés IA des réunions et synchronisez l'historique sur tous vos appareils"
+    },
+    "2e42751836d4": {
+      "en": "Register",
+      "uk": "Зареєструватися",
+      "es": "Registrarse",
+      "pt": "Registrar",
+      "de": "Registrieren",
+      "fr": "S'inscrire"
+    },
+    "423752216a35": {
+      "en": "Your @username",
+      "es": "@nombredeusuario",
+      "pt": "@username",
+      "de": "@Benutzername",
+      "fr": "@username"
+    },
+    "f04b115c63b7": {
+      "en": "Click to copy",
+      "uk": "Натисніть, щоб скопіювати",
+      "es": "Haz clic para copiar",
+      "pt": "Clique para copiar",
+      "de": "Zum Kopieren klicken",
+      "fr": "Cliquez pour copier"
+    },
+    "2a557712ba02": {
+      "en": "Add @username",
+      "uk": "Додайте @username",
+      "es": "Agrega @nombredeusuario",
+      "pt": "Adicione @username",
+      "de": "Fügen Sie @username hinzu",
+      "fr": "Ajoutez @nomutilisateur"
+    },
+    "5e56deb8cbbf": {
+      "en": "So others can find and add you to contacts",
+      "uk": "Щоб вас могли знайти та додати в контакти",
+      "es": "Para que puedan encontrarte y añadirte como contacto",
+      "pt": "Para que possam te encontrar e adicionar aos contatos",
+      "de": "Damit man Sie finden und zu Kontakten hinzufügen kann",
+      "fr": "Pour que les autres puissent vous trouver et vous ajouter à leurs contacts"
+    },
+    "4864057d626a": {
+      "en": "Save",
+      "uk": "Зберегти",
+      "es": "Guardar",
+      "pt": "Salvar",
+      "de": "Speichern",
+      "fr": "Enregistrer"
+    },
+    "a91a7e3fa78b": {
+      "en": "Saving...",
+      "uk": "Збереження...",
+      "es": "Guardando...",
+      "pt": "Salvando...",
+      "de": "Wird gespeichert...",
+      "fr": "Enregistrement..."
+    },
+    "0e7e92faebc5": {
+      "en": "3-20 characters: letters, numbers, underscore",
+      "uk": "3-20 символів: латиниця, цифри, підкреслення",
+      "es": "3–20 caracteres: letras latinas, números, guión bajo",
+      "pt": "3–20 caracteres: letras latinas, números e sublinhado",
+      "de": "3–20 Zeichen: lateinische Buchstaben, Zahlen, Unterstrich",
+      "fr": "3 à 20 caractères : lettres latines, chiffres, souligné"
+    },
+    "574c4395197b": {
+      "en": "No IP Restrictions",
+      "uk": "Без обмежень по IP",
+      "es": "Sin restricciones por IP",
+      "pt": "Sem restrições de IP",
+      "de": "Keine IP-Beschränkungen",
+      "fr": "Pas de restrictions IP"
+    },
+    "8d095153a93d": {
+      "en": "AI Meeting Summaries",
+      "uk": "AI-конспекти зустрічей",
+      "es": "Resúmenes de reuniones con IA",
+      "pt": "Transcrições com IA",
+      "de": "AI-Meeting-Zusammenfassungen",
+      "fr": "Résumés des réunions par IA"
+    },
+    "4ec384abee04": {
+      "en": "Real-time Translator",
+      "uk": "Перекладач в реальному часі",
+      "es": "Traductor en tiempo real",
+      "pt": "Tradução em tempo real",
+      "de": "Echtzeit-Übersetzer",
+      "fr": "Traducteur en temps réel"
+    },
+    "22b7e47be3fd": {
+      "en": "No Borders",
+      "uk": "Без кордонів",
+      "es": "Sin límites",
+      "pt": "Sem fronteiras",
+      "de": "Ohne Grenzen",
+      "fr": "Sans limites"
+    },
+    "f8397645d5c6": {
+      "en": "Works from any country in the world, including Russia",
+      "uk": "Працює з будь-якої країни світу, включаючи Росію",
+      "es": "Funciona desde cualquier país del mundo, incluida Rusia",
+      "pt": "Funciona de qualquer país do mundo, incluindo a Rússia",
+      "de": "Funktioniert von jedem Land der Welt aus, einschließlich Russland",
+      "fr": "Fonctionne depuis n'importe quel pays du monde, y compris la Russie"
+    },
+    "972590c07b3b": {
+      "en": "Privacy",
+      "uk": "Приватність",
+      "es": "Privacidad",
+      "pt": "Privacidade",
+      "de": "Privatsphäre",
+      "fr": "Confidentialité"
+    },
+    "c515cf752146": {
+      "en": "Secure calls only for you and your colleagues",
+      "uk": "Захищені дзвінки тільки для вас та ваших колег",
+      "es": "Llamadas seguras solo para ti y tus colegas",
+      "pt": "Chamadas protegidas apenas para você e seus colegas",
+      "de": "Geschützte Anrufe nur für Sie und Ihre Kollegen",
+      "fr": "Appels sécurisés réservés à vous et vos collaborateurs uniquement"
+    },
+    "aa341fb4b1fc": {
+      "en": "HD Quality",
+      "uk": "HD якість",
+      "es": "Calidad HD",
+      "pt": "Qualidade HD",
+      "de": "HD-Qualität",
+      "fr": "Qualité HD"
+    },
+    "180aeed5e1e6": {
+      "en": "Crystal clear audio and excellent video",
+      "uk": "Чистий звук та відмінна картинка",
+      "es": "Sonido limpio y excelente imagen",
+      "pt": "Som limpo e imagem incrível",
+      "de": "Klarer Klang und hervorragendes Bild",
+      "fr": "Son clair et image impeccable"
+    },
+    "515d075e02b0": {
+      "en": "Group Calls",
+      "uk": "Групові дзвінки",
+      "es": "Llamadas grupales",
+      "pt": "Chamadas em grupo",
+      "de": "Gruppenanrufe",
+      "fr": "Appels en groupe"
+    },
+    "ddec4987cd3f": {
+      "en": "Up to 100 participants in one room",
+      "uk": "До 100 учасників в одній кімнаті",
+      "es": "Hasta 100 participantes en una misma sala",
+      "pt": "Até 100 participantes em uma mesma sala",
+      "de": "Bis zu 100 Teilnehmer in einem Raum",
+      "fr": "Jusqu'à 100 participants dans une même salle"
+    },
+    "20828e729c2f": {
+      "en": "Project Roadmap",
+      "uk": "Дорожня карта проєкту",
+      "es": "Hoja de ruta del proyecto",
+      "pt": "Roadmap do projeto",
+      "de": "Projekt-Roadmap",
+      "fr": "Feuille de route du projet"
+    },
+    "0aaf5ffaa74d": {
+      "en": "APLink development stages — from idea to global platform",
+      "uk": "Етапи розвитку APLink — від ідеї до глобальної платформи",
+      "es": "Etapas de desarrollo de APLink: de la idea a la plataforma global",
+      "pt": "Etapas de desenvolvimento do APLink — da ideia à plataforma global",
+      "de": "Entwicklungsschritte von APLink – von der Idee zur globalen Plattform",
+      "fr": "Les étapes d'APLink — de l'idée à la plateforme mondiale"
+    },
+    "373614e34fd7": {
+      "en": "Platform Launch",
+      "uk": "Запуск платформи",
+      "es": "Lanzamiento de la plataforma",
+      "pt": "Lançamento da plataforma",
+      "de": "Plattform-Start",
+      "fr": "Lancement de la plateforme"
+    },
+    "27e22af57653": {
+      "en": "Video calls, room creation, basic interface and instant connection without registration.",
+      "uk": "Відеодзвінки, створення кімнат, базовий інтерфейс та миттєве підключення без реєстрації.",
+      "es": "Videoconferencias, creación de salas, interfaz básica y conexión instantánea sin registro.",
+      "pt": "Videochamadas, criação de salas, interface básica e conexão instantânea sem necessidade de cadastro.",
+      "de": "Videoanrufe, Raum-Erstellung, Basis-Interface und sofortige Verbindung ohne Registrierung.",
+      "fr": "Vidéos appels, création de salles, interface basique et connexion instantanée sans inscription."
+    },
+    "74895345c4ff": {
+      "en": "AI Integration",
+      "uk": "AI інтеграція",
+      "es": "Integración con IA",
+      "pt": "Integração com AI",
+      "de": "AI-Integration",
+      "fr": "Intégration de l'IA"
+    },
+    "3783d275026b": {
+      "en": "Real-time speech translation, AI subtitles, meeting summaries and voice notifications.",
+      "uk": "Переклад мовлення в реальному часі, AI-субтитри, конспекти зустрічей та голосові сповіщення.",
+      "es": "Traducción de voz en tiempo real, subtítulos con IA, resúmenes de reuniones y notificaciones de voz.",
+      "pt": "Tradução de voz em tempo real, legendas com IA, resumos de reuniões e notificações por voz.",
+      "de": "Echtzeit-Sprachübersetzung, AI-Untertitel, Meeting-Zusammenfassungen und Sprachbenachrichtigungen.",
+      "fr": "Traduction vocale en temps réel, sous-titres IA, comptes rendus automatiques et notifications vocales."
+    },
+    "cfe148a1da69": {
+      "en": "Enhanced Calls",
+      "uk": "Розширені дзвінки",
+      "es": "Llamadas avanzadas",
+      "pt": "Chamadas avançadas",
+      "de": "Erweiterte Anrufe",
+      "fr": "Appels avancés"
+    },
+    "6dc9e40d2b3f": {
+      "en": "Reactions, PiP mode, screen sharing, virtual backgrounds and call recording.",
+      "uk": "Реакції, PiP-режим, демонстрація екрану, віртуальні фони та запис дзвінків.",
+      "es": "Reacciones, modo picture-in-picture (PiP), compartición de pantalla, fondos virtuales y grabación de llamadas.",
+      "pt": "Reações, modo Picture-in-Picture (PiP), compartilhamento de tela, fundos virtuais e gravação de chamadas.",
+      "de": "Reaktionen, PiP-Modus, Bildschirmfreigabe, virtuelle Hintergründe und Aufzeichnung von Anrufen.",
+      "fr": "Réactions, mode image dans l'image (PiP), partage d'écran, arrière-plans virtuels et enregistrement des appels."
+    },
+    "279f4271dc5c": {
+      "en": "Automation",
+      "uk": "Автоматизація",
+      "es": "Automatización",
+      "pt": "Automação",
+      "de": "Automatisierung",
+      "fr": "Automatisation"
+    },
+    "e3ac6157d593": {
+      "en": "Telegram bot, push notifications, analytics and automatic reminders.",
+      "uk": "Telegram бот, push-сповіщення, аналітика та автоматичні нагадування.",
+      "es": "Bot de Telegram, notificaciones push, analítica y recordatorios automáticos.",
+      "pt": "Bot do Telegram, notificações push, análise de dados e lembretes automáticos.",
+      "de": "Telegram-Bot, Push-Benachrichtigungen, Analysen und automatische Erinnerungen.",
+      "fr": "Bot Telegram, notifications push, analyses et rappels automatiques."
+    },
+    "e3a4adfb571e": {
+      "en": "Monetization",
+      "uk": "Монетизація",
+      "es": "Monetización",
+      "pt": "Monetização",
+      "de": "Monetarisierung",
+      "fr": "Monétisation"
+    },
+    "a9788c421f96": {
+      "en": "Service marketplace, partner program and premium features.",
+      "uk": "Маркетплейс послуг, партнерська програма та преміум-функції.",
+      "es": "Mercado de servicios, programa de afiliados y funciones premium.",
+      "pt": "Marketplace de serviços, programa de afiliados e recursos premium.",
+      "de": "Marktplatz für Dienstleistungen, Partnerprogramm und Premium-Funktionen.",
+      "fr": "Marché de services, programme de parrainage et fonctionnalités premium."
+    },
+    "1e408f44b904": {
+      "en": "Scaling",
+      "uk": "Масштабування",
+      "es": "Escalabilidad",
+      "pt": "Expansão",
+      "de": "Skalierung",
+      "fr": "Évolutivité"
+    },
+    "6d3fac7ee354": {
+      "en": "Global expansion, enterprise solutions and cross-platform support.",
+      "uk": "Глобальне розширення, enterprise-рішення та мультиплатформність.",
+      "es": "Expansión global, soluciones para empresas y multiplataforma.",
+      "pt": "Expansão global, soluções empresariais e multiplataforma.",
+      "de": "Globale Expansion, Enterprise-Lösungen und Multi-Plattform-Unterstützung.",
+      "fr": "Extension mondiale, solutions pour entreprises et multiplateforme."
+    },
+    "0d8f8292cfc0": {
+      "en": "COMPLETE",
+      "es": "LISTO",
+      "pt": "PRONTO",
+      "de": "FERTIG",
+      "fr": "PRÊT"
+    },
+    "8961a8f38ff0": {
+      "en": "IN PROGRESS",
+      "uk": "В РОБОТІ",
+      "es": "EN DESARROLLO",
+      "pt": "EM DESENVOLVIMENTO",
+      "de": "IN ARBEIT",
+      "fr": "EN COURS"
+    },
+    "72af2777a1db": {
+      "en": "PLANNED",
+      "uk": "ПЛАНИ",
+      "es": "PROYECTOS",
+      "pt": "PLANOS",
+      "de": "PLÄNE",
+      "fr": "PROJETS"
+    },
+    "88d59af4fe9e": {
+      "en": "Progress",
+      "uk": "Прогрес",
+      "es": "Progreso",
+      "pt": "Progresso",
+      "de": "Fortschritt",
+      "fr": "Progression"
+    },
+    "0f6806c7c997": {
+      "en": "Related Stages",
+      "uk": "Пов'язані етапи",
+      "es": "Etapas vinculadas",
+      "pt": "Etapas vinculadas",
+      "de": "Verknüpfte Phasen",
+      "fr": "Étapes liées"
+    },
+    "fbcda4694fbf": {
+      "en": "Record",
+      "uk": "Запис",
+      "es": "Grabación",
+      "pt": "Gravação",
+      "de": "Aufnahme",
+      "fr": "Enregistrer"
+    },
+    "6d714e833d40": {
+      "en": "Stop",
+      "es": "Detener",
+      "pt": "Parar",
+      "de": "Stopp",
+      "fr": "Arrêter"
+    },
+    "162f0440ede7": {
+      "en": "Translate",
+      "uk": "Переклад",
+      "es": "Traducir",
+      "pt": "Tradução",
+      "de": "Übersetzung",
+      "fr": "Traduction"
+    },
+    "046e475e5a9a": {
+      "en": "Link",
+      "uk": "Посилання",
+      "es": "Enlace",
+      "pt": "Link",
+      "de": "Link",
+      "fr": "Lien"
+    },
+    "398c7d4f7b0d": {
+      "en": "Done",
+      "es": "Listo",
+      "pt": "Concluído",
+      "de": "Fertig",
+      "fr": "Terminé"
+    },
+    "d7748bfad036": {
+      "en": "Report",
+      "uk": "Звіт",
+      "es": "Informe",
+      "pt": "Relatório",
+      "de": "Bericht",
+      "fr": "Rapport"
+    },
+    "184ef87d8b46": {
+      "en": "Start call recording with AI transcription",
+      "uk": "Почати запис дзвінка з AI-транскрипцією",
+      "es": "Iniciar grabación de llamada con transcripción de IA",
+      "pt": "Iniciar gravação da chamada com transcrição por IA",
+      "de": "Anrufaufnahme mit AI-Transkription starten",
+      "fr": "Commencer l'enregistrement de l'appel avec transcription IA"
+    },
+    "5a7b02953f63": {
+      "en": "Stop recording and save transcription",
+      "uk": "Зупинити запис та зберегти транскрипцію",
+      "es": "Detener grabación y guardar transcripción",
+      "pt": "Parar gravação e salvar transcrição",
+      "de": "Aufnahme beenden und Transkription speichern",
+      "fr": "Arrêter l'enregistrement et sauvegarder la transcription"
+    },
+    "f51a54da91fb": {
+      "en": "Real-time translator for 100+ languages",
+      "uk": "Перекладач у реальному часі на 100+ мов",
+      "es": "Traductor en tiempo real a más de 100 idiomas",
+      "pt": "Tradutor em tempo real em 100+ idiomas",
+      "de": "Echtzeit-Übersetzung in über 100 Sprachen",
+      "fr": "Traducteur en temps réel dans plus de 100 langues"
+    },
+    "d8acb1670443": {
+      "en": "Copy link to invite participants",
+      "uk": "Скопіювати посилання для запрошення учасників",
+      "es": "Copiar enlace para invitar a participantes",
+      "pt": "Copiar link para convidar participantes",
+      "de": "Link zum Einladen von Teilnehmern kopieren",
+      "fr": "Copier le lien pour inviter les participants"
+    },
+    "4b583ac97afd": {
+      "en": "Show participants' IP addresses",
+      "uk": "Показати IP-адреси учасників",
+      "es": "Mostrar direcciones IP de los participantes",
+      "pt": "Mostrar endereços IP dos participantes",
+      "de": "IP-Adressen der Teilnehmer anzeigen",
+      "fr": "Afficher les adresses IP des participants"
+    },
+    "4233289441db": {
+      "en": "Copy diagnostics for support",
+      "uk": "Скопіювати діагностику для підтримки",
+      "es": "Copiar diagnóstico para soporte",
+      "pt": "Copiar diagnóstico para suporte",
+      "de": "Diagnose für den Support kopieren",
+      "fr": "Copier le diagnostic pour le support"
+    },
+    "fadb01e8b283": {
+      "en": "Link copied!",
+      "uk": "Посилання скопійовано!",
+      "es": "¡Enlace copiado!",
+      "pt": "Link copiado!",
+      "de": "Link kopiert!",
+      "fr": "Lien copié !"
+    },
+    "27c73f8a7d54": {
+      "en": "Send it to participants to join",
+      "uk": "Надішліть його учасникам для підключення",
+      "es": "Envíalo a los participantes para que se conecten",
+      "pt": "Envie aos participantes para se conectarem",
+      "de": "Senden Sie ihn an die Teilnehmer, um sich zu verbinden",
+      "fr": "Envoyez-le aux participants pour qu'ils se connectent"
+    },
+    "8ad8e6b1eba6": {
+      "en": "Recording started",
+      "uk": "Запис розпочато",
+      "es": "Grabación iniciada",
+      "pt": "Gravação iniciada",
+      "de": "Aufnahme gestartet",
+      "fr": "Enregistrement commencé"
+    },
+    "f2b8f7e968d2": {
+      "en": "Recording call audio",
+      "uk": "Записуємо звук дзвінка",
+      "es": "Grabando audio de la llamada",
+      "pt": "Gravando áudio da chamada",
+      "de": "Tonaufnahme des Gesprächs läuft",
+      "fr": "Enregistrement du son de l'appel en cours"
+    },
+    "4613e3831b4f": {
+      "en": "Recording stopped",
+      "uk": "Запис зупинено",
+      "es": "Grabación detenida",
+      "pt": "Gravação interrompida",
+      "de": "Aufnahme gestoppt",
+      "fr": "Enregistrement arrêté"
+    },
+    "c0210c3e265b": {
+      "en": "Transcribing call...",
+      "uk": "Транскрибуємо дзвінок...",
+      "es": "Transcribiendo la llamada...",
+      "pt": "Transcrevendo chamada...",
+      "de": "Transkription des Gesprächs wird durchgeführt...",
+      "fr": "Transcription de l'appel en cours..."
+    },
+    "5eb8ccc5123f": {
+      "en": "Transcription ready",
+      "uk": "Транскрипція готова",
+      "es": "Transcripción lista",
+      "pt": "Transcrição pronta",
+      "de": "Transkription fertiggestellt",
+      "fr": "Transcription terminée"
+    },
+    "02247bc13934": {
+      "en": "Transcription error",
+      "uk": "Помилка транскрипції",
+      "es": "Error en la transcripción",
+      "pt": "Erro na transcrição",
+      "de": "Transkriptionsfehler",
+      "fr": "Erreur de transcription"
+    },
+    "36777e67c2fd": {
+      "en": "Could not transcribe audio",
+      "uk": "Не вдалося транскрибувати аудіо",
+      "es": "No se pudo transcribir el audio",
+      "pt": "Falha ao transcrever áudio",
+      "de": "Audio konnte nicht transkribiert werden",
+      "fr": "Échec de la transcription de l'audio"
+    },
+    "c4213c04ca06": {
+      "en": "Could not start recording",
+      "uk": "Не вдалося почати запис",
+      "es": "No se pudo iniciar la grabación",
+      "pt": "Falha ao iniciar gravação",
+      "de": "Aufnahme konnte nicht gestartet werden",
+      "fr": "Impossible de démarrer l'enregistrement"
+    },
+    "3ffc8e5e4191": {
+      "en": "Processing recording",
+      "uk": "Запис обробляється",
+      "es": "La grabación está siendo procesada",
+      "pt": "A gravação está sendo processada",
+      "de": "Die Aufnahme wird bearbeitet",
+      "fr": "L'enregistrement est en cours"
+    },
+    "005bd2482bbd": {
+      "en": "Report copied",
+      "uk": "Звіт скопійовано",
+      "es": "Informe copiado",
+      "pt": "Relatório copiado",
+      "de": "Bericht kopiert",
+      "fr": "Le rapport a été copié"
+    },
+    "2565120d7e34": {
+      "en": "Send it to the developer",
+      "uk": "Надішліть його розробнику",
+      "es": "Envíalo al desarrollador",
+      "pt": "Envie ao desenvolvedor",
+      "de": "Sende es dem Entwickler",
+      "fr": "Envoyez-le au développeur"
+    },
+    "6e3eed46bab9": {
+      "en": "Record your calls!",
+      "uk": "Записуйте дзвінки!",
+      "es": "¡Graba tus llamadas!",
+      "pt": "Grave suas chamadas!",
+      "de": "Nehmen Sie Anrufe auf!",
+      "fr": "Enregistrez vos appels !"
+    },
+    "f37ff9d9b469": {
+      "en": "Register to get AI summaries after each call",
+      "uk": "Зареєструйтесь, щоб отримувати AI-конспект після кожного дзвінка",
+      "es": "Regístrate para recibir resúmenes de IA tras cada llamada",
+      "pt": "Registre-se para receber um resumo com IA após cada chamada",
+      "de": "Registrieren Sie sich, um nach jedem Anruf eine AI-Zusammenfassung zu erhalten",
+      "fr": "Inscrivez-vous pour recevoir un résumé IA après chaque appel"
+    },
+    "7224765e4459": {
+      "en": "Register",
+      "uk": "Реєстрація",
+      "es": "Registrarse",
+      "pt": "Registrar",
+      "de": "Registrierung",
+      "fr": "S'inscrire"
+    },
+    "7e0a249f354f": {
+      "en": "Recording in progress",
+      "uk": "Йде запис дзвінка",
+      "es": "Llamada en curso",
+      "pt": "Gravando chamada",
+      "de": "Anruf wird aufgezeichnet",
+      "fr": "Appel en cours d'enregistrement"
+    },
+    "72aecd9ad856": {
+      "en": "Error",
+      "uk": "Помилка",
+      "es": "Error",
+      "pt": "Erro",
+      "de": "Fehler",
+      "fr": "Erreur"
+    },
+    "12942f101ca0": {
+      "en": "Could not copy link",
+      "uk": "Не вдалося скопіювати посилання",
+      "es": "No se pudo copiar el enlace",
+      "pt": "Falha ao copiar o link",
+      "de": "Link konnte nicht kopiert werden",
+      "fr": "Impossible de copier le lien"
+    },
+    "e9382b748378": {
+      "en": "Connecting...",
+      "uk": "Підключення...",
+      "es": "Conectando...",
+      "pt": "Conectando...",
+      "de": "Verbindung...",
+      "fr": "Connexion..."
+    },
+    "cf6ec146a54c": {
+      "en": "Connecting to room...",
+      "uk": "Підключення до кімнати...",
+      "es": "Conectando a la sala...",
+      "pt": "Conectando à sala...",
+      "de": "Verbindung zum Raum...",
+      "fr": "Connexion à la salle..."
+    },
+    "534cbf08a16b": {
+      "en": "Reconnecting...",
+      "uk": "Перепідключення...",
+      "es": "Reconectando...",
+      "pt": "Reconectando...",
+      "de": "Wiederverbindung...",
+      "fr": "Reconnexion..."
+    },
+    "640673d64082": {
+      "en": "Attempt {attempt} of {max}",
+      "uk": "Спроба {attempt} з {max}",
+      "es": "Intento {attempt} de {max}",
+      "pt": "Tentativa {attempt} de {max}",
+      "de": "Versuch {attempt} von {max}",
+      "fr": "Tentative {attempt} sur {max}"
+    },
+    "9d30b977c4b8": {
+      "en": "Disconnected",
+      "uk": "Відключено",
+      "es": "Desconectado",
+      "pt": "Desconectado",
+      "de": "Getrennt",
+      "fr": "Déconnecté"
+    },
+    "cffce7183574": {
+      "en": "Reconnect",
+      "uk": "Перепідключитися",
+      "es": "Volver a conectar",
+      "pt": "Reconectar",
+      "de": "Erneut verbinden",
+      "fr": "Se reconnecter"
+    },
+    "92e415deeb6c": {
+      "en": "Create an account to record calls",
+      "uk": "Створіть акаунт для запису дзвінків",
+      "es": "Crea una cuenta para grabar videollamadas",
+      "pt": "Crie uma conta para registrar chamadas",
+      "de": "Erstellen Sie ein Konto, um Anrufe aufzuzeichnen",
+      "fr": "Créez un compte pour enregistrer les appels"
+    },
+    "8e98deb11879": {
+      "en": "✓ AI call summaries\n✓ Meeting history\n✓ Sync across devices",
+      "uk": "✓ AI-конспект дзвінків\n✓ Історія зустрічей\n✓ Синхронізація",
+      "es": "✓ Resúmenes de IA de llamadas\n✓ Historial de reuniones\n✓ Sincronización",
+      "pt": "✓ Resumo da chamada com IA\n✓ Histórico de reuniões\n✓ Sincronização",
+      "de": "✓ AI-Zusammenfassung der Anrufe\n✓ Gesprächsverlauf\n✓ Synchronisierung",
+      "fr": "✓ Résumé IA des appels\n✓ Historique des réunions\n✓ Synchronisation"
+    },
+    "d266ffdccf37": {
+      "en": "Sign in with Google",
+      "uk": "Увійти через Google",
+      "es": "Iniciar sesión con Google",
+      "pt": "Entrar com o Google",
+      "de": "Mit Google anmelden",
+      "fr": "Se connecter avec Google"
+    },
+    "bb213ca5266a": {
+      "en": "Admin Panel",
+      "uk": "Адмін-панель",
+      "es": "Panel de administración",
+      "pt": "Painel de administração",
+      "de": "Admin-Panel",
+      "fr": "Tableau de bord admin"
+    },
+    "a77d7f6c0d08": {
+      "en": "Analytics",
+      "es": "Estadísticas",
+      "pt": "Estatísticas",
+      "de": "Statistik",
+      "fr": "Statistiques"
+    },
+    "596144b0e6c8": {
+      "en": "Transcripts",
+      "es": "Grabaciones",
+      "pt": "Gravações",
+      "de": "Aufnahmen",
+      "fr": "Enregistrements"
+    },
+    "d09a06dfda56": {
+      "en": "IP Checker",
+      "es": "Comprobador de IP",
+      "pt": "Verificador de IP",
+      "de": "IP-Checker",
+      "fr": "Vérificateur IP"
+    },
+    "0f0b8f55edcc": {
+      "en": "Users",
+      "uk": "Користувачі",
+      "es": "Usuarios",
+      "pt": "Usuários",
+      "de": "Benutzer",
+      "fr": "Utilisateurs"
+    },
+    "eb0b9b0d9010": {
+      "en": "Profile",
+      "uk": "Профіль",
+      "es": "Perfil",
+      "pt": "Perfil",
+      "de": "Profil",
+      "fr": "Profil"
+    },
+    "f4b8fa85faf5": {
+      "en": "Site Analytics",
+      "uk": "Аналітика сайту",
+      "es": "Análisis del sitio",
+      "pt": "Análise do site",
+      "de": "Website-Analyse",
+      "fr": "Analytique du site"
+    },
+    "555daa49e2a5": {
+      "en": "Page Views",
+      "uk": "Переглядів",
+      "es": "Visualizaciones",
+      "pt": "Visualizações",
+      "de": "Aufrufe",
+      "fr": "Vues"
+    },
+    "9484e94ed8d7": {
+      "en": "Translations",
+      "uk": "Перекладів",
+      "es": "Traducciones",
+      "pt": "Traduções",
+      "de": "Übersetzungen",
+      "fr": "Traductions"
+    },
+    "c871bd51a219": {
+      "en": "Clicks",
+      "uk": "Кліків",
+      "es": "Clics",
+      "pt": "Cliques",
+      "de": "Klicks",
+      "fr": "Clics"
+    },
+    "c30de2197376": {
+      "en": "Room Joins",
+      "uk": "Входів в кімнати",
+      "es": "Entradas a salas",
+      "pt": "Entradas em salas",
+      "de": "Raumbetretrungen",
+      "fr": "Connexions aux salles"
+    },
+    "3b199e117c66": {
+      "en": "Sessions",
+      "uk": "Сесій",
+      "es": "Sesiones",
+      "pt": "Sessões",
+      "de": "Sitzungen",
+      "fr": "Sessions"
+    },
+    "937b5505b435": {
+      "en": "Popular Pages",
+      "uk": "Популярні сторінки",
+      "es": "Páginas populares",
+      "pt": "Páginas populares",
+      "de": "Beliebte Seiten",
+      "fr": "Pages populaires"
+    },
+    "470030deb692": {
+      "en": "Translations by Language",
+      "uk": "Переклади за мовами",
+      "es": "Traducciones por idioma",
+      "pt": "Traduções por idiomas",
+      "de": "Übersetzungen nach Sprachen",
+      "fr": "Traductions par langue"
+    },
+    "2355a3badd7f": {
+      "en": "Recent Events",
+      "uk": "Останні події",
+      "es": "Últimos eventos",
+      "pt": "Últimos eventos",
+      "de": "Letzte Ereignisse",
+      "fr": "Derniers événements"
+    },
+    "d0dd940c4c09": {
+      "en": "No data",
+      "uk": "Немає даних",
+      "es": "Sin datos",
+      "pt": "Sem dados",
+      "de": "Keine Daten",
+      "fr": "Pas de données"
+    },
+    "e19c07a68e78": {
+      "en": "No translation data",
+      "uk": "Немає даних про переклади",
+      "es": "Sin datos de traducciones",
+      "pt": "Sem dados de traduções",
+      "de": "Keine Übersetzungsdaten",
+      "fr": "Pas de données de traduction"
+    },
+    "20f2c409a205": {
+      "en": "No analytics data",
+      "uk": "Немає даних аналітики",
+      "es": "Sin datos de análisis",
+      "pt": "Sem dados de análise",
+      "de": "Keine Analyse-Daten",
+      "fr": "Pas de données analytiques"
+    },
+    "c9841cee1df8": {
+      "en": "All Calls",
+      "uk": "Усі дзвінки",
+      "es": "Todas las llamadas",
+      "pt": "Todas as chamadas",
+      "de": "Alle Anrufe",
+      "fr": "Tous les appels"
+    },
+    "e79b8c3a260f": {
+      "en": "No call recordings yet",
+      "uk": "Поки немає записів дзвінків",
+      "es": "Aún no hay registros de llamadas",
+      "pt": "Ainda não há registros de chamadas",
+      "de": "Bisher keine Anrufe aufgezeichnet",
+      "fr": "Aucun appel enregistré pour le moment"
+    },
+    "ba59db3761e7": {
+      "en": "participants",
+      "uk": "учасників",
+      "es": "participantes",
+      "pt": "participantes",
+      "de": "Teilnehmer",
+      "fr": "participants"
+    },
+    "ac11729360b2": {
+      "en": "Completed",
+      "uk": "Завершено",
+      "es": "Finalizado",
+      "pt": "Concluído",
+      "de": "Abgeschlossen",
+      "fr": "Terminé"
+    },
+    "326f7ecf9e13": {
+      "en": "Brief Summary",
+      "uk": "Короткий зміст",
+      "es": "Resumen",
+      "pt": "Resumo",
+      "de": "Zusammenfassung",
+      "fr": "Résumé"
+    },
+    "3c716af0788e": {
+      "en": "Key Points",
+      "uk": "Ключові моменти",
+      "es": "Puntos clave",
+      "pt": "Pontos principais",
+      "de": "Hauptpunkte",
+      "fr": "Points clés"
+    },
+    "f74d491bd797": {
+      "en": "Action Items",
+      "uk": "Завдання до виконання",
+      "es": "Tareas por realizar",
+      "pt": "Tarefas a serem realizadas",
+      "de": "Aufgaben zur Erledigung",
+      "fr": "Tâches à accomplir"
+    },
+    "fc38e97cfcf8": {
+      "en": "Decisions Made",
+      "uk": "Прийняті рішення",
+      "es": "Decisiones tomadas",
+      "pt": "Decisões tomadas",
+      "de": "Getroffene Entscheidungen",
+      "fr": "Décisions prises"
+    },
+    "09cf4262ebfc": {
+      "en": "Full Transcript",
+      "uk": "Повна транскрипція",
+      "es": "Transcripción completa",
+      "pt": "Transcrição completa",
+      "de": "Vollständige Transkription",
+      "fr": "Transcription complète"
+    },
+    "9d376aabd56c": {
+      "en": "online · total",
+      "uk": "онлайн · всього",
+      "es": "en línea · total",
+      "pt": "online · no total",
+      "de": "online · gesamt",
+      "fr": "en ligne · total"
+    },
+    "bc4091c417e5": {
+      "en": "Profile saved",
+      "uk": "Профіль збережено",
+      "es": "Perfil guardado",
+      "pt": "Perfil salvo",
+      "de": "Profil gespeichert",
+      "fr": "Profil enregistré"
+    },
+    "81c9ea6dab44": {
+      "en": "Save error:",
+      "uk": "Помилка збереження:",
+      "es": "Error al guardar:",
+      "pt": "Erro ao salvar:",
+      "de": "Fehler beim Speichern:",
+      "fr": "Erreur lors de l'enregistrement :"
+    },
+    "2ab9a0459d50": {
+      "en": "2FA disabled",
+      "uk": "2FA вимкнено",
+      "es": "2FA desactivada",
+      "pt": "2FA desativada",
+      "de": "2FA deaktiviert",
+      "fr": "2FA désactivée"
+    },
+    "cdd1d2b71537": {
+      "en": "Could not disable 2FA",
+      "uk": "Не вдалося вимкнути 2FA",
+      "es": "No se pudo desactivar la 2FA",
+      "pt": "Falha ao desativar 2FA",
+      "de": "2FA konnte nicht deaktiviert werden",
+      "fr": "Impossible de désactiver la 2FA"
+    },
+    "29112581ee3a": {
+      "en": "Please select an image",
+      "uk": "Будь ласка, виберіть зображення",
+      "es": "Por favor, selecciona una imagen",
+      "pt": "Por favor, selecione uma imagem",
+      "de": "Bitte wählen Sie ein Bild",
+      "fr": "Veuillez sélectionner une image"
+    },
+    "7d65cd98f212": {
+      "en": "Maximum file size is 2MB",
+      "uk": "Максимальний розмір файлу 2MB",
+      "es": "Tamaño máximo del archivo 2MB",
+      "pt": "Tamanho máximo do arquivo 2MB",
+      "de": "Maximale Dateigröße 2MB",
+      "fr": "Taille maximale du fichier : 2 Mo"
+    },
+    "b7d43dd1ec8e": {
+      "en": "Could not upload avatar",
+      "uk": "Не вдалося завантажити аватар",
+      "es": "No se pudo cargar el avatar",
+      "pt": "Falha ao carregar avatar",
+      "de": "Avatar konnte nicht hochgeladen werden",
+      "fr": "Échec du téléchargement de l'avatar"
+    },
+    "bb03a27167ca": {
+      "en": "Could not update profile",
+      "uk": "Не вдалося оновити профіль",
+      "es": "No se pudo actualizar el perfil",
+      "pt": "Falha ao atualizar perfil",
+      "de": "Profil konnte nicht aktualisiert werden",
+      "fr": "Échec de la mise à jour du profil"
+    },
+    "bab3f2f0e764": {
+      "en": "Avatar updated",
+      "uk": "Аватар оновлено",
+      "es": "Avatar actualizado",
+      "pt": "Avatar atualizado",
+      "de": "Avatar aktualisiert",
+      "fr": "Avatar mis à jour"
+    },
+    "f2a3630ed130": {
+      "en": "Could not load analytics",
+      "uk": "Не вдалося завантажити аналітику",
+      "es": "No se pudo cargar la analítica",
+      "pt": "Falha ao carregar análise",
+      "de": "Analysen konnten nicht geladen werden",
+      "fr": "Échec du chargement des analyses"
+    },
+    "fd1f6be171c4": {
+      "en": "Could not load users",
+      "uk": "Не вдалося завантажити користувачів",
+      "es": "No se pudieron cargar los usuarios",
+      "pt": "Falha ao carregar usuários",
+      "de": "Benutzer konnten nicht geladen werden",
+      "fr": "Échec du chargement des utilisateurs"
+    },
+    "503d1c9809f8": {
+      "en": "Success",
+      "uk": "Успішно",
+      "es": "Éxito",
+      "pt": "Sucesso",
+      "de": "Erfolgreich",
+      "fr": "Succès"
+    },
+    "f0dff5ab4a66": {
+      "en": "Saved",
+      "uk": "Збережено",
+      "es": "Guardado",
+      "pt": "Salvo",
+      "de": "Gespeichert",
+      "fr": "Enregistré"
+    },
+    "8922542f90c1": {
+      "en": "Copied",
+      "uk": "Скопійовано",
+      "es": "Copiado",
+      "pt": "Copiado",
+      "de": "Kopiert",
+      "fr": "Copié"
+    },
+    "1cb6cb07ec1d": {
+      "en": "copied to clipboard",
+      "uk": "скопійовано в буфер",
+      "es": "copiado al portapapeles",
+      "pt": "copiado para a área de transferência",
+      "de": "in die Zwischenablage kopiert",
+      "fr": "copié dans le presse-papiers"
+    },
+    "668f661c8b22": {
+      "en": "Username must be at least 3 characters",
+      "uk": "Username повинен бути мінімум 3 символи",
+      "es": "El nombre de usuario debe tener al menos 3 caracteres",
+      "pt": "O nome de usuário deve ter pelo menos 3 caracteres",
+      "de": "Der Benutzername muss mindestens 3 Zeichen lang sein",
+      "fr": "Le nom d'utilisateur doit comporter au moins 3 caractères"
+    },
+    "9fdcce782898": {
+      "en": "This username is already taken",
+      "uk": "Цей username вже зайнятий",
+      "es": "Este nombre de usuario ya está en uso",
+      "pt": "Este nome de usuário já está em uso",
+      "de": "Dieser Benutzername ist bereits vergeben",
+      "fr": "Ce nom d'utilisateur est déjà pris"
+    },
+    "3f583571ee68": {
+      "en": "Could not save username",
+      "uk": "Не вдалося зберегти username",
+      "es": "No se pudo guardar el nombre de usuario",
+      "pt": "Falha ao salvar nome de usuário",
+      "de": "Benutzername konnte nicht gespeichert werden",
+      "fr": "Impossible d'enregistrer le nom d'utilisateur"
+    },
+    "2a72bb5cb0de": {
+      "en": "You have successfully logged in",
+      "uk": "Ви успішно увійшли в систему",
+      "es": "Has iniciado sesión correctamente",
+      "pt": "Você entrou com sucesso",
+      "de": "Sie haben sich erfolgreich eingeloggt",
+      "fr": "Vous êtes connecté avec succès"
+    },
+    "816ca6c80985": {
+      "en": "Two-Factor Authentication",
+      "uk": "Двофакторна автентифікація",
+      "es": "Autenticación de dos factores",
+      "pt": "Autenticação de dois fatores",
+      "de": "Zwei-Faktor-Authentifizierung",
+      "fr": "Authentification à deux facteurs"
+    },
+    "a76937b5b121": {
+      "en": "Enter the 6-digit code from your authenticator app",
+      "uk": "Введіть 6-значний код з вашого додатку-автентифікатора",
+      "es": "Introduce el código de 6 dígitos de tu aplicación autenticadora",
+      "pt": "Insira o código de 6 dígitos do seu aplicativo autenticador",
+      "de": "Geben Sie den 6-stelligen Code aus Ihrer Authentifizierungs-App ein",
+      "fr": "Saisissez le code à 6 chiffres de votre application d'authentification"
+    },
+    "e341e0642d58": {
+      "en": "Enter code",
+      "uk": "Введіть код",
+      "es": "Introduce el código",
+      "pt": "Insira o código",
+      "de": "Geben Sie den Code ein",
+      "fr": "Saisir le code"
+    },
+    "0467ae4bb88b": {
+      "en": "Verify",
+      "uk": "Підтвердити",
+      "es": "Confirmar",
+      "pt": "Confirmar",
+      "de": "Bestätigen",
+      "fr": "Confirmer"
+    },
+    "0ec753be8df9": {
+      "en": "Cancel",
+      "uk": "Скасувати",
+      "es": "Cancelar",
+      "pt": "Cancelar",
+      "de": "Abbrechen",
+      "fr": "Annuler"
+    },
+    "34f88e6d1a50": {
+      "en": "2FA factor not found",
+      "uk": "Фактор 2FA не знайдено",
+      "es": "No se encontró el factor 2FA",
+      "pt": "Fator 2FA não encontrado",
+      "de": "2FA-Faktor nicht gefunden",
+      "fr": "Le facteur 2FA est introuvable"
+    },
+    "e54157b76059": {
+      "en": "Invalid code. Please try again.",
+      "uk": "Невірний код. Спробуйте ще раз.",
+      "pt": "Código inválido. Tente novamente.",
+      "es": "Código incorrecto. Inténtalo de nuevo.",
+      "de": "Ungültiger Code. Versuchen Sie es erneut.",
+      "fr": "Code incorrect. Veuillez réessayer."
+    },
+    "16b53f963d05": {
+      "en": "Favorite Contacts",
+      "uk": "Обрані контакти",
+      "pt": "Contatos favoritos",
+      "es": "Contactos destacados",
+      "de": "Favoriten",
+      "fr": "Contacts favoris"
+    },
+    "155d119a081b": {
+      "en": "Add Contact",
+      "uk": "Додати контакт",
+      "pt": "Adicionar contato",
+      "es": "Añadir contacto",
+      "de": "Kontakt hinzufügen",
+      "fr": "Ajouter un contact"
+    },
+    "593f53606794": {
+      "en": "No favorite contacts",
+      "uk": "Немає обраних контактів",
+      "pt": "Nenhum contato favorito",
+      "es": "No hay contactos destacados",
+      "de": "Keine Favoriten vorhanden",
+      "fr": "Aucun contact favori"
+    },
+    "60054fa02b82": {
+      "en": "User not found",
+      "uk": "Користувача не знайдено",
+      "pt": "Usuário não encontrado",
+      "es": "Usuario no encontrado",
+      "de": "Benutzer nicht gefunden",
+      "fr": "Utilisateur non trouvé"
+    },
+    "2479169e7b56": {
+      "en": "User @{username} not found",
+      "uk": "Користувача @{username} не знайдено",
+      "pt": "Usuário @{username} não encontrado",
+      "es": "Usuario @{username} no encontrado",
+      "de": "Benutzer @{username} nicht gefunden",
+      "fr": "L'utilisateur @{username} est introuvable"
+    },
+    "4cab7c84f10a": {
+      "en": "Contact already added",
+      "uk": "Контакт вже додано",
+      "pt": "Contato já adicionado",
+      "es": "El contacto ya fue añadido",
+      "de": "Kontakt bereits hinzugefügt",
+      "fr": "Le contact est déjà ajouté"
+    },
+    "964497df148b": {
+      "en": "Contact added",
+      "uk": "Контакт додано",
+      "pt": "Contato adicionado",
+      "es": "Contacto añadido",
+      "de": "Kontakt hinzugefügt",
+      "fr": "Contact ajouté"
+    },
+    "cd085151b7d9": {
+      "en": "Contact removed",
+      "uk": "Контакт видалено",
+      "pt": "Contato removido",
+      "es": "Contacto eliminado",
+      "de": "Kontakt entfernt",
+      "fr": "Contact supprimé"
+    },
+    "49261ec6a4c8": {
+      "en": "Link copied",
+      "uk": "Посилання скопійовано",
+      "pt": "Link copiado",
+      "es": "Enlace copiado",
+      "de": "Link kopiert",
+      "fr": "Lien copié"
+    },
+    "2b5d80abfe08": {
+      "en": "Send it to",
+      "uk": "Надішліть його",
+      "pt": "Envie-o",
+      "es": "Envíalo",
+      "de": "Senden Sie ihn",
+      "fr": "Envoyez-le"
+    },
+    "ad0ee2da0a5a": {
+      "en": "Nickname (optional)",
+      "uk": "Нікнейм (необов'язково)",
+      "pt": "Apelido (opcional)",
+      "es": "Nombre de usuario (opcional)",
+      "de": "Spitzname (optional)",
+      "fr": "Pseudo (facultatif)"
+    },
+    "559a87f7cc13": {
+      "en": "Add",
+      "uk": "Додати",
+      "pt": "Adicionar",
+      "es": "Añadir",
+      "de": "Hinzufügen",
+      "fr": "Ajouter"
+    },
+    "5a440e94d0bc": {
+      "en": "Adding...",
+      "uk": "Додавання...",
+      "pt": "Adicionando...",
+      "es": "Añadiendo...",
+      "de": "Wird hinzugefügt...",
+      "fr": "Ajout en cours..."
+    },
+    "76e9fb6aa15c": {
+      "en": "Online",
+      "pt": "Online",
+      "es": "En línea",
+      "de": "Online",
+      "fr": "En ligne"
+    },
+    "aba1153e3374": {
+      "en": "Offline",
+      "pt": "Offline",
+      "es": "Desconectado",
+      "de": "Offline",
+      "fr": "Hors ligne"
+    },
+    "ff03b9dda1ee": {
+      "en": "In room",
+      "uk": "В кімнаті",
+      "pt": "Na sala",
+      "es": "En la sala",
+      "de": "Im Raum",
+      "fr": "Dans la pièce"
+    },
+    "51aff1853949": {
+      "en": "User",
+      "uk": "Користувач",
+      "pt": "Usuário",
+      "es": "Usuario",
+      "de": "Benutzer",
+      "fr": "Utilisateur"
+    },
+    "6a567ddb48cb": {
+      "en": "About",
+      "uk": "Про нас",
+      "pt": "Sobre nós",
+      "es": "Sobre nosotros",
+      "de": "Über uns",
+      "fr": "À propos"
+    },
+    "14d8c22fbb16": {
+      "en": "Traffic Sources",
+      "uk": "Джерела трафіку",
+      "es": "Fuentes de tráfico",
+      "pt": "Fontes de tráfego",
+      "de": "Verkehrquellen",
+      "fr": "Sources de trafic"
+    },
+    "cb1c054b4404": {
+      "en": "Services",
+      "uk": "Послуги",
+      "es": "Servicios",
+      "pt": "Serviços",
+      "de": "Dienstleistungen",
+      "fr": "Services"
+    },
+    "911e40889fd1": {
+      "en": "Infrastructure",
+      "uk": "Інфраструктура",
+      "es": "Infraestructura",
+      "pt": "Infraestrutura",
+      "de": "Infrastruktur",
+      "fr": "Infrastructure"
+    },
+    "eae81bc386ca": {
+      "en": "Reddit Site",
+      "es": "Sitio Reddit",
+      "pt": "Site Reddit",
+      "de": "Reddit-Website",
+      "fr": "Site Reddit"
+    },
+    "0b0dc8dd6887": {
+      "en": "Reddit Project:",
+      "uk": "Проєкт Reddit:",
+      "es": "Proyecto Reddit:",
+      "pt": "Projeto Reddit:",
+      "de": "Reddit-Projekt:",
+      "fr": "Projet Reddit :"
+    },
+    "163d3356a3c5": {
+      "en": "Managing Model and Agency Growth on OnlyFans",
+      "uk": "Керуємо зростанням моделей та агентств на OnlyFans",
+      "es": "Gestionamos el crecimiento de modelos y agencias en OnlyFans",
+      "pt": "Gerenciamos o crescimento de modelos e agências no OnlyFans",
+      "de": "Wir steuern das Wachstum von Models und Agenturen auf OnlyFans",
+      "fr": "Nous gérons la croissance des modèles et des agences sur OnlyFans"
+    },
+    "4a999329712f": {
+      "en": "5 years working in the OnlyFans industry. During this time, we've helped launch and establish dozens of agencies worldwide, accumulated vast experience in model management, traffic generation, and monetization. We manage model growth on all major platforms and help agencies develop, applying all our accumulated expertise to achieve maximum results.",
+      "uk": "5 років роботи в індустрії OnlyFans. За цей час допомогли відкрити та запустити десятки агентств по всьому світу, зібрали величезний досвід у керуванні моделями, трафіку та монетизації. Ми керуємо зростанням моделей на всіх основних платформах і допомагаємо агентствам розвиватися, застосовуючи весь накопичений досвід для досягнення максимальних результатів.",
+      "es": "5 años en la industria. Decenas de agencias en todo el mundo. Gestionamos el crecimiento de modelos en todas las plataformas: tráfico, monetización y escalabilidad.",
+      "pt": "5 anos na indústria. Dezenas de agências pelo mundo. Gerenciamos o crescimento de modelos em todas as plataformas — tráfego, monetização, escalabilidade.",
+      "de": "5 Jahre in der Branche. Dutzende Agenturen weltweit. Wir managen das Wachstum von Models auf allen Plattformen – Traffic, Monetarisierung, Skalierung.",
+      "fr": "5 ans dans l'industrie. Des dizaines d'agences à travers le monde. Nous accompagnons la croissance des modèles sur toutes les plateformes — trafic, monétisation, développement à grande échelle."
+    },
+    "74b69f961b37": {
+      "en": "Get Started",
+      "uk": "Почати роботу",
+      "es": "Comenzar",
+      "pt": "Começar",
+      "de": "Jetzt starten",
+      "fr": "Commencer"
+    },
+    "970c38ce3abd": {
+      "en": "Fill Application",
+      "uk": "Заповнити анкету",
+      "es": "Rellenar el formulario",
+      "pt": "Preencher o formulário",
+      "de": "Fragebogen ausfüllen",
+      "fr": "Remplir le questionnaire"
+    },
+    "232c5acd062d": {
+      "en": "Income Calculator",
+      "uk": "Калькулятор доходу",
+      "es": "Calculadora de ingresos",
+      "pt": "Calculadora de rendimento",
+      "de": "Einnahmenrechner",
+      "fr": "Calculateur de revenus"
+    },
+    "c315f5fb06de": {
+      "en": "Subscribers",
+      "uk": "Підписники",
+      "es": "Seguidores",
+      "pt": "Assinantes",
+      "de": "Abonnenten",
+      "fr": "Abonnés"
+    },
+    "1d31461e2632": {
+      "en": "Price per subscription ($)",
+      "uk": "Ціна підписки ($)",
+      "es": "Precio de suscripción ($)",
+      "pt": "Preço da assinatura ($)",
+      "de": "Abonnementpreis ($)",
+      "fr": "Prix de l'abonnement ($)"
+    },
+    "ea761c16fd81": {
+      "en": "Monthly Revenue",
+      "uk": "Місячна виручка",
+      "es": "Ingresos mensuales",
+      "pt": "Receita mensal",
+      "de": "Monatlicher Umsatz",
+      "fr": "Revenu mensuel"
+    },
+    "2f44a04c8939": {
+      "en": "Agency Fee (20%)",
+      "uk": "Комісія агентства (20%)",
+      "es": "Comisión de la agencia (20%)",
+      "pt": "Comissão da agência (20%)",
+      "de": "Agenturprovision (20%)",
+      "fr": "Commission de l'agence (20%)"
+    },
+    "4bc0116aee11": {
+      "en": "Your Monthly Income",
+      "uk": "Ваш місячний дохід",
+      "es": "Tus ingresos mensuales",
+      "pt": "Seu rendimento mensal",
+      "de": "Ihr monatlicher Verdienst",
+      "fr": "Votre revenu mensuel"
+    },
+    "87051ad0016e": {
+      "en": "Yearly",
+      "uk": "Річний дохід",
+      "es": "Ingresos anuales",
+      "pt": "Rendimento anual",
+      "de": "Jahresumsatz",
+      "fr": "Revenu annuel"
+    },
+    "ffddd31c128e": {
+      "en": "Home",
+      "uk": "Головна",
+      "es": "Inicio",
+      "pt": "Início",
+      "de": "Startseite",
+      "fr": "Accueil"
+    },
+    "43a387c8c183": {
+      "en": "News",
+      "uk": "Новини",
+      "es": "Noticias",
+      "pt": "Notícias",
+      "de": "Neuigkeiten",
+      "fr": "Actualités"
+    },
+    "1f1b5eb1f898": {
+      "en": "Model Income Growth",
+      "uk": "Зростання доходу моделей",
+      "es": "Crecimiento de ingresos de modelos",
+      "pt": "Crescimento da renda das modelos",
+      "de": "Einkommenswachstum der Models",
+      "fr": "Croissance des revenus des modèles"
+    },
+    "aa02af377960": {
+      "en": "Your path to",
+      "uk": "Твій шлях до",
+      "es": "Tu camino hacia",
+      "pt": "Seu caminho para",
+      "de": "Ihr Weg zu",
+      "fr": "Votre chemin vers"
+    },
+    "0d59c8a5e2d7": {
+      "en": "Average income growth of our models in the first year",
+      "uk": "Середнє зростання доходу наших моделей за перший рік роботи",
+      "es": "Crecimiento promedio de ingresos de nuestras modelos en el primer año de trabajo",
+      "pt": "Crescimento médio de rendimento de nossas modelos no primeiro ano de trabalho",
+      "de": "Durchschnittliches Einkommenswachstum unserer Models im ersten Jahr",
+      "fr": "Croissance moyenne des revenus de nos modèles la première année"
+    },
+    "c70ec86b64ed": {
+      "en": "Start",
+      "es": "Comenzar",
+      "pt": "Início",
+      "de": "Start",
+      "fr": "Démarrer"
+    },
+    "9419dcd40b37": {
+      "en": "6 months",
+      "uk": "6 місяців",
+      "es": "6 meses",
+      "pt": "6 meses",
+      "de": "6 Monate",
+      "fr": "6 mois"
+    },
+    "5e6213f4a6a8": {
+      "en": "12 months",
+      "uk": "12 місяців",
+      "es": "12 meses",
+      "pt": "12 meses",
+      "de": "12 Monate",
+      "fr": "12 mois"
+    },
+    "e558fb6e24c6": {
+      "en": "Month",
+      "uk": "Місяць",
+      "es": "Mes",
+      "pt": "Mês",
+      "de": "Monat",
+      "fr": "Mois"
+    },
+    "7e427795b548": {
+      "en": "Learn More",
+      "uk": "Докладніше",
+      "es": "Más información",
+      "pt": "Mais detalhes",
+      "de": "Mehr erfahren",
+      "fr": "En savoir plus"
+    },
+    "1e7967a6d65a": {
+      "en": "TikTok (farms)",
+      "uk": "TikTok (ферми)",
+      "es": "TikTok (granjas)",
+      "pt": "TikTok (farms)",
+      "de": "TikTok (Farms)",
+      "fr": "TikTok (fermes)"
+    },
+    "ebbba5fd992d": {
+      "en": "UGC networks, Spark Ads, systematic creative and vertical testing.",
+      "uk": "UGC-мережі, Spark Ads, системне тестування креативів і вертикалей.",
+      "es": "Redes UGC, Spark Ads, prueba sistemática de creatividades y verticales.",
+      "pt": "Redes UGC, Spark Ads, teste sistemático de criativos e verticais.",
+      "de": "UGC-Grids, Spark Ads, systematischer Test von Creatives und Vertikalen.",
+      "fr": "Réseaux UGC, Spark Ads, tests systématiques de créatifs et de verticales."
+    },
+    "a00743fae2b4": {
+      "en": "Instagram (mobile farms)",
+      "uk": "Instagram (моб. ферми)",
+      "es": "Instagram (granjas móviles)",
+      "pt": "Instagram (farms móveis)",
+      "de": "Instagram (Mobile Farms)",
+      "fr": "Instagram (fermes mobiles)"
+    },
+    "958a8162795d": {
+      "en": "Mobile farms, reels, warm-up, auto-funnels and secure setups.",
+      "uk": "Мобільні ферми, рілси, прогрів, автоворонки та безпечні сетапи.",
+      "es": "Granjas móviles, reels, calentamiento, embudos automáticos y configuraciones seguras.",
+      "pt": "Farms móveis, reels, aquecimento, funis automatizados e setups seguros.",
+      "de": "Mobile Farms, Reels, Warm-up, Auto-Funnels und sichere Setups.",
+      "fr": "Fermes mobiles, reels, préchauffage, entonnoirs automatiques et setups sécurisés."
+    },
+    "3b4dcfa87f52": {
+      "en": "NSFW-friendly: threads, media, audience growth and warm-up.",
+      "uk": "NSFW-friendly: треди, медіа, зростання аудиторії та прогрів.",
+      "es": "Apto para NSFW: hilos, medios, crecimiento de audiencia y calentamiento.",
+      "pt": "NSFW-friendly: threads, mídia, crescimento de audiência e aquecimento.",
+      "de": "NSFW-freundlich: Threads, Medien, Publikumsaufbau und Warm-up.",
+      "fr": "NSFW-friendly : fils de discussion, médias, croissance de l'audience et préchauffage."
+    },
+    "0ffcd8731bd6": {
+      "en": "Chat leads, fast sales, SFS and advertising networks.",
+      "uk": "Ліди в чат, швидкі продажі, SFS та рекламні мережі.",
+      "es": "Leads en chat, ventas rápidas, SFS y redes publicitarias.",
+      "pt": "Leads no chat, vendas rápidas, SFS e redes publicitárias.",
+      "de": "Leads im Chat, schnelle Verkäufe, SFS und Werbe-Grids.",
+      "fr": "Leads dans le chat, ventes rapides, SFS et réseaux publicitaires."
+    },
+    "396d21bd617c": {
+      "en": "Dating (Tinder etc.)",
+      "uk": "Dating (Tinder тощо)",
+      "es": "Dating (Tinder y otros)",
+      "pt": "Dating (Tinder e outros)",
+      "de": "Dating (Tinder u. a.)",
+      "fr": "Dating (Tinder et autres)"
+    },
+    "e784256d943d": {
+      "en": "Dating conversions to offers and warm dialogues with high monetization.",
+      "uk": "Дейтингові конверсії в оффери та теплі діалоги з високою монетизацією.",
+      "es": "Conversiones de citas en ofertas y diálogos cálidos con alta monetización.",
+      "pt": "Conversões em ofertas de namoro e diálogos quentes com alta monetização.",
+      "de": "Dating-Conversions in Angebote und warme Dialoge mit hoher Monetarisierung.",
+      "fr": "Conversions dating vers des offres et dialogues chaleureux à forte monétisation."
+    },
+    "2298d39202ee": {
+      "en": "Google/Meta (where possible), pre-landing, retargeting and attribution.",
+      "uk": "Google/Meta (де можливо), pre-landing, ретаргет та атрибуція.",
+      "es": "Google/Meta (donde sea posible), pre-landing, remarketing y atribución.",
+      "pt": "Google/Meta (onde possível), pre-landing, remarketing e atribuição.",
+      "de": "Google/Meta (wo möglich), Pre-Landing, Remarketing und Attribution.",
+      "fr": "Google/Meta (là où possible), pre-landing, remarketing et attribution."
+    },
+    "696f380febb2": {
+      "en": "Landing pages, indexing, search traffic and content clusters.",
+      "uk": "Прокладки, індексація, трафік з пошуку та контент-кластери.",
+      "es": "Intermedios, indexación, tráfico desde búsquedas y clústeres de contenido.",
+      "pt": "Ponteiras, indexação, tráfego de busca e clusters de conteúdo.",
+      "de": "Landingpages, Indexierung, Suchverkehr und Content-Cluster.",
+      "fr": "Intermédiaires, indexation, trafic issu du moteur de recherche et clusters de contenu."
+    },
+    "7ddb6b0d5c35": {
+      "en": "Collaborations, mutual warm-ups and cross traffic.",
+      "uk": "Колаборації, взаємні прогріви та перехресний трафік.",
+      "es": "Colaboraciones, calentamientos mutuos y tráfico cruzado.",
+      "pt": "Colaborações, aquecimentos mútuos e tráfego cruzado.",
+      "de": "Kollaborationen, gegenseitiges Warm-up und Cross-Traffic.",
+      "fr": "Collaborations, préchauffages croisés et trafic croisé."
+    },
+    "5b42314fae54": {
+      "en": "All information transferred — visit onlyreddit.com.",
+      "uk": "Вся інформація перенесена — переходьте на onlyreddit.com.",
+      "es": "Toda la información ha sido trasladada — pase a onlyreddit.com.",
+      "pt": "Todas as informações foram transferidas — acesse onlyreddit.com.",
+      "de": "Alle Informationen wurden verschoben – wechseln Sie zu onlyreddit.com.",
+      "fr": "Toutes les informations ont été transférées — rendez-vous sur onlyreddit.com."
+    },
+    "e2a19bbf9cd9": {
+      "en": "Themes",
+      "uk": "Теми",
+      "es": "Temas",
+      "pt": "Tópicos",
+      "de": "Themen",
+      "fr": "Thèmes"
+    },
+    "cebd5a533252": {
+      "en": "Crypto Unlock",
+      "uk": "Розблокування крипти",
+      "es": "Desbloqueo de cripto",
+      "pt": "Desbloqueio de cripto",
+      "de": "Entsperrung von Kryptowährung",
+      "fr": "Déblocage de cryptomonnaie"
+    },
+    "a71baa0866ec": {
+      "en": "Unlocking cryptocurrency payments on Fansly. 70+ successful cases. Unlock within 24 hours with guarantee.",
+      "uk": "Розблокування криптовалютних платежів на Fansly. 70+ успішних кейсів. Розблокування за 24 години з гарантією.",
+      "es": "Desbloqueo de pagos en criptomonedas en Fansly. 70+ casos exitosos. Desbloqueo en 24 horas con garantía.",
+      "pt": "Desbloqueio de pagamentos em criptomoedas no Fansly. 70+ casos de sucesso. Desbloqueio em 24 horas com garantia.",
+      "de": "Entsperrung von Kryptozahlungen auf Fansly. 70+ erfolgreiche Fälle. Entsperrung innerhalb von 24 Stunden mit Garantie.",
+      "fr": "Déblocage des paiements cryptos sur Fansly. 70+ cas réussis. Déblocage en 24 heures avec garantie."
+    },
+    "fb666ac75e5e": {
+      "en": "Full range of traffic sources for OnlyFans: TikTok, Instagram, X/Twitter, Telegram, Dating, PPC, SEO and others.",
+      "uk": "Повний спектр джерел трафіку для OnlyFans: TikTok, Instagram, X/Twitter, Telegram, Dating, PPC, SEO та інші.",
+      "es": "Amplio espectro de fuentes de tráfico para OnlyFans: TikTok, Instagram, X/Twitter, Telegram, Dating, PPC, SEO y más.",
+      "pt": "Escala completa de fontes de tráfego para OnlyFans: TikTok, Instagram, X/Twitter, Telegram, Dating, PPC, SEO e outros.",
+      "de": "Vollständiges Spektrum an Verkehrsquellen für OnlyFans: TikTok, Instagram, X/Twitter, Telegram, Dating, PPC, SEO und mehr.",
+      "fr": "Gamme complète de sources de trafic pour OnlyFans : TikTok, Instagram, X/Twitter, Telegram, Dating, PPC, SEO et autres."
+    },
+    "f227d2884e91": {
+      "en": "RF/CIS Model Verification",
+      "uk": "Верифікація моделей РФ/СНД",
+      "es": "Verificación modelos RU/CIS",
+      "pt": "Verificação de modelos RÚ/CIS",
+      "de": "Verifizierung von Modellen aus Russland/GUS",
+      "fr": "Vérification modèles RU/CIS"
+    },
+    "539c0a45daf0": {
+      "en": "Ready OnlyFans with crypto withdrawal. Assistance with OF + SKRILL + PAXUM verification from home.",
+      "uk": "Готовий OnlyFans з виведенням в крипту. Допомога з верифікацією OF + SKRILL + PAXUM не виходячи з дому.",
+      "es": "OnlyFans listo con retiro en cripto. Ayuda con verificación OF + SKRILL + PAXUM sin salir de casa.",
+      "pt": "OnlyFans pronto com saque em cripto. Ajuda com verificação OF + SKRILL + PAXUM sem sair de casa.",
+      "de": "Fertiges OnlyFans mit Auszahlung in Krypto. Hilfe bei der Verifizierung von OF + SKRILL + PAXUM, ohne das Haus zu verlassen.",
+      "fr": "Compte OnlyFans prêt à l'emploi avec retrait en crypto. Aide à la vérification OF + SKRILL + PAXUM depuis chez vous."
+    },
+    "e9bb5d2c4208": {
+      "en": "Partnership Program",
+      "uk": "Партнерська програма",
+      "es": "Programa de afiliados",
+      "pt": "Programa de afiliados",
+      "de": "Partnerprogramm",
+      "fr": "Programme partenaire"
+    },
+    "190c706bffed": {
+      "en": "40% from each video. $300 first month | $1,000+ after 3 months. Automated passive income.",
+      "uk": "40% з кожного ролика. $300 перший місяць | $1,000+ через 3 місяці. Пасивний дохід на автоматі.",
+      "es": "40% por cada video. $300 el primer mes | +$1,000 a los 3 meses. Ingresos pasivos en automático.",
+      "pt": "40% de cada vídeo. $300 no primeiro mês | $1.000+ em 3 meses. Renda passiva automática.",
+      "de": "40 % von jedem Video. $300 im ersten Monat | $1.000+ nach 3 Monaten. Passives Einkommen automatisch.",
+      "fr": "40% sur chaque vidéo. 300 $ le premier mois | +1 000 $ après 3 mois. Revenu passif en automatique."
+    },
+    "57da2cc1e6f0": {
+      "en": "Dubai Residency",
+      "uk": "ВНЖ в Дубаї",
+      "es": "Residencia en Dubái",
+      "pt": "Residência nos Emirados Árabes",
+      "de": "Daueraufenthalt in Dubai",
+      "fr": "Résidence permanente à Dubaï"
+    },
+    "d348f84597d4": {
+      "en": "ID Dubai processing in 10-14 days. Full process support from A to Z. 100% guarantee.",
+      "uk": "Оформлення ID Dubai за 10-14 днів. Повний супровід процесу від А до Я. Гарантія 100%.",
+      "es": "Trámite ID Dubai en 10-14 días. Gestión completa del proceso de principio a fin. Garantía 100%.",
+      "pt": "Emissão do ID Dubai em 10-14 dias. Acompanhamento completo do processo do início ao fim. Garantia 100%.",
+      "de": "Beantragung der ID Dubai innerhalb von 10–14 Tagen. Vollständige Begleitung des gesamten Prozesses von A bis Z. 100 % Garantie.",
+      "fr": "Obtention du ID Dubai en 10-14 jours. Accompagnement complet du processus de A à Z. Garantie 100%."
+    },
+    "9f0b08bcfa00": {
+      "en": "Webcam Services",
+      "uk": "Вебкам послуги",
+      "es": "Servicios de webcam",
+      "pt": "Serviços para modelos de webcam",
+      "de": "Webcam-Dienstleistungen",
+      "fr": "Services webcam"
+    },
+    "a5b1f500a227": {
+      "en": "Work on 7 sites with personal operator. Relocation to Georgia. Payments twice a month.",
+      "uk": "Робота на 7 сайтах з персональним оператором. Релокація до Грузії. Виплати 2 рази на місяць.",
+      "es": "Trabaja en 7 sitios con operador personal. Reubicación a Georgia. Pagos 2 veces al mes.",
+      "pt": "Trabalho em 7 sites com operador pessoal. Realocação na Geórgia. Pagamentos 2 vezes por mês.",
+      "de": "Arbeit auf 7 Websites mit persönlichem Operator. Umzug nach Georgien. Auszahlungen zweimal monatlich.",
+      "fr": "Travail sur 7 sites avec opérateur personnel. Relocalisation en Géorgie. Paiements 2 fois par mois."
+    },
+    "d72bde9fdf08": {
+      "en": "Automation and Software",
+      "uk": "Автоматизація та Софти",
+      "es": "Automatización y Software",
+      "pt": "Automação e Softwares",
+      "de": "Automatisierung und Software",
+      "fr": "Automatisation et logiciels"
+    },
+    "0268ea38d285": {
+      "en": "Instagram farms for OnlyFans traffic. 200-400+ accounts / device. AI live 24/7.",
+      "uk": "Instagram ферм для трафіку на OnlyFans. 200-400+ акаунтів / пристрій. ШІ в лайві 24/7.",
+      "es": "Granjas de Instagram para tráfico a OnlyFans. 200-400+ cuentas/dispositivo. IA en vivo 24/7.",
+      "pt": "Fazendas de Instagram para tráfego no OnlyFans. 200-400+ contas / dispositivo. IA no live 24/7.",
+      "de": "Instagram-Farmen für Traffic auf OnlyFans. 200–400+ Konten pro Gerät. KI im Live-Chat 24/7.",
+      "fr": "Ferme Instagram pour le trafic vers OnlyFans. 200-400+ comptes / appareil. IA en live 24/7."
+    },
+    "a50e597f763a": {
+      "en": "Platform for buying and selling model contacts. 14-day guarantee. Model statuses. Secure transactions.",
+      "uk": "Площадка купівлі та продажу контактів моделей. Гарантія 14 днів. Статуси моделей. Захищені угоди.",
+      "es": "Plataforma para comprar y vender contactos de modelos. Garantía de 14 días. Estados de modelos. Transacciones seguras.",
+      "pt": "Plataforma para compra e venda de contatos de modelos. Garantia de 14 dias. Status de modelos. Negociações seguras.",
+      "de": "Plattform zum Kauf und Verkauf von Kontakten von Modellen. 14-tägige Garantie. Model-Status. Sichere Transaktionen.",
+      "fr": "Plateforme d'achat et de vente de contacts de modèles. Garantie 14 jours. Statuts des modèles. Transactions sécurisées."
+    },
+    "2df88f82050e": {
+      "en": "Our Services",
+      "uk": "Наші послуги",
+      "es": "Nuestros servicios",
+      "pt": "Nossos serviços",
+      "de": "Unsere Leistungen",
+      "fr": "Nos services"
+    },
+    "3b261347887a": {
+      "en": "All Services",
+      "uk": "Усі послуги",
+      "es": "Todos los servicios",
+      "pt": "Todos os serviços",
+      "de": "Alle Leistungen",
+      "fr": "Tous les services"
+    },
+    "2dc6abcb31bc": {
+      "en": "Full range of services for successful work on OnlyFans",
+      "uk": "Повний спектр послуг для успішної роботи на OnlyFans",
+      "es": "Amplio espectro de servicios para trabajar con éxito en OnlyFans",
+      "pt": "Escala completa de serviços para trabalhar com sucesso no OnlyFans",
+      "de": "Vollständiges Dienstleistungsspektrum für erfolgreiche Arbeit auf OnlyFans",
+      "fr": "Gamme complète de services pour réussir sur OnlyFans"
+    },
+    "12897790495a": {
+      "en": "How it Works",
+      "uk": "Як це працює",
+      "es": "Cómo funciona",
+      "pt": "Como funciona",
+      "de": "So funktioniert's",
+      "fr": "Comment ça marche"
+    },
+    "a400bfea842a": {
+      "en": "Consultation",
+      "uk": "Консультація",
+      "es": "Consulta",
+      "pt": "Consulta",
+      "de": "Beratung",
+      "fr": "Consultation"
+    },
+    "ce7fefc71221": {
+      "en": "Free consultation and selection of optimal service package",
+      "uk": "Безкоштовна консультація та підбір оптимального пакету послуг",
+      "es": "Consulta gratuita y selección del paquete ideal",
+      "pt": "Consulta gratuita e escolha do pacote ideal de serviços",
+      "de": "Kostenlose Beratung und passende Paketauswahl",
+      "fr": "Consultation gratuite et sélection du forfait idéal"
+    },
+    "0d91beec439d": {
+      "en": "Setup",
+      "uk": "Налаштування",
+      "es": "Configuración",
+      "pt": "Configuração",
+      "de": "Einrichtung",
+      "fr": "Configuration"
+    },
+    "444db76211b4": {
+      "en": "We set up all necessary systems and tools",
+      "uk": "Налаштовуємо всі необхідні системи та інструменти",
+      "es": "Configuramos todos los sistemas y herramientas necesarios",
+      "pt": "Configuramos todos os sistemas e ferramentas necessários",
+      "de": "Wir richten alle notwendigen Systeme und Tools ein",
+      "fr": "Mise en place de tous les systèmes et outils nécessaires"
+    },
+    "c001fc7717d4": {
+      "en": "Launch",
+      "es": "Lanzamiento",
+      "pt": "Lançamento",
+      "de": "Start",
+      "fr": "Lancement"
+    },
+    "d15b1f4f7ff9": {
+      "en": "Launch campaigns and start working",
+      "uk": "Запуск кампаній та початок роботи",
+      "es": "Lanzamiento de campañas y comienzo del trabajo",
+      "pt": "Lançamento de campanhas e início do trabalho",
+      "de": "Kampagnenstart und Arbeitsbeginn",
+      "fr": "Lancement de campagnes et démarrage"
+    },
+    "09dfe6d3f5c9": {
+      "en": "Growth",
+      "uk": "Зростання",
+      "es": "Crecimiento",
+      "pt": "Crescimento",
+      "de": "Wachstum",
+      "fr": "Croissance"
+    },
+    "451eed01d997": {
+      "en": "Continuous optimization and scaling",
+      "uk": "Постійна оптимізація та масштабування",
+      "es": "Optimización y escalado continuos",
+      "pt": "Otimização e escalonamento contínuos",
+      "de": "Ständige Optimierung und Skalierung",
+      "fr": "Optimisation et montée en échelle continues"
+    },
+    "2ca35c43591d": {
+      "en": "Ready to Start?",
+      "uk": "Готові почати?",
+      "es": "¿Listos para comenzar?",
+      "pt": "Pronto para começar?",
+      "de": "Bereit anzufangen?",
+      "fr": "Prêt(e) à commencer ?"
+    },
+    "032ea6b9641e": {
+      "en": "Contact us for a free consultation",
+      "uk": "Зв'яжіться з нами для безкоштовної консультації",
+      "es": "Contáctanos para una consulta gratuita",
+      "pt": "Entre em contato conosco para uma consulta gratuita",
+      "de": "Kontaktiere uns für eine kostenlose Beratung",
+      "fr": "Contactez-nous pour une consultation gratuite"
+    },
+    "ad7fec729506": {
+      "en": "40% from each video. Automated passive income",
+      "uk": "40% з кожного ролика. Пасивний дохід на автоматі",
+      "es": "40% de cada clip. Ingresos pasivos en piloto automático",
+      "pt": "40% de cada vídeo. Renda passiva automática",
+      "de": "40 % von jedem Video. Passives Einkommen im Automatikmodus",
+      "fr": "40 % sur chaque vidéo. Revenu passif en pilotage automatique"
+    },
+    "ae3aafdba65e": {
+      "en": "Fansly/OnlyFans unlock within 24 hours",
+      "uk": "Fansly/OnlyFans розблокування за 24 години",
+      "es": "Desbloqueo de Fansly/OnlyFans en 24 horas",
+      "pt": "Desbloqueio do Fansly/OnlyFans em 24 horas",
+      "de": "Fansly/OnlyFans-Entsperrung innerhalb von 24 Stunden",
+      "fr": "Déblocage Fansly/OnlyFans en 24 heures"
+    },
+    "01bfdd503355": {
+      "en": "Model Verification",
+      "uk": "Верифікація моделей",
+      "es": "Verificación de modelos",
+      "pt": "Verificação de modelos",
+      "de": "Modell-Verifizierung",
+      "fr": "Vérification des modèles"
+    },
+    "8b8c0a0388aa": {
+      "en": "Ready OnlyFans with crypto withdrawal",
+      "uk": "Готовий OnlyFans з виведенням в крипту",
+      "es": "OnlyFans listo con retiro en cripto",
+      "pt": "OnlyFans pronto com saque em cripto",
+      "de": "Fertiger OnlyFans mit Auszahlung in Kryptowährung",
+      "fr": "OnlyFans prêt à l'emploi avec retrait en cryptomonnaie"
+    },
+    "e9c5fa128cf4": {
+      "en": "ID Dubai processing in 10-14 days",
+      "uk": "Оформлення ID Dubai за 10-14 днів",
+      "es": "Obtención del ID de Dubái en 10-14 días",
+      "pt": "Obtenção do ID Dubai em 10-14 dias",
+      "de": "Beantragung der ID Dubai innerhalb von 10–14 Tagen",
+      "fr": "Obtention de l'ID Dubaï en 10-14 jours"
+    },
+    "d963beb07d3f": {
+      "en": "Work on 7 sites with personal operator",
+      "uk": "Робота на 7 сайтах з персональним оператором",
+      "es": "Trabaja en 7 sitios con un operador personal",
+      "pt": "Trabalhe em 7 sites com operador pessoal",
+      "de": "Arbeit auf 7 Websites mit persönlichem Operator",
+      "fr": "Travail sur 7 sites avec opérateur personnel"
+    },
+    "8c7b22f59b11": {
+      "en": "Instagram farms with AI live 24/7",
+      "uk": "Instagram ферми з ШІ в лайві 24/7",
+      "es": "Granjas de Instagram con IA en directo 24/7",
+      "pt": "Fazendas Instagram com IA em live 24/7",
+      "de": "Instagram-Farmen mit KI im Live-Lauf 24/7",
+      "fr": "Fermes Instagram avec IA en direct 24h/24"
+    },
+    "f6dab074d7bb": {
+      "en": "Back",
+      "es": "Atrás",
+      "pt": "Voltar",
+      "de": "Zurück",
+      "fr": "Retour"
+    },
+    "dee4019853c9": {
+      "en": "Contact on Telegram",
+      "uk": "Зв'язатися в Telegram",
+      "es": "Contactar por Telegram",
+      "pt": "Entrar em contato no Telegram",
+      "de": "Kontakt über Telegram",
+      "fr": "Contacter via Telegram"
+    },
+    "2937b5264c7b": {
+      "en": "AI Assistant",
+      "uk": "AI Помічник",
+      "es": "Asistente de IA",
+      "pt": "Assistente AI",
+      "de": "KI-Assistent",
+      "fr": "Assistant IA"
+    },
+    "281182de110e": {
+      "en": "Site Navigation",
+      "uk": "Навігація по сайту",
+      "es": "Navegación por el sitio",
+      "pt": "Navegação no site",
+      "de": "Navigation auf der Website",
+      "fr": "Navigation sur le site"
+    },
+    "ed1075b9a4f1": {
+      "en": "Type a message...",
+      "uk": "Введіть повідомлення...",
+      "es": "Escribe un mensaje...",
+      "pt": "Digite sua mensagem...",
+      "de": "Nachricht eingeben...",
+      "fr": "Saisissez un message..."
+    },
+    "26584f772462": {
+      "en": "Hello! I'll help you find information on the site.",
+      "uk": "Привіт! Я допоможу тобі знайти інформацію на сайті.",
+      "es": "¡Hola! Te ayudaré a encontrar información en el sitio.",
+      "pt": "Olá! Posso te ajudar a encontrar informações no site.",
+      "de": "Hallo! Ich helfe dir, Informationen auf der Website zu finden.",
+      "fr": "Bonjour ! Je peux t'aider à trouver des informations sur le site."
+    },
+    "2ae353651c5e": {
+      "en": "Ask me about our services, prices or contacts.",
+      "uk": "Запитай мене про наші послуги, ціни або контакти.",
+      "es": "Pregúntame sobre nuestros servicios, precios o contactos.",
+      "pt": "Pergunte-me sobre nossos serviços, preços ou contatos.",
+      "de": "Fragen Sie mich nach unseren Dienstleistungen, Preisen oder Kontakten.",
+      "fr": "Demande-moi tout sur nos services, prix ou coordonnées."
+    },
+    "bda1e4f4b67f": {
+      "en": "If I can't answer - I'll direct you to Telegram",
+      "uk": "Якщо не можу відповісти - направлю в Telegram",
+      "es": "Si no puedo responder, te redirigiré a Telegram",
+      "pt": "Se não conseguir responder, encaminharei para o Telegram",
+      "de": "Wenn ich nicht antworten kann, leite ich Sie an Telegram weiter",
+      "fr": "Si je ne peux pas répondre, je t'envoie sur Telegram"
+    },
+    "1fd2b68a3b9d": {
+      "en": "All rights reserved.",
+      "uk": "Всі права захищені.",
+      "es": "Todos los derechos reservados.",
+      "pt": "Todos os direitos reservados.",
+      "de": "Alle Rechte vorbehalten.",
+      "fr": "Tous droits réservés."
+    },
+    "07373cfeddfa": {
+      "en": "Get in Touch",
+      "uk": "Зв'яжіться з нами",
+      "es": "Contáctanos",
+      "pt": "Entre em contato conosco",
+      "de": "Kontaktieren Sie uns",
+      "fr": "Contactez-nous"
+    },
+    "752011c1f961": {
+      "en": "Top Offers in High Demand",
+      "uk": "Топ пропозицій, що користуються попитом",
+      "es": "Las mejores ofertas más demandadas",
+      "pt": "Top ofertas populares",
+      "de": "Die beliebtesten Angebote",
+      "fr": "Top offres populaires"
+    },
+    "f5b2f48169a1": {
+      "en": "Partnership — 40% passive income",
+      "uk": "Партнерка — 40% пасив",
+      "es": "Programa de afiliados: 40% de pasivo",
+      "pt": "Parceria — 40% passivo",
+      "de": "Partnerprogramm – 40 % passiv",
+      "fr": "Partenaire — 40 % de revenus passifs"
+    },
+    "d1f744ad55b7": {
+      "en": "Fansly Crypto Withdrawal Unlock",
+      "uk": "Розблокування виводу в крипту Fansly",
+      "es": "Desbloqueo de retiros en cripto para Fansly",
+      "pt": "Desbloqueio de saque em cripto no Fansly",
+      "de": "Entsperrung der Auszahlung in Kryptowährung für Fansly",
+      "fr": "Déblocage des retraits en cryptomonnaie sur Fansly"
+    },
+    "d7881b04eea9": {
+      "en": "OF Verification for RF & CIS (even with FACEBAN)",
+      "uk": "Верифікація OF для РФ і СНД (навіть з FACEBAN)",
+      "es": "Verificación de OnlyFans para RU y CEI (incluso con FACEBAN)",
+      "pt": "Verificação OF para Rússia e CEI (mesmo com FACEBAN)",
+      "de": "OF-Verifizierung für Russland und GUS (auch mit FACEBAN)",
+      "fr": "Vérification OF pour la Russie et la CEI (même avec FACEBAN)"
+    },
+    "03901777cd85": {
+      "en": "Looking for models for multi-platform work",
+      "uk": "Шукаємо моделей для роботи на платформах",
+      "es": "Buscamos modelos para OnlyFans / Fansly / 4based / MYM / FanCentro / Meloum / Fanvu / LoyalFans / ManyVids / F4F / Twitch / Kick",
+      "pt": "Estamos procurando modelos para OnlyFans / Fansly / 4based / MYM / FanCentro / Meloum / Fanvu / LoyalFans / ManyVids / F4F / Twitch / Kick",
+      "de": "Suchen Models für OnlyFans / Fansly / 4based / MYM / Meloum / FanCentro / Fanvu / LoyalFans / ManyVids / F4F / Twitch / Kick",
+      "fr": "Nous recrutons des modèles pour OnlyFans / Fansly / 4based / MYM / FanCentro / Meloum / Fanvu / LoyalFans / ManyVids / F4F / Twitch / Kick"
+    },
+    "c8f82502def5": {
+      "en": "Application for New Models",
+      "uk": "Анкета для нових моделей",
+      "es": "Formulario para nuevas modelos",
+      "pt": "Formulário para novas modelos",
+      "de": "Anmeldung für neue Models",
+      "fr": "Formulaire pour nouveaux modèles"
+    },
+    "3f66ab2f21bc": {
+      "en": "Fill out the form and start earning with us",
+      "uk": "Заповни анкету і почни заробляти з нами",
+      "es": "Completa el formulario y comienza a ganar con nosotros",
+      "pt": "Preencha o formulário e comece a ganhar com a gente",
+      "de": "Fülle den Fragebogen aus und beginne mit uns zu verdienen",
+      "fr": "Remplis le formulaire et commence à gagner avec nous"
+    },
+    "b5e6402aa3f8": {
+      "en": "Start Earning",
+      "uk": "Почни заробляти",
+      "es": "Comienza a ganar",
+      "pt": "Comece a ganhar",
+      "de": "Beginne zu verdienen",
+      "fr": "Commence à gagner"
+    },
+    "b75926325734": {
+      "en": "Ready to Increase Your Income?",
+      "uk": "Готова збільшити свій дохід?",
+      "es": "¿Lista para aumentar tus ingresos?",
+      "pt": "Pronta para aumentar sua renda?",
+      "de": "Bereit, dein Einkommen zu steigern?",
+      "fr": "Prête à augmenter tes revenus ?"
+    },
+    "174a5af441aa": {
+      "en": "Fill out the application and our team will contact you within 24 hours",
+      "uk": "Заповни анкету і наша команда зв'яжеться з тобою протягом 24 годин",
+      "es": "Completa el formulario y nuestro equipo se pondrá en contacto contigo en menos de 24 horas",
+      "pt": "Preencha o formulário e nossa equipe entrará em contato em até 24 horas",
+      "de": "Fülle den Fragebogen aus – unser Team meldet sich innerhalb von 24 Stunden bei dir",
+      "fr": "Remplis le formulaire et notre équipe te contactera sous 24 heures"
+    },
+    "3af719b02e9b": {
+      "en": "Success Stories",
+      "uk": "Історії успіху",
+      "es": "Historias de éxito",
+      "pt": "Histórias de sucesso",
+      "de": "Erfolgsgeschichten",
+      "fr": "Histoires à succès"
+    },
+    "cedb8fe81edb": {
+      "en": "Real Results from Real Models",
+      "uk": "Реальні результати від реальних моделей",
+      "es": "Resultados reales de modelos reales",
+      "pt": "Resultados reais de modelos reais",
+      "de": "Echte Ergebnisse von echten Models",
+      "fr": "Des résultats réels de modèles réels"
+    },
+    "3d987a9c8bba": {
+      "en": "See how our models transformed their income",
+      "uk": "Подивіться, як наші моделі трансформували свій дохід",
+      "es": "Mira cómo nuestras modelos transformaron sus ingresos",
+      "pt": "Veja como nossas modelos transformaram seus ganhos",
+      "de": "Sieh, wie unsere Models ihr Einkommen transformiert haben",
+      "fr": "Découvre comment nos modèles ont transformé leurs revenus"
+    },
+    "1520dcf50638": {
+      "en": "Before",
+      "es": "Antes",
+      "pt": "Antes",
+      "de": "Vorher",
+      "fr": "Avant"
+    },
+    "47e08058d2b7": {
+      "en": "After",
+      "uk": "Після",
+      "es": "Después",
+      "pt": "Depois",
+      "de": "Nachher",
+      "fr": "Après"
+    },
+    "a98e59f2728b": {
+      "en": "in",
+      "es": "en",
+      "pt": "por",
+      "de": "in",
+      "fr": "en"
+    },
+    "447f67839837": {
+      "en": "months",
+      "uk": "місяців",
+      "es": "meses",
+      "pt": "meses",
+      "de": "Monaten",
+      "fr": "mois"
+    },
+    "2d6a3f777089": {
+      "en": "Apollo Production transformed my career. In 6 months, my income increased 15x!",
+      "uk": "Apollo Production змінило мою кар'єру. За 6 місяців мій дохід виріс у 15 разів!",
+      "es": "Apollo Production ha cambiado mi carrera. ¡En 6 meses mis ingresos aumentaron 15 veces!",
+      "pt": "A Apollo Production mudou minha carreira. Em 6 meses, minha renda aumentou 15 vezes!",
+      "de": "Apollo Production hat meine Karriere verändert. In 6 Monaten stieg mein Einkommen um das 15-fache!",
+      "fr": "Apollo Production a transformé ma carrière. En 6 mois, mes revenus ont été multipliés par 15 !"
+    },
+    "2571e506430d": {
+      "en": "Professional team, excellent traffic sources, and constant support. Best decision I made!",
+      "uk": "Професійна команда, чудові джерела трафіку та постійна підтримка. Найкраще рішення!",
+      "es": "Equipo profesional, excelentes fuentes de tráfico y soporte constante. ¡La mejor decisión!",
+      "pt": "Equipe profissional, excelentes fontes de tráfego e suporte constante. A melhor decisão!",
+      "de": "Professionelles Team, hervorragende Trafficquellen und ständige Unterstützung. Die beste Entscheidung!",
+      "fr": "Une équipe professionnelle, d'excellentes sources de trafic et un soutien constant. La meilleure décision !"
+    },
+    "ad81885bc24a": {
+      "en": "The agency handles everything - I just focus on content. Results speak for themselves!",
+      "uk": "Агентство бере все на себе - я просто створюю контент. Результати говорять самі за себе!",
+      "es": "La agencia se encarga de todo: yo solo creo contenido. ¡Los resultados hablan por sí solos!",
+      "pt": "A agência cuida de tudo — eu só crio conteúdo. Os resultados falam por si!",
+      "de": "Die Agentur übernimmt alles – ich erstelle nur Inhalte. Die Ergebnisse sprechen für sich!",
+      "fr": "L'agence s'occupe de tout — je n'ai qu'à créer du contenu. Les résultats parlent d'eux-mêmes !"
+    },
+    "99bed4a6027f": {
+      "en": "Cryptocurrency Unlock",
+      "uk": "Розблокування криптовалюти",
+      "es": "Desbloqueo de criptomonedas",
+      "pt": "Desbloqueio de criptomoedas",
+      "de": "Entsperrung von Kryptowährungen",
+      "fr": "Déblocage de cryptomonnaie"
+    },
+    "26945963bc2a": {
+      "en": "Professional cryptocurrency payment unlock on Fansly. Fast, secure, with guarantee.",
+      "uk": "Професійне розблокування криптовалютних платежів на Fansly. Швидко, безпечно, з гарантією.",
+      "es": "Desbloqueo profesional de pagos en criptomonedas en Fansly. Rápido, seguro y con garantía.",
+      "pt": "Desbloqueio profissional de pagamentos em criptomoedas na Fansly. Rápido, seguro e com garantia.",
+      "de": "Professionelle Entsperrung von Kryptowährungszahlungen auf Fansly. Schnell, sicher und mit Garantie.",
+      "fr": "Déblocage professionnel des paiements en cryptomonnaie sur Fansly. Rapide, sécurisé, avec garantie."
+    },
+    "e14e414b7183": {
+      "en": "24 Hours",
+      "uk": "24 години",
+      "es": "24 horas",
+      "pt": "24 horas",
+      "de": "24 Stunden",
+      "fr": "24 heures"
+    },
+    "587f13e72ad6": {
+      "en": "Unlock within 24 hours from request",
+      "uk": "Розблокування за 24 години з моменту звернення",
+      "es": "Desbloqueo en 24 horas desde el momento de la solicitud",
+      "pt": "Desbloqueio em até 24 horas após o contato",
+      "de": "Entsperrung innerhalb von 24 Stunden nach Kontaktaufnahme",
+      "fr": "Déblocage en 24 heures suivant la demande"
+    },
+    "dd398c316e89": {
+      "en": "70+ Cases",
+      "uk": "70+ кейсів",
+      "es": "70+ casos",
+      "pt": "70+ casos",
+      "de": "70+ Fälle",
+      "fr": "70+ cas"
+    },
+    "1f529a1e9915": {
+      "en": "Over 70 successful cryptocurrency payment unlocks",
+      "uk": "Понад 70 успішних розблокувань криптовалютних платежів",
+      "es": "Más de 70 desbloqueos exitosos de pagos en criptomonedas",
+      "pt": "Mais de 70 desbloqueios bem-sucedidos de pagamentos em criptomoedas",
+      "de": "Mehr als 70 erfolgreiche Entsperrungen von Kryptowährungszahlungen",
+      "fr": "Plus de 70 déblocages réussis de paiements en cryptomonnaie"
+    },
+    "fabd284062ad": {
+      "en": "Guarantee",
+      "uk": "Гарантія",
+      "es": "Garantía",
+      "pt": "Garantia",
+      "de": "Garantie",
+      "fr": "Garantie"
+    },
+    "e0dcac259347": {
+      "en": "100% unlock guarantee or money back",
+      "uk": "100% гарантія розблокування або повернення коштів",
+      "es": "Garantía 100% de desbloqueo o devolución del dinero",
+      "pt": "Garantia de 100% de desbloqueio ou reembolso",
+      "de": "100 % Geld-zurück-Garantie bei fehlender Entsperrung",
+      "fr": "100 % de garantie de déblocage ou remboursement"
+    },
+    "c44ec16d8125": {
+      "en": "Specialization in Fansly platform",
+      "uk": "Спеціалізація на платформі Fansly",
+      "es": "Especialización en la plataforma Fansly",
+      "pt": "Especialização na plataforma Fansly",
+      "de": "Spezialisiert auf die Plattform Fansly",
+      "fr": "Spécialisation sur la plateforme Fansly"
+    },
+    "45cbfd548bf0": {
+      "en": "Contact",
+      "uk": "Звернення",
+      "es": "Solicitud",
+      "pt": "Contato",
+      "de": "Kontakt",
+      "fr": "Contact"
+    },
+    "11173a426861": {
+      "en": "Contact us via Telegram and describe your situation",
+      "uk": "Зв'яжіться з нами через Telegram і опишіть ситуацію",
+      "es": "Contáctanos por Telegram y describe tu situación",
+      "pt": "Entre em contato conosco pelo Telegram e descreva sua situação",
+      "de": "Kontaktieren Sie uns über Telegram und schildern Sie Ihre Situation",
+      "fr": "Contactez-nous via Telegram et décrivez votre situation"
+    },
+    "0267f32af938": {
+      "en": "Analysis",
+      "uk": "Аналіз",
+      "es": "Análisis",
+      "pt": "Análise",
+      "de": "Analyse",
+      "fr": "Analyse"
+    },
+    "640c4da2969b": {
+      "en": "We'll analyze your situation and offer a solution",
+      "uk": "Ми проаналізуємо вашу ситуацію і запропонуємо рішення",
+      "es": "Analizaremos tu caso y te propondremos una solución",
+      "pt": "Analisaremos seu caso e ofereceremos uma solução",
+      "de": "Wir analysieren Ihre Situation und schlagen eine Lösung vor",
+      "fr": "Nous analysons votre cas et vous proposons une solution"
+    },
+    "734e9d81b5f7": {
+      "en": "Unlock",
+      "uk": "Розблокування",
+      "es": "Desbloqueo",
+      "pt": "Desbloqueio",
+      "de": "Entsperrung",
+      "fr": "Déblocage"
+    },
+    "84428d782e76": {
+      "en": "We'll perform the unlock within 24 hours",
+      "uk": "Виконаємо розблокування протягом 24 годин",
+      "es": "Realizaremos el desbloqueo en un plazo de 24 horas",
+      "pt": "Realizaremos o desbloqueio em até 24 horas",
+      "de": "Wir führen die Entsperrung innerhalb von 24 Stunden durch",
+      "fr": "Nous effectuons le déblocage sous 24 heures"
+    },
+    "457969b00982": {
+      "en": "Verification",
+      "uk": "Перевірка",
+      "es": "Verificación",
+      "pt": "Verificação",
+      "de": "Prüfung",
+      "fr": "Vérification"
+    },
+    "439105eaaafe": {
+      "en": "We'll make sure everything works correctly",
+      "uk": "Переконаємося, що все працює коректно",
+      "es": "Asegurémonos de que todo funcione correctamente",
+      "pt": "Vamos garantir que tudo funcione corretamente",
+      "de": "Wir stellen sicher, dass alles korrekt funktioniert",
+      "fr": "Assurons-nous que tout fonctionne correctement"
+    },
+    "9ea1bb370991": {
+      "en": "Service Cost",
+      "uk": "Вартість послуги",
+      "es": "Coste del servicio",
+      "pt": "Custo do serviço",
+      "de": "Kosten des Services",
+      "fr": "Frais de service"
+    },
+    "187cbd6c781a": {
+      "en": "Fixed price for unlock. No hidden fees.",
+      "uk": "Фіксована ціна за розблокування. Без прихованих платежів.",
+      "es": "Precio fijo por desbloqueo. Sin pagos ocultos.",
+      "pt": "Preço fixo para desbloqueio. Sem pagamentos ocultos.",
+      "de": "Fester Preis für die Entsperrung. Keine versteckten Gebühren.",
+      "fr": "Prix fixe pour le déblocage. Sans paiements cachés."
+    },
+    "99b90118177a": {
+      "en": "Why Choose Us",
+      "uk": "Чому обирають нас",
+      "es": "Por qué nos eligen",
+      "pt": "Por que nos escolher",
+      "de": "Warum uns Kunden wählen",
+      "fr": "Pourquoi nous choisir"
+    },
+    "b749457bec24": {
+      "en": "Over 70 successful unlock cases",
+      "uk": "Понад 70 успішних кейсів розблокування",
+      "es": "Más de 70 casos exitosos de desbloqueo",
+      "pt": "Mais de 70 casos de sucesso de desbloqueio",
+      "de": "Über 70 erfolgreiche Entsperrungsfälle",
+      "fr": "Plus de 70 cas réussis de déblocage"
+    },
+    "a6806641f72e": {
+      "en": "Average solution time — up to 24 hours",
+      "uk": "Середній термін вирішення — до 24 годин",
+      "es": "Plazo medio de resolución: hasta 24 horas",
+      "pt": "Tempo médio de solução — até 24 horas",
+      "de": "Durchschnittliche Bearbeitungsdauer – bis zu 24 Stunden",
+      "fr": "Délai moyen de résolution — jusqu'à 24 heures"
+    },
+    "90b9d10ef04f": {
+      "en": "100% guarantee or money back",
+      "uk": "100% гарантія або повернення коштів",
+      "es": "Garantía 100% o devolución del dinero",
+      "pt": "Garantia de 100% ou reembolso",
+      "de": "100 % Geld-zurück-Garantie",
+      "fr": "Garantie 100 % ou remboursement"
+    },
+    "a4ab17219ef0": {
+      "en": "Data confidentiality and security",
+      "uk": "Конфіденційність і безпека даних",
+      "es": "Confidencialidad y seguridad de los datos",
+      "pt": "Confidencialidade e segurança dos dados",
+      "de": "Datensicherheit und Vertraulichkeit",
+      "fr": "Confidentialité et sécurité des données"
+    },
+    "64f4d2032c2d": {
+      "en": "24/7 support via Telegram",
+      "uk": "Підтримка 24/7 через Telegram",
+      "es": "Soporte 24/7 a través de Telegram",
+      "pt": "Suporte 24/7 via Telegram",
+      "de": "24/7-Support über Telegram",
+      "fr": "Support 24/7 via Telegram"
+    },
+    "447abfbd4977": {
+      "en": "Experience with Fansly and OnlyFans",
+      "uk": "Досвід роботи з Fansly та OnlyFans",
+      "es": "Experiencia trabajando con Fansly y OnlyFans",
+      "pt": "Experiência com Fansly e OnlyFans",
+      "de": "Erfahrung mit Fansly und OnlyFans",
+      "fr": "Expérience dans le travail avec Fansly et OnlyFans"
+    },
+    "817774224c60": {
+      "en": "Ready to Unlock Cryptocurrency?",
+      "uk": "Готові розблокувати криптовалюту?",
+      "es": "¿Listo para desbloquear tu criptomoneda?",
+      "pt": "Pronto para desbloquear sua criptomoeda?",
+      "de": "Bereit, Ihre Kryptowährung freizuschalten?",
+      "fr": "Prêt à débloquer votre devise cryptographique ?"
+    },
+    "03dc73a5e9fe": {
+      "en": "Contact us on Telegram and get help within 24 hours",
+      "uk": "Зв'яжіться з нами в Telegram і отримайте допомогу протягом 24 годин",
+      "es": "Contáctanos en Telegram y recibe ayuda en menos de 24 horas",
+      "pt": "Entre em contato conosco no Telegram e receba ajuda em até 24 horas",
+      "de": "Kontaktieren Sie uns via Telegram und erhalten Sie innerhalb von 24 Stunden Hilfe",
+      "fr": "Contactez-nous sur Telegram et obtenez de l'aide dans les 24 heures"
+    },
+    "add0b01c2140": {
+      "en": "Message on Telegram",
+      "uk": "Написати в Telegram",
+      "es": "Escribir en Telegram",
+      "pt": "Escrever no Telegram",
+      "de": "In Telegram schreiben",
+      "fr": "Écrire sur Telegram"
+    },
+    "978416f71853": {
+      "en": "Fill Form",
+      "uk": "Заповнити форму",
+      "es": "Completar formulario",
+      "pt": "Preencher formulário",
+      "de": "Formular ausfüllen",
+      "fr": "Remplir le formulaire"
+    },
+    "42a94d6e50c9": {
+      "en": "RF and CIS Model Verification",
+      "uk": "Верифікація моделей РФ та СНД",
+      "es": "Verificación para modelos de Rusia y la CEI",
+      "pt": "Verificação de modelos da Rússia e CEI",
+      "de": "Verifizierung für Models aus Russland und GUS",
+      "fr": "Vérification des modèles RU et CEI"
+    },
+    "233e4f27a1b6": {
+      "en": "Ready OnlyFans with crypto withdrawal for models from Russia and CIS. We do everything turnkey!",
+      "uk": "Готовий OnlyFans з виведенням в крипту для моделей з Росії та СНД. Робимо все під ключ!",
+      "es": "OnlyFans listo con retiro en cripto para modelos de Rusia y la CEI. ¡Todo incluido y listo para usar!",
+      "pt": "OnlyFans pronto com saque em cripto para modelos da Rússia e CEI. Fazemos tudo chave na mão!",
+      "de": "Fertiges OnlyFans mit Auszahlung in Kryptowährung für Models aus Russland und GUS. Alles inklusive – schlüsselfertig!",
+      "fr": "OnlyFans prêt à l'emploi avec retrait en cryptomonnaie pour les modèles russes et de la CEI. Nous faisons tout clé en main !"
+    },
+    "e42c0ef74e21": {
+      "en": "What You Get",
+      "uk": "Що ви отримаєте",
+      "es": "Qué obtienes",
+      "pt": "O que você receberá",
+      "de": "Was Sie erhalten",
+      "fr": "Ce que vous obtenez"
+    },
+    "461b09aa4443": {
+      "en": "Free Consultation",
+      "uk": "Безкоштовна консультація",
+      "es": "Consulta gratuita",
+      "pt": "Consulta gratuita",
+      "de": "Kostenlose Beratung",
+      "fr": "Consultation gratuite"
+    },
+    "0257a528dbcb": {
+      "en": "Video chat or text consultation to confirm all details",
+      "uk": "Консультація по відеочату або текстом для підтвердження всіх деталей",
+      "es": "Consulta por videollamada o mensaje para confirmar todos los detalles",
+      "pt": "Consulta por vídeochamada ou texto para confirmar todos os detalhes",
+      "de": "Video- oder Textberatung zur Bestätigung aller Details",
+      "fr": "Consultation par chat vidéo ou par message pour confirmer tous les détails"
+    },
+    "8c9f5d928372": {
+      "en": "FACEBAN Problem Solving",
+      "uk": "Вирішення проблем з FACEBAN",
+      "es": "Solución a problemas de FACEBAN",
+      "pt": "Solução de problemas com FACEBAN",
+      "de": "Lösung von FACEBAN-Problemen",
+      "fr": "Résolution des problèmes de FACEBAN"
+    },
+    "e080685404a1": {
+      "en": "Help with account unlock and solving blocking issues",
+      "uk": "Допомога в розблокуванні акаунта та вирішення проблем з блокуваннями",
+      "es": "Ayuda para desbloquear tu cuenta y resolver problemas de bloqueos",
+      "pt": "Ajuda para desbloquear conta e resolver problemas de bloqueio",
+      "de": "Hilfe bei der Kontosperrung und Problemen mit Blockierungen",
+      "fr": "Aide pour débloquer le compte et résoudre les problèmes de blocage"
+    },
+    "4726a6348bf9": {
+      "en": "Full Verification",
+      "uk": "Повна верифікація",
+      "es": "Verificación completa",
+      "pt": "Verificação completa",
+      "de": "Vollständige Verifizierung",
+      "fr": "Vérification complète"
+    },
+    "ffd8e70b9424": {
+      "en": "Assistance with OF + SKRILL + PAXUM verification from home",
+      "uk": "Допомога в проходженні верифікації OF + SKRILL + PAXUM не виходячи з дому",
+      "es": "Ayuda con la verificación de OF + SKRILL + PAXUM sin salir de casa",
+      "pt": "Ajuda na verificação do OF + SKRILL + PAXUM sem sair de casa",
+      "de": "Unterstützung bei der Verifizierung von OF + SKRILL + PAXUM – bequem von zu Hause aus",
+      "fr": "Aide à la vérification OF + SKRILL + PAXUM sans sortir de chez vous"
+    },
+    "71136b07f3ed": {
+      "en": "Bonuses and Guarantees",
+      "uk": "Бонуси та гарантії",
+      "es": "Bonos y garantías",
+      "pt": "Bônus e garantias",
+      "de": "Bonuses und Garantien",
+      "fr": "Bonus et garanties"
+    },
+    "44d928938c3f": {
+      "en": "Any popular guarantors for transaction security",
+      "uk": "Будь-які популярні гаранти для безпеки угоди",
+      "es": "Cualquier garante popular para seguridad en la transacción",
+      "pt": "Qualquer garantia popular para segurança na transação",
+      "de": "Beliebte Garanten für sichere Transaktionen",
+      "fr": "Toutes les garanties populaires pour sécuriser vos transactions"
+    },
+    "679f19d9efa9": {
+      "en": "We guide you through verification from start to finish",
+      "uk": "Проходимо верифікацію за руку від початку до кінця",
+      "es": "Hacemos la verificación de la mano, desde el principio hasta el final",
+      "pt": "Fazemos a verificação passo a passo, desde o início até o fim",
+      "de": "Wir begleiten die Verifizierung von Anfang bis Ende Schritt für Schritt",
+      "fr": "Nous accompagnons la vérification main dans la main, du début à la fin"
+    },
+    "9507f7f47613": {
+      "en": "No need to go anywhere - everything done at home in comfort and safety",
+      "uk": "Не треба нікуди їхати - все робиться вдома в затишку та безпеці",
+      "es": "No necesitas ir a ningún sitio: todo se hace desde casa, con comodidad y seguridad",
+      "pt": "Sem necessidade de ir a lugar nenhum — tudo é feito em casa, com conforto e segurança",
+      "de": "Keine Reise nötig – alles bequem von zu Hause aus",
+      "fr": "Pas besoin de se déplacer — tout se fait depuis chez vous, en toute sécurité et confort"
+    },
+    "49bb767c2f68": {
+      "en": "Help with reliable agencies making $10-50k monthly on new models",
+      "uk": "Допомога з надійними агентствами, які роблять доходи від 10-50к$ щомісяця на нових моделях",
+      "es": "Ayuda con agencias confiables que generan ingresos de 10-50k$ mensuales en modelos nuevos",
+      "pt": "Apoio com agências confiáveis que geram rendimentos de 10 a 50 mil USD mensais com modelos novos",
+      "de": "Unterstützung durch zuverlässige Agenturen, die monatlich Einkommen von 10–50 Tausend $ für neue Models generieren",
+      "fr": "Aide pour rejoindre des agences fiables générant des revenus de 10 à 50k$ par mois avec de nouveaux modèles"
+    },
+    "d556d1f59c2e": {
+      "en": "Recruiting Models for Multi-Platform Work",
+      "uk": "Набір моделей на багатоплатформну роботу",
+      "es": "Reclutamiento de modelos para trabajo multiplataforma",
+      "pt": "Recrutamento de modelos para trabalho multiplataforma",
+      "de": "Models für die Mehrplattform-Arbeit gesucht",
+      "fr": "Recrutement de modèles pour du travail multiplateforme"
+    },
+    "fb2c476def45": {
+      "en": "Work on the best adult content platforms with professional support and high income",
+      "uk": "Робота на кращих платформах для дорослого контенту з професійною підтримкою та високим доходом",
+      "es": "Trabaja en las mejores plataformas de contenido para adultos con soporte profesional y altos ingresos",
+      "pt": "Trabalhe nas melhores plataformas de conteúdo adulto com suporte profissional e alta renda",
+      "de": "Arbeiten auf den besten Plattformen für Erwachseneninhalte mit professioneller Unterstützung und hohem Einkommen",
+      "fr": "Travaillez sur les meilleures plateformes de contenu adulte avec un soutien professionnel et des revenus élevés"
+    },
+    "198c8f79cdff": {
+      "en": "Platforms for Work",
+      "uk": "Платформи для роботи",
+      "es": "Plataformas para trabajar",
+      "pt": "Plataformas para trabalho",
+      "de": "Plattformen zur Arbeit",
+      "fr": "Plateformes de travail"
+    },
+    "f845ba7abecd": {
+      "en": "LoyalFans — Platform for Dominant Models",
+      "uk": "LoyalFans — платформа для домінуючих моделей",
+      "es": "LoyalFans — plataforma para modelos dominantes",
+      "pt": "LoyalFans — plataforma para modelos dominantes",
+      "de": "LoyalFans — Plattform für dominante Models",
+      "fr": "LoyalFans — la plateforme pour les modèles dominants"
+    },
+    "c9975cff2648": {
+      "en": "Platform for models with dominant work style",
+      "uk": "Платформа для моделей з домінуючим стилем роботи",
+      "es": "Plataforma para modelos con estilo de trabajo dominante",
+      "pt": "Plataforma para modelos com estilo de trabalho dominante",
+      "de": "Plattform für Models mit dominanter Arbeitsweise",
+      "fr": "Une plateforme dédiée aux modèles au style de travail dominant"
+    },
+    "2fdc5bffa797": {
+      "en": "Your Tasks",
+      "uk": "Твої завдання",
+      "es": "Tus tareas",
+      "pt": "Suas tarefas",
+      "de": "Deine Aufgaben",
+      "fr": "Vos tâches"
+    },
+    "dcdcaeb4e33a": {
+      "en": "Photos/videos according to content plan",
+      "uk": "Фото/відео за контент-планом",
+      "es": "Fotos/vídeos según plan de contenido",
+      "pt": "Fotos/vídeos conforme plano de conteúdo",
+      "de": "Fotos/Videos nach Content-Plan",
+      "fr": "Photos/vidéos selon le planning éditorial"
+    },
+    "8e0c5a539d2b": {
+      "en": "Custom content for fans",
+      "uk": "Кастоми для фанатів",
+      "es": "Contenido personalizado para fans",
+      "pt": "Conteúdo personalizado para fãs",
+      "de": "Customs für Fans",
+      "fr": "Contenu personnalisé pour les fans"
+    },
+    "56d49f8441fa": {
+      "en": "Streams optionally (+additional income)",
+      "uk": "Стріми за бажанням (+додатковий дохід)",
+      "es": "Streams según disponibilidad (+ingresos adicionales)",
+      "pt": "Transmissões ao vivo conforme desejo (+ renda extra)",
+      "de": "Streams nach Wunsch (+zusätzliches Einkommen)",
+      "fr": "Streams selon vos envies (+ revenus supplémentaires)"
+    },
+    "5b1c65c00823": {
+      "en": "Conditions",
+      "uk": "Умови",
+      "es": "Condiciones",
+      "pt": "Condições",
+      "de": "Bedingungen",
+      "fr": "Conditions"
+    },
+    "5ddf280c6d58": {
+      "en": "20% for you (+5% for streams)",
+      "uk": "20% тобі (+5% за стріми)",
+      "es": "20% para ti (+5% por streams)",
+      "pt": "20% para você (+5% pelos streams)",
+      "de": "20% für dich (+5% für Streams)",
+      "fr": "20% pour vous (+5% pour les streams)"
+    },
+    "6ce7a57545f4": {
+      "en": "Payments 2 times/month in USDT",
+      "uk": "Виплати 2 рази/місяць в USDT",
+      "es": "Pagos 2 veces/mes en USDT",
+      "pt": "Pagamentos 2 vezes/mês em USDT",
+      "de": "Auszahlungen 2 Mal/Monat in USDT",
+      "fr": "Paiements 2 fois/mois en USDT"
+    },
+    "ce3aa66b7f0c": {
+      "en": "Country blocking for safety",
+      "uk": "Блокування країн для безпеки",
+      "es": "Bloqueo de países para seguridad",
+      "pt": "Bloqueio de países para segurança",
+      "de": "Länderblockierung für Sicherheit",
+      "fr": "Blocage des pays pour la sécurité"
+    },
+    "49add23713f2": {
+      "en": "ManyVids — Focus on Custom Videos",
+      "uk": "ManyVids — фокус на кастомних відео",
+      "es": "ManyVids — enfoque en vídeos personalizados",
+      "pt": "ManyVids — foco em vídeos personalizados",
+      "de": "ManyVids — Fokus auf Custom-Videos",
+      "fr": "ManyVids — axé sur les vidéos personnalisées"
+    },
+    "ebb8b1770a5b": {
+      "en": "Specialty: bringing fans' fantasies to life",
+      "uk": "Особливість: втілення фантазій фанатів",
+      "es": "Característica: hacer realidad las fantasías de los fans",
+      "pt": "Diferencial: realização das fantasias dos fãs",
+      "de": "Besonderheit: Verwirklichung der Fantasien der Fans",
+      "fr": "Spécificité : réaliser les fantasmes des fans"
+    },
+    "2fc71c81f9b2": {
+      "en": "20% for you",
+      "uk": "20% тобі",
+      "es": "20% para ti",
+      "pt": "20% para você",
+      "de": "20% für dich",
+      "fr": "20% pour toi"
+    },
+    "aebdd90341c3": {
+      "en": "Weekly payments to Paxum",
+      "uk": "Виплати щотижня на Paxum",
+      "es": "Pagos semanales en Paxum",
+      "pt": "Pagamentos semanais via Paxum",
+      "de": "Wöchentliche Auszahlungen auf Paxum",
+      "fr": "Paiements hebdomadaires sur Paxum"
+    },
+    "f2a2cb5fa12e": {
+      "en": "$10-25 per minute of customs",
+      "uk": "$10-25 за хвилину кастомів",
+      "es": "$10-25 por minuto en contenidos personalizados",
+      "pt": "$10-25 por minuto em conteúdos personalizados",
+      "de": "$10-25 pro Minute Custom",
+      "fr": "10 $ à 25 $ la minute de contenu personnalisé"
+    },
+    "247a472599e3": {
+      "en": "Independent withdrawal to crypto",
+      "uk": "Самостійне виведення на крипту",
+      "es": "Retiro independiente a cripto",
+      "pt": "Saque independente para cripto",
+      "de": "Selbstständige Auszahlung auf Krypto",
+      "fr": "Retrait autonome vers le crypto"
+    },
+    "8098f477d68e": {
+      "en": "4based — German Audience",
+      "uk": "4based — німецька аудиторія",
+      "es": "4based — audiencia alemana",
+      "pt": "4based — audiência alemã",
+      "de": "4based — deutsche Zielgruppe",
+      "fr": "4based — public allemand"
+    },
+    "8a3fe40a31c8": {
+      "en": "On the 4based platform, oriented towards German audience, models have the opportunity to sell their content. Each content set costs $300-$500, and agencies plan to make such purchases regularly.",
+      "uk": "На платформі 4based, орієнтованій на німецьку аудиторію, надається можливість для моделей продавати свій контент. Кожен контент-сет коштує $300-$500, і агентства планують робити такі покупки регулярно.",
+      "es": "En la plataforma 4based, enfocada en la audiencia alemana, se ofrece a las modelos la posibilidad de vender su contenido. Cada pack de contenido cuesta entre $300 y $500, y las agencias planean realizar estas compras regularmente.",
+      "pt": "Na plataforma 4based, voltada para o público alemão, modelos têm a oportunidade de vender seu conteúdo. Cada pacote de conteúdo custa $300-$500, e agências planejam fazer essas compras regularmente.",
+      "de": "On the 4based platform, which targets a German audience, models have the opportunity to sell their content. Each content set costs $300-$500, and agencies plan to make such purchases regularly.",
+      "fr": "Sur la plateforme 4based, axée sur le public allemand, les modèles peuvent vendre leur contenu. Chaque pack de contenu coûte entre 300 $ et 500 $, et les agences prévoient d'effectuer ces achats régulièrement."
+    },
+    "1df4937e98f8": {
+      "en": "To participate, you need to complete verification through the provided link",
+      "uk": "Для участі необхідно пройти верифікацію через надане посилання",
+      "es": "Para participar, debes completar la verificación a través del enlace proporcionado",
+      "pt": "Para participar, é necessário passar pela verificação através do link fornecido",
+      "de": "To participate, you must complete verification via the provided link",
+      "fr": "Pour participer, tu dois passer par une vérification via le lien fourni"
+    },
+    "f43c914317d2": {
+      "en": "Traffic is attracted only internally, without using social networks, and is oriented towards German audience",
+      "uk": "Трафік залучається тільки внутрішній, без використання соціальних мереж, і орієнтований на німецьку аудиторію",
+      "es": "El tráfico se genera exclusivamente en el interior de la plataforma, sin uso de redes sociales, y está enfocado en la audiencia alemana",
+      "pt": "O tráfego é atraído exclusivamente internamente, sem uso de redes sociais, e direcionado ao público alemão",
+      "de": "Traffic is generated exclusively through internal channels, without using social media, and is aimed at a German-speaking audience",
+      "fr": "Le trafic est exclusivement interne, sans utilisation des réseaux sociaux, et ciblé vers le public allemand"
+    },
+    "fbe907c960e6": {
+      "en": "Content Plan Includes",
+      "uk": "Контент-план включає",
+      "es": "El plan de contenido incluye",
+      "pt": "O plano de conteúdo inclui",
+      "de": "Content plan includes:",
+      "fr": "Le plan de contenu inclut"
+    },
+    "4e85c3a77f0e": {
+      "en": "50 non-nude videos (15-30 seconds)",
+      "uk": "50 відео без оголення (15-30 секунд)",
+      "es": "50 vídeos sin desnudo (15-30 segundos)",
+      "pt": "50 vídeos sem nudez (15-30 segundos)",
+      "de": "50 non-nude videos (15-30 seconds)",
+      "fr": "50 vidéos sans nudité (15-30 secondes)"
+    },
+    "af04086d88b0": {
+      "en": "200 non-nude photos",
+      "uk": "200 фотографій без оголення",
+      "es": "200 fotos sin desnudo",
+      "pt": "200 fotos sem nudez",
+      "de": "200 non-nude photos",
+      "fr": "200 photos sans nudité"
+    },
+    "2692d5bb7c2a": {
+      "en": "10 breast photos",
+      "uk": "10 фотографій грудей",
+      "es": "10 fotos de pechos",
+      "pt": "10 fotos de seios",
+      "de": "10 breast photos",
+      "fr": "10 photos de seins"
+    },
+    "4f98d2950eed": {
+      "en": "10 close-up pussy photos",
+      "uk": "10 фотографій кіски великим планом",
+      "es": "10 fotos de vagina en primer plano",
+      "pt": "10 fotos close do púbis",
+      "de": "10 close-up pussy photos",
+      "fr": "10 photos de chatte en gros plan"
+    },
+    "f9dc9aacc4d4": {
+      "en": "10 butt photos",
+      "uk": "10 фотографій попи",
+      "es": "10 fotos de culo",
+      "pt": "10 fotos de nádegas",
+      "de": "10 ass photos",
+      "fr": "10 photos de fesses"
+    },
+    "cd44b609e86a": {
+      "en": "10 toe photos",
+      "uk": "10 фотографій пальців ніг",
+      "es": "10 fotos de pies",
+      "pt": "10 fotos de pés",
+      "de": "10 foot photos",
+      "fr": "10 photos de pieds"
+    },
+    "2ec86928750b": {
+      "en": "10 mirror photos",
+      "uk": "10 фотографій в дзеркалі",
+      "es": "10 fotos en espejo",
+      "pt": "10 fotos em espelho",
+      "de": "10 mirror photos",
+      "fr": "10 photos dans un miroir"
+    },
+    "05ba6fc9f76d": {
+      "en": "10 full photos",
+      "uk": "10 повних фотографій",
+      "es": "10 fotos completas",
+      "pt": "10 fotos completas",
+      "de": "10 full-body photos",
+      "fr": "10 photos complètes"
+    },
+    "3bc4f04938bc": {
+      "en": "10 photos in different poses",
+      "uk": "10 фотографій в різних позах",
+      "es": "10 fotos en diferentes poses",
+      "pt": "10 fotos em diferentes poses",
+      "de": "10 photos in different poses",
+      "fr": "10 photos dans différentes poses"
+    },
+    "fc63c71df752": {
+      "en": "5 close-up butt photos",
+      "uk": "5 фотографій попки великим планом",
+      "es": "5 fotos de culo en primer plano",
+      "pt": "5 fotos close das nádegas",
+      "de": "5 close-up ass photos",
+      "fr": "5 photos de fesses en gros plan"
+    },
+    "61da52827c95": {
+      "en": "5 doggy-style butt photos",
+      "es": "5 fotos de culo agachado",
+      "pt": "5 fotos de bunda empinada",
+      "de": "5 photos of ass spread",
+      "fr": "5 photos de fesses à quatre pattes"
+    },
+    "9f40cfa2146c": {
+      "en": "10 masturbation videos 5-10 minutes each",
+      "uk": "10 відео мастурбації по 5-10 хвилин кожне",
+      "es": "10 vídeos de masturbación de 5-10 minutos cada uno",
+      "pt": "10 vídeos de masturbação de 5-10 minutos cada",
+      "de": "10 masturbation videos, 5-10 minutes each",
+      "fr": "10 vidéos de masturbation de 5 à 10 minutes chacune"
+    },
+    "1fd29c665faa": {
+      "en": "10 anal videos 5-10 minutes each",
+      "uk": "10 анальних відео по 5-10 хвилин кожне",
+      "es": "10 vídeos anales de 5-10 minutos cada uno",
+      "pt": "10 vídeos anais de 5-10 minutos cada",
+      "de": "10 anal videos, 5-10 minutes each",
+      "fr": "10 vidéos anales de 5 à 10 minutes chacune"
+    },
+    "1c5930232650": {
+      "en": "10 partner videos with a guy",
+      "uk": "10 партнерських відео з хлопцем",
+      "es": "10 vídeos con pareja masculina",
+      "pt": "10 vídeos com parceiro masculino",
+      "de": "10 partner videos with a guy",
+      "fr": "10 vidéos avec un partenaire masculin"
+    },
+    "62735348f1e8": {
+      "en": "Dildo blowjob video, 5 minutes",
+      "uk": "Мінет з ділдо, відео 5 хвилин",
+      "es": "Felación con dildo, vídeo de 5 minutos",
+      "pt": "Boquete com dildo, vídeo de 5 minutos",
+      "de": "Blowjob with dildo, 5-minute video",
+      "fr": "Pipe avec dildo, vidéo 5 minutes"
+    },
+    "de1d9be92893": {
+      "en": "Most Important",
+      "uk": "Найважливіше",
+      "es": "Lo más importante",
+      "pt": "O mais importante",
+      "de": "Most important",
+      "fr": "Le plus important"
+    },
+    "b636ca8efbdf": {
+      "en": "5 different sexting scripts, each scenario with minimum 3-5 photos and 2-3 videos 3-5 minutes long",
+      "uk": "5 різних скриптів секстингу, в кожному сценарії мінімум 3-5 фото та 2-3 відео тривалістю 3-5 хвилин",
+      "es": "5 guiones diferentes de sexteo, cada escenario con al menos 3-5 fotos y 2-3 vídeos de 3-5 minutos",
+      "pt": "5 roteiros diferentes de sexting, cada cenário com pelo menos 3-5 fotos e 2-3 vídeos de 3-5 minutos",
+      "de": "5 different sexting scripts, each scenario includes at least 3-5 photos and 2-3 videos lasting 3-5 minutes",
+      "fr": "5 scénarios de sexting différents, chaque scénario comprenant au minimum 3 à 5 photos et 2 à 3 vidéos de 3 à 5 minutes"
+    },
+    "355590818046": {
+      "en": "Teacher (schoolgirl)",
+      "uk": "Вчителька (школярка)",
+      "es": "Profesora (escolar)",
+      "pt": "Professora (escolar)",
+      "de": "Schoolgirl (teacher)",
+      "fr": "Institutrice (écolière)"
+    },
+    "5d0114b3c46c": {
+      "en": "Gym",
+      "es": "Gimnasio",
+      "pt": "Academia",
+      "de": "Gym",
+      "fr": "Salle de sport"
+    },
+    "ea9ba450b932": {
+      "en": "Shower",
+      "es": "Ducha",
+      "pt": "Chuveiro",
+      "de": "Shower",
+      "fr": "Douche"
+    },
+    "c66a3c24a79f": {
+      "en": "Dominant (BDSM)",
+      "uk": "Домінант (БДСМ)",
+      "es": "Dominante (BDSM)",
+      "pt": "Dominante (BDSM)",
+      "de": "Dominant (BDSM)",
+      "fr": "Dominante (BDSM)"
+    },
+    "9fd59f840111": {
+      "en": "Kitchen",
+      "es": "Cocina",
+      "pt": "Cozinha",
+      "de": "Küche",
+      "fr": "Cuisine"
+    },
+    "39a7b7115ede": {
+      "en": "F2F & FanCentro — European Audience",
+      "uk": "F2F & FanCentro — європейська аудиторія",
+      "es": "F2F & FanCentro — audiencia europea",
+      "pt": "F2F & FanCentro — audiência europeia",
+      "de": "F2F & FanCentro – europäische Zielgruppe",
+      "fr": "F2F & FanCentro — public européen"
+    },
+    "9f4b8c49b6ad": {
+      "en": "Work opportunity on F2F and FanCentro platforms (audience from Europe, mainly from Netherlands). Agency managers are English-speaking, based in Cyprus",
+      "uk": "Пропозиція по роботі на платформах F2F та FanCentro (аудиторія з Європи, в основному з Нідерландів). Менеджери агентства англомовні, базується агентство на Кіпрі",
+      "es": "Oportunidad de trabajo en las plataformas F2F y FanCentro (audiencia de Europa, principalmente de los Países Bajos). Los gestores de la agencia hablan inglés, la agencia está ubicada en Chipre",
+      "pt": "Oportunidade de trabalho nas plataformas F2F e FanCentro (público da Europa, principalmente dos Países Baixos). Os gerentes da agência são anglófonos, e a agência está sediada em Chipre",
+      "de": "Angebot für die Plattformen F2F und FanCentro (Publikum aus Europa, hauptsächlich aus den Niederlanden). Das Agenturteam ist englischsprachig, das Unternehmen hat seinen Sitz auf Zypern",
+      "fr": "Opportunité de travail sur F2F et FanCentro (public principalement des Pays-Bas et d'Europe). L'agence est anglophone et basée à Chypre"
+    },
+    "a57409ab19fa": {
+      "en": "Model receives 20% of earnings (average earnings 1-5k$)",
+      "uk": "Модель отримує 20% від доходу (доходи в середньому 1-5к$)",
+      "es": "La modelo obtiene el 20% de los ingresos (ingresos promedio de 1-5k$)",
+      "pt": "A modelo recebe 20% dos lucros (ganhos médios de 1-5 mil dólares)",
+      "de": "Das Model erhält 20 % vom Umsatz (durchschnittlicher Verdienst 1–5 Tausend $)",
+      "fr": "Le modèle reçoit 20% des revenus (revenus moyens : 1 à 5k$)"
+    },
+    "4053124b16d6": {
+      "en": "Only ready content needed, 300+ files. No additional shooting required, this will be almost passive income",
+      "uk": "Контент потрібен тільки готовий, 300+ файлів. Додаткових зйомок не потрібно, це буде майже пасивний заробіток",
+      "es": "Solo se necesita contenido ya listo, 300+ archivos. No se requieren grabaciones adicionales, será casi una ganancia pasiva",
+      "pt": "Só é necessário conteúdo pronto, 300+ arquivos. Nenhuma filmagem adicional necessária — será quase uma renda passiva",
+      "de": "Benötigt wird nur bereits vorhandenes Material, 300+ Dateien. Keine zusätzlichen Shootings nötig – dies ist nahezu passives Einkommen",
+      "fr": "Uniquement du contenu prêt à l'emploi requis, 300+ fichiers. Aucun tournage supplémentaire nécessaire — quasiment un revenu passif"
+    },
+    "796bd3ba79d3": {
+      "en": "Internal traffic only, no social networks",
+      "uk": "Трафік тільки внутрішній, без соц мереж",
+      "es": "Tráfico exclusivamente interno, sin redes sociales",
+      "pt": "Tráfego exclusivamente interno, sem redes sociais",
+      "de": "Verkehr ausschließlich intern, ohne soziale Netzwerke",
+      "fr": "Trafic exclusivement interne, sans réseaux sociaux"
+    },
+    "cb672e8b54e7": {
+      "en": "Model percentage: 20% everywhere",
+      "uk": "Відсоток моделі: 20% всюди",
+      "es": "Porcentaje de la modelo: 20% en todas partes",
+      "pt": "Porcentagem da modelo: 20% em todos os lugares",
+      "de": "Modell-Anteil: 20 % auf allen Plattformen",
+      "fr": "Commission du modèle : 20% sur toutes les plateformes"
+    },
+    "3848f1a6b6dc": {
+      "en": "Currency: USDT (LoyalFans) / Paxum (ManyVids)",
+      "es": "Moneda: USDT (LoyalFans) / Paxum (ManyVids)",
+      "pt": "Moeda: USDT (LoyalFans) / Paxum (ManyVids)",
+      "de": "Währung: USDT (LoyalFans) / Paxum (ManyVids)",
+      "fr": "Devise : USDT (LoyalFans) / Paxum (ManyVids)"
+    },
+    "eda819137a36": {
+      "en": "Specialization: dominance (LoyalFans) / customs (ManyVids)",
+      "uk": "Спеціалізація: домінування (LoyalFans) / кастоми (ManyVids)",
+      "es": "Especialización: dominación (LoyalFans) / personalizados (ManyVids)",
+      "pt": "Especialização: dominação (LoyalFans) / personalizados (ManyVids)",
+      "de": "Spezialisierung: Dominanz (LoyalFans) / Custom-Videos (ManyVids)",
+      "fr": "Spécialisation : domination (LoyalFans) / contenus personnalisés (ManyVids)"
+    },
+    "1917bf77477f": {
+      "en": "Safety: country blocking",
+      "uk": "Безпека: блокування країн",
+      "es": "Seguridad: bloqueo de países",
+      "pt": "Segurança: bloqueio de países",
+      "de": "Sicherheit: Länderblockierung",
+      "fr": "Sécurité : blocage par pays"
+    },
+    "f14cb6aa33dc": {
+      "en": "Ready content for passive income (F2F/FanCentro)",
+      "uk": "Готовий контент для пасивного доходу (F2F/FanCentro)",
+      "es": "Contenido listo para ingresos pasivos (F2F/FanCentro)",
+      "pt": "Conteúdo pronto para renda passiva (F2F/FanCentro)",
+      "de": "Fertiger Content für passives Einkommen (F2F/FanCentro)",
+      "fr": "Contenu prêt pour un revenu passif (F2F/FanCentro)"
+    },
+    "2ba3eaafdb75": {
+      "en": "Work on multiple platforms simultaneously",
+      "uk": "Робота на декількох платформах одночасно",
+      "es": "Trabajar en varias plataformas simultáneamente",
+      "pt": "Trabalhar em várias plataformas ao mesmo tempo",
+      "de": "Arbeit gleichzeitig auf mehreren Plattformen",
+      "fr": "Travail simultané sur plusieurs plateformes"
+    },
+    "bd5be4e345aa": {
+      "en": "Limited Spots",
+      "uk": "Набір обмежено",
+      "es": "Plazas limitadas",
+      "pt": "Inscrições limitadas",
+      "de": "Plätze begrenzt",
+      "fr": "Inscription limitée"
+    },
+    "90008a59a04c": {
+      "en": "Join Closed Partnership",
+      "uk": "Набір в закриту партнерку",
+      "es": "Inscripción para asociación privada",
+      "pt": "Recrutamento para parceria fechada",
+      "de": "Bewerbung für exklusive Partnerschaft",
+      "fr": "Recrutement pour un partenariat privé"
+    },
+    "13675a44bfbc": {
+      "en": "Official platform partners with guaranteed promotion in recommendations",
+      "uk": "Офіційні партнери платформи з гарантованим просуванням в рекомендаціях",
+      "es": "Socios oficiales de la plataforma con promoción garantizada en recomendaciones",
+      "pt": "Parceiros oficiais da plataforma com promoção garantida nas recomendações",
+      "de": "Offizielle Partner der Plattform mit garantiertem Empfehlungs-Boost",
+      "fr": "Partenaires officiels de la plateforme avec promotion garantie dans les recommandations"
+    },
+    "195163951794": {
+      "en": "40% per Video",
+      "uk": "40% з кожного ролика",
+      "es": "40% de cada vídeo",
+      "pt": "40% de cada vídeo",
+      "de": "40 % von jedem Video",
+      "fr": "40% sur chaque vidéo"
+    },
+    "06890b4cf479": {
+      "en": "High percentage from each uploaded video",
+      "uk": "Високий відсоток від кожного завантаженого відео",
+      "es": "Alto porcentaje de cada video subido",
+      "pt": "Alta porcentagem de cada vídeo carregado",
+      "de": "Hoher Anteil an jedem hochgeladenen Video",
+      "fr": "Un taux élevé sur chaque vidéo téléchargée"
+    },
+    "66255565be3f": {
+      "en": "Stable Growth",
+      "uk": "Стабільне зростання",
+      "es": "Crecimiento estable",
+      "pt": "Crescimento estável",
+      "de": "Stetiges Wachstum",
+      "fr": "Croissance stable"
+    },
+    "c46cceaaf772": {
+      "en": "$300 first month | $1,000+ after 3 months",
+      "uk": "$300 перший місяць | $1,000+ через 3 місяці роботи",
+      "es": "$300 el primer mes | $1,000+ en 3 meses de trabajo",
+      "pt": "$300 no primeiro mês | $1.000+ em 3 meses de trabalho",
+      "de": "300 $ im ersten Monat | über 1.000 $ nach 3 Monaten",
+      "fr": "300 $ le premier mois | 1 000 $+ après 3 mois de travail"
+    },
+    "622df687832a": {
+      "en": "Passive Income",
+      "uk": "Пасивний дохід",
+      "es": "Ingresos pasivos",
+      "pt": "Renda passiva",
+      "de": "Passives Einkommen",
+      "fr": "Revenu passif"
+    },
+    "448c0583e0f3": {
+      "en": "Automated income after uploading content",
+      "uk": "Дохід на автоматі після завантаження контенту",
+      "es": "Gana automáticamente tras subir contenido",
+      "pt": "Lucro automático após o carregamento do conteúdo",
+      "de": "Automatisiertes Einkommen nach dem Hochladen von Content",
+      "fr": "Des revenus automatiques dès le téléchargement du contenu"
+    },
+    "4d3db472bef1": {
+      "en": "Why We're Official Partners",
+      "uk": "Чому ми - офіційні партнери",
+      "es": "Por qué somos socios oficiales",
+      "pt": "Por que somos parceiros oficiais",
+      "de": "Warum wir – offizielle Partner",
+      "fr": "Pourquoi nous - partenaires officiels"
+    },
+    "6833316c6486": {
+      "en": "Forced Recommendations Placement",
+      "uk": "Примусове потрапляння в рекомендації",
+      "es": "Aparición garantizada en recomendaciones",
+      "pt": "Garantia de aparecer nas recomendações",
+      "de": "Garantierte Platzierung in den Empfehlungen",
+      "fr": "Placement garanti dans les recommandations"
+    },
+    "5d5d79157bed": {
+      "en": "Not 'maybe' or 'if lucky' - guaranteed. We have direct access to promotion",
+      "uk": "Не 'може бути' або 'якщо пощастить' - гарантовано. У нас прямий доступ до просування",
+      "es": "No es 'puede ser' o 'si tienes suerte', es garantizado. Tenemos acceso directo a la promoción",
+      "pt": "Não é 'pode ser' ou 'se tiver sorte' — é garantido. Temos acesso direto à promoção",
+      "de": "Nicht 'könnte sein' oder 'wenn man Glück hat' – sondern garantiert. Wir haben direkten Zugang zum Promotion",
+      "fr": "Pas de « peut-être » ou de « si tu as de la chance » — c’est garanti. Nous avons un accès direct à la promotion"
+    },
+    "114e0aee2a9a": {
+      "en": "5x Higher Reach Than PornHub",
+      "uk": "Охоплення в х5 вище ніж на PornHub",
+      "es": "Alcance hasta 5x mayor que en PornHub",
+      "pt": "Alcance até 5x maior que no PornHub",
+      "de": "Die Reichweite ist um das 5-Fache höher als auf PornHub",
+      "fr": "Portée jusqu’à 5 fois supérieure à celle de PornHub"
+    },
+    "a337d623640f": {
+      "en": "Proven on real models. Facts, not promises",
+      "uk": "Перевірено на реальних моделях. Факти, не обіцянки",
+      "es": "Comprobado con modelos reales. Hechos, no promesas",
+      "pt": "Testado com modelos reais. Fatos, não promessas",
+      "de": "Getestet an echten Models. Fakten, keine Versprechen",
+      "fr": "Testé sur de vraies modèles. Des faits, pas des promesses"
+    },
+    "3db260b46698": {
+      "en": "Almost No Competition",
+      "uk": "Майже немає конкуренції",
+      "es": "Casi sin competencia",
+      "pt": "Quase nenhuma concorrência",
+      "de": "Fast keine Konkurrenz",
+      "fr": "Presque pas de concurrence"
+    },
+    "0494d304a572": {
+      "en": "Platform is new - getting to TOP is easy now. In six months there'll be crowds, you'll be late",
+      "uk": "Платформа нова - потрапити в ТОП зараз легко. Через півроку буде натовп, запізнишся",
+      "es": "La plataforma es nueva: entrar al TOP ahora es fácil. En seis meses habrá mucha competencia, y llegarás tarde",
+      "pt": "A plataforma é nova — entrar no TOP agora é fácil. Daqui a seis meses haverá multidões, e você chegará atrasado",
+      "de": "Die Plattform ist neu – jetzt leicht in die Top-Positionen gelangen. In sechs Monaten wird es voll sein, dann kommst du zu spät",
+      "fr": "La plateforme est nouvelle — grimper dans le TOP est facile maintenant. Dans six mois, il y aura une foule, tu seras en retard"
+    },
+    "5d847f2fc656": {
+      "en": "Double Monetization",
+      "uk": "Подвійна монетизація",
+      "es": "Doble monetización",
+      "pt": "Dupla monetização",
+      "de": "Doppelte Monetarisierung",
+      "fr": "Double monétisation"
+    },
+    "72525cd746a6": {
+      "en": "We insert your links (OF, TG, Fansly) - double monetization from single content",
+      "uk": "Вставляємо твої посилання (OF, TG, Fansly) - подвійна монетизація з одного контенту",
+      "es": "Incluimos tus enlaces (OF, TG, Fansly): doble ganancia por un mismo contenido",
+      "pt": "Inserimos seus links (OF, TG, Fansly) — dupla monetização a partir de um mesmo conteúdo",
+      "de": "Wir integrieren deine Links (OF, TG, Fansly) – doppelte Einnahmen aus einem Content",
+      "fr": "Nous ajoutons tes liens (OF, TG, Fansly) — double monétisation à partir d’un seul contenu"
+    },
+    "1e00c353970a": {
+      "en": "What We Need From You",
+      "uk": "Від тебе потрібно",
+      "es": "Lo que necesitamos de ti",
+      "pt": "O que precisamos de você",
+      "de": "Von dir benötigen wir",
+      "fr": "Ce que nous demandons"
+    },
+    "290a748d503f": {
+      "en": "Platform verification",
+      "uk": "Верифікація на платформі",
+      "es": "Verificación en la plataforma",
+      "pt": "Verificação na plataforma",
+      "de": "Verifizierung auf der Plattform",
+      "fr": "Vérification sur la plateforme"
+    },
+    "fba2748d3202": {
+      "en": "5-10 starter videos (quality not critical)",
+      "uk": "5-10 стартових відео (якість не критична)",
+      "es": "5-10 videos iniciales (la calidad no es crítica)",
+      "pt": "5-10 vídeos iniciais (qualidade não é crítica)",
+      "de": "5–10 Startvideos (Qualität ist nicht entscheidend)",
+      "fr": "5 à 10 vidéos de départ (la qualité n’est pas critique)"
+    },
+    "f2454e5ec651": {
+      "en": "Everything else (editing, thumbnails, SEO, algorithms) - our work",
+      "uk": "Все інше (монтаж, превью, SEO, алгоритми) - наша робота",
+      "es": "Todo lo demás (edición, miniaturas, SEO, algoritmos) es nuestro trabajo",
+      "pt": "Todo o resto (edição, capa, SEO, algoritmos) é com a gente",
+      "de": "Alles Weitere (Schnitt, Vorschaubilder, SEO, Algorithmen) – machen wir",
+      "fr": "Le reste (montage, vignettes, SEO, algorithmes) — c’est notre travail"
+    },
+    "fa60146d1c72": {
+      "en": "⚡ Strictly Limited: 15 Models",
+      "uk": "⚡ Набір жорстко обмежений: 15 моделей",
+      "es": "⚡ Plazas limitadas: solo 15 modelos",
+      "pt": "⚡ Vagas extremamente limitadas: apenas 15 modelos",
+      "de": "⚡ Die Teilnehmerzahl ist streng begrenzt: nur 15 Models",
+      "fr": "⚡ Inscriptions strictement limitées : 15 modèles"
+    },
+    "3bf0e8998439": {
+      "en": "Goal: reach platform TOP-30 in 2 months and stay there. Application-based selection - we don't take everyone",
+      "uk": "Мета: увійти в ТОП-30 платформи за 2 місяці та утриматися. Відбір по заявках - беремо не всіх",
+      "es": "Objetivo: entrar en el TOP-30 de la plataforma en 2 meses y mantenerse. Selección por solicitud: no aceptamos a todos",
+      "pt": "Objetivo: entrar no TOP-30 da plataforma em 2 meses e se manter lá. Seleção por inscrição — não aceitamos todos",
+      "de": "Ziel: innerhalb von 2 Monaten in die Top-30 der Plattform aufsteigen und dort bleiben. Auswahl über Bewerbungen – wir nehmen nicht alle",
+      "fr": "Objectif : entrer dans le TOP-30 de la plateforme en 2 mois et y rester. Sélection sur candidature — nous ne prenons pas tout le monde"
+    },
+    "1fd46f5239af": {
+      "en": "Want to Join the Program?",
+      "uk": "Хочеш потрапити в програму?",
+      "es": "¿Quieres entrar en el programa?",
+      "pt": "Quer entrar no programa?",
+      "de": "Möchtest du an dem Programm teilnehmen?",
+      "fr": "Tu veux intégrer le programme ?"
+    },
+    "0d05db986f7c": {
+      "en": "Submit application and we'll contact you to discuss details",
+      "uk": "Надішли заявку і ми зв'яжемося з тобою для обговорення деталей",
+      "es": "Envía tu solicitud y nos pondremos en contacto contigo para discutir los detalles",
+      "pt": "Envie sua inscrição e entraremos em contato para discutir os detalhes",
+      "de": "Sende deine Bewerbung, wir melden uns bei dir, um die Details zu besprechen",
+      "fr": "Envoie ta candidature et nous te contacterons pour discuter des détails"
+    },
+    "67020d96514e": {
+      "en": "Submit Application",
+      "uk": "Подати заявку",
+      "es": "Enviar solicitud",
+      "pt": "Inscrever-se",
+      "de": "Bewerben",
+      "fr": "Soumettre une candidature"
+    },
+    "2e35624a7e71": {
+      "en": "Ask Question",
+      "uk": "Поставити питання",
+      "es": "Hacer una pregunta",
+      "pt": "Fazer pergunta",
+      "de": "Frage stellen",
+      "fr": "Poser une question"
+    },
+    "cd578dd83ad0": {
+      "en": "Dubai Residency",
+      "uk": "Резидентство в Дубаї",
+      "es": "Residencia en Dubái",
+      "pt": "Residência em Dubai",
+      "de": "Residenz in Dubai",
+      "fr": "Résidence à Dubaï"
+    },
+    "4608f42a2f05": {
+      "en": "ID Dubai processing in 10-14 days with full process support",
+      "uk": "Оформлення ID Dubai за 10-14 днів з повним супроводом процесу",
+      "es": "Tramitación del ID de Dubái en 10-14 días con acompañamiento completo del proceso",
+      "pt": "Obtenção do ID Dubai em 10-14 dias com acompanhamento completo do processo",
+      "de": "Beantragung der ID Dubai innerhalb von 10–14 Tagen mit vollständiger Betreuung",
+      "fr": "Obtention de l'ID Dubai en 10 à 14 jours avec accompagnement complet du processus"
+    },
+    "b0687d11a0e8": {
+      "en": "Main Information",
+      "uk": "Основна інформація",
+      "es": "Información principal",
+      "pt": "Informações principais",
+      "de": "Wichtige Informationen",
+      "fr": "Informations principales"
+    },
+    "f7ca8c1a96c9": {
+      "en": "Processing Time",
+      "uk": "Терміни оформлення",
+      "es": "Plazos de tramitación",
+      "pt": "Prazo de obtenção",
+      "de": "Bearbeitungsdauer",
+      "fr": "Délais de traitement"
+    },
+    "56cd29cd752a": {
+      "en": "10-14 days from document submission",
+      "uk": "10-14 днів з моменту подачі документів",
+      "es": "10-14 días desde la presentación de documentos",
+      "pt": "10-14 dias a partir do envio dos documentos",
+      "de": "10–14 Tage ab Einreichung der Dokumente",
+      "fr": "10 à 14 jours à compter du dépôt des documents"
+    },
+    "ea72be52ed34": {
+      "en": "$1750 - complete support package from A to Z",
+      "uk": "$1750 - повний пакет супроводу від А до Я",
+      "es": "$1750 - paquete completo de acompañamiento de principio a fin",
+      "pt": "$1750 - pacote completo com suporte de ponta a ponta",
+      "de": "$1750 - Komplettservice von A bis Z",
+      "fr": "1750 $ - forfait complet d'accompagnement de A à Z"
+    },
+    "87e7a85d5987": {
+      "en": "Validity Period",
+      "uk": "Термін дії",
+      "es": "Duración",
+      "pt": "Validade",
+      "de": "Gültigkeitsdauer",
+      "fr": "Durée de validité"
+    },
+    "a54cfe296e91": {
+      "en": "1 year with renewal option",
+      "uk": "1 рік з можливістю продовження",
+      "es": "1 año con posibilidad de renovación",
+      "pt": "1 ano, com possibilidade de renovação",
+      "de": "1 Jahr, Verlängerung möglich",
+      "fr": "1 an, renouvelable"
+    },
+    "8234d57815d1": {
+      "en": "Renewal",
+      "uk": "Продовження",
+      "es": "Renovación",
+      "pt": "Renovação",
+      "de": "Verlängerung",
+      "fr": "Renouvellement"
+    },
+    "f56548abdde5": {
+      "en": "Border crossing required every 6 months",
+      "uk": "Раз на півроку необхідно перетинати кордон Дубая",
+      "es": "Cada seis meses es necesario salir y volver a cruzar la frontera de Dubái",
+      "pt": "É necessário sair e retornar ao Dubai a cada 6 meses",
+      "de": "Alle sechs Monate muss die Grenze von Dubai überquert werden",
+      "fr": "Une sortie du territoire de Dubaï est requise tous les six mois"
+    },
+    "7e91d3eeda61": {
+      "en": "What You Need",
+      "uk": "Що потрібно від вас",
+      "es": "Qué necesitamos de ti",
+      "pt": "O que precisamos de você",
+      "de": "Was wir von Ihnen benötigen",
+      "fr": "Ce que nous demandons"
+    },
+    "292e99e122ae": {
+      "en": "Passport scan",
+      "uk": "Скан закордонного паспорта",
+      "es": "Copia escaneada del pasaporte",
+      "pt": "Cópia digital do passaporte",
+      "de": "Scan des Reisepasses",
+      "fr": "Copie scannée du passeport"
+    },
+    "3544884ce200": {
+      "en": "Photo in required format (we'll provide instructions)",
+      "uk": "Фото потрібного формату (інструкцію надамо)",
+      "es": "Foto en el formato requerido (te enviaremos las instrucciones)",
+      "pt": "Foto no formato exigido (enviaremos as instruções)",
+      "de": "Foto im benötigten Format (Anleitung geben wir Ihnen)",
+      "fr": "Photo au format requis (nous vous enverrons les instructions)"
+    },
+    "2de38356d4de": {
+      "en": "Fly to Dubai after approval",
+      "uk": "Прилетіти в Дубай після схвалення",
+      "es": "Viajar a Dubái tras la aprobación",
+      "pt": "Viajar para Dubai após a aprovação",
+      "de": "Anreise nach Dubai nach Genehmigung",
+      "fr": "Se rendre à Dubaï après approbation"
+    },
+    "4eaf99429bea": {
+      "en": "What's Included",
+      "uk": "Що включено в послугу",
+      "es": "Qué incluye el servicio",
+      "pt": "O que está incluso no serviço",
+      "de": "Was im Service enthalten ist",
+      "fr": "Ce qui est inclus dans le service"
+    },
+    "7ecf8b7983b7": {
+      "en": "Full process support",
+      "uk": "Повний супровід всього процесу",
+      "es": "Acompañamiento completo durante todo el proceso",
+      "pt": "Acompanhamento completo de todo o processo",
+      "de": "Vollständige Begleitung während des gesamten Prozesses",
+      "fr": "Accompagnement complet tout au long du processus"
+    },
+    "09c4bdc7fc08": {
+      "en": "Detailed instructions: navigation, savings, communication",
+      "uk": "Детальні інструкції: навігація, економія, комунікація",
+      "es": "Instrucciones detalladas: navegación, ahorro, comunicación",
+      "pt": "Instruções detalhadas: navegação, economia e comunicação",
+      "de": "Detaillierte Anleitungen: Navigation, Kostenersparnis, Kommunikation",
+      "fr": "Instructions détaillées : navigation, économies, communication"
+    },
+    "e074799f0972": {
+      "en": "Guaranteed document approval (100%) for OnlyFans registration",
+      "uk": "Гарантоване проходження документа (100%) при реєстрації OnlyFans",
+      "es": "Aprobación garantizada del documento (100%) al registrarse en OnlyFans",
+      "pt": "Garantia de aprovação do documento (100%) ao se registrar no OnlyFans",
+      "de": "Sichere Genehmigung des Dokuments (100 %) bei der OnlyFans-Registrierung",
+      "fr": "Obtention garantie du document (100 %) lors de l'inscription sur OnlyFans"
+    },
+    "5d0c3ac3718e": {
+      "en": "Additional Costs",
+      "uk": "Додаткові витрати",
+      "es": "Gastos adicionales",
+      "pt": "Despesas adicionais",
+      "de": "Zusätzliche Kosten",
+      "fr": "Frais supplémentaires"
+    },
+    "61440a52201a": {
+      "en": "Medical tests: ~$200 (paid in Dubai)",
+      "uk": "Медичні аналізи: ~$200 (оплата в Дубаї)",
+      "es": "Análisis médicos: ~$200 (pago en Dubái)",
+      "pt": "Exames médicos: ~$200 (pagamento em Dubai)",
+      "de": "Medizinische Untersuchungen: ~$200 (Zahlung in Dubai)",
+      "fr": "Analyses médicales : ~200 $ (paiement sur place à Dubaï)"
+    },
+    "db0f0318c267": {
+      "en": "Accommodation and meals: ~$1000 for 5-6 days (includes housing, 3 meals daily, taxi and living expenses)",
+      "uk": "Проживання та харчування: ~$1000 на 5-6 днів (включає житло, харчування 3 рази на день, таксі та побутові витрати)",
+      "es": "Alojamiento y manutención: ~$1000 durante 5-6 días (incluye alojamiento, comida 3 veces al día, taxi y gastos básicos)",
+      "pt": "Hospedagem e alimentação: ~$1000 por 5-6 dias (inclui acomodação, alimentação 3 vezes ao dia, táxi e despesas diárias)",
+      "de": "Unterkunft und Verpflegung: ~$1000 für 5–6 Tage (beinhaltet Unterkunft, 3 Mahlzeiten täglich, Taxi und alltägliche Ausgaben)",
+      "fr": "Hébergement et nourriture : ~1000 $ pour 5 à 6 jours (inclut logement, repas 3 fois par jour, taxi et dépenses quotidiennes)"
+    },
+    "c54bf00e9958": {
+      "en": "Trip to Dubai",
+      "uk": "Поїздка в Дубай",
+      "es": "Viaje a Dubái",
+      "pt": "Viagem para Dubai",
+      "de": "Anreise nach Dubai",
+      "fr": "Voyage à Dubaï"
+    },
+    "d3a2a2d28e54": {
+      "en": "Required stay: 5-6 days. We'll advise where to stay and how to save money.",
+      "uk": "Необхідне перебування: 5-6 днів. Ми підкажемо, де зупинитися і як заощадити.",
+      "es": "Estancia necesaria: 5-6 días. Te indicaremos dónde alojarte y cómo ahorrar.",
+      "pt": "Permanência obrigatória: 5-6 dias. Nós indicaremos onde se hospedar e como economizar.",
+      "de": "Erforderlicher Aufenthalt: 5–6 Tage. Wir beraten Sie gern bei der Unterkunft und wie Sie Geld sparen können.",
+      "fr": "Présence requise sur place : 5 à 6 jours. Nous vous conseillerons sur l'hébergement et comment économiser."
+    },
+    "bbc01a5fb2ab": {
+      "en": "After Receiving Document",
+      "uk": "Після отримання документа",
+      "es": "Tras la recepción del documento",
+      "pt": "Após receber o documento",
+      "de": "Nach Erhalt des Dokuments",
+      "fr": "Après réception du document"
+    },
+    "454dbc37beeb": {
+      "en": "Dubai SIM card registration",
+      "uk": "Реєстрація SIM-карти в Дубаї",
+      "es": "Registro de tarjeta SIM en Dubái",
+      "pt": "Registro de chip em Dubai",
+      "de": "SIM-Karten-Registrierung in Dubai",
+      "fr": "Enregistrement de la carte SIM à Dubaï"
+    },
+    "87b678d33165": {
+      "en": "OnlyFans (100% verification pass)",
+      "uk": "OnlyFans (100% проходження верифікації)",
+      "es": "OnlyFans (verificación al 100%)",
+      "pt": "OnlyFans (100% de verificação garantida)",
+      "de": "OnlyFans (100 % erfolgreiche Verifizierung)",
+      "fr": "OnlyFans (vérification réussie à 100%)"
+    },
+    "a7e258e8f047": {
+      "en": "Paxum and Skrill for withdrawals",
+      "uk": "Paxum і Skrill для виведення коштів",
+      "es": "Paxum y Skrill para retirar fondos",
+      "pt": "Paxum e Skrill para saques",
+      "de": "Paxum und Skrill für Auszahlungen",
+      "fr": "Paxum et Skrill pour le retrait d'argent"
+    },
+    "4d7a99c6d900": {
+      "en": "Dubai bank account (discussed individually)",
+      "uk": "Банківський рахунок в Дубаї (обговорюється індивідуально)",
+      "es": "Cuenta bancaria en Dubái (se discute individualmente)",
+      "pt": "Conta bancária em Dubai (discutido individualmente)",
+      "de": "Bankkonto in Dubai (wird individuell besprochen)",
+      "fr": "Compte bancaire à Dubaï (discuté individuellement)"
+    },
+    "daf3bececadd": {
+      "en": "Ready to Get ID Dubai?",
+      "uk": "Готові отримати ID Dubai?",
+      "es": "¿Listo para obtener tu ID Dubái?",
+      "pt": "Pronto para obter seu ID Dubai?",
+      "de": "Bereit, Ihre Dubai-ID zu erhalten?",
+      "fr": "Prêt à obtenir votre ID Dubai ?"
+    },
+    "63a21f69caee": {
+      "en": "Contact us for consultation and to start the processing",
+      "uk": "Зв'яжіться з нами для консультації та початку процесу оформлення",
+      "es": "Contáctanos para una consulta y comenzar el proceso de solicitud",
+      "pt": "Entre em contato conosco para consultoria e iniciar o processo",
+      "de": "Kontaktieren Sie uns für eine Beratung und um den Anmeldeprozess zu starten",
+      "fr": "Contactez-nous pour une consultation et pour commencer le processus de demande"
+    },
+    "a41c7002eb01": {
+      "en": "Professional support and high income for webcam models",
+      "uk": "Професійна підтримка та високі доходи для вебкам-моделей",
+      "es": "Soporte profesional e ingresos altos para modelos de webcam",
+      "pt": "Suporte profissional e altos ganhos para modelos de webcam",
+      "de": "Professionelle Unterstützung und hohe Einnahmen für Webcam-Models",
+      "fr": "Soutien professionnel et revenus élevés pour modèles webcam"
+    },
+    "ade7c42a2b2c": {
+      "en": "Work Conditions",
+      "uk": "Умови роботи",
+      "es": "Condiciones de trabajo",
+      "pt": "Condições de trabalho",
+      "de": "Arbeitsbedingungen",
+      "fr": "Conditions de travail"
+    },
+    "8b58c237c3e4": {
+      "en": "Base Rate",
+      "uk": "Базова ставка",
+      "es": "Tarifa base",
+      "pt": "Taxa básica",
+      "de": "Grundprovision",
+      "fr": "Taux de base"
+    },
+    "0297d2527954": {
+      "en": "30% of earnings",
+      "uk": "30% від заробітку",
+      "es": "30% de las ganancias",
+      "pt": "30% dos ganhos",
+      "de": "30 % vom Verdienst",
+      "fr": "30 % des gains"
+    },
+    "86f7cbf0f37b": {
+      "en": "Monthly Totals",
+      "uk": "Щомісячні тотали",
+      "es": "Totales mensuales",
+      "pt": "Totais mensais",
+      "de": "Monatliche Gesamtsummen",
+      "fr": "Revenus mensuels totaux"
+    },
+    "828050578a29": {
+      "en": "From $5k-15k monthly",
+      "uk": "Від 5к-15к$ щомісяця",
+      "es": "De 5k a 15k$ mensuales",
+      "pt": "De 5k a 15k$ por mês",
+      "de": "Ab 5k–15k $ monatlich",
+      "fr": "De 5 000 à 15 000 $ par mois"
+    },
+    "1cf2525cd635": {
+      "en": "Payments",
+      "uk": "Виплати",
+      "es": "Pagos",
+      "pt": "Pagamentos",
+      "de": "Auszahlungen",
+      "fr": "Paiements"
+    },
+    "b93139528950": {
+      "en": "Twice a month in cryptocurrency",
+      "uk": "2 рази на місяць на криптовалюту",
+      "es": "2 veces al mes en criptomoneda",
+      "pt": "2 vezes por mês em criptomoeda",
+      "de": "2-mal im Monat in Kryptowährung",
+      "fr": "2 fois par mois en cryptomonnaie"
+    },
+    "8fb0b28564b3": {
+      "en": "For Top Models",
+      "es": "Para modelos top",
+      "pt": "Para modelos top",
+      "de": "Für Top-Models",
+      "fr": "Pour les top modèles"
+    },
+    "d8c8b4c65b1c": {
+      "en": "40/60 or 50/50 for models with their own equipment",
+      "uk": "40/60 або 50/50 для моделей зі своїм обладнанням",
+      "es": "40/60 o 50/50 para modelos con su propio equipo",
+      "pt": "40/60 ou 50/50 para modelos com seu próprio equipamento",
+      "de": "40/60 oder 50/50 für Models mit eigener Ausrüstung",
+      "fr": "40/60 ou 50/50 pour les modèles avec leur propre équipement"
+    },
+    "32f921d938a3": {
+      "en": "What We Offer",
+      "uk": "Що пропонуємо",
+      "es": "Lo que ofrecemos",
+      "pt": "O que oferecemos",
+      "de": "Was wir bieten",
+      "fr": "Ce que nous proposons"
+    },
+    "506d84ee6b61": {
+      "en": "Work on 7 Sites",
+      "uk": "Робота на 7 сайтах",
+      "es": "Trabajar en 7 sitios web",
+      "pt": "Trabalho em 7 sites",
+      "de": "Arbeit auf 7 Websites",
+      "fr": "Travail sur 7 sites"
+    },
+    "8c954dddde33": {
+      "en": "With personal operator on each platform",
+      "uk": "З персональним оператором на кожній платформі",
+      "es": "Con un operador personal en cada plataforma",
+      "pt": "Com operador pessoal em cada plataforma",
+      "de": "Mit persönlichen Operator auf jeder Plattform",
+      "fr": "Avec un opérateur dédié sur chaque plateforme"
+    },
+    "41fce4dae37f": {
+      "en": "Account Management",
+      "uk": "Управління акаунтами",
+      "es": "Gestión de cuentas",
+      "pt": "Gestão de contas",
+      "de": "Account-Management",
+      "fr": "Gestion des comptes"
+    },
+    "83cbf492ef59": {
+      "en": "Full management of your Fansly and OnlyFans accounts",
+      "uk": "Ведення ваших Fansly та OnlyFans під ключ",
+      "es": "Gestión completa de tus Fansly y OnlyFans",
+      "pt": "Gestão completa das suas contas Fansly e OnlyFans",
+      "de": "Verwaltung Ihrer Fansly- und OnlyFans-Profile inklusive",
+      "fr": "Gestion complète de vos profils Fansly et OnlyFans"
+    },
+    "466f16e16b11": {
+      "en": "Technical Support",
+      "uk": "Техпідтримка",
+      "es": "Soporte técnico",
+      "pt": "Suporte técnico",
+      "de": "Technischer Support",
+      "fr": "Support technique"
+    },
+    "3c2f3b6cb04c": {
+      "en": "24/7 support for any questions",
+      "uk": "Підтримка 24/7 для вирішення будь-яких питань",
+      "es": "Soporte 24/7 para resolver cualquier problema",
+      "pt": "Suporte 24/7 para resolver qualquer questão",
+      "de": "24/7-Support für alle Fragen",
+      "fr": "Assistance 24/7 pour toutes vos questions"
+    },
+    "882904aaa0bb": {
+      "en": "Flexible Schedule",
+      "uk": "Вільний графік",
+      "es": "Horario flexible",
+      "pt": "Horário flexível",
+      "de": "Flexibler Zeitplan",
+      "fr": "Horaire flexible"
+    },
+    "3c5946f44527": {
+      "en": "Work at your convenient time",
+      "uk": "Працюйте у зручний для вас час",
+      "es": "Trabaja cuando mejor te convenga",
+      "pt": "Trabalhe no horário que for mais conveniente para você",
+      "de": "Arbeiten Sie zu Ihrer gewünschten Zeit",
+      "fr": "Travaillez à votre rythme"
+    },
+    "53dccde76b40": {
+      "en": "Relocation to Georgia",
+      "uk": "Релокація до Грузії",
+      "es": "Relocalización a Georgia",
+      "pt": "Realocação para a Geórgia",
+      "de": "Umsiedlung nach Georgien",
+      "fr": "Relocalisation en Géorgie"
+    },
+    "20ee663d09b8": {
+      "en": "Full Package",
+      "uk": "Повний пакет",
+      "es": "Paquete completo",
+      "pt": "Pacote completo",
+      "de": "Vollständiges Paket",
+      "fr": "Forfait complet"
+    },
+    "b89af6856b1a": {
+      "en": "Housing + equipment for work",
+      "uk": "Житло + обладнання для роботи",
+      "es": "Alojamiento + equipo para trabajar",
+      "pt": "Acomodação + equipamentos para trabalho",
+      "de": "Unterkunft + Ausrüstung für die Arbeit",
+      "fr": "Logement + équipement professionnel"
+    },
+    "9b19ad0c8596": {
+      "en": "Documents",
+      "uk": "Документи",
+      "es": "Documentación",
+      "pt": "Documentos",
+      "de": "Dokumente",
+      "fr": "Documents"
+    },
+    "959ac5b5f43b": {
+      "en": "Insurance, bank account, residence permit",
+      "uk": "Страховка, банківський рахунок, ВНЖ",
+      "es": "Seguro, cuenta bancaria, residencia",
+      "pt": "Seguro, conta bancária, visto de residência (VNR)",
+      "de": "Versicherung, Bankkonto, Aufenthaltserlaubnis",
+      "fr": "Assurance, compte bancaire, résidence"
+    },
+    "6ca4d43dbfac": {
+      "en": "Benefits",
+      "uk": "Переваги",
+      "es": "Ventajas",
+      "pt": "Vantagens",
+      "de": "Vorteile",
+      "fr": "Avantages"
+    },
+    "6fa5fd0e4191": {
+      "en": "Low taxes, high quality of life",
+      "uk": "Низькі податки, висока якість життя",
+      "es": "Bajos impuestos, alta calidad de vida",
+      "pt": "Baixos impostos, alta qualidade de vida",
+      "de": "Niedrige Steuern, hohe Lebensqualität",
+      "fr": "Faibles taxes, haute qualité de vie"
+    },
+    "d2dccd68c536": {
+      "en": "Ready to Start Earning?",
+      "uk": "Готові почати заробляти?",
+      "es": "¿Listo para empezar a ganar dinero?",
+      "pt": "Pronto para começar a ganhar dinheiro?",
+      "de": "Bereit, mit dem Verdienen zu beginnen?",
+      "fr": "Prêt à gagner de l'argent ?"
+    },
+    "b5741b4fdd70": {
+      "en": "Contact us for consultation and to start cooperation",
+      "uk": "Зв'яжіться з нами для консультації та початку співпраці",
+      "es": "Contáctanos para una consulta y comenzar la colaboración",
+      "pt": "Entre em contato conosco para uma consulta e começar a parceria",
+      "de": "Kontaktieren Sie uns für eine Beratung und um die Zusammenarbeit zu starten",
+      "fr": "Contactez-nous pour une consultation et commencer la collaboration"
+    },
+    "76c27ae8b1bf": {
+      "en": "Contact Us",
+      "uk": "Зв'язатися з нами",
+      "es": "Contactarnos",
+      "pt": "Entrar em contato",
+      "de": "Kontaktieren Sie uns",
+      "fr": "Nous contacter"
+    },
+    "d65fe985ec2b": {
+      "en": "Official platform for buying and selling model contacts. Guarantee up to 14 days. Secure transactions.",
+      "uk": "Офіційна площадка купівлі та продажу контактів моделей. Гарантія до 14 днів. Захищені угоди.",
+      "es": "Plataforma oficial para comprar y vender contactos de modelos. Garantía de hasta 14 días. Transacciones seguras.",
+      "pt": "Plataforma oficial para compra e venda de contatos de modelos. Garantia de até 14 dias. Transações seguras.",
+      "de": "Offizielle Plattform zum Kauf und Verkauf von Model-Kontakten. Garantie bis zu 14 Tage. Sichere Transaktionen.",
+      "fr": "Plateforme officielle d'achat et de vente de contacts de modèles. Garantie jusqu'à 14 jours. Transactions sécurisées."
+    },
+    "399f5357b3a8": {
+      "en": "Model Statuses",
+      "uk": "Статуси моделей",
+      "es": "Estados de los modelos",
+      "pt": "Status dos modelos",
+      "de": "Status der Models",
+      "fr": "Statuts des modèles"
+    },
+    "db0faac3f7e2": {
+      "en": "Available, waiting for agency",
+      "uk": "Вільна, чекає агентство",
+      "es": "Disponible, esperando agencia",
+      "pt": "Disponível, aguardando agência",
+      "de": "Frei, wartet auf Agentur",
+      "fr": "Disponible, en attente d'agence"
+    },
+    "1fcc7a4171e6": {
+      "en": "Reserved, awaiting decision",
+      "uk": "Зарезервована, очікування рішення",
+      "es": "Reservada, esperando decisión",
+      "pt": "Reservado, aguardando decisão",
+      "de": "Reserviert, wartet auf Entscheidung",
+      "fr": "Réservée, en attente de décision"
+    },
+    "2b5d716ac0cc": {
+      "en": "Bidding between multiple agencies",
+      "uk": "Торги між кількома агентствами",
+      "es": "Subasta entre varias agencias",
+      "pt": "Leilão entre várias agências",
+      "de": "Ausschreibung zwischen mehreren Agenturen",
+      "fr": "En négociation entre plusieurs agences"
+    },
+    "eb748e6551eb": {
+      "en": "Sold, page transferred",
+      "uk": "Продана, сторінка передана",
+      "es": "Vendida, página entregada",
+      "pt": "Vendido, página entregue",
+      "de": "Verkauft, Seite übergeben",
+      "fr": "Vendue, page transférée"
+    },
+    "79c50f66f226": {
+      "en": "Purchase",
+      "uk": "Купівля",
+      "es": "Compra",
+      "pt": "Compra",
+      "de": "Kauf",
+      "fr": "Acheter"
+    },
+    "494884c7c430": {
+      "en": "Full payment (guarantor welcomed) → create chat → provide keys, contacts, starter content",
+      "uk": "Повна оплата (гарант вітається) → створюємо чат → видаємо ключі, контакти, старт-контент",
+      "es": "Pago completo (garante recomendado) → creamos chat → entregamos claves, contactos y contenido inicial",
+      "pt": "Pagamento completo (garantia é bem-vinda) → criamos um chat → entregamos chaves, contatos e conteúdo inicial",
+      "de": "Vollständige Zahlung (Garant wird empfohlen) → Chat wird erstellt → Schlüssel, Kontakte, Start-Content übergeben",
+      "fr": "Paiement complet (garant recommandé) → création d'un chat → remise des clés, contacts et contenu de démarrage"
+    },
+    "91e33769362a": {
+      "en": "14 days to check OF page, email, payment methods",
+      "uk": "14 днів ви перевіряєте OF-сторінку, пошту, платіжки",
+      "es": "14 días pruebas la página de OF, el correo y los pagos",
+      "pt": "14 dias para testar a página do OnlyFans, e-mail e pagamentos",
+      "de": "14 Tage prüfen Sie die OF-Seite, E-Mail, Zahlungsmethoden",
+      "fr": "14 jours pour tester le compte OnlyFans, l'e-mail et les paiements"
+    },
+    "248dcfd8db1b": {
+      "en": "After 14 days guarantee closes",
+      "uk": "Після закінчення 14 днів гарантія закривається",
+      "es": "Tras 14 días, la garantía finaliza",
+      "pt": "Após 14 dias, a garantia é encerrada",
+      "de": "Nach Ablauf von 14 Tagen wird die Garantie geschlossen",
+      "fr": "Après 14 jours, la garantie prend fin"
+    },
+    "dbd1e90f21c4": {
+      "en": "14-day guarantee applies to model contacts worth more than $1,000 USD. 10-day guarantee applies to contracts worth less than $1,000 USD",
+      "uk": "Гарантія 14 днів актуальна для модельних контактів вартістю понад 1.000$ USD. Гарантія 10 днів актуальна для контрактів вартістю менше 1.000$ USD",
+      "es": "La garantía de 14 días aplica para contactos de modelos cuyo valor supere los 1.000$ USD. La garantía de 10 días aplica para contratos por debajo de 1.000$ USD",
+      "pt": "A garantia de 14 dias é válida para contatos de modelos com valor superior a 1.000$ USD. A garantia de 10 dias é válida para contratos com valor inferior a 1.000$ USD",
+      "de": "Die 14-tägige Garantie gilt für Model-Kontakte ab 1.000$ USD. Die 10-tägige Garantie gilt für Verträge unter 1.000$ USD",
+      "fr": "La garantie de 14 jours s'applique aux contacts modèles dont le prix est supérieur à 1 000 $ USD. La garantie de 10 jours s'applique aux contrats inférieurs à 1 000 $ USD"
+    },
+    "673e456455f9": {
+      "en": "Agency Obligations",
+      "uk": "Зобов'язання агентства",
+      "es": "Obligaciones de la agencia",
+      "pt": "Obrigações da agência",
+      "de": "Verpflichtungen des Agenturs",
+      "fr": "Obligations de l'agence"
+    },
+    "b8518da55d5a": {
+      "en": "Contact model within 24 hours",
+      "uk": "Зв'язатися з моделлю протягом 24 годин",
+      "es": "Contactar con la modelo dentro de las 24 horas",
+      "pt": "Entrar em contato com a modelo dentro de 24 horas",
+      "de": "Kontakt zum Model innerhalb von 24 Stunden herstellen",
+      "fr": "Contacter la modèle dans les 24 heures"
+    },
+    "80d4d4452efb": {
+      "en": "Communicate correctly, without pressure or insults",
+      "uk": "Спілкуватися коректно, без тиску та образ",
+      "es": "Comunicarse correctamente, sin presión ni ofensas",
+      "pt": "Comunicar-se de forma respeitosa, sem pressão ou ofensas",
+      "de": "Korrekt kommunizieren, ohne Druck oder Beleidigungen",
+      "fr": "Communiquer de manière polie, sans pression ni insultes"
+    },
+    "b9c497bdda37": {
+      "en": "Upon model complaints, market access may be restricted",
+      "uk": "При скаргах моделі доступ до маркету може бути обмежений",
+      "es": "Si la modelo presenta quejas, el acceso al mercado puede ser restringido",
+      "pt": "Em caso de reclamações da modelo, o acesso ao mercado poderá ser restrito",
+      "de": "Bei Beschwerden des Models kann der Zugang zum Marktplatz eingeschränkt werden",
+      "fr": "En cas de plaintes de la modèle, l'accès au marché peut être restreint"
+    },
+    "a5c9cc190a75": {
+      "en": "14-Day Guarantee",
+      "uk": "Гарантія 14 днів",
+      "es": "Garantía de 14 días",
+      "pt": "Garantia de 14 dias",
+      "de": "14-Tage-Garantie",
+      "fr": "Garantie 14 jours"
+    },
+    "c0d9fb6993bb": {
+      "en": "Refund or replacement if:",
+      "uk": "Повернення або заміна якщо:",
+      "es": "Devolución o reemplazo si:",
+      "pt": "Reembolso ou substituição se:",
+      "de": "Rückerstattung oder Ersatz, wenn:",
+      "fr": "Remboursement ou remplacement si :"
+    },
+    "bbb0494d9da2": {
+      "en": "Model disappeared (no response for more than 3 days)",
+      "uk": "Модель зникла (не відповідає більше 3 доби)",
+      "es": "La modelo desaparece (no responde por más de 3 días)",
+      "pt": "A modelo sumir (não responder por mais de 3 dias)",
+      "de": "Das Model ist verschwunden (antwortet seit über 3 Tagen nicht)",
+      "fr": "La modèle a disparu (ne répond pas depuis plus de 3 jours)"
+    },
+    "3d500e9a3ad7": {
+      "en": "Gives extremely sluggish response, delays launch",
+      "uk": "Дає вкрай млявуреакцію, гальмує запуск",
+      "es": "Muestra una respuesta muy débil o retrasa el lanzamiento",
+      "pt": "Demonstrar resposta extremamente fraca, atrasar o lançamento",
+      "de": "Reagiert extrem träge, verzögert den Start",
+      "fr": "Réaction extrêmement lente, retard dans le lancement"
+    },
+    "3380e954f9ff": {
+      "en": "Provided data turned out to be inaccurate",
+      "uk": "Надані дані виявилися недостовірними",
+      "es": "Los datos proporcionados resultaron ser falsos",
+      "pt": "As informações fornecidas forem falsas",
+      "de": "Die bereitgestellten Daten waren unrichtig",
+      "fr": "Les informations fournies s'avèrent inexactes"
+    },
+    "d35b4cb28424": {
+      "en": "Model refuses to sign contract (if needed)",
+      "uk": "Модель відмовляється підписати договір (якщо він потрібен)",
+      "es": "La modelo se niega a firmar el contrato (si es necesario)",
+      "pt": "A modelo recusar assinar o contrato (se necessário)",
+      "de": "Das Model weigert sich, den Vertrag zu unterzeichnen (falls erforderlich)",
+      "fr": "La modèle refuse de signer le contrat (si requis)"
+    },
+    "283d89b2dc15": {
+      "en": "To claim guarantee you need:",
+      "uk": "Для звернення до гарантії потрібні:",
+      "es": "Para solicitar la garantía se requiere:",
+      "pt": "Para solicitar a garantia, são necessários:",
+      "de": "Für Anspruch auf Garantie benötigen Sie:",
+      "fr": "Pour faire une demande de garantie, vous devez fournir :"
+    },
+    "261563c38b0a": {
+      "en": "Full chat log and video call recording (if there was one). No recording → minus 50% from refund amount.",
+      "uk": "Повний чат-лог та запис відео-дзвінка (якщо був). Немає запису → мінус 50% до суми повернення.",
+      "es": "Historial completo del chat y grabación de videollamada (si hubo). Sin grabación → 50% menos en el reembolso.",
+      "pt": "Histórico completo do chat e gravação da videochamada (se houver). Sem gravação → 50% a menos no valor de reembolso.",
+      "de": "Vollständiges Chat-Protokoll und Aufnahme des Video-Calls (falls vorhanden). Keine Aufnahme → 50 % weniger Rückerstattung.",
+      "fr": "Le journal de chat complet et l'enregistrement de l'appel vidéo (si effectué). Pas d'enregistrement → 50 % de moins sur le montant du remboursement."
+    },
+    "6c705e82fd7d": {
+      "en": "Guarantee does not apply if:",
+      "uk": "Гарантія не діє якщо:",
+      "es": "La garantía no aplica si:",
+      "pt": "A garantia não é válida se:",
+      "de": "Garantie gilt nicht, wenn:",
+      "fr": "La garantie n'est pas valable si :"
+    },
+    "d5c12b421def": {
+      "en": "Agency showed incompetence or unprofessionalism",
+      "uk": "Агентство проявило некомпетентність або непрофесіоналізм",
+      "es": "La agencia demostró incompetencia o falta de profesionalismo",
+      "pt": "A agência demonstrar incompetência ou falta de profissionalismo",
+      "de": "Die Agentur inkompetent oder unprofessionell handelte",
+      "fr": "L'agence fait preuve d'incompétence ou de manque de professionnalisme"
+    },
+    "8f8277986930": {
+      "en": "Violated agreements or applied pressure",
+      "uk": "Порушило домовленості або здійснювало тиск",
+      "es": "Incumplió acuerdos o ejerció presión",
+      "pt": "Descumprir acordos ou exercer pressão",
+      "de": "Vereinbarungen gebrochen oder Druck ausgeübt wurde",
+      "fr": "Viole les accords ou exerce une pression"
+    },
+    "b02a357de8d3": {
+      "en": "Model left due to weak offer or lack of earnings",
+      "uk": "Модель пішла через слабкий оффер або відсутність заробітку",
+      "es": "La modelo se retiró por una oferta débil o falta de ganancias",
+      "pt": "A modelo sair devido a uma oferta fraca ou falta de ganhos",
+      "de": "Das Model ging wegen eines schwachen Angebots oder fehlenden Verdiensts",
+      "fr": "La modèle part en raison d'une offre faible ou d'un manque de revenus"
+    },
+    "88cb2761450f": {
+      "en": "Model saw that agency 'doesn't know how'",
+      "uk": "Модель побачила, що агентство 'не вміє'",
+      "es": "La modelo vio que la agencia 'no sabe cómo hacerlo'",
+      "pt": "A modelo perceber que a agência 'não sabe como atuar'",
+      "de": "Das Model erkannte, dass die Agentur 'es nicht kann'",
+      "fr": "La modèle constate que l'agence 'ne sait pas faire'"
+    },
+    "1d533853a8bb": {
+      "en": "After Sale",
+      "uk": "Після продажу",
+      "es": "Tras la venta",
+      "pt": "Após a venda",
+      "de": "Nach dem Verkauf",
+      "fr": "Après la vente"
+    },
+    "48afc3454ddc": {
+      "en": "Model's page is sent to #Sold status",
+      "uk": "Сторінка моделі відправляється в статус #Sold",
+      "es": "La página de la modelo pasa al estado #Sold",
+      "pt": "A página da modelo é movida para o status #Sold",
+      "de": "Das Profil des Models wechselt in den Status #Sold",
+      "fr": "La page de la modèle passe au statut #Sold"
+    },
+    "f076d3b3c178": {
+      "en": "Payment",
+      "es": "Pago",
+      "pt": "Pagamento",
+      "de": "Zahlung",
+      "fr": "Paiement"
+    },
+    "acee645d53fb": {
+      "en": "Cryptocurrency USDT TRC-20",
+      "es": "Criptomoneda USDT TRC-20",
+      "pt": "Criptomoeda USDT TRC-20",
+      "de": "Kryptowährung USDT TRC-20",
+      "fr": "Cryptomonnaie USDT TRC-20"
+    },
+    "07495950c860": {
+      "en": "Join marketplace group",
+      "uk": "Перейти до групи маркетплейсу",
+      "es": "Ir al grupo del marketplace",
+      "pt": "Ir para o grupo do marketplace",
+      "de": "Zur Marktplatz-Gruppe wechseln",
+      "fr": "Accéder au groupe du marché"
+    },
+    "c1e9a4ea185b": {
+      "en": "Login",
+      "uk": "Вхід в акаунт",
+      "es": "Iniciar sesión en la cuenta",
+      "pt": "Entrar na conta",
+      "de": "Einloggen in das Konto",
+      "fr": "Connexion au compte"
+    },
+    "d5ac04200898": {
+      "en": "Forgot Password",
+      "uk": "Відновлення пароля",
+      "es": "Recuperar contraseña",
+      "pt": "Recuperar senha",
+      "de": "Passwort wiederherstellen",
+      "fr": "Réinitialiser le mot de passe"
+    },
+    "5e611d705a8d": {
+      "en": "New Password",
+      "uk": "Новий пароль",
+      "es": "Nueva contraseña",
+      "pt": "Nova senha",
+      "de": "Neues Passwort",
+      "fr": "Nouveau mot de passe"
+    },
+    "e63ae33e7a9b": {
+      "en": "Sign in to save call recordings",
+      "uk": "Увійдіть щоб зберігати записи дзвінків",
+      "es": "Inicia sesión para guardar registros de llamadas",
+      "pt": "Entre para salvar registros de chamadas",
+      "de": "Melden Sie sich an, um Anrufaufzeichnungen zu speichern",
+      "fr": "Connectez-vous pour enregistrer les appels"
+    },
+    "e62a73da8da5": {
+      "en": "Enter your email to reset password",
+      "uk": "Введіть email для відновлення пароля",
+      "es": "Introduce tu email para recuperar la contraseña",
+      "pt": "Insira o e-mail para recuperar a senha",
+      "de": "Geben Sie Ihre E-Mail zur Passwortwiederherstellung ein",
+      "fr": "Saisissez votre email pour réinitialiser le mot de passe"
+    },
+    "7c2a9c66f13e": {
+      "en": "Enter your new password",
+      "uk": "Введіть новий пароль",
+      "es": "Introduce la nueva contraseña",
+      "pt": "Insira a nova senha",
+      "de": "Geben Sie ein neues Passwort ein",
+      "fr": "Saisissez un nouveau mot de passe"
+    },
+    "e6ed245d05d9": {
+      "en": "Continue with Google",
+      "uk": "Продовжити з Google",
+      "es": "Continuar con Google",
+      "pt": "Continuar com Google",
+      "de": "Weiter mit Google",
+      "fr": "Continuer avec Google"
+    },
+    "30bb0333ca15": {
+      "en": "or",
+      "uk": "або",
+      "es": "o",
+      "pt": "ou",
+      "de": "oder",
+      "fr": "ou"
+    },
+    "14f7c63cc128": {
+      "en": "Password",
+      "es": "Contraseña",
+      "pt": "Senha",
+      "de": "Passwort",
+      "fr": "Mot de passe"
+    },
+    "538d885f016a": {
+      "en": "Confirm password",
+      "uk": "Підтвердіть пароль",
+      "es": "Confirmar contraseña",
+      "pt": "Confirme a senha",
+      "de": "Passwort bestätigen",
+      "fr": "Confirmez le mot de passe"
+    },
+    "3cc4d8d58e95": {
+      "en": "Send Reset Link",
+      "uk": "Надіслати посилання",
+      "es": "Enviar enlace",
+      "pt": "Enviar link",
+      "de": "Link senden",
+      "fr": "Envoyer le lien"
+    },
+    "a7769307afa1": {
+      "en": "Save Password",
+      "uk": "Зберегти пароль",
+      "es": "Guardar contraseña",
+      "pt": "Salvar senha",
+      "de": "Passwort speichern",
+      "fr": "Enregistrer le mot de passe"
+    },
+    "42127ad3c475": {
+      "en": "Forgot password?",
+      "uk": "Забули пароль?",
+      "es": "¿Olvidaste la contraseña?",
+      "pt": "Esqueceu a senha?",
+      "de": "Passwort vergessen?",
+      "fr": "Mot de passe oublié ?"
+    },
+    "260430a6ca54": {
+      "en": "Don't have an account? Sign up",
+      "uk": "Немає акаунту? Зареєструватися",
+      "es": "¿No tienes cuenta? Regístrate",
+      "pt": "Não tem uma conta? Registre-se",
+      "de": "Kein Konto? Registrieren",
+      "fr": "Pas de compte ? S'inscrire"
+    },
+    "c5f967a933f1": {
+      "en": "Already have an account? Sign in",
+      "uk": "Вже є акаунт? Увійти",
+      "es": "¿Ya tienes cuenta? Inicia sesión",
+      "pt": "Já tem uma conta? Entrar",
+      "de": "Bereits Konto vorhanden? Einloggen",
+      "fr": "Déjà un compte ? Se connecter"
+    },
+    "3663ccabbd1d": {
+      "en": "Back to login",
+      "uk": "Повернутися до входу",
+      "es": "Volver al inicio de sesión",
+      "pt": "Voltar ao login",
+      "de": "Zurück zur Anmeldung",
+      "fr": "Retour à la connexion"
+    },
+    "de740aafecb9": {
+      "en": "Invalid email format",
+      "uk": "Невірний формат email",
+      "es": "Formato de email no válido",
+      "pt": "Formato de e-mail inválido",
+      "de": "Ungültiges E-Mail-Format",
+      "fr": "Format d'email invalide"
+    },
+    "bc02950b3612": {
+      "en": "Password must be at least 6 characters",
+      "uk": "Пароль має бути мінімум 6 символів",
+      "es": "La contraseña debe tener al menos 6 caracteres",
+      "pt": "A senha deve ter pelo menos 6 caracteres",
+      "de": "Das Passwort muss mindestens 6 Zeichen lang sein",
+      "fr": "Le mot de passe doit comporter au moins 6 caractères"
+    },
+    "2469d7aac9ea": {
+      "en": "Name must be at least 2 characters",
+      "uk": "Ім'я має бути мінімум 2 символи",
+      "es": "El nombre debe tener al menos 2 caracteres",
+      "pt": "O nome deve ter pelo menos 2 caracteres",
+      "de": "Der Name muss mindestens 2 Zeichen lang sein",
+      "fr": "Le nom doit comporter au moins 2 caractères"
+    },
+    "81f8d85603ee": {
+      "en": "Name is too long",
+      "uk": "Ім'я занадто довге",
+      "es": "El nombre es demasiado largo",
+      "pt": "O nome é muito longo",
+      "de": "Der Name ist zu lang",
+      "fr": "Le nom est trop long"
+    },
+    "a73dc9b108b1": {
+      "en": "Passwords don't match",
+      "uk": "Паролі не співпадають",
+      "es": "Las contraseñas no coinciden",
+      "pt": "As senhas não coincidem",
+      "de": "Die Passwörter stimmen nicht überein",
+      "fr": "Les mots de passe ne correspondent pas"
+    },
+    "a88e15d11d94": {
+      "en": "Login Error",
+      "uk": "Помилка входу",
+      "es": "Error al iniciar sesión",
+      "pt": "Erro ao fazer login",
+      "de": "Anmeldung fehlgeschlagen",
+      "fr": "Erreur de connexion"
+    },
+    "2d0d0d9e2c19": {
+      "en": "Invalid email or password",
+      "uk": "Невірний email або пароль",
+      "es": "Correo electrónico o contraseña incorrectos",
+      "pt": "E-mail ou senha inválidos",
+      "de": "Falsche E-Mail oder falsches Passwort",
+      "fr": "E-mail ou mot de passe incorrect"
+    },
+    "177e87edb52d": {
+      "en": "Registration Error",
+      "uk": "Помилка реєстрації",
+      "es": "Error de registro",
+      "pt": "Erro no registro",
+      "de": "Registrierung fehlgeschlagen",
+      "fr": "Erreur d'inscription"
+    },
+    "1ba2c49f7e7b": {
+      "en": "This email is already registered",
+      "uk": "Цей email вже зареєстрований",
+      "es": "Este correo electrónico ya está registrado",
+      "pt": "Este e-mail já está cadastrado",
+      "de": "Diese E-Mail ist bereits registriert",
+      "fr": "Cet e-mail est déjà enregistré"
+    },
+    "21ed9004b5b0": {
+      "en": "Failed to sign in with Google",
+      "uk": "Не вдалося увійти через Google",
+      "es": "No se pudo iniciar sesión con Google",
+      "pt": "Não foi possível fazer login com o Google",
+      "de": "Anmeldung über Google fehlgeschlagen",
+      "fr": "Impossible de se connecter via Google"
+    },
+    "f955aa075a88": {
+      "en": "Welcome!",
+      "uk": "Ласкаво просимо!",
+      "es": "¡Bienvenido!",
+      "pt": "Bem-vindo!",
+      "de": "Willkommen!",
+      "fr": "Bienvenue !"
+    },
+    "5c783b229c90": {
+      "en": "You have successfully logged in",
+      "uk": "Ви успішно увійшли в акаунт",
+      "es": "Has iniciado sesión correctamente",
+      "pt": "Você entrou com sucesso na sua conta",
+      "de": "Sie haben sich erfolgreich eingeloggt",
+      "fr": "Vous êtes connecté avec succès"
+    },
+    "57ec848f01da": {
+      "en": "Account created!",
+      "uk": "Акаунт створено!",
+      "es": "¡Cuenta creada!",
+      "pt": "Conta criada!",
+      "de": "Konto erstellt!",
+      "fr": "Compte créé !"
+    },
+    "8bc6f3a693cf": {
+      "en": "Welcome to APLink",
+      "uk": "Ласкаво просимо до APLink",
+      "es": "Bienvenido a APLink",
+      "pt": "Bem-vindo ao APLink",
+      "de": "Willkommen bei APLink",
+      "fr": "Bienvenue sur APLink"
+    },
+    "48b0d4ddb613": {
+      "en": "Email sent!",
+      "uk": "Лист надіслано!",
+      "es": "¡Correo enviado!",
+      "pt": "E-mail enviado!",
+      "de": "E-Mail gesendet!",
+      "fr": "E-mail envoyé !"
+    },
+    "4a7df87b8b44": {
+      "en": "Check your email for password recovery",
+      "uk": "Перевірте вашу пошту для відновлення пароля",
+      "es": "Revisa tu correo para recuperar la contraseña",
+      "pt": "Verifique seu e-mail para redefinir a senha",
+      "de": "Überprüfen Sie Ihre E-Mail zur Passwortwiederherstellung",
+      "fr": "Vérifiez votre boîte e-mail pour réinitialiser votre mot de passe"
+    },
+    "33919bf6c73d": {
+      "en": "Password updated!",
+      "uk": "Пароль оновлено!",
+      "es": "¡Contraseña actualizada!",
+      "pt": "Senha atualizada!",
+      "de": "Passwort aktualisiert!",
+      "fr": "Mot de passe mis à jour !"
+    },
+    "c7fcec9b2ff2": {
+      "en": "You can now log in with your new password",
+      "uk": "Тепер ви можете увійти з новим паролем",
+      "es": "Ahora puedes iniciar sesión con tu nueva contraseña",
+      "pt": "Agora você pode fazer login com a nova senha",
+      "de": "Jetzt können Sie sich mit Ihrem neuen Passwort anmelden",
+      "fr": "Vous pouvez désormais vous connecter avec votre nouveau mot de passe"
+    },
+    "ba8f1982efec": {
+      "en": "Translator",
+      "uk": "Перекладач",
+      "es": "Traductor",
+      "pt": "Tradutor",
+      "de": "Übersetzer",
+      "fr": "Traducteur"
+    },
+    "d5fec7479b43": {
+      "en": "History",
+      "uk": "Історія",
+      "es": "Historial",
+      "pt": "Histórico",
+      "de": "Verlauf",
+      "fr": "Historique"
+    },
+    "5695330ffb54": {
+      "en": "Auto",
+      "es": "Auto",
+      "pt": "Auto",
+      "de": "Auto",
+      "fr": "Auto"
+    },
+    "c6167f6c09b5": {
+      "en": "Voice",
+      "es": "Voz",
+      "pt": "Voz",
+      "de": "Stimme",
+      "fr": "Voix"
+    },
+    "c17aa690390e": {
+      "en": "Preview voice",
+      "uk": "Прослухати голос",
+      "es": "Escuchar voz",
+      "pt": "Ouvir voz",
+      "de": "Stimme anhören",
+      "fr": "Écouter la voix"
+    },
+    "2c18136be695": {
+      "en": "Female",
+      "uk": "Жіночі",
+      "es": "Femeninas",
+      "pt": "Femininas",
+      "de": "Weiblich",
+      "fr": "Féminines"
+    },
+    "dcb884c84ece": {
+      "en": "Male",
+      "uk": "Чоловічі",
+      "es": "Masculinas",
+      "pt": "Masculinas",
+      "de": "Männlich",
+      "fr": "Masculins"
+    },
+    "0e15c2998034": {
+      "en": "Neutral",
+      "uk": "Нейтральні",
+      "es": "Neutras",
+      "pt": "Neutras",
+      "de": "Neutral",
+      "fr": "Neutres"
+    },
+    "4a0edcd18859": {
+      "en": "Space",
+      "uk": "Пробіл",
+      "es": "Espacio",
+      "pt": "Espaço",
+      "de": "Leertaste",
+      "fr": "Espace"
+    },
+    "de94b0480690": {
+      "en": "Mic Settings",
+      "uk": "Налаштування мікрофона",
+      "es": "Ajustes del micrófono",
+      "pt": "Configurações do microfone",
+      "de": "Mikrofoneinstellungen",
+      "fr": "Paramètres du microphone"
+    },
+    "2e869cc5c260": {
+      "en": "Speaking",
+      "uk": "Говорить",
+      "es": "Hablando",
+      "pt": "Fala",
+      "de": "Spricht",
+      "fr": "Parle"
+    },
+    "d9f964d71b0d": {
+      "en": "Level",
+      "uk": "Рівень",
+      "es": "Nivel",
+      "pt": "Nível",
+      "de": "Lautstärke",
+      "fr": "Niveau"
+    },
+    "d21cebb54dfc": {
+      "en": "Sensitivity",
+      "uk": "Чутливість",
+      "es": "Sensibilidad",
+      "pt": "Sensibilidade",
+      "de": "Empfindlichkeit",
+      "fr": "Sensibilité"
+    },
+    "105047ecf5fc": {
+      "en": "Minimum audio level to detect speech. Lower = more sensitive (catches quiet speech), higher = needs louder voice.",
+      "uk": "Мінімальний рівень звуку для розпізнавання мовлення. Нижче = чутливіше (ловить тиху мову), вище = потрібен гучний голос.",
+      "es": "Nivel mínimo de sonido para reconocer el habla. Más bajo = más sensible (detecta voces suaves), más alto = se necesita una voz fuerte.",
+      "pt": "Nível mínimo de som para detecção de voz. Abaixo = mais sensível (captura vozes baixas), acima = requer voz mais alta.",
+      "de": "Minimale Lautstärke für die Spracherkennung. Niedriger = empfindlicher (erfasst leise Sprache), höher = lautere Stimme erforderlich.",
+      "fr": "Niveau sonore minimal requis pour détecter la parole. Plus bas = plus sensible (capte les voix douces), plus haut = nécessite une voix forte."
+    },
+    "03498e395a43": {
+      "en": "Pause",
+      "es": "Pausa",
+      "pt": "Pausa",
+      "de": "Pause",
+      "fr": "Pause"
+    },
+    "825aee678147": {
+      "en": "How long to wait after you stop speaking before translating. Longer = waits for longer pauses.",
+      "uk": "Скільки чекати після того, як ви перестали говорити, перед відправкою на переклад. Довше = чекає на довші паузи.",
+      "es": "Tiempo de espera tras dejar de hablar antes de enviar a traducción. Más tiempo = espera pausas más largas.",
+      "pt": "Quanto tempo esperar após você parar de falar antes de enviar para tradução. Mais tempo = espera por pausas mais longas.",
+      "de": "Wie lange nach dem Sprechen gewartet wird, bevor die Übersetzung gesendet wird. Länger = längere Pausen werden erwartet.",
+      "fr": "Temps d'attente après avoir cessé de parler avant d'envoyer la traduction. Plus long = attend des pauses plus longues."
+    },
+    "f7dc29ac9436": {
+      "en": "Hold Space to record",
+      "uk": "Утримуйте Пробіл для запису",
+      "es": "Mantenga pulsado Espacio para grabar",
+      "pt": "Segure Espaço para gravar",
+      "de": "Halten Sie die Leertaste zum Aufnehmen",
+      "fr": "Maintenez Espace pour enregistrer"
+    },
+    "f4b645714cdf": {
+      "en": "Release to translate",
+      "uk": "Відпустіть для перекладу",
+      "es": "Suelte para traducir",
+      "pt": "Solte para traduzir",
+      "de": "Loslassen zum Übersetzen",
+      "fr": "Relâchez pour traduire"
+    },
+    "aab9bdfcd925": {
+      "en": "Recording...",
+      "uk": "Запис...",
+      "es": "Grabando...",
+      "pt": "Gravando...",
+      "de": "Aufnahme...",
+      "fr": "Enregistrement..."
+    },
+    "9891fc077431": {
+      "en": "Start Translation",
+      "uk": "Почати переклад",
+      "es": "Iniciar traducción",
+      "pt": "Iniciar tradução",
+      "de": "Übersetzung starten",
+      "fr": "Démarrer la traduction"
+    },
+    "741b0d8a235d": {
+      "en": "Listening... speak clearly",
+      "uk": "Слухаю... говоріть чітко",
+      "es": "Escuchando... hable claramente",
+      "pt": "Ouvindo... fale claramente",
+      "de": "Ich höre zu... sprechen Sie bitte deutlich",
+      "fr": "J'écoute... parlez clairement"
+    },
+    "a2afc24e531e": {
+      "en": "Press \"Start Translation\"",
+      "uk": "Натисніть «Почати переклад»",
+      "es": "Pulse «Iniciar traducción»",
+      "pt": "Clique em «Iniciar tradução»",
+      "de": "Klicken Sie auf „Übertragung starten“",
+      "fr": "Cliquez sur « Démarrer la traduction »"
+    },
+    "98b2073ed181": {
+      "en": "Clear",
+      "uk": "Очистити",
+      "es": "Limpiar",
+      "pt": "Limpar",
+      "de": "Löschen",
+      "fr": "Effacer"
+    },
+    "dd5016c82982": {
+      "en": "Export",
+      "uk": "Експорт",
+      "es": "Exportar",
+      "pt": "Exportar",
+      "de": "Export",
+      "fr": "Exporter"
+    },
+    "95cb25c87fe7": {
+      "en": "Sign in to view translation history",
+      "uk": "Увійдіть для перегляду історії перекладів",
+      "es": "Inicie sesión para ver el historial de traducciones",
+      "pt": "Entre para ver o histórico de traduções",
+      "de": "Melden Sie sich an, um den Übersetzungsverlauf anzusehen",
+      "fr": "Connectez-vous pour voir l'historique des traductions"
+    },
+    "6eec3f3ac0a6": {
+      "en": "No translation history",
+      "uk": "Історія перекладів порожня",
+      "es": "El historial de traducciones está vacío",
+      "pt": "Histórico de traduções vazio",
+      "de": "Der Übersetzungsverlauf ist leer",
+      "fr": "L'historique des traductions est vide"
+    },
+    "8ef2fb6d3596": {
+      "en": "Export CSV",
+      "uk": "Експорт CSV",
+      "es": "Exportar CSV",
+      "pt": "Exportar CSV",
+      "de": "CSV exportieren",
+      "fr": "Exporter CSV"
+    },
+    "8ebf1247b037": {
+      "en": "Push-to-talk mode: hold Space and speak",
+      "uk": "Режим Push-to-talk: утримуйте Пробіл та говоріть",
+      "es": "Modo Push-to-talk: mantenga pulsado Espacio y hable",
+      "pt": "Modo Push-to-talk: segure Espaço e fale",
+      "de": "Push-to-Talk-Modus: Leertaste gedrückt halten und sprechen",
+      "fr": "Mode Push-to-talk : maintenez Espace et parlez"
+    },
+    "fca2ddb98f92": {
+      "en": "VAD activated — speak and translation will start automatically",
+      "uk": "VAD активовано — говоріть, переклад почнеться автоматично",
+      "es": "VAD activado — hable, la traducción comenzará automáticamente",
+      "pt": "VAD ativado — fale, a tradução começará automaticamente",
+      "de": "VAD aktiviert – sprechen Sie, die Übersetzung startet automatisch",
+      "fr": "VAD activé — parlez, la traduction commencera automatiquement"
+    },
+    "9dfbf81cae5c": {
+      "en": "Could not access microphone",
+      "uk": "Не вдалося отримати доступ до мікрофона",
+      "es": "No se pudo acceder al micrófono",
+      "pt": "Não foi possível acessar o microfone",
+      "de": "Zugriff auf das Mikrofon fehlgeschlagen",
+      "fr": "Impossible d'accéder au microphone"
+    },
+    "051ea779d1f9": {
+      "en": "History cleared",
+      "uk": "Історію очищено",
+      "es": "Historial limpiado",
+      "pt": "Histórico limpo",
+      "de": "Verlauf gelöscht",
+      "fr": "Historique effacé"
+    },
+    "cec352b825db": {
+      "en": "History exported",
+      "uk": "Історію експортовано",
+      "es": "Historial exportado",
+      "pt": "Histórico exportado",
+      "de": "Verlauf exportiert",
+      "fr": "Historique exporté"
+    },
+    "291f55d5c056": {
+      "en": "No data to export",
+      "uk": "Немає даних для експорту",
+      "es": "No hay datos para exportar",
+      "pt": "Nenhum dado para exportar",
+      "de": "Keine Daten zum Exportieren vorhanden",
+      "fr": "Aucune donnée à exporter"
+    },
+    "3ec09d7470ed": {
+      "en": "Failed to load history",
+      "uk": "Не вдалося завантажити історію",
+      "es": "No se pudo cargar el historial",
+      "pt": "Falha ao carregar o histórico",
+      "de": "Fehler beim Laden des Verlaufs",
+      "fr": "Échec du chargement de l'historique"
+    },
+    "fc4c7c14298b": {
+      "en": "Error clearing history",
+      "uk": "Помилка очищення історії",
+      "es": "Error al limpiar el historial",
+      "pt": "Erro ao limpar o histórico",
+      "de": "Fehler beim Löschen des Verlaufs",
+      "fr": "Échec de l'effacement de l'historique"
+    },
+    "8e8a1033022a": {
+      "en": "Failed to play voice",
+      "uk": "Не вдалося відтворити голос",
+      "es": "No se pudo reproducir el audio",
+      "pt": "Falha ao reproduzir a voz",
+      "de": "Sprachwiedergabe fehlgeschlagen",
+      "fr": "Impossible de lire le message vocal"
+    },
+    "c2a317d2ae84": {
+      "en": "I speak",
+      "uk": "Я говорю",
+      "es": "Hablo en",
+      "pt": "Eu falo em",
+      "de": "Ich spreche",
+      "fr": "Je parle"
+    },
+    "7707650fa4c4": {
+      "en": "Partner",
+      "uk": "Співрозмовник",
+      "es": "Interlocutor",
+      "pt": "Interlocutor",
+      "de": "Gesprächspartner",
+      "fr": "Interlocuteur"
+    },
+    "68931d3858a5": {
+      "en": "Waiting...",
+      "uk": "Очікую...",
+      "es": "Esperando...",
+      "pt": "Aguardando...",
+      "de": "Warte...",
+      "fr": "En attente..."
+    },
+    "7fa7d5ec4af2": {
+      "en": "Or select manually:",
+      "uk": "Або оберіть вручну:",
+      "es": "O selecciona manualmente:",
+      "pt": "Ou selecione manualmente:",
+      "de": "Oder wählen Sie manuell:",
+      "fr": "Ou sélectionnez manuellement :"
+    },
+    "8cde46880302": {
+      "en": "Two-way translation",
+      "uk": "Двосторонній переклад",
+      "es": "Traducción bidireccional",
+      "pt": "Tradução bilateral",
+      "de": "Zweierlei Übersetzung",
+      "fr": "Traduction bilingue"
+    },
+    "6f0881c801be": {
+      "en": "Incoming translation",
+      "uk": "Вхідний переклад",
+      "es": "Traducción entrante",
+      "pt": "Tradução de entrada",
+      "de": "Eingehende Übersetzung",
+      "fr": "Traduction entrante"
+    },
+    "cbfdb3f83aa9": {
+      "en": "Outgoing translation",
+      "uk": "Вихідний переклад",
+      "es": "Traducción saliente",
+      "pt": "Tradução de saída",
+      "de": "Ausgehende Übersetzung",
+      "fr": "Traduction sortante"
+    },
+    "edbea9ff1a78": {
+      "en": "Telegram",
+      "es": "Telegram",
+      "pt": "Telegram",
+      "de": "Telegram",
+      "fr": "Telegram"
+    },
+    "d25781f34ca8": {
+      "en": "© 2025 APLink by",
+      "es": "© 2025 APLink by",
+      "pt": "© 2025 APLink by",
+      "de": "© 2025 APLink by",
+      "fr": "© 2025 APLink by"
+    },
+    "ea424d38af72": {
+      "en": "IP",
+      "es": "IP",
+      "pt": "IP",
+      "de": "IP",
+      "fr": "IP"
+    },
+    "249ba3600002": {
+      "en": "username",
+      "pt": "username",
+      "es": "username",
+      "de": "Benutzername",
+      "fr": "username"
+    },
+    "d1aefc324bbd": {
+      "en": "APOLLO PRODUCTION — OnlyFans Management Agency",
+      "pt": "APOLLO PRODUCTION — OnlyFans Management Agency",
+      "es": "APOLLO PRODUCTION — OnlyFans Management Agency",
+      "de": "APOLLO PRODUCTION — OnlyFans Management Agency",
+      "fr": "APOLLO PRODUCTION — OnlyFans Management Agency"
+    },
+    "854143a99c15": {
+      "en": "onlyreddit.com",
+      "es": "onlyreddit.com",
+      "pt": "onlyreddit.com",
+      "de": "onlyreddit.com",
+      "fr": "onlyreddit.com"
+    },
+    "b4d7e8a5639a": {
+      "en": "OnlyFans Management Agency",
+      "es": "OnlyFans Management Agency",
+      "pt": "OnlyFans Management Agency",
+      "de": "OnlyFans Management Agency",
+      "fr": "OnlyFans Management Agency"
+    },
+    "f0482a55fa50": {
+      "en": "$20,000+",
+      "es": "$20,000+",
+      "pt": "$20.000+",
+      "de": "$20.000+",
+      "fr": "$20 000+"
+    },
+    "9ae44c1806ca": {
+      "en": "X (Twitter)",
+      "es": "X (Twitter)",
+      "pt": "X (Twitter)",
+      "de": "X (Twitter)",
+      "fr": "X (Twitter)"
+    },
+    "36ed3be1a004": {
+      "en": "PPC",
+      "es": "PPC",
+      "pt": "PPC",
+      "de": "PPC",
+      "fr": "PPC"
+    },
+    "a3c452da36ba": {
+      "en": "Microsites / SEO",
+      "es": "Micrositios / SEO",
+      "pt": "Microsites / SEO",
+      "de": "Microsites / SEO",
+      "fr": "Microsites / SEO"
+    },
+    "28589d14211a": {
+      "en": "Influencers / Collabs",
+      "es": "Influencers / Colaboraciones",
+      "pt": "Influencers / Collabs",
+      "de": "Influencer / Collabs",
+      "fr": "Influenceurs / Collabs"
+    },
+    "4af26436ae9d": {
+      "en": "Reddit",
+      "es": "Reddit",
+      "pt": "Reddit",
+      "de": "Reddit",
+      "fr": "Reddit"
+    },
+    "3e05b2f25d56": {
+      "en": "Marketplace | Only4riend",
+      "es": "Marketplace | Only4riend",
+      "pt": "Marketplace | Only4riend",
+      "de": "Marketplace | Only4riend",
+      "fr": "Marketplace | Only4riend"
+    },
+    "806cfff51e53": {
+      "en": "Fansly",
+      "es": "Fansly",
+      "pt": "Fansly",
+      "de": "Fansly",
+      "fr": "Fansly"
+    },
+    "356a192b7913": {
+      "en": "1",
+      "es": "1",
+      "pt": "1",
+      "de": "1",
+      "fr": "1"
+    },
+    "da4b9237bacc": {
+      "en": "2",
+      "es": "2",
+      "pt": "2",
+      "de": "2",
+      "fr": "2"
+    },
+    "77de68daecd8": {
+      "en": "3",
+      "es": "3",
+      "pt": "3",
+      "de": "3",
+      "fr": "3"
+    },
+    "1b6453892473": {
+      "en": "4",
+      "es": "4",
+      "pt": "4",
+      "de": "4",
+      "fr": "4"
+    },
+    "03a84b338656": {
+      "en": "$150",
+      "es": "$150",
+      "pt": "$150",
+      "de": "$150",
+      "fr": "$150"
+    },
+    "bc51e5a7340a": {
+      "en": "ID Dubai by APOLLO PRODUCTION",
+      "es": "ID Dubai by APOLLO PRODUCTION",
+      "pt": "ID Dubai by APOLLO PRODUCTION",
+      "de": "ID Dubai by APOLLO PRODUCTION",
+      "fr": "ID Dubai by APOLLO PRODUCTION"
+    }
+  }
+}

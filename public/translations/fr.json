@@ -1,0 +1,905 @@
+{
+  "aplink": {
+    "badge": "Appels vidéo de nouvelle génération",
+    "title": "Appels sans limites",
+    "description": "Pas de restrictions IP  |  Résumés des réunions par IA  |  Traducteur en temps réel",
+    "yourName": "Votre nom",
+    "roomName": "Nom de la salle (ou laissez vide)",
+    "createRoom": "Créer une salle",
+    "joinRoom": "Se connecter",
+    "telegram": "Telegram",
+    "website": "Notre site",
+    "admin": "Admin",
+    "cabinet": "Tableau de bord",
+    "createAccount": "Créez un compte",
+    "createAccountDesc": "Enregistrez vos appels, obtenez des résumés IA des réunions et synchronisez l'historique sur tous vos appareils",
+    "register": "S'inscrire",
+    "yourUsername": "@username",
+    "clickToCopy": "Cliquez pour copier",
+    "addUsername": "Ajoutez @nomutilisateur",
+    "addUsernameDesc": "Pour que les autres puissent vous trouver et vous ajouter à leurs contacts",
+    "save": "Enregistrer",
+    "saving": "Enregistrement...",
+    "usernameHint": "3 à 20 caractères : lettres latines, chiffres, souligné",
+    "noIPRestrictions": "Pas de restrictions IP",
+    "aiMeetingSummaries": "Résumés des réunions par IA",
+    "realtimeTranslator": "Traducteur en temps réel",
+    "features": {
+      "noBorders": "Sans limites",
+      "noBordersDesc": "Fonctionne depuis n'importe quel pays du monde, y compris la Russie",
+      "privacy": "Confidentialité",
+      "privacyDesc": "Appels sécurisés réservés à vous et vos collaborateurs uniquement",
+      "hdQuality": "Qualité HD",
+      "hdQualityDesc": "Son clair et image impeccable",
+      "groupCalls": "Appels en groupe",
+      "groupCallsDesc": "Jusqu'à 100 participants dans une même salle"
+    },
+    "footer": "© 2025 APLink by",
+    "roadmap": {
+      "title": "Feuille de route du projet",
+      "subtitle": "Les étapes d'APLink — de l'idée à la plateforme mondiale",
+      "stages": {
+        "launch": "Lancement de la plateforme",
+        "launchDesc": "Vidéos appels, création de salles, interface basique et connexion instantanée sans inscription.",
+        "ai": "Intégration de l'IA",
+        "aiDesc": "Traduction vocale en temps réel, sous-titres IA, comptes rendus automatiques et notifications vocales.",
+        "calls": "Appels avancés",
+        "callsDesc": "Réactions, mode image dans l'image (PiP), partage d'écran, arrière-plans virtuels et enregistrement des appels.",
+        "automation": "Automatisation",
+        "automationDesc": "Bot Telegram, notifications push, analyses et rappels automatiques.",
+        "monetization": "Monétisation",
+        "monetizationDesc": "Marché de services, programme de parrainage et fonctionnalités premium.",
+        "scaling": "Évolutivité",
+        "scalingDesc": "Extension mondiale, solutions pour entreprises et multiplateforme."
+      },
+      "statusDone": "PRÊT",
+      "statusInProgress": "EN COURS",
+      "statusPending": "PROJETS",
+      "progress": "Progression",
+      "relatedStages": "Étapes liées"
+    }
+  },
+  "meetingRoom": {
+    "record": "Enregistrer",
+    "stop": "Arrêter",
+    "translate": "Traduction",
+    "link": "Lien",
+    "done": "Terminé",
+    "ip": "IP",
+    "report": "Rapport",
+    "recordTooltip": "Commencer l'enregistrement de l'appel avec transcription IA",
+    "stopRecordTooltip": "Arrêter l'enregistrement et sauvegarder la transcription",
+    "translateTooltip": "Traducteur en temps réel dans plus de 100 langues",
+    "linkTooltip": "Copier le lien pour inviter les participants",
+    "ipTooltip": "Afficher les adresses IP des participants",
+    "reportTooltip": "Copier le diagnostic pour le support",
+    "linkCopied": "Lien copié !",
+    "linkCopiedDesc": "Envoyez-le aux participants pour qu'ils se connectent",
+    "recordStarted": "Enregistrement commencé",
+    "recordStartedDesc": "Enregistrement du son de l'appel en cours",
+    "recordStopped": "Enregistrement arrêté",
+    "transcribing": "Transcription de l'appel en cours...",
+    "transcriptionReady": "Transcription terminée",
+    "transcriptionError": "Erreur de transcription",
+    "transcriptionErrorDesc": "Échec de la transcription de l'audio",
+    "recordError": "Impossible de démarrer l'enregistrement",
+    "recordProcessing": "L'enregistrement est en cours",
+    "diagnosticsCopied": "Le rapport a été copié",
+    "diagnosticsCopiedDesc": "Envoyez-le au développeur",
+    "registerHint": "Enregistrez vos appels !",
+    "registerHintDesc": "Inscrivez-vous pour recevoir un résumé IA après chaque appel",
+    "register": "S'inscrire",
+    "recording": "Appel en cours d'enregistrement",
+    "error": "Erreur",
+    "copyLinkError": "Impossible de copier le lien",
+    "connecting": "Connexion...",
+    "connectingToRoom": "Connexion à la salle...",
+    "reconnecting": "Reconnexion...",
+    "reconnectingAttempt": "Tentative {attempt} sur {max}",
+    "disconnected": "Déconnecté",
+    "reconnect": "Se reconnecter"
+  },
+  "registrationBanner": {
+    "title": "S'inscrire",
+    "description": "Créez un compte pour enregistrer les appels",
+    "benefits": "✓ Résumé IA des appels\n✓ Historique des réunions\n✓ Synchronisation",
+    "registerButton": "S'inscrire",
+    "googleSignIn": "Se connecter avec Google"
+  },
+  "adminPanel": {
+    "title": "Tableau de bord admin",
+    "analytics": "Statistiques",
+    "transcripts": "Enregistrements",
+    "ipChecker": "Vérificateur IP",
+    "users": "Utilisateurs",
+    "profile": "Profil",
+    "siteAnalytics": "Analytique du site",
+    "pageViews": "Vues",
+    "translations": "Traductions",
+    "clicks": "Clics",
+    "roomJoins": "Connexions aux salles",
+    "sessions": "Sessions",
+    "popularPages": "Pages populaires",
+    "translationsByLang": "Traductions par langue",
+    "recentEvents": "Derniers événements",
+    "noData": "Pas de données",
+    "noTranslationData": "Pas de données de traduction",
+    "noAnalyticsData": "Pas de données analytiques",
+    "allCalls": "Tous les appels",
+    "noRecordings": "Aucun appel enregistré pour le moment",
+    "participants": "participants",
+    "completed": "Terminé",
+    "briefSummary": "Résumé",
+    "keyPoints": "Points clés",
+    "actionItems": "Tâches à accomplir",
+    "decisions": "Décisions prises",
+    "fullTranscript": "Transcription complète",
+    "onlineTotal": "en ligne · total",
+    "profileSaved": "Profil enregistré",
+    "profileSaveError": "Erreur lors de l'enregistrement :",
+    "twoFADisabled": "2FA désactivée",
+    "twoFADisableError": "Impossible de désactiver la 2FA",
+    "selectImage": "Veuillez sélectionner une image",
+    "maxFileSize": "Taille maximale du fichier : 2 Mo",
+    "avatarUploadError": "Échec du téléchargement de l'avatar",
+    "avatarUpdateError": "Échec de la mise à jour du profil",
+    "avatarUpdated": "Avatar mis à jour",
+    "loadAnalyticsError": "Échec du chargement des analyses",
+    "loadUsersError": "Échec du chargement des utilisateurs"
+  },
+  "toast": {
+    "error": "Erreur",
+    "success": "Succès",
+    "saved": "Enregistré",
+    "copied": "Copié",
+    "copiedToClipboard": "copié dans le presse-papiers",
+    "usernameMinLength": "Le nom d'utilisateur doit comporter au moins 3 caractères",
+    "usernameTaken": "Ce nom d'utilisateur est déjà pris",
+    "usernameSaveError": "Impossible d'enregistrer le nom d'utilisateur",
+    "yourUsername": "@username",
+    "loginSuccess": "Vous êtes connecté avec succès"
+  },
+  "twoFactor": {
+    "title": "Authentification à deux facteurs",
+    "description": "Saisissez le code à 6 chiffres de votre application d'authentification",
+    "enterCode": "Saisir le code",
+    "verify": "Confirmer",
+    "cancel": "Annuler",
+    "factorNotFound": "Le facteur 2FA est introuvable",
+    "invalidCode": "Code incorrect. Veuillez réessayer.",
+    "success": "Succès",
+    "loginSuccess": "Vous êtes connecté avec succès"
+  },
+  "favorites": {
+    "title": "Contacts favoris",
+    "addContact": "Ajouter un contact",
+    "noContacts": "Aucun contact favori",
+    "userNotFound": "Utilisateur non trouvé",
+    "userNotFoundDesc": "L'utilisateur @{username} est introuvable",
+    "alreadyAdded": "Le contact est déjà ajouté",
+    "contactAdded": "Contact ajouté",
+    "contactRemoved": "Contact supprimé",
+    "linkCopied": "Lien copié",
+    "sendTo": "Envoyez-le",
+    "username": "username",
+    "nickname": "Pseudo (facultatif)",
+    "add": "Ajouter",
+    "adding": "Ajout en cours...",
+    "online": "En ligne",
+    "offline": "Hors ligne",
+    "inRoom": "Dans la pièce",
+    "user": "Utilisateur",
+    "error": "Erreur"
+  },
+  "header": {
+    "title": "APOLLO PRODUCTION — OnlyFans Management Agency",
+    "about": "À propos",
+    "traffic": "Sources de trafic",
+    "services": "Services",
+    "infrastructure": "Infrastructure",
+    "redditSite": "Site Reddit"
+  },
+  "topBanner": {
+    "project": "Projet Reddit :",
+    "link": "onlyreddit.com"
+  },
+  "hero": {
+    "badge": "OnlyFans Management Agency",
+    "title": "Nous gérons la croissance des modèles et des agences sur OnlyFans",
+    "description": "5 ans dans l'industrie. Des dizaines d'agences à travers le monde. Nous accompagnons la croissance des modèles sur toutes les plateformes — trafic, monétisation, développement à grande échelle.",
+    "startButton": "Commencer",
+    "formButton": "Remplir le questionnaire",
+    "calculator": {
+      "title": "Calculateur de revenus",
+      "subscribers": "Abonnés",
+      "price": "Prix de l'abonnement ($)",
+      "monthly": "Revenu mensuel",
+      "commission": "Commission de l'agence (20%)",
+      "yourIncome": "Votre revenu mensuel",
+      "yearly": "Revenu annuel"
+    }
+  },
+  "nav": {
+    "home": "Accueil",
+    "services": "Services",
+    "news": "Actualités"
+  },
+  "earnings": {
+    "badge": "Croissance des revenus des modèles",
+    "title": "Votre chemin vers",
+    "titleAmount": "$20 000+",
+    "description": "Croissance moyenne des revenus de nos modèles la première année",
+    "start": "Démarrer",
+    "months6": "6 mois",
+    "months12": "12 mois",
+    "month": "Mois"
+  },
+  "trafficSources": {
+    "title": "Sources de trafic",
+    "more": "En savoir plus",
+    "tiktok": {
+      "title": "TikTok (fermes)",
+      "description": "Réseaux UGC, Spark Ads, tests systématiques de créatifs et de verticales."
+    },
+    "instagram": {
+      "title": "Instagram (fermes mobiles)",
+      "description": "Fermes mobiles, reels, préchauffage, entonnoirs automatiques et setups sécurisés."
+    },
+    "twitter": {
+      "title": "X (Twitter)",
+      "description": "NSFW-friendly : fils de discussion, médias, croissance de l'audience et préchauffage."
+    },
+    "telegram": {
+      "title": "Telegram",
+      "description": "Leads dans le chat, ventes rapides, SFS et réseaux publicitaires."
+    },
+    "dating": {
+      "title": "Dating (Tinder et autres)",
+      "description": "Conversions dating vers des offres et dialogues chaleureux à forte monétisation."
+    },
+    "ppc": {
+      "title": "PPC",
+      "description": "Google/Meta (là où possible), pre-landing, remarketing et attribution."
+    },
+    "seo": {
+      "title": "Microsites / SEO",
+      "description": "Intermédiaires, indexation, trafic issu du moteur de recherche et clusters de contenu."
+    },
+    "influencers": {
+      "title": "Influenceurs / Collabs",
+      "description": "Collaborations, préchauffages croisés et trafic croisé."
+    },
+    "reddit": {
+      "title": "Reddit",
+      "description": "Toutes les informations ont été transférées — rendez-vous sur onlyreddit.com."
+    }
+  },
+  "sidebar": {
+    "themes": "Thèmes",
+    "more": "En savoir plus",
+    "cryptoUnlock": {
+      "title": "Déblocage de cryptomonnaie",
+      "description": "Déblocage des paiements cryptos sur Fansly. 70+ cas réussis. Déblocage en 24 heures avec garantie."
+    },
+    "trafficSources": {
+      "title": "Sources de trafic",
+      "description": "Gamme complète de sources de trafic pour OnlyFans : TikTok, Instagram, X/Twitter, Telegram, Dating, PPC, SEO et autres."
+    },
+    "modelVerification": {
+      "title": "Vérification modèles RU/CIS",
+      "description": "Compte OnlyFans prêt à l'emploi avec retrait en crypto. Aide à la vérification OF + SKRILL + PAXUM depuis chez vous."
+    },
+    "partnership": {
+      "title": "Programme partenaire",
+      "description": "40% sur chaque vidéo. 300 $ le premier mois | +1 000 $ après 3 mois. Revenu passif en automatique."
+    },
+    "dubaiResidency": {
+      "title": "Résidence permanente à Dubaï",
+      "description": "Obtention du ID Dubai en 10-14 jours. Accompagnement complet du processus de A à Z. Garantie 100%."
+    },
+    "webcamServices": {
+      "title": "Services webcam",
+      "description": "Travail sur 7 sites avec opérateur personnel. Relocalisation en Géorgie. Paiements 2 fois par mois."
+    },
+    "instagramAutomation": {
+      "title": "Automatisation et logiciels",
+      "description": "Ferme Instagram pour le trafic vers OnlyFans. 200-400+ comptes / appareil. IA en live 24/7."
+    },
+    "marketplace": {
+      "title": "Marketplace | Only4riend",
+      "description": "Plateforme d'achat et de vente de contacts de modèles. Garantie 14 jours. Statuts des modèles. Transactions sécurisées."
+    }
+  },
+  "services": {
+    "title": "Nos services",
+    "allServices": "Tous les services",
+    "subtitle": "Gamme complète de services pour réussir sur OnlyFans",
+    "howItWorks": "Comment ça marche",
+    "step1": "Consultation",
+    "step1Desc": "Consultation gratuite et sélection du forfait idéal",
+    "step2": "Configuration",
+    "step2Desc": "Mise en place de tous les systèmes et outils nécessaires",
+    "step3": "Lancement",
+    "step3Desc": "Lancement de campagnes et démarrage",
+    "step4": "Croissance",
+    "step4Desc": "Optimisation et montée en échelle continues",
+    "readyToStart": "Prêt(e) à commencer ?",
+    "contactDesc": "Contactez-nous pour une consultation gratuite",
+    "partnership": {
+      "title": "Programme partenaire",
+      "description": "40 % sur chaque vidéo. Revenu passif en pilotage automatique"
+    },
+    "crypto": {
+      "title": "Déblocage de cryptomonnaie",
+      "description": "Déblocage Fansly/OnlyFans en 24 heures"
+    },
+    "verification": {
+      "title": "Vérification des modèles",
+      "description": "OnlyFans prêt à l'emploi avec retrait en cryptomonnaie"
+    },
+    "dubai": {
+      "title": "Résidence permanente à Dubaï",
+      "description": "Obtention de l'ID Dubaï en 10-14 jours"
+    },
+    "webcam": {
+      "title": "Services webcam",
+      "description": "Travail sur 7 sites avec opérateur personnel"
+    },
+    "automation": {
+      "title": "Automatisation",
+      "description": "Fermes Instagram avec IA en direct 24h/24"
+    }
+  },
+  "common": {
+    "back": "Retour",
+    "learnMore": "En savoir plus",
+    "contactTelegram": "Contacter via Telegram"
+  },
+  "chatbot": {
+    "title": "Assistant IA",
+    "subtitle": "Navigation sur le site",
+    "placeholder": "Saisissez un message...",
+    "welcome": "Bonjour ! Je peux t'aider à trouver des informations sur le site.",
+    "welcomeDetails": "Demande-moi tout sur nos services, prix ou coordonnées.",
+    "disclaimer": "Si je ne peux pas répondre, je t'envoie sur Telegram"
+  },
+  "footer": {
+    "rights": "Tous droits réservés.",
+    "contactTitle": "Contactez-nous"
+  },
+  "rightSidebar": {
+    "title": "Top offres populaires",
+    "partnership40": "Partenaire — 40 % de revenus passifs",
+    "cryptoUnlock": "Déblocage des retraits en cryptomonnaie sur Fansly",
+    "verificationRF": "Vérification OF pour la Russie et la CEI (même avec FACEBAN)",
+    "modelRecruitment": "Nous recrutons des modèles pour OnlyFans / Fansly / 4based / MYM / FanCentro / Meloum / Fanvu / LoyalFans / ManyVids / F4F / Twitch / Kick",
+    "marketplace": "Marketplace | Only4riend",
+    "telegram": "Telegram",
+    "launch": "Lancement",
+    "modelForm": "Formulaire pour nouveaux modèles",
+    "ctaText": "Remplis le formulaire et commence à gagner avec nous",
+    "ctaButton": "Remplir le questionnaire"
+  },
+  "cta": {
+    "badge": "Commence à gagner",
+    "title": "Prête à augmenter tes revenus ?",
+    "description": "Remplis le formulaire et notre équipe te contactera sous 24 heures",
+    "button": "Remplir le questionnaire"
+  },
+  "testimonials": {
+    "badge": "Histoires à succès",
+    "title": "Des résultats réels de modèles réels",
+    "subtitle": "Découvre comment nos modèles ont transformé leurs revenus",
+    "before": "Avant",
+    "after": "Après",
+    "period": "en",
+    "months": "mois",
+    "feedback1": "Apollo Production a transformé ma carrière. En 6 mois, mes revenus ont été multipliés par 15 !",
+    "feedback2": "Une équipe professionnelle, d'excellentes sources de trafic et un soutien constant. La meilleure décision !",
+    "feedback3": "L'agence s'occupe de tout — je n'ai qu'à créer du contenu. Les résultats parlent d'eux-mêmes !"
+  },
+  "cryptoUnlock": {
+    "back": "Retour",
+    "title": "Déblocage de cryptomonnaie",
+    "subtitle": "Déblocage professionnel des paiements en cryptomonnaie sur Fansly. Rapide, sécurisé, avec garantie.",
+    "features": {
+      "timing": {
+        "title": "24 heures",
+        "description": "Déblocage en 24 heures suivant la demande"
+      },
+      "cases": {
+        "title": "70+ cas",
+        "description": "Plus de 70 déblocages réussis de paiements en cryptomonnaie"
+      },
+      "guarantee": {
+        "title": "Garantie",
+        "description": "100 % de garantie de déblocage ou remboursement"
+      },
+      "fansly": {
+        "title": "Fansly",
+        "description": "Spécialisation sur la plateforme Fansly"
+      }
+    },
+    "howItWorks": {
+      "title": "Comment ça marche",
+      "step1": {
+        "number": "1",
+        "title": "Contact",
+        "description": "Contactez-nous via Telegram et décrivez votre situation"
+      },
+      "step2": {
+        "number": "2",
+        "title": "Analyse",
+        "description": "Nous analysons votre cas et vous proposons une solution"
+      },
+      "step3": {
+        "number": "3",
+        "title": "Déblocage",
+        "description": "Nous effectuons le déblocage sous 24 heures"
+      },
+      "step4": {
+        "number": "4",
+        "title": "Vérification",
+        "description": "Assurons-nous que tout fonctionne correctement"
+      }
+    },
+    "pricing": {
+      "title": "Frais de service",
+      "price": "$150",
+      "description": "Prix fixe pour le déblocage. Sans paiements cachés."
+    },
+    "whyUs": {
+      "title": "Pourquoi nous choisir",
+      "items": [
+        "Plus de 70 cas réussis de déblocage",
+        "Délai moyen de résolution — jusqu'à 24 heures",
+        "Garantie 100 % ou remboursement",
+        "Confidentialité et sécurité des données",
+        "Support 24/7 via Telegram",
+        "Expérience dans le travail avec Fansly et OnlyFans"
+      ]
+    },
+    "cta": {
+      "title": "Prêt à débloquer votre devise cryptographique ?",
+      "description": "Contactez-nous sur Telegram et obtenez de l'aide dans les 24 heures",
+      "telegram": "Écrire sur Telegram",
+      "form": "Remplir le formulaire"
+    }
+  },
+  "modelVerification": {
+    "back": "Retour",
+    "title": "Vérification des modèles RU et CEI",
+    "subtitle": "OnlyFans prêt à l'emploi avec retrait en cryptomonnaie pour les modèles russes et de la CEI. Nous faisons tout clé en main !",
+    "whatYouGet": "Ce que vous obtenez",
+    "features": {
+      "consultation": {
+        "title": "Consultation gratuite",
+        "description": "Consultation par chat vidéo ou par message pour confirmer tous les détails"
+      },
+      "faceban": {
+        "title": "Résolution des problèmes de FACEBAN",
+        "description": "Aide pour débloquer le compte et résoudre les problèmes de blocage"
+      },
+      "verification": {
+        "title": "Vérification complète",
+        "description": "Aide à la vérification OF + SKRILL + PAXUM sans sortir de chez vous"
+      }
+    },
+    "benefits": {
+      "title": "Bonus et garanties",
+      "items": [
+        "Toutes les garanties populaires pour sécuriser vos transactions",
+        "Nous accompagnons la vérification main dans la main, du début à la fin",
+        "Pas besoin de se déplacer — tout se fait depuis chez vous, en toute sécurité et confort",
+        "Aide pour rejoindre des agences fiables générant des revenus de 10 à 50k$ par mois avec de nouveaux modèles"
+      ]
+    },
+    "cta": {
+      "title": "Prêt(e) à commencer ?",
+      "description": "Contactez-nous pour une consultation gratuite",
+      "telegram": "Écrire sur Telegram",
+      "form": "Remplir le questionnaire"
+    }
+  },
+  "modelRecruitment": {
+    "title": "Recrutement de modèles pour du travail multiplateforme",
+    "subtitle": "Travaillez sur les meilleures plateformes de contenu adulte avec un soutien professionnel et des revenus élevés",
+    "platformsTitle": "Plateformes de travail",
+    "loyalfans": {
+      "title": "LoyalFans — la plateforme pour les modèles dominants",
+      "description": "Une plateforme dédiée aux modèles au style de travail dominant",
+      "tasksTitle": "Vos tâches",
+      "tasks": [
+        "Photos/vidéos selon le planning éditorial",
+        "Contenu personnalisé pour les fans",
+        "Streams selon vos envies (+ revenus supplémentaires)"
+      ],
+      "conditionsTitle": "Conditions",
+      "conditions": [
+        "20% pour vous (+5% pour les streams)",
+        "Paiements 2 fois/mois en USDT",
+        "Blocage des pays pour la sécurité"
+      ]
+    },
+    "manyvids": {
+      "title": "ManyVids — axé sur les vidéos personnalisées",
+      "description": "Spécificité : réaliser les fantasmes des fans",
+      "conditionsTitle": "Conditions",
+      "conditions": [
+        "20% pour toi",
+        "Paiements hebdomadaires sur Paxum",
+        "10 $ à 25 $ la minute de contenu personnalisé",
+        "Retrait autonome vers le crypto"
+      ]
+    },
+    "fourbased": {
+      "title": "4based — public allemand",
+      "description": "Sur la plateforme 4based, axée sur le public allemand, les modèles peuvent vendre leur contenu. Chaque pack de contenu coûte entre 300 $ et 500 $, et les agences prévoient d'effectuer ces achats régulièrement.",
+      "verification": "Pour participer, tu dois passer par une vérification via le lien fourni",
+      "traffic": "Le trafic est exclusivement interne, sans utilisation des réseaux sociaux, et ciblé vers le public allemand",
+      "contentPlanTitle": "Le plan de contenu inclut",
+      "contentPlan": [
+        "50 vidéos sans nudité (15-30 secondes)",
+        "200 photos sans nudité",
+        "10 photos de seins",
+        "10 photos de chatte en gros plan",
+        "10 photos de fesses",
+        "10 photos de pieds",
+        "10 photos dans un miroir",
+        "10 photos complètes",
+        "10 photos dans différentes poses",
+        "5 photos de fesses en gros plan",
+        "5 photos de fesses à quatre pattes",
+        "10 vidéos de masturbation de 5 à 10 minutes chacune",
+        "10 vidéos anales de 5 à 10 minutes chacune",
+        "10 vidéos avec un partenaire masculin",
+        "Pipe avec dildo, vidéo 5 minutes"
+      ],
+      "importantTitle": "Le plus important",
+      "scriptInfo": "5 scénarios de sexting différents, chaque scénario comprenant au minimum 3 à 5 photos et 2 à 3 vidéos de 3 à 5 minutes",
+      "scripts": [
+        "Institutrice (écolière)",
+        "Salle de sport",
+        "Douche",
+        "Dominante (BDSM)",
+        "Cuisine"
+      ]
+    },
+    "f2f": {
+      "title": "F2F & FanCentro — public européen",
+      "description": "Opportunité de travail sur F2F et FanCentro (public principalement des Pays-Bas et d'Europe). L'agence est anglophone et basée à Chypre",
+      "income": "Le modèle reçoit 20% des revenus (revenus moyens : 1 à 5k$)",
+      "content": "Uniquement du contenu prêt à l'emploi requis, 300+ fichiers. Aucun tournage supplémentaire nécessaire — quasiment un revenu passif",
+      "traffic": "Trafic exclusivement interne, sans réseaux sociaux"
+    },
+    "keyPoints": {
+      "title": "Points clés",
+      "points": [
+        "Commission du modèle : 20% sur toutes les plateformes",
+        "Devise : USDT (LoyalFans) / Paxum (ManyVids)",
+        "Spécialisation : domination (LoyalFans) / contenus personnalisés (ManyVids)",
+        "Sécurité : blocage par pays",
+        "Contenu prêt pour un revenu passif (F2F/FanCentro)",
+        "Travail simultané sur plusieurs plateformes"
+      ]
+    },
+    "cta": "Contacter via Telegram"
+  },
+  "partnership": {
+    "back": "Retour",
+    "badge": "Inscription limitée",
+    "title": "Recrutement pour un partenariat privé",
+    "subtitle": "Partenaires officiels de la plateforme avec promotion garantie dans les recommandations",
+    "features": {
+      "commission": {
+        "title": "40% sur chaque vidéo",
+        "description": "Un taux élevé sur chaque vidéo téléchargée"
+      },
+      "income": {
+        "title": "Croissance stable",
+        "description": "300 $ le premier mois | 1 000 $+ après 3 mois de travail"
+      },
+      "passive": {
+        "title": "Revenu passif",
+        "description": "Des revenus automatiques dès le téléchargement du contenu"
+      }
+    },
+    "whyOfficial": "Pourquoi nous - partenaires officiels",
+    "advantages": {
+      "recommendations": {
+        "title": "Placement garanti dans les recommandations",
+        "description": "Pas de « peut-être » ou de « si tu as de la chance » — c’est garanti. Nous avons un accès direct à la promotion"
+      },
+      "reach": {
+        "title": "Portée jusqu’à 5 fois supérieure à celle de PornHub",
+        "description": "Testé sur de vraies modèles. Des faits, pas des promesses"
+      },
+      "competition": {
+        "title": "Presque pas de concurrence",
+        "description": "La plateforme est nouvelle — grimper dans le TOP est facile maintenant. Dans six mois, il y aura une foule, tu seras en retard"
+      },
+      "bonus": {
+        "title": "Double monétisation",
+        "description": "Nous ajoutons tes liens (OF, TG, Fansly) — double monétisation à partir d’un seul contenu"
+      }
+    },
+    "requirements": {
+      "title": "Ce que nous demandons",
+      "items": [
+        "Vérification sur la plateforme",
+        "5 à 10 vidéos de départ (la qualité n’est pas critique)",
+        "Le reste (montage, vignettes, SEO, algorithmes) — c’est notre travail"
+      ]
+    },
+    "limited": {
+      "title": "⚡ Inscriptions strictement limitées : 15 modèles",
+      "description": "Objectif : entrer dans le TOP-30 de la plateforme en 2 mois et y rester. Sélection sur candidature — nous ne prenons pas tout le monde"
+    },
+    "cta": {
+      "title": "Tu veux intégrer le programme ?",
+      "description": "Envoie ta candidature et nous te contacterons pour discuter des détails",
+      "apply": "Soumettre une candidature",
+      "questions": "Poser une question"
+    }
+  },
+  "dubaiResidency": {
+    "back": "Retour",
+    "badge": "ID Dubai by APOLLO PRODUCTION",
+    "title": "Résidence à Dubaï",
+    "subtitle": "Obtention de l'ID Dubai en 10 à 14 jours avec accompagnement complet du processus",
+    "mainInfo": {
+      "title": "Informations principales",
+      "timing": {
+        "title": "Délais de traitement",
+        "description": "10 à 14 jours à compter du dépôt des documents"
+      },
+      "cost": {
+        "title": "Frais de service",
+        "description": "1750 $ - forfait complet d'accompagnement de A à Z"
+      },
+      "validity": {
+        "title": "Durée de validité",
+        "description": "1 an, renouvelable"
+      },
+      "renewal": {
+        "title": "Renouvellement",
+        "description": "Une sortie du territoire de Dubaï est requise tous les six mois"
+      }
+    },
+    "requirements": {
+      "title": "Ce que nous demandons",
+      "items": [
+        "Copie scannée du passeport",
+        "Photo au format requis (nous vous enverrons les instructions)",
+        "Se rendre à Dubaï après approbation"
+      ]
+    },
+    "included": {
+      "title": "Ce qui est inclus dans le service",
+      "items": [
+        "Accompagnement complet tout au long du processus",
+        "Instructions détaillées : navigation, économies, communication",
+        "Obtention garantie du document (100 %) lors de l'inscription sur OnlyFans"
+      ]
+    },
+    "additionalCosts": {
+      "title": "Frais supplémentaires",
+      "items": [
+        "Analyses médicales : ~200 $ (paiement sur place à Dubaï)",
+        "Hébergement et nourriture : ~1000 $ pour 5 à 6 jours (inclut logement, repas 3 fois par jour, taxi et dépenses quotidiennes)"
+      ]
+    },
+    "trip": {
+      "title": "Voyage à Dubaï",
+      "description": "Présence requise sur place : 5 à 6 jours. Nous vous conseillerons sur l'hébergement et comment économiser."
+    },
+    "afterReceiving": {
+      "title": "Après réception du document",
+      "items": [
+        "Enregistrement de la carte SIM à Dubaï",
+        "OnlyFans (vérification réussie à 100%)",
+        "Paxum et Skrill pour le retrait d'argent",
+        "Compte bancaire à Dubaï (discuté individuellement)"
+      ]
+    },
+    "cta": {
+      "title": "Prêt à obtenir votre ID Dubai ?",
+      "description": "Contactez-nous pour une consultation et pour commencer le processus de demande",
+      "telegram": "Écrire sur Telegram",
+      "form": "Remplir le questionnaire"
+    }
+  },
+  "webcam": {
+    "backButton": "Retour",
+    "title": "Services webcam",
+    "subtitle": "Soutien professionnel et revenus élevés pour modèles webcam",
+    "conditionsTitle": "Conditions de travail",
+    "conditions": {
+      "baseRate": "Taux de base",
+      "baseRateDesc": "30 % des gains",
+      "totals": "Revenus mensuels totaux",
+      "totalsDesc": "De 5 000 à 15 000 $ par mois",
+      "payments": "Paiements",
+      "paymentsDesc": "2 fois par mois en cryptomonnaie",
+      "topModels": "Pour les top modèles",
+      "topModelsDesc": "40/60 ou 50/50 pour les modèles avec leur propre équipement"
+    },
+    "servicesTitle": "Ce que nous proposons",
+    "services": {
+      "multiSite": "Travail sur 7 sites",
+      "multiSiteDesc": "Avec un opérateur dédié sur chaque plateforme",
+      "management": "Gestion des comptes",
+      "managementDesc": "Gestion complète de vos profils Fansly et OnlyFans",
+      "support": "Support technique",
+      "supportDesc": "Assistance 24/7 pour toutes vos questions",
+      "schedule": "Horaire flexible",
+      "scheduleDesc": "Travaillez à votre rythme"
+    },
+    "relocationTitle": "Relocalisation en Géorgie",
+    "relocation": {
+      "package": "Forfait complet",
+      "packageDesc": "Logement + équipement professionnel",
+      "documents": "Documents",
+      "documentsDesc": "Assurance, compte bancaire, résidence",
+      "benefits": "Avantages",
+      "benefitsDesc": "Faibles taxes, haute qualité de vie"
+    },
+    "ctaTitle": "Prêt à gagner de l'argent ?",
+    "ctaDescription": "Contactez-nous pour une consultation et commencer la collaboration",
+    "contactButton": "Nous contacter"
+  },
+  "marketplace": {
+    "back": "Retour",
+    "title": "Marketplace | Only4riend",
+    "subtitle": "Plateforme officielle d'achat et de vente de contacts de modèles. Garantie jusqu'à 14 jours. Transactions sécurisées.",
+    "statusesTitle": "Statuts des modèles",
+    "statuses": {
+      "active": "Disponible, en attente d'agence",
+      "reserve": "Réservée, en attente de décision",
+      "auction": "En négociation entre plusieurs agences",
+      "sold": "Vendue, page transférée"
+    },
+    "purchaseTitle": "Acheter",
+    "purchase": {
+      "steps": [
+        "Paiement complet (garant recommandé) → création d'un chat → remise des clés, contacts et contenu de démarrage",
+        "14 jours pour tester le compte OnlyFans, l'e-mail et les paiements",
+        "Après 14 jours, la garantie prend fin"
+      ],
+      "guaranteeNote": "La garantie de 14 jours s'applique aux contacts modèles dont le prix est supérieur à 1 000 $ USD. La garantie de 10 jours s'applique aux contrats inférieurs à 1 000 $ USD"
+    },
+    "obligationsTitle": "Obligations de l'agence",
+    "obligations": {
+      "items": [
+        "Contacter la modèle dans les 24 heures",
+        "Communiquer de manière polie, sans pression ni insultes",
+        "En cas de plaintes de la modèle, l'accès au marché peut être restreint"
+      ]
+    },
+    "guaranteeTitle": "Garantie 14 jours",
+    "guarantee": {
+      "coverageTitle": "Remboursement ou remplacement si :",
+      "coverage": [
+        "La modèle a disparu (ne répond pas depuis plus de 3 jours)",
+        "Réaction extrêmement lente, retard dans le lancement",
+        "Les informations fournies s'avèrent inexactes",
+        "La modèle refuse de signer le contrat (si requis)"
+      ],
+      "requirementsTitle": "Pour faire une demande de garantie, vous devez fournir :",
+      "requirements": "Le journal de chat complet et l'enregistrement de l'appel vidéo (si effectué). Pas d'enregistrement → 50 % de moins sur le montant du remboursement.",
+      "exclusionsTitle": "La garantie n'est pas valable si :",
+      "exclusions": [
+        "L'agence fait preuve d'incompétence ou de manque de professionnalisme",
+        "Viole les accords ou exerce une pression",
+        "La modèle part en raison d'une offre faible ou d'un manque de revenus",
+        "La modèle constate que l'agence 'ne sait pas faire'"
+      ]
+    },
+    "afterSaleTitle": "Après la vente",
+    "afterSale": {
+      "description": "La page de la modèle passe au statut #Sold"
+    },
+    "payment": {
+      "title": "Paiement",
+      "method": "Cryptomonnaie USDT TRC-20"
+    },
+    "telegramGroup": "Accéder au groupe du marché"
+  },
+  "auth": {
+    "login": "Connexion au compte",
+    "register": "S'inscrire",
+    "forgotPassword": "Réinitialiser le mot de passe",
+    "resetPassword": "Nouveau mot de passe",
+    "loginDescription": "Connectez-vous pour enregistrer les appels",
+    "registerDescription": "Créez un compte pour enregistrer les appels",
+    "forgotDescription": "Saisissez votre email pour réinitialiser le mot de passe",
+    "resetDescription": "Saisissez un nouveau mot de passe",
+    "continueWithGoogle": "Continuer avec Google",
+    "or": "ou",
+    "namePlaceholder": "Votre nom",
+    "password": "Mot de passe",
+    "newPassword": "Nouveau mot de passe",
+    "confirmPassword": "Confirmez le mot de passe",
+    "loginButton": "Se connecter",
+    "registerButton": "S'inscrire",
+    "sendResetLink": "Envoyer le lien",
+    "updatePassword": "Enregistrer le mot de passe",
+    "forgotPasswordLink": "Mot de passe oublié ?",
+    "noAccount": "Pas de compte ? S'inscrire",
+    "hasAccount": "Déjà un compte ? Se connecter",
+    "backToLogin": "Retour à la connexion",
+    "errors": {
+      "invalidEmail": "Format d'email invalide",
+      "passwordMin": "Le mot de passe doit comporter au moins 6 caractères",
+      "nameMin": "Le nom doit comporter au moins 2 caractères",
+      "nameMax": "Le nom est trop long",
+      "passwordMismatch": "Les mots de passe ne correspondent pas",
+      "loginError": "Erreur de connexion",
+      "invalidCredentials": "E-mail ou mot de passe incorrect",
+      "error": "Erreur",
+      "registerError": "Erreur d'inscription",
+      "emailExists": "Cet e-mail est déjà enregistré",
+      "googleError": "Impossible de se connecter via Google"
+    },
+    "success": {
+      "welcome": "Bienvenue !",
+      "loginSuccess": "Vous êtes connecté avec succès",
+      "accountCreated": "Compte créé !",
+      "welcomeToApp": "Bienvenue sur APLink",
+      "emailSent": "E-mail envoyé !",
+      "checkEmail": "Vérifiez votre boîte e-mail pour réinitialiser votre mot de passe",
+      "passwordUpdated": "Mot de passe mis à jour !",
+      "canLoginNow": "Vous pouvez désormais vous connecter avec votre nouveau mot de passe"
+    }
+  },
+  "translator": {
+    "title": "Traducteur",
+    "tabTranslate": "Traduction",
+    "tabHistory": "Historique",
+    "autoDetect": "Auto",
+    "voice": "Voix",
+    "previewVoice": "Écouter la voix",
+    "femaleVoices": "Féminines",
+    "maleVoices": "Masculins",
+    "neutralVoices": "Neutres",
+    "modeAuto": "Auto",
+    "modeSpace": "Espace",
+    "micSettings": "Paramètres du microphone",
+    "speaking": "Parle",
+    "level": "Niveau",
+    "sensitivity": "Sensibilité",
+    "sensitivityTooltip": "Niveau sonore minimal requis pour détecter la parole. Plus bas = plus sensible (capte les voix douces), plus haut = nécessite une voix forte.",
+    "pause": "Pause",
+    "pauseTooltip": "Temps d'attente après avoir cessé de parler avant d'envoyer la traduction. Plus long = attend des pauses plus longues.",
+    "holdSpaceToRecord": "Maintenez Espace pour enregistrer",
+    "releaseToTranslate": "Relâchez pour traduire",
+    "recording": "Enregistrement...",
+    "stop": "Arrêter",
+    "startTranslation": "Démarrer la traduction",
+    "listening": "J'écoute... parlez clairement",
+    "pressStart": "Cliquez sur « Démarrer la traduction »",
+    "clear": "Effacer",
+    "export": "Exporter",
+    "signInToViewHistory": "Connectez-vous pour voir l'historique des traductions",
+    "noHistory": "L'historique des traductions est vide",
+    "clearHistory": "Effacer",
+    "exportCsv": "Exporter CSV",
+    "pttActivated": "Mode Push-to-talk : maintenez Espace et parlez",
+    "vadActivated": "VAD activé — parlez, la traduction commencera automatiquement",
+    "micError": "Impossible d'accéder au microphone",
+    "historyCleared": "Historique effacé",
+    "historyExported": "Historique exporté",
+    "noDataToExport": "Aucune donnée à exporter",
+    "loadHistoryError": "Échec du chargement de l'historique",
+    "clearHistoryError": "Échec de l'effacement de l'historique",
+    "voicePreviewError": "Impossible de lire le message vocal",
+    "myLanguage": "Je parle",
+    "partnerLanguage": "Interlocuteur",
+    "detected": "Auto",
+    "waitingForPartner": "En attente...",
+    "orSelectManually": "Ou sélectionnez manuellement :",
+    "symmetricMode": "Traduction bilingue",
+    "incomingTranslation": "Traduction entrante",
+    "outgoingTranslation": "Traduction sortante"
+  }
+}

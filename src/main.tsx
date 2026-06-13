@@ -3,6 +3,13 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import { initGlobalErrorHandlers } from "./utils/globalErrorHandler";
+import { stripLanguagePrefix } from "@/components/LanguageRouter";
+
+// If URL is /en/foo or /es/, etc., strip prefix so existing routes match.
+const initialLang = stripLanguagePrefix();
+if (initialLang) {
+  (window as unknown as { __apollo_initial_lang?: string }).__apollo_initial_lang = initialLang;
+}
 
 const isElectronRuntime = window.location.protocol === "file:";
 

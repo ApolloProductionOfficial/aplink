@@ -23,8 +23,13 @@ const Header = () => {
   const languages = {
     ru: { label: 'Русский', flag: '🇷🇺' },
     en: { label: 'English', flag: '🇬🇧' },
+    es: { label: 'Español', flag: '🇪🇸' },
+    pt: { label: 'Português', flag: '🇧🇷' },
+    de: { label: 'Deutsch', flag: '🇩🇪' },
+    fr: { label: 'Français', flag: '🇫🇷' },
     uk: { label: 'Українська', flag: '🇺🇦' }
-  };
+  } as const;
+  type LangCode = keyof typeof languages;
   
   const handleNavigate = (e: React.MouseEvent<HTMLAnchorElement>, sectionId: string) => {
     e.preventDefault();
@@ -201,7 +206,7 @@ const Header = () => {
                     key={code}
                     onClick={() => {
                       playClickSound();
-                      setLanguage(code as 'ru' | 'en' | 'uk');
+                      setLanguage(code as LangCode);
                     }}
                     className={`${language === code ? 'bg-primary/20 border-l-2 border-primary' : ''} hover:bg-primary/10 transition-all duration-200 cursor-pointer`}
                   >
@@ -268,7 +273,7 @@ const Header = () => {
                     key={code}
                     onClick={() => {
                       playClickSound();
-                      setLanguage(code as 'ru' | 'en' | 'uk');
+                      setLanguage(code as LangCode);
                     }}
                     className={`${language === code ? 'bg-primary/20 border-l-2 border-primary' : ''} hover:bg-primary/10 transition-all duration-200 cursor-pointer`}
                   >
