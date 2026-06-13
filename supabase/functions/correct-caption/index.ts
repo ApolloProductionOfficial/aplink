@@ -35,7 +35,7 @@ async function translateWithLingva(text: string, sourceLang: string, targetLang:
 async function translateWithMyMemory(text: string, sourceLang: string, targetLang: string): Promise<string | null> {
   try {
     const langPair = `${sourceLang}|${targetLang}`;
-    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${langPair}&de=aplink@lovable.app`;
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${langPair}&de=apollo@apolloproduction.studio`;
     const response = await fetch(url, { signal: AbortSignal.timeout(5000) });
     if (!response.ok) return null;
     

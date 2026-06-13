@@ -20,9 +20,9 @@ serve(async (req) => {
       );
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    const FAL_API_KEY = Deno.env.get("FAL_API_KEY");
+    if (!FAL_API_KEY) {
+      throw new Error("FAL_API_KEY is not configured");
     }
 
     const prompts: Record<string, string> = {
@@ -43,80 +43,74 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Generating ${theme} background...`);
+    console.log(`Generating ${theme} background via Fal.ai...`);
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-pro-image-preview",
-        messages: [
-          { 
-            role: "user", 
-            content: prompt 
-          }
-        ],
-        modalities: ["image", "text"],
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Lovable AI image generation error:", response.status, errorText);
-      
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "Payment required" }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      throw new Error(`AI gateway error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    console.log("Image generation response received");
-
-    // Extract image URL from response
-    const message = data.choices?.[0]?.message;
     let imageUrl: string | null = null;
 
-    // Check for inline_data in parts (Gemini format)
-    if (message?.content && Array.isArray(message.content)) {
-      for (const part of message.content) {
-        if (part.type === 'image' && part.image_url?.url) {
-          imageUrl = part.image_url.url;
-          break;
-        }
-        if (part.inline_data?.data && part.inline_data?.mime_type) {
-          imageUrl = `data:${part.inline_data.mime_type};base64,${part.inline_data.data}`;
-          break;
-        }
-      }
-    }
+    try {
+      // Fal.ai image generation (flux/schnell — fast, cheap, 16:9 landscape backgrounds).
+      // NOTE: as of 2026-06-13 the Fal.ai account balance is exhausted (HTTP 403
+      // "User is locked. Exhausted balance"), so this call will fail and we fall back
+      // to the curated Unsplash backgrounds below. Top up at fal.ai/dashboard/billing
+      // to re-enable AI generation. Valid alternative slugs: fal-ai/nano-banana,
+      // fal-ai/bytedance/seedream/v4/text-to-image.
+      const submitResponse = await fetch("https://queue.fal.run/fal-ai/flux/schnell", {
+        method: "POST",
+        headers: {
+          Authorization: `Key ${FAL_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          prompt,
+          image_size: "landscape_16_9",
+          num_images: 1,
+          enable_safety_checker: false,
+        }),
+      });
 
-    // Check for images array
-    if (!imageUrl && message?.images && Array.isArray(message.images)) {
-      const firstImage = message.images[0];
-      if (firstImage?.image_url?.url) {
-        imageUrl = firstImage.image_url.url;
-      } else if (firstImage?.url) {
-        imageUrl = firstImage.url;
+      if (!submitResponse.ok) {
+        const errorText = await submitResponse.text();
+        console.error("Fal.ai image generation error:", submitResponse.status, errorText);
+        throw new Error(`Fal.ai error: ${submitResponse.status}`);
       }
+
+      const submitData = await submitResponse.json();
+
+      // Sync response: images returned directly
+      if (submitData.images && submitData.images.length > 0) {
+        imageUrl = submitData.images[0].url;
+      } else if (submitData.status_url || submitData.response_url) {
+        // Queued: poll for the result (max ~25s)
+        const statusUrl = submitData.status_url;
+        const responseUrl = submitData.response_url;
+        for (let i = 0; i < 25; i++) {
+          await new Promise((r) => setTimeout(r, 1000));
+          const statusResp = await fetch(statusUrl, {
+            headers: { Authorization: `Key ${FAL_API_KEY}` },
+          });
+          const statusData = await statusResp.json();
+          if (statusData.status === "COMPLETED") {
+            const resultResp = await fetch(responseUrl, {
+              headers: { Authorization: `Key ${FAL_API_KEY}` },
+            });
+            const resultData = await resultResp.json();
+            if (resultData.images && resultData.images.length > 0) {
+              imageUrl = resultData.images[0].url;
+            }
+            break;
+          }
+          if (statusData.status === "FAILED") {
+            console.error("Fal.ai generation failed:", JSON.stringify(statusData));
+            break;
+          }
+        }
+      }
+    } catch (genError) {
+      console.error("Fal.ai generation exception:", genError);
     }
 
     if (!imageUrl) {
-      console.error("No image URL found in response:", JSON.stringify(data, null, 2));
+      console.error("No image URL produced by Fal.ai, falling back to Unsplash");
       
       // Fallback to high-quality Unsplash images
       const fallbackUrls: Record<string, string> = {

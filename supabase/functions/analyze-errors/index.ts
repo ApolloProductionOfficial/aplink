@@ -24,7 +24,7 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
+    const groqApiKey = Deno.env.get("GROQ_API_KEY");
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Parse request body for options
@@ -36,9 +36,9 @@ serve(async (req) => {
       // No body is fine
     }
 
-    if (!lovableApiKey) {
+    if (!groqApiKey) {
       return new Response(
-        JSON.stringify({ error: "LOVABLE_API_KEY not configured" }),
+        JSON.stringify({ error: "GROQ_API_KEY not configured" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -127,16 +127,16 @@ ${JSON.stringify(errorSummary, null, 2)}
 - Если ошибка связана с API ключами — укажи какой именно и где его настроить
 - Если ошибка в коде — покажи готовый код исправления
 - Приоритизируй по критичности: high = влияет на работу приложения, medium = неудобство для пользователя, low = косметические
-- Давай рекомендации, которые разработчик может скопировать в Lovable chat для исправления`;
+- Давай рекомендации, которые разработчик может скопировать в чат для исправления`;
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const aiResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${lovableApiKey}`,
+        Authorization: `Bearer ${groqApiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "llama-3.3-70b-versatile",
         messages: [
           { 
             role: "system", 
@@ -157,7 +157,7 @@ ${JSON.stringify(errorSummary, null, 2)}
       }
       if (aiResponse.status === 402) {
         return new Response(
-          JSON.stringify({ error: "Требуется пополнение баланса Lovable AI." }),
+          JSON.stringify({ error: "Требуется пополнение баланса Groq AI." }),
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }

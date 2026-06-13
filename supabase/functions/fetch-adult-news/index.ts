@@ -14,12 +14,76 @@ interface NewsItem {
   url?: string;
 }
 
+// Rate limiting helper with email alerts
+async function checkRateLimit(ip: string, functionName: string, maxRequests = 100): Promise<{ allowed: boolean; remaining?: number; retryAfter?: number; current_count?: number }> {
+  try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    
+    const { data, error } = await supabase.rpc('check_rate_limit', {
+      p_ip_address: ip,
+      p_function_name: functionName,
+      p_max_requests: maxRequests
+    });
+    
+    if (error) {
+      console.error('Rate limit check error:', error);
+      return { allowed: true };
+    }
+    
+    // Send email alert if rate limit exceeded
+    if (!data.allowed && data.current_count) {
+      const overLimit = data.current_count - maxRequests;
+      if (overLimit === 1 || overLimit % 50 === 0) {
+        try {
+          await supabase.functions.invoke('send-rate-limit-alert', {
+            body: {
+              ip_address: ip,
+              function_name: functionName,
+              request_count: data.current_count,
+              max_requests: maxRequests
+            }
+          });
+          console.log(`Rate limit alert sent for IP: ${ip}`);
+        } catch (alertError) {
+          console.error('Failed to send rate limit alert:', alertError);
+        }
+      }
+    }
+    
+    return data;
+  } catch (e) {
+    console.error('Rate limit error:', e);
+    return { allowed: true };
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // Rate limiting
+    const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0] || req.headers.get('cf-connecting-ip') || 'unknown';
+    const rateLimit = await checkRateLimit(clientIP, 'fetch-adult-news', 30); // Lower limit for news
+    
+    if (!rateLimit.allowed) {
+      console.log(`Rate limit exceeded for IP: ${clientIP}`);
+      return new Response(JSON.stringify({ 
+        error: 'Слишком много запросов. Попробуйте через минуту.',
+        retry_after: rateLimit.retryAfter,
+        success: false
+      }), {
+        status: 429,
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json',
+          'Retry-After': String(rateLimit.retryAfter || 60)
+        },
+      });
+    }
     console.log('Starting adult industry news fetch...');
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -32,25 +96,27 @@ serve(async (req) => {
     
     console.log('Fetching news for language:', language);
 
-    // Search queries based on language - search on news sites, not OnlyFans
+    // Search queries based on language - search for RECENT news only (2025-2026)
+    // Adding year filter to get fresh content
+    const currentYear = new Date().getFullYear();
     const searchQueriesByLang: Record<string, string[]> = {
       ru: [
-        'site:xbiz.com OnlyFans',
-        'site:avn.com creator platform',
-        'site:xbiz.com content creator',
-        'site:avn.com adult industry'
+        `site:xbiz.com OnlyFans ${currentYear}`,
+        `site:avn.com creator platform ${currentYear}`,
+        `site:xbiz.com content creator news ${currentYear}`,
+        `site:avn.com adult industry ${currentYear}`
       ],
       en: [
-        'site:xbiz.com OnlyFans',
-        'site:avn.com content creator',
-        'site:xbiz.com adult industry',
-        'site:avn.com creator platform'
+        `site:xbiz.com OnlyFans ${currentYear}`,
+        `site:avn.com content creator ${currentYear}`,
+        `site:xbiz.com adult industry news ${currentYear}`,
+        `site:avn.com creator platform ${currentYear}`
       ],
       uk: [
-        'site:xbiz.com OnlyFans',
-        'site:avn.com content creator',
-        'site:xbiz.com creator platform',
-        'site:avn.com adult industry'
+        `site:xbiz.com OnlyFans ${currentYear}`,
+        `site:avn.com content creator ${currentYear}`,
+        `site:xbiz.com creator platform ${currentYear}`,
+        `site:avn.com adult industry ${currentYear}`
       ]
     };
 
@@ -60,7 +126,8 @@ serve(async (req) => {
 
     // Using Brave Search API for real news
     const braveApiKey = Deno.env.get('BRAVE_API_KEY');
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+    const openrouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
+    const veniceApiKey = Deno.env.get('APOLLO_AI_API_KEY');
     
     if (!braveApiKey) {
       console.log('BRAVE_API_KEY not set, using fallback');
@@ -81,7 +148,20 @@ serve(async (req) => {
 
       if (newsData.web && newsData.web.results && newsData.web.results.length > 0) {
         const rawItems = newsData.web.results
-          .filter((item: any) => item.url && !item.url.includes('onlyfans.com'))
+          .filter((item: any) => {
+            if (!item.url) return false;
+            // Skip OnlyFans direct links
+            if (item.url.includes('onlyfans.com')) return false;
+            // Skip homepage and category pages - only allow article URLs
+            const url = item.url.toLowerCase();
+            if (url.match(/^https?:\/\/[^\/]+\/?$/)) return false; // Homepage
+            if (url.match(/^https?:\/\/[^\/]+\/news\/?$/)) return false; // /news page
+            if (url.match(/^https?:\/\/[^\/]+\/[a-z-]+\/?$/)) return false; // Single category
+            // Must have a specific article path (contains numbers or long slugs)
+            const path = url.replace(/^https?:\/\/[^\/]+/, '');
+            if (path.length < 15) return false; // Too short path = likely not an article
+            return true;
+          })
           .slice(0, 2)
           .map((item: any) => {
             // Remove HTML tags from description
@@ -103,33 +183,61 @@ serve(async (req) => {
             };
           });
         
-        // Translate if needed and LOVABLE_API_KEY is available
-        if (language !== 'en' && lovableApiKey && rawItems.length > 0) {
+        // Translate if needed
+        if (language !== 'en' && (openrouterApiKey || veniceApiKey) && rawItems.length > 0) {
           console.log('Translating news to', language);
           
-          try {
-            const translationResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${lovableApiKey}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                model: 'google/gemini-2.5-flash',
-                messages: [
-                  {
-                    role: 'system',
-                    content: `You are a professional translator. Translate news titles and descriptions from English to ${language === 'ru' ? 'Russian' : 'Ukrainian'}. Return ONLY a JSON array with translated items in format: [{"title": "...", "description": "..."}]. Do not add any other text.`
-                  },
-                  {
-                    role: 'user',
-                    content: JSON.stringify(rawItems.map((item: any) => ({ title: item.title, description: item.description })))
-                  }
-                ]
-              }),
-            });
+          const translateMessages = [
+            {
+              role: 'system',
+              content: `You are a professional translator. Translate news titles and descriptions from English to ${language === 'ru' ? 'Russian' : 'Ukrainian'}. Return ONLY a JSON array with translated items in format: [{"title": "...", "description": "..."}]. Do not add any other text.`
+            },
+            {
+              role: 'user',
+              content: JSON.stringify(rawItems.map((item: any) => ({ title: item.title, description: item.description })))
+            }
+          ];
 
-            if (translationResponse.ok) {
+          try {
+            let translationResponse: Response | null = null;
+
+            // Try OpenRouter first
+            if (openrouterApiKey) {
+              translationResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${openrouterApiKey}`, 'Content-Type': 'application/json', 'HTTP-Referer': 'https://apolloproduction.studio', 'X-Title': 'Apollo News' },
+                body: JSON.stringify({ model: 'openrouter/free', messages: translateMessages, plugins: [] }),
+              });
+              if (!translationResponse.ok) {
+                console.warn('OpenRouter translate failed:', translationResponse.status);
+                translationResponse = null;
+              }
+            }
+            // HuggingFace fallback (free)
+            const hfApiKey = Deno.env.get('HUGGINGFACE_API_KEY');
+            if (!translationResponse && hfApiKey) {
+              for (const hfModel of ['Qwen/Qwen2.5-72B-Instruct', 'meta-llama/Llama-3.3-70B-Instruct']) {
+                translationResponse = await fetch('https://router.huggingface.co/v1/chat/completions', {
+                  method: 'POST',
+                  headers: { 'Authorization': `Bearer ${hfApiKey}`, 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ model: hfModel, messages: translateMessages, max_tokens: 2048 }),
+                });
+                if (translationResponse.ok) break;
+                console.warn(`HuggingFace ${hfModel} translate failed:`, translationResponse.status);
+                translationResponse = null;
+              }
+            }
+            // Venice fallback
+            if (!translationResponse && veniceApiKey) {
+              translationResponse = await fetch('https://api.venice.ai/api/v1/chat/completions', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${veniceApiKey}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ model: 'zai-org-glm-4.7-flash', messages: translateMessages }),
+              });
+              if (!translationResponse.ok) translationResponse = null;
+            }
+
+            if (translationResponse) {
               const translationData = await translationResponse.json();
               const translatedText = translationData.choices[0].message.content;
               
@@ -169,44 +277,44 @@ serve(async (req) => {
       const fallbackNews: Record<string, NewsItem[]> = {
         ru: [
           {
-            title: "Рост индустрии создателей контента",
-            description: "Платформы для создателей контента продолжают расти, предоставляя новые возможности для монетизации",
-            source: "Industry Report",
-            url: "https://xbiz.com"
+            title: "Платформы для создателей контента продолжают развиваться",
+            description: "Индустрия создателей контента демонстрирует стабильный рост и новые возможности для монетизации",
+            source: "xbiz.com",
+            url: "https://www.xbiz.com/news/293733/onlyfans-institutes-criminal-background-checks-for-us-creators"
           },
           {
-            title: "Новые тренды в продвижении",
-            description: "Социальные сети остаются ключевым источником трафика для создателей контента",
-            source: "Industry Analysis",
-            url: "https://avn.com"
+            title: "Новые инструменты для продвижения контента",
+            description: "Создатели контента получают доступ к новым маркетинговым инструментам",
+            source: "avn.com",
+            url: "https://avn.com/news/video/joey-kim-launches-creator-platform-muselink-179494"
           }
         ],
         en: [
           {
-            title: "Creator Economy Growth",
-            description: "Content creator platforms continue to grow, offering new monetization opportunities",
-            source: "Industry Report",
-            url: "https://xbiz.com"
+            title: "Content Creator Platforms Continue to Evolve",
+            description: "The creator economy shows steady growth with new monetization opportunities",
+            source: "xbiz.com",
+            url: "https://www.xbiz.com/news/293733/onlyfans-institutes-criminal-background-checks-for-us-creators"
           },
           {
-            title: "New Marketing Trends",
-            description: "Social media remains a key traffic source for content creators",
-            source: "Industry Analysis",
-            url: "https://avn.com"
+            title: "New Marketing Tools for Content Promotion",
+            description: "Content creators gain access to new promotional tools and platforms",
+            source: "avn.com",
+            url: "https://avn.com/news/video/joey-kim-launches-creator-platform-muselink-179494"
           }
         ],
         uk: [
           {
-            title: "Зростання індустрії творців контенту",
-            description: "Платформи для творців контенту продовжують рости, надаючи нові можливості монетизації",
-            source: "Industry Report",
-            url: "https://xbiz.com"
+            title: "Платформи для творців контенту продовжують розвиватися",
+            description: "Індустрія творців контенту демонструє стабільне зростання та нові можливості монетизації",
+            source: "xbiz.com",
+            url: "https://www.xbiz.com/news/293733/onlyfans-institutes-criminal-background-checks-for-us-creators"
           },
           {
-            title: "Нові тренди в просуванні",
-            description: "Соціальні мережі залишаються ключовим джерелом трафіку для творців контенту",
-            source: "Industry Analysis",
-            url: "https://avn.com"
+            title: "Нові інструменти для просування контенту",
+            description: "Творці контенту отримують доступ до нових маркетингових інструментів",
+            source: "avn.com",
+            url: "https://avn.com/news/video/joey-kim-launches-creator-platform-muselink-179494"
           }
         ]
       };
