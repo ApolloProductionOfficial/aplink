@@ -43,9 +43,70 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Generating ${theme} background via Fal.ai...`);
+    console.log(`Generating ${theme} background (Higgsfield primary → Fal → Unsplash)...`);
 
     let imageUrl: string | null = null;
+
+    // ── PRIMARY: Higgsfield platform API (Soul, 16:9 landscape) ───────────────
+    // submit + poll, auth `Authorization: Key KEY_ID:KEY_SECRET`. Любая ошибка
+    // (нет ключей / not_enough_credits / timeout / nsfw) → null → падаем в Fal ниже.
+    try {
+      const hfKeyId = Deno.env.get("HIGGSFIELD_KEY_ID");
+      const hfKeySecret = Deno.env.get("HIGGSFIELD_KEY_SECRET");
+      if (hfKeyId && hfKeySecret) {
+        const hfAuth = `Key ${hfKeyId}:${hfKeySecret}`;
+        const hfBase = "https://platform.higgsfield.ai";
+        const submit = await fetch(`${hfBase}/higgsfield-ai/soul/standard`, {
+          method: "POST",
+          headers: {
+            Authorization: hfAuth,
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({ prompt, aspect_ratio: "16:9", resolution: "1080p" }),
+        });
+        if (submit.ok) {
+          const submitData = await submit.json();
+          if (submitData.status === "completed" && submitData.images?.length > 0) {
+            imageUrl = submitData.images[0].url;
+          } else {
+            const statusUrl = submitData.status_url ||
+              `${hfBase}/requests/${submitData.request_id}/status`;
+            for (let i = 0; i < 30; i++) {
+              await new Promise((r) => setTimeout(r, 2000));
+              const statusResp = await fetch(statusUrl, {
+                headers: { Authorization: hfAuth, Accept: "application/json" },
+              });
+              if (!statusResp.ok) continue;
+              const statusData = await statusResp.json();
+              if (statusData.status === "completed") {
+                if (statusData.images?.length > 0) imageUrl = statusData.images[0].url;
+                break;
+              }
+              if (statusData.status === "failed" || statusData.status === "nsfw") {
+                console.error("Higgsfield bg generation status:", statusData.status);
+                break;
+              }
+            }
+          }
+        } else {
+          console.error("Higgsfield bg submit error:", submit.status, await submit.text());
+        }
+      } else {
+        console.log("Higgsfield keys not configured — skipping to Fal");
+      }
+    } catch (hfErr) {
+      console.error("Higgsfield bg exception, falling back to Fal:", hfErr);
+    }
+
+    if (imageUrl) {
+      console.log(`Background ${theme} generated via Higgsfield`);
+      return new Response(
+        JSON.stringify({ imageUrl, theme, generated: true, provider: "higgsfield" }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    console.log("Higgsfield unavailable → falling back to Fal.ai");
 
     try {
       // Fal.ai image generation (flux/schnell — fast, cheap, 16:9 landscape backgrounds).
@@ -109,9 +170,11 @@ serve(async (req) => {
       console.error("Fal.ai generation exception:", genError);
     }
 
+    let provider = "fal";
     if (!imageUrl) {
       console.error("No image URL produced by Fal.ai, falling back to Unsplash");
-      
+      provider = "unsplash";
+
       // Fallback to high-quality Unsplash images
       const fallbackUrls: Record<string, string> = {
         space: "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=1920&h=1080&fit=crop&q=90",
@@ -119,12 +182,12 @@ serve(async (req) => {
         nature: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1920&h=1080&fit=crop&q=90",
         beach: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1920&h=1080&fit=crop&q=90",
       };
-      
+
       imageUrl = fallbackUrls[theme];
     }
 
     return new Response(
-      JSON.stringify({ imageUrl, theme, generated: true }),
+      JSON.stringify({ imageUrl, theme, generated: true, provider }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
