@@ -2,8 +2,18 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+// Public Supabase anon credentials (project otpqvjrdhaitghygkdnc). These are
+// safe to ship in the client bundle — access is gated by RLS, not by secrecy.
+// Hardcoded fallbacks guarantee the client never receives an empty URL/key
+// (which makes createClient() throw at module load and blanks the whole SPA —
+// e.g. when a host like Vercel injects empty VITE_SUPABASE_* env vars).
+const FALLBACK_SUPABASE_URL = "https://otpqvjrdhaitghygkdnc.supabase.co";
+const FALLBACK_SUPABASE_PUBLISHABLE_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im90cHF2anJkaGFpdGdoeWdrZG5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NjMyMzUsImV4cCI6MjA5MTMzOTIzNX0.kD1r2-Rsd1FBG-k3PUuXhCGe_Ji-BthteniWn6w6Zdw";
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || FALLBACK_SUPABASE_URL;
+const SUPABASE_PUBLISHABLE_KEY =
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || FALLBACK_SUPABASE_PUBLISHABLE_KEY;
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
