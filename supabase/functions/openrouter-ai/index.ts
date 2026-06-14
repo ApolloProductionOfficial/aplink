@@ -19,81 +19,86 @@ serve(async (req) => {
       });
     }
 
-    const useProvider = provider || 'lovable';
-    const useModel = model || 'google/gemini-2.5-flash';
-
-    let apiUrl: string;
-    let apiKey: string;
-    let requestModel: string;
-
-    if (useProvider === 'openrouter') {
-      const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
-      if (!OPENROUTER_API_KEY) {
-        throw new Error("OPENROUTER_API_KEY is not configured");
-      }
-      apiUrl = "https://openrouter.ai/api/v1/chat/completions";
-      apiKey = OPENROUTER_API_KEY;
-      requestModel = useModel;
-    } else {
-      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-      if (!LOVABLE_API_KEY) {
-        throw new Error("LOVABLE_API_KEY is not configured");
-      }
-      apiUrl = "https://ai.gateway.lovable.dev/v1/chat/completions";
-      apiKey = LOVABLE_API_KEY;
-      requestModel = useModel;
-    }
+    // PRIMARY = Venice (uncensored); fall back to Groq. OpenRouter only when
+    // explicitly requested (provider === 'openrouter') with a key. Lovable retired.
+    const veniceKey = Deno.env.get("VENICE_API_KEY") || Deno.env.get("VENICE_INFERENCE_KEY");
+    const groqKey = Deno.env.get("GROQ_API_KEY");
+    const openrouterKey = Deno.env.get("OPENROUTER_API_KEY");
 
     const allMessages = systemPrompt
       ? [{ role: 'system', content: systemPrompt }, ...messages]
       : messages;
 
-    const body: Record<string, unknown> = {
-      model: requestModel,
-      messages: allMessages,
-      temperature: temperature ?? 0.7,
-    };
-    if (maxTokens) body.max_tokens = maxTokens;
-
-    const headers: Record<string, string> = {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    };
-
-    if (useProvider === 'openrouter') {
-      headers['HTTP-Referer'] = 'https://aplink.lovable.app';
-      headers['X-Title'] = 'APLink by Apollo Production';
+    type Attempt = { name: string; url: string; key: string; model: string; extraHeaders?: Record<string, string> };
+    const chain: Attempt[] = [];
+    if (provider === 'openrouter' && openrouterKey) {
+      // Explicit opt-in: honor the caller-supplied model.
+      chain.push({
+        name: 'openrouter',
+        url: 'https://openrouter.ai/api/v1/chat/completions',
+        key: openrouterKey,
+        model: model || 'openai/gpt-4o-mini',
+        extraHeaders: { 'HTTP-Referer': 'https://aplink.lovable.app', 'X-Title': 'APLink by Apollo Production' },
+      });
+    }
+    if (veniceKey) {
+      chain.push({ name: 'venice', url: 'https://api.venice.ai/api/v1/chat/completions', key: veniceKey, model: 'venice-uncensored' });
+    }
+    if (groqKey) {
+      chain.push({ name: 'groq', url: 'https://api.groq.com/openai/v1/chat/completions', key: groqKey, model: 'llama-3.3-70b-versatile' });
+    }
+    if (chain.length === 0) {
+      throw new Error('No AI provider configured (need VENICE_API_KEY or GROQ_API_KEY)');
     }
 
-    console.log(`[openrouter-ai] provider=${useProvider} model=${requestModel}`);
+    let data: any = null;
+    let lastStatus = 500;
+    let lastErr = '';
+    for (const attempt of chain) {
+      try {
+        const body: Record<string, unknown> = {
+          model: attempt.model,
+          messages: allMessages,
+          temperature: temperature ?? 0.7,
+        };
+        if (maxTokens) body.max_tokens = maxTokens;
 
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(body),
-    });
+        const headers: Record<string, string> = {
+          Authorization: `Bearer ${attempt.key}`,
+          'Content-Type': 'application/json',
+          ...(attempt.extraHeaders || {}),
+        };
+        console.log(`[openrouter-ai] try provider=${attempt.name} model=${attempt.model}`);
+        const response = await fetch(attempt.url, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(body),
+        });
+        if (response.ok) {
+          data = await response.json();
+          console.log(`[openrouter-ai] ok provider=${attempt.name}`);
+          break;
+        }
+        lastStatus = response.status;
+        lastErr = await response.text();
+        console.error(`[openrouter-ai] provider=${attempt.name} failed ${response.status}:`, lastErr.slice(0, 300));
+      } catch (e) {
+        lastErr = e instanceof Error ? e.message : String(e);
+        console.error(`[openrouter-ai] provider=${attempt.name} threw`, lastErr);
+      }
+    }
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`[openrouter-ai] API error ${response.status}:`, errorText);
-
-      if (response.status === 429) {
+    if (!data) {
+      if (lastStatus === 429) {
         return new Response(JSON.stringify({ error: 'Rate limit exceeded, try again later' }), {
           status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: 'Insufficient credits' }), {
-          status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
-
-      return new Response(JSON.stringify({ error: `AI API error: ${response.status}` }), {
+      return new Response(JSON.stringify({ error: `AI API error: ${lastStatus}` }), {
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    const data = await response.json();
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

@@ -38,12 +38,14 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    // PRIMARY = Venice (uncensored); fall back to Groq.
+    const veniceKey = Deno.env.get("VENICE_API_KEY") || Deno.env.get("VENICE_INFERENCE_KEY");
     const groqApiKey = Deno.env.get("GROQ_API_KEY");
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    if (!groqApiKey) {
+    if (!veniceKey && !groqApiKey) {
       return new Response(
-        JSON.stringify({ error: "GROQ_API_KEY not configured" }),
+        JSON.stringify({ error: "No AI provider configured (need VENICE_API_KEY or GROQ_API_KEY)" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -476,29 +478,33 @@ ${mediumFindings.length > 0 ? mediumFindings.map(f => `• ${f.title}: ${f.descr
     let aiRecommendations: string[] = [];
 
     try {
-      const aiResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${groqApiKey}`,
-          "Content-Type": "application/json",
+      const auditMessages = [
+        {
+          role: "system",
+          content: "Ты эксперт по безопасности и оптимизации веб-приложений. Отвечай ТОЛЬКО валидным JSON без markdown.",
         },
-        body: JSON.stringify({
-          model: "llama-3.3-70b-versatile",
-          messages: [
-            { 
-              role: "system", 
-              content: "Ты эксперт по безопасности и оптимизации веб-приложений. Отвечай ТОЛЬКО валидным JSON без markdown." 
-            },
-            { role: "user", content: aiPrompt }
-          ],
-          temperature: 0.3,
-        }),
-      });
+        { role: "user", content: aiPrompt },
+      ];
+      const auditChain: { name: string; url: string; key: string; model: string }[] = [];
+      if (veniceKey) auditChain.push({ name: "venice", url: "https://api.venice.ai/api/v1/chat/completions", key: veniceKey, model: "venice-uncensored" });
+      if (groqApiKey) auditChain.push({ name: "groq", url: "https://api.groq.com/openai/v1/chat/completions", key: groqApiKey, model: "llama-3.3-70b-versatile" });
 
-      if (aiResponse.ok) {
+      let aiResponse: Response | null = null;
+      for (const a of auditChain) {
+        console.log(`[deep-security-audit] try provider=${a.name}`);
+        const r = await fetch(a.url, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${a.key}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ model: a.model, messages: auditMessages, temperature: 0.3 }),
+        });
+        if (r.ok) { aiResponse = r; console.log(`[deep-security-audit] ok provider=${a.name}`); break; }
+        console.error(`[deep-security-audit] provider=${a.name} failed`, r.status, (await r.text()).slice(0, 200));
+      }
+
+      if (aiResponse && aiResponse.ok) {
         const aiData = await aiResponse.json();
         const aiText = aiData.choices?.[0]?.message?.content || "";
-        
+
         try {
           const jsonMatch = aiText.match(/```json\n?([\s\S]*?)\n?```/) || aiText.match(/\{[\s\S]*\}/);
           const jsonStr = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : aiText;

@@ -14,29 +14,15 @@ serve(async (req) => {
   try {
     const { messages, provider, model } = await req.json();
 
-    // Determine which AI provider to use
-    const useProvider = provider || 'lovable';
-    const useModel = model || 'google/gemini-2.5-flash';
-
-    let apiUrl: string;
-    let apiKey: string;
-
-    if (useProvider === 'openrouter') {
-      const key = Deno.env.get("OPENROUTER_API_KEY");
-      if (!key) throw new Error("OPENROUTER_API_KEY is not configured");
-      apiUrl = "https://openrouter.ai/api/v1/chat/completions";
-      apiKey = key;
-    } else if (useProvider === 'huggingface') {
-      const key = Deno.env.get("HUGGINGFACE_API_KEY");
-      if (!key) throw new Error("HUGGINGFACE_API_KEY is not configured");
-      apiUrl = `https://router.huggingface.co/hf-inference/models/${useModel}/v1/chat/completions`;
-      apiKey = key;
-    } else {
-      const key = Deno.env.get("LOVABLE_API_KEY");
-      if (!key) throw new Error("LOVABLE_API_KEY is not configured");
-      apiUrl = "https://ai.gateway.lovable.dev/v1/chat/completions";
-      apiKey = key;
-    }
+    // Provider selection. PRIMARY = Venice (uncensored) — the agency is
+    // adult/OF, an uncensored model is required. On any Venice error we fall
+    // back to Groq (free, OpenAI-compatible). Lovable/OpenRouter are retired
+    // as defaults and only honored when explicitly requested with a key.
+    const veniceKey =
+      Deno.env.get("VENICE_API_KEY") || Deno.env.get("VENICE_INFERENCE_KEY");
+    const groqKey = Deno.env.get("GROQ_API_KEY");
+    const openrouterKey = Deno.env.get("OPENROUTER_API_KEY");
+    const hfKey = Deno.env.get("HUGGINGFACE_API_KEY");
 
     // Detect language from the last user message
     const lastUserMessage = messages.filter((m: any) => m.role === 'user').pop();
@@ -97,46 +83,93 @@ serve(async (req) => {
 - ВСЕГДА в конце ответа направляй к @Apollo_Production для детальной консультации
 - Отвечай кратко, дружелюбно, информативно с эмодзи 😊`;
 
-    const headers: Record<string, string> = {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    };
-    if (useProvider === 'openrouter') {
-      headers['HTTP-Referer'] = 'https://aplink.lovable.app';
-      headers['X-Title'] = 'APLink by Apollo Production';
+    const chatMessages = [{ role: "system", content: systemPrompt }, ...messages];
+
+    // Build the provider chain: Venice first, then Groq fallback.
+    type Attempt = { name: string; url: string; key: string; model: string; extraHeaders?: Record<string, string> };
+    const chain: Attempt[] = [];
+    if (veniceKey) {
+      chain.push({
+        name: 'venice',
+        url: 'https://api.venice.ai/api/v1/chat/completions',
+        key: veniceKey,
+        model: 'venice-uncensored',
+      });
+    }
+    if (groqKey) {
+      chain.push({
+        name: 'groq',
+        url: 'https://api.groq.com/openai/v1/chat/completions',
+        key: groqKey,
+        model: 'llama-3.3-70b-versatile',
+      });
+    }
+    // Explicit opt-in fallbacks (never default).
+    if (provider === 'openrouter' && openrouterKey) {
+      chain.push({
+        name: 'openrouter',
+        url: 'https://openrouter.ai/api/v1/chat/completions',
+        key: openrouterKey,
+        model: model && model.includes('/') ? model : 'openai/gpt-4o-mini',
+        extraHeaders: { 'HTTP-Referer': 'https://aplink.lovable.app', 'X-Title': 'APLink by Apollo Production' },
+      });
+    }
+    if (provider === 'huggingface' && hfKey) {
+      const hfModel = model || 'mistralai/Mistral-7B-Instruct-v0.3';
+      chain.push({
+        name: 'huggingface',
+        url: `https://router.huggingface.co/hf-inference/models/${hfModel}/v1/chat/completions`,
+        key: hfKey,
+        model: hfModel,
+      });
+    }
+    if (chain.length === 0) {
+      throw new Error("No AI provider configured (need VENICE_API_KEY or GROQ_API_KEY)");
     }
 
-    console.log(`[ai-chat] provider=${useProvider} model=${useModel}`);
+    let data: any = null;
+    let lastStatus = 500;
+    let lastErr = '';
+    for (const attempt of chain) {
+      try {
+        const headers: Record<string, string> = {
+          Authorization: `Bearer ${attempt.key}`,
+          'Content-Type': 'application/json',
+          ...(attempt.extraHeaders || {}),
+        };
+        console.log(`[ai-chat] try provider=${attempt.name} model=${attempt.model}`);
+        const response = await fetch(attempt.url, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ model: attempt.model, messages: chatMessages, stream: false }),
+        });
+        if (response.ok) {
+          data = await response.json();
+          console.log(`[ai-chat] ok provider=${attempt.name}`);
+          break;
+        }
+        lastStatus = response.status;
+        lastErr = await response.text();
+        console.error(`[ai-chat] provider=${attempt.name} failed`, response.status, lastErr.slice(0, 300));
+        // try next provider in chain
+      } catch (e) {
+        lastErr = e instanceof Error ? e.message : String(e);
+        console.error(`[ai-chat] provider=${attempt.name} threw`, lastErr);
+      }
+    }
 
-    const response = await fetch(apiUrl, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        model: useModel,
-        messages: [{ role: "system", content: systemPrompt }, ...messages],
-        stream: false,
-      }),
-    });
-
-    if (!response.ok) {
-      if (response.status === 429) {
+    if (!data) {
+      if (lastStatus === 429) {
         return new Response(JSON.stringify({ error: "Слишком много запросов, попробуйте позже." }), {
           status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Требуется пополнение кредитов." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const errorText = await response.text();
-      console.error("AI error:", response.status, errorText);
+      console.error("AI error: all providers failed", lastStatus, lastErr);
       return new Response(JSON.stringify({ error: "Ошибка AI" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const data = await response.json();
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

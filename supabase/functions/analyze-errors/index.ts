@@ -24,7 +24,9 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
+    // PRIMARY = Venice (uncensored); fall back to Groq. Lovable retired.
+    const veniceKey = Deno.env.get("VENICE_API_KEY") || Deno.env.get("VENICE_INFERENCE_KEY");
+    const groqKey = Deno.env.get("GROQ_API_KEY");
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Parse request body for options
@@ -36,9 +38,9 @@ serve(async (req) => {
       // No body is fine
     }
 
-    if (!lovableApiKey) {
+    if (!veniceKey && !groqKey) {
       return new Response(
-        JSON.stringify({ error: "LOVABLE_API_KEY not configured" }),
+        JSON.stringify({ error: "No AI provider configured (need VENICE_API_KEY or GROQ_API_KEY)" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -129,43 +131,60 @@ ${JSON.stringify(errorSummary, null, 2)}
 - Приоритизируй по критичности: high = влияет на работу приложения, medium = неудобство для пользователя, low = косметические
 - Давай рекомендации, которые разработчик может скопировать в Lovable chat для исправления`;
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${lovableApiKey}`,
-        "Content-Type": "application/json",
+    const chatMessages = [
+      {
+        role: "system",
+        content: "Ты эксперт по отладке React/TypeScript/Supabase приложений. Отвечай ТОЛЬКО валидным JSON без markdown обёрток. Фокусируйся на практических решениях, которые можно сразу применить.",
       },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { 
-            role: "system", 
-            content: "Ты эксперт по отладке React/TypeScript/Supabase приложений. Отвечай ТОЛЬКО валидным JSON без markdown обёрток. Фокусируйся на практических решениях, которые можно сразу применить." 
-          },
-          { role: "user", content: prompt }
-        ],
-        temperature: 0.2,
-      }),
-    });
+      { role: "user", content: prompt },
+    ];
 
-    if (!aiResponse.ok) {
-      if (aiResponse.status === 429) {
+    type Attempt = { name: string; url: string; key: string; model: string };
+    const chain: Attempt[] = [];
+    if (veniceKey) {
+      chain.push({ name: "venice", url: "https://api.venice.ai/api/v1/chat/completions", key: veniceKey, model: "venice-uncensored" });
+    }
+    if (groqKey) {
+      chain.push({ name: "groq", url: "https://api.groq.com/openai/v1/chat/completions", key: groqKey, model: "llama-3.3-70b-versatile" });
+    }
+
+    let aiText = "";
+    let aiOk = false;
+    let lastStatus = 500;
+    let lastErr = "";
+    for (const attempt of chain) {
+      try {
+        console.log(`[analyze-errors] try provider=${attempt.name} model=${attempt.model}`);
+        const aiResponse = await fetch(attempt.url, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${attempt.key}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ model: attempt.model, messages: chatMessages, temperature: 0.2 }),
+        });
+        if (aiResponse.ok) {
+          const aiData = await aiResponse.json();
+          aiText = aiData.choices?.[0]?.message?.content || "";
+          aiOk = true;
+          console.log(`[analyze-errors] ok provider=${attempt.name}`);
+          break;
+        }
+        lastStatus = aiResponse.status;
+        lastErr = await aiResponse.text();
+        console.error(`[analyze-errors] provider=${attempt.name} failed`, aiResponse.status, lastErr.slice(0, 300));
+      } catch (e) {
+        lastErr = e instanceof Error ? e.message : String(e);
+        console.error(`[analyze-errors] provider=${attempt.name} threw`, lastErr);
+      }
+    }
+
+    if (!aiOk) {
+      if (lastStatus === 429) {
         return new Response(
           JSON.stringify({ error: "Слишком много запросов. Попробуйте позже." }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      if (aiResponse.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "Требуется пополнение баланса Lovable AI." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      throw new Error(`AI gateway error: ${aiResponse.status}`);
+      throw new Error(`AI gateway error: ${lastStatus} ${lastErr.slice(0, 200)}`);
     }
-
-    const aiData = await aiResponse.json();
-    const aiText = aiData.choices?.[0]?.message?.content || "";
     
     // Parse AI response
     let analysisResult;

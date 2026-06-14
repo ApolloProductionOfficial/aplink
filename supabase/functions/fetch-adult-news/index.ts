@@ -60,7 +60,10 @@ serve(async (req) => {
 
     // Using Brave Search API for real news
     const braveApiKey = Deno.env.get('BRAVE_API_KEY');
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+    // PRIMARY = Venice (uncensored); fall back to Groq. Lovable retired.
+    const veniceKey = Deno.env.get('VENICE_API_KEY') || Deno.env.get('VENICE_INFERENCE_KEY');
+    const groqKey = Deno.env.get('GROQ_API_KEY');
+    const translateKeyAvailable = !!(veniceKey || groqKey);
     
     if (!braveApiKey) {
       console.log('BRAVE_API_KEY not set, using fallback');
@@ -103,31 +106,35 @@ serve(async (req) => {
             };
           });
         
-        // Translate if needed and LOVABLE_API_KEY is available
-        if (language !== 'en' && lovableApiKey && rawItems.length > 0) {
+        // Translate if needed and a chat provider is available (Venice→Groq)
+        if (language !== 'en' && translateKeyAvailable && rawItems.length > 0) {
           console.log('Translating news to', language);
-          
+
           try {
-            const translationResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${lovableApiKey}`,
-                'Content-Type': 'application/json',
+            const translateMessages = [
+              {
+                role: 'system',
+                content: `You are a professional translator. Translate news titles and descriptions from English to ${language === 'ru' ? 'Russian' : 'Ukrainian'}. Return ONLY a JSON array with translated items in format: [{"title": "...", "description": "..."}]. Do not add any other text.`
               },
-              body: JSON.stringify({
-                model: 'google/gemini-2.5-flash',
-                messages: [
-                  {
-                    role: 'system',
-                    content: `You are a professional translator. Translate news titles and descriptions from English to ${language === 'ru' ? 'Russian' : 'Ukrainian'}. Return ONLY a JSON array with translated items in format: [{"title": "...", "description": "..."}]. Do not add any other text.`
-                  },
-                  {
-                    role: 'user',
-                    content: JSON.stringify(rawItems.map((item: any) => ({ title: item.title, description: item.description })))
-                  }
-                ]
-              }),
-            });
+              {
+                role: 'user',
+                content: JSON.stringify(rawItems.map((item: any) => ({ title: item.title, description: item.description })))
+              }
+            ];
+            const trChain: { name: string; url: string; key: string; model: string }[] = [];
+            if (veniceKey) trChain.push({ name: 'venice', url: 'https://api.venice.ai/api/v1/chat/completions', key: veniceKey, model: 'venice-uncensored' });
+            if (groqKey) trChain.push({ name: 'groq', url: 'https://api.groq.com/openai/v1/chat/completions', key: groqKey, model: 'llama-3.3-70b-versatile' });
+
+            let translationResponse: Response = new Response(null, { status: 500 });
+            for (const t of trChain) {
+              const r = await fetch(t.url, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${t.key}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ model: t.model, messages: translateMessages }),
+              });
+              if (r.ok) { translationResponse = r; break; }
+              console.error(`[fetch-adult-news] translate provider=${t.name} failed`, r.status);
+            }
 
             if (translationResponse.ok) {
               const translationData = await translationResponse.json();
