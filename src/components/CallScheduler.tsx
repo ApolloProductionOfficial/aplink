@@ -48,7 +48,7 @@ const CallScheduler = () => {
       .channel('scheduled-calls-changes')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'scheduled_calls' },
+        { event: '*', schema: 'aplink', table: 'scheduled_calls' },
         (payload) => {
           if (payload.eventType === 'INSERT') {
             setScheduledCalls(prev => [payload.new as ScheduledCall, ...prev]);

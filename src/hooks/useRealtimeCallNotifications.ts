@@ -110,7 +110,7 @@ export const useRealtimeCallNotifications = () => {
         'postgres_changes',
         { 
           event: 'INSERT', 
-          schema: 'public', 
+          schema: 'aplink', 
           table: 'call_requests' 
         },
         (payload) => {
@@ -122,7 +122,7 @@ export const useRealtimeCallNotifications = () => {
         'postgres_changes',
         { 
           event: 'UPDATE', 
-          schema: 'public', 
+          schema: 'aplink', 
           table: 'call_requests' 
         },
         (payload) => {
@@ -139,7 +139,7 @@ export const useRealtimeCallNotifications = () => {
         'postgres_changes',
         { 
           event: '*', 
-          schema: 'public', 
+          schema: 'aplink', 
           table: 'call_participants' 
         },
         (payload) => {

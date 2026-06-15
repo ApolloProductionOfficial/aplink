@@ -77,7 +77,7 @@ const FavoriteContacts = () => {
         'postgres_changes',
         {
           event: '*',
-          schema: 'public',
+          schema: 'aplink',
           table: 'user_presence',
         },
         () => {

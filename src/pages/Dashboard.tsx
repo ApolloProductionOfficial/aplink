@@ -305,7 +305,7 @@ const Dashboard = () => {
         'postgres_changes',
         {
           event: 'INSERT',
-          schema: 'public',
+          schema: 'aplink',
           table: 'meeting_transcripts',
         },
         (payload) => {

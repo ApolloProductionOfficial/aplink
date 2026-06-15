@@ -377,7 +377,7 @@ const AdminPanel = () => {
       .channel('admin-participants-changes')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'meeting_participants' },
+        { event: '*', schema: 'aplink', table: 'meeting_participants' },
         (payload) => {
           if (payload.eventType === 'INSERT') {
             setParticipants(prev => [payload.new as MeetingParticipant, ...prev]);

@@ -203,11 +203,13 @@ const Index = () => {
       return;
     }
     
+    // Use upsert (not update): some users created before the aplink.profiles
+    // trigger existed have no profile row, so a plain UPDATE would match 0 rows
+    // and silently "succeed" without persisting. Upsert self-creates the row.
     const { error } = await supabase
       .from('profiles')
-      .update({ username })
-      .eq('user_id', user.id);
-    
+      .upsert({ user_id: user.id, username }, { onConflict: 'user_id' });
+
     if (error) {
       toast({
         title: t.toast.error,
@@ -584,7 +586,7 @@ const Index = () => {
         <footer className="relative z-10 py-6 md:py-8 pb-24 md:pb-8 border-t border-border/30">
           <div className="container mx-auto px-4 text-center space-y-2">
             <p className="text-muted-foreground text-xs md:text-sm">
-              {t.aplink?.footer || '© 2025 APLink by'}{" "}
+              {t.aplink?.footer || '© 2026 APLink by'}{" "}
               <a
                 href="https://apolloproduction.studio"
                 target="_blank"

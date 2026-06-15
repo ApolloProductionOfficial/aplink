@@ -35,7 +35,7 @@ export const translations = {
         groupCalls: "Групповые звонки",
         groupCallsDesc: "До 100 участников в одной комнате"
       },
-      footer: "© 2025 APLink by",
+      footer: "© 2026 APLink by",
       roadmap: {
         title: "Roadmap проекта",
         subtitle: "Этапы развития APLink — от идеи до глобальной платформы",
@@ -864,7 +864,7 @@ export const translations = {
         groupCalls: "Group Calls",
         groupCallsDesc: "Up to 100 participants in one room"
       },
-      footer: "© 2025 APLink by",
+      footer: "© 2026 APLink by",
       roadmap: {
         title: "Project Roadmap",
         subtitle: "APLink development stages — from idea to global platform",
@@ -1693,7 +1693,7 @@ export const translations = {
         groupCalls: "Llamadas grupales",
         groupCallsDesc: "Hasta 100 participantes en una misma sala"
       },
-      footer: "© 2025 APLink by",
+      footer: "© 2026 APLink by",
       roadmap: {
         title: "Hoja de ruta del proyecto",
         subtitle: "Etapas de desarrollo de APLink: de la idea a la plataforma global",
@@ -2522,7 +2522,7 @@ export const translations = {
         groupCalls: "Chamadas em grupo",
         groupCallsDesc: "Até 100 participantes em uma mesma sala"
       },
-      footer: "© 2025 APLink by",
+      footer: "© 2026 APLink by",
       roadmap: {
         title: "Roadmap do projeto",
         subtitle: "Etapas de desenvolvimento do APLink — da ideia à plataforma global",
@@ -3351,7 +3351,7 @@ export const translations = {
         groupCalls: "Gruppenanrufe",
         groupCallsDesc: "Bis zu 100 Teilnehmer in einem Raum"
       },
-      footer: "© 2025 APLink by",
+      footer: "© 2026 APLink by",
       roadmap: {
         title: "Projekt-Roadmap",
         subtitle: "Entwicklungsschritte von APLink – von der Idee zur globalen Plattform",
@@ -4180,7 +4180,7 @@ export const translations = {
         groupCalls: "Appels en groupe",
         groupCallsDesc: "Jusqu'à 100 participants dans une même salle"
       },
-      footer: "© 2025 APLink by",
+      footer: "© 2026 APLink by",
       roadmap: {
         title: "Feuille de route du projet",
         subtitle: "Les étapes d'APLink — de l'idée à la plateforme mondiale",
@@ -5009,7 +5009,7 @@ export const translations = {
         groupCalls: "Групові дзвінки",
         groupCallsDesc: "До 100 учасників в одній кімнаті"
       },
-      footer: "© 2025 APLink by",
+      footer: "© 2026 APLink by",
       roadmap: {
         title: "Дорожня карта проєкту",
         subtitle: "Етапи розвитку APLink — від ідеї до глобальної платформи",

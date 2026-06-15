@@ -118,7 +118,7 @@ export function ContactRequestsPanel({ userId, onRequestCountChange }: ContactRe
         "postgres_changes",
         {
           event: "*",
-          schema: "public",
+          schema: "aplink",
           table: "contact_requests",
           filter: `to_user_id=eq.${userId}`,
         },
@@ -128,7 +128,7 @@ export function ContactRequestsPanel({ userId, onRequestCountChange }: ContactRe
         "postgres_changes",
         {
           event: "*",
-          schema: "public",
+          schema: "aplink",
           table: "contact_requests",
           filter: `from_user_id=eq.${userId}`,
         },

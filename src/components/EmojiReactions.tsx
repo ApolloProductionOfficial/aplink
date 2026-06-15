@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 interface CustomReaction {
   id: string;
   label: string;
-  category: 'faces' | 'hands' | 'hearts' | 'objects' | 'brand';
+  category: 'reactions' | 'gestures' | 'celebrate' | 'brand';
   svg: React.ReactNode;
   glowColor: string;
   animationClass?: string;
@@ -22,221 +22,126 @@ interface CustomReaction {
 }
 
 /* ───────────────────────────────────────────────
-   PROFESSIONALLY DESIGNED SVG REACTIONS
-   Organised: Faces → Hands → Hearts → Objects → Brand
+   APLink REACTION SET — clean, cohesive, on-brand
+   Cyan-glass aesthetic, Telegram-style live reactions.
+   Each icon: soft gradient fill, subtle inner highlight,
+   thin glass rim, brand-cyan glow. No cartoon clutter,
+   no crude objects — only tasteful, presentable icons.
+   Groups: Реакции → Жесты → Празднование → Бренд
    ─────────────────────────────────────────────── */
 
+// Shared glass rim helper colors
+const RIM = 'rgba(255,255,255,0.55)';
+
 const CUSTOM_REACTIONS: CustomReaction[] = [
-  // ═══════ FACES ═══════
+  // ═══════ РЕАКЦИИ (core, like Telegram) ═══════
   {
-    id: 'laugh', category: 'faces', label: '😂',
+    id: 'heart', category: 'reactions', label: 'Нравится',
     svg: (
-      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><radialGradient id="face-g" cx="40%" cy="35%"><stop offset="0%" stopColor="#ffe066"/><stop offset="100%" stopColor="#f9a825"/></radialGradient></defs><circle cx="24" cy="24" r="21" fill="url(#face-g)"/><path d="M13.5 19c0-1 1.5-3 3.5-1.5" stroke="#5d4037" strokeWidth="2.5" strokeLinecap="round" fill="none"/><path d="M34.5 19c0-1-1.5-3-3.5-1.5" stroke="#5d4037" strokeWidth="2.5" strokeLinecap="round" fill="none"/><path d="M13 29q11 13 22 0" fill="#5d4037"/><path d="M13 29q11-3 22 0" fill="white"/><circle cx="12" cy="25" r="3.5" fill="#ff8a65" opacity="0.25"/><circle cx="36" cy="25" r="3.5" fill="#ff8a65" opacity="0.25"/></svg>
+      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><linearGradient id="r-hrt" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#ff6b81"/><stop offset="100%" stopColor="#e63956"/></linearGradient></defs><path d="M24 41C24 41 7 30 7 18.5 7 12.7 11.3 8 17 8c3.6 0 6.3 1.9 7 4.6C24.7 9.9 27.4 8 31 8c5.7 0 10 4.7 10 10.5C41 30 24 41 24 41z" fill="url(#r-hrt)"/><path d="M16 13.5c-2.4.4-4.2 2.6-4.4 5.1" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" fill="none" opacity="0.45"/></svg>
     ),
-    glowColor: 'rgba(255,214,0,0.6)',
-  },
-  {
-    id: 'wink', category: 'faces', label: '😉',
-    svg: (
-      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><radialGradient id="wink-g" cx="40%" cy="35%"><stop offset="0%" stopColor="#ffe066"/><stop offset="100%" stopColor="#f9a825"/></radialGradient></defs><circle cx="24" cy="24" r="21" fill="url(#wink-g)"/><circle cx="16" cy="20" r="2.8" fill="#5d4037"/><path d="M29 19.5l5 2" stroke="#5d4037" strokeWidth="2.5" strokeLinecap="round"/><path d="M14 31q10 9 20 0" stroke="#5d4037" strokeWidth="2.2" fill="none" strokeLinecap="round"/></svg>
-    ),
-    glowColor: 'rgba(255,214,0,0.6)',
-  },
-  {
-    id: 'surprised', category: 'faces', label: '😮',
-    svg: (
-      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><radialGradient id="surp-g" cx="40%" cy="35%"><stop offset="0%" stopColor="#ffe066"/><stop offset="100%" stopColor="#f9a825"/></radialGradient></defs><circle cx="24" cy="24" r="21" fill="url(#surp-g)"/><circle cx="16" cy="19" r="3.2" fill="white"/><circle cx="16" cy="19" r="1.8" fill="#5d4037"/><circle cx="32" cy="19" r="3.2" fill="white"/><circle cx="32" cy="19" r="1.8" fill="#5d4037"/><path d="M14 14l3.5 2.5" stroke="#5d4037" strokeWidth="2" strokeLinecap="round"/><path d="M34 14l-3.5 2.5" stroke="#5d4037" strokeWidth="2" strokeLinecap="round"/><ellipse cx="24" cy="35" rx="5" ry="6" fill="#5d4037"/></svg>
-    ),
-    glowColor: 'rgba(255,214,0,0.6)',
-  },
-  {
-    id: 'tongue', category: 'faces', label: '😛',
-    svg: (
-      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><radialGradient id="tng-g" cx="40%" cy="35%"><stop offset="0%" stopColor="#ffe066"/><stop offset="100%" stopColor="#f9a825"/></radialGradient></defs><circle cx="24" cy="24" r="21" fill="url(#tng-g)"/><circle cx="16" cy="20" r="2.8" fill="#5d4037"/><circle cx="32" cy="20" r="2.8" fill="#5d4037"/><path d="M15 31q9 7 18 0" stroke="#5d4037" strokeWidth="2" fill="none" strokeLinecap="round"/><path d="M20 33q4 10 8 0" fill="#ef5350"/></svg>
-    ),
-    glowColor: 'rgba(255,214,0,0.6)',
-  },
-
-  // ═══════ HANDS ═══════
-  {
-    id: 'thumbs_up', category: 'hands', label: '👍',
-    svg: (
-      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><linearGradient id="thu-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#42a5f5"/><stop offset="100%" stopColor="#1e88e5"/></linearGradient></defs><path d="M14 44V22l8-16s4 0 4 6v8h14c2 0 3.5 2 3 4l-4 18c-.5 2-2 2-3 2H14z" fill="url(#thu-g)" opacity="0.9"/><rect x="4" y="22" width="8" height="22" rx="3" fill="#1565c0" opacity="0.5"/><path d="M14 44V22l8-16s4 0 4 6v8h14c2 0 3.5 2 3 4l-4 18c-.5 2-2 2-3 2H14z" stroke="#90caf9" strokeWidth="1.2" fill="none"/></svg>
-    ),
-    glowColor: 'rgba(66,165,245,0.7)',
+    glowColor: 'rgba(230,57,86,0.65)',
     animationClass: 'emoji-thumbs-up-animate',
   },
   {
-    id: 'thumbs_down', category: 'hands', label: '👎',
+    id: 'thumbs_up', category: 'reactions', label: 'Класс',
     svg: (
-      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><linearGradient id="thd-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#ef5350"/><stop offset="100%" stopColor="#c62828"/></linearGradient></defs><path d="M34 4V26l-8 16s-4 0-4-6v-8H8c-2 0-3.5-2-3-4l4-18c.5-2 2-2 3-2h22z" fill="url(#thd-g)" opacity="0.9"/><rect x="36" y="4" width="8" height="22" rx="3" fill="#b71c1c" opacity="0.5"/><path d="M34 4V26l-8 16s-4 0-4-6v-8H8c-2 0-3.5-2-3-4l4-18c.5-2 2-2 3-2h22z" stroke="#ef9a9a" strokeWidth="1.2" fill="none"/></svg>
+      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><linearGradient id="r-up" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#3dd6e8"/><stop offset="100%" stopColor="#0aa3c2"/></linearGradient></defs><path d="M15 43V21l7.5-15c.3-.6 1-1 1.7-.8 2.2.5 3.6 2.6 3.3 4.9L26.5 18H39c2.2 0 3.8 2 3.3 4.1l-3.6 16c-.3 1.6-1.8 2.9-3.5 2.9H15z" fill="url(#r-up)"/><rect x="5" y="21" width="8" height="22" rx="3" fill="#0aa3c2" opacity="0.6"/><path d="M15 43V21l7.5-15" stroke="#cffafe" strokeWidth="1.1" fill="none" opacity="0.5"/></svg>
     ),
-    glowColor: 'rgba(239,83,80,0.7)',
-    animationClass: 'emoji-thumbs-down-animate',
-  },
-  {
-    id: 'clap', category: 'hands', label: '👏',
-    svg: (
-      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><linearGradient id="clp-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#ffcc80"/><stop offset="100%" stopColor="#e8953a"/></linearGradient></defs><path d="M18 28l-6-10c-1-2 0-4 2-4s3 1 3.5 2l3.5 6" fill="url(#clp-g)" stroke="#d48b35" strokeWidth="0.8"/><path d="M20 22l-4-8c-1-2 0-4 2-4s3 1 3.5 2l3.5 8" fill="url(#clp-g)" stroke="#d48b35" strokeWidth="0.8"/><path d="M24 20l-3-7c-1-2 0-4 2-3.5s2.5 1.5 3 2.5l2.5 5" fill="url(#clp-g)" stroke="#d48b35" strokeWidth="0.8"/><path d="M28 18l-2-5c-.5-2 .5-3.5 2-3.5s2.5 1.5 2.5 2.5l.5 6" fill="url(#clp-g)" stroke="#d48b35" strokeWidth="0.8"/><path d="M18 28c-2 4-1 8 2 11s8 4 11 1 5-6 3-16" fill="url(#clp-g)" stroke="#d48b35" strokeWidth="0.8"/><line x1="10" y1="8" x2="12" y2="12" stroke="#ffd54f" strokeWidth="1.5" strokeLinecap="round" opacity="0.7"/><line x1="36" y1="6" x2="34" y2="10" stroke="#ffd54f" strokeWidth="1.5" strokeLinecap="round" opacity="0.7"/><line x1="38" y1="15" x2="35" y2="15" stroke="#ffd54f" strokeWidth="1.5" strokeLinecap="round" opacity="0.5"/></svg>
-    ),
-    glowColor: 'rgba(255,183,77,0.7)',
-  },
-  {
-    id: 'wave', category: 'hands', label: '👋',
-    svg: (
-      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><linearGradient id="wav-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#ffcc80"/><stop offset="100%" stopColor="#e8a850"/></linearGradient></defs><path d="M30 8c0-2 2-3 3.5-1.5L36 12M26 10c0-2 2-3 3.5-1.5L32 14M22 12c0-2 2-3 3.5-1.5L28 16M18 16c0-2 2-3 3.5-1.5L24 20" fill="url(#wav-g)" stroke="#d4903a" strokeWidth="0.8"/><path d="M14 22c-2-4 0-6 2-6h2s-2 4 0 12c2 8 8 12 14 10s6-10 4-16l-2-10" fill="url(#wav-g)" stroke="#d4903a" strokeWidth="0.8"/><line x1="37" y1="9" x2="40" y2="6" stroke="#80cbc4" strokeWidth="1.5" strokeLinecap="round" opacity="0.5"/><line x1="40" y1="14" x2="43" y2="12" stroke="#80cbc4" strokeWidth="1.5" strokeLinecap="round" opacity="0.4"/></svg>
-    ),
-    glowColor: 'rgba(255,204,128,0.7)',
-  },
-
-  // ═══════ HEARTS ═══════
-  {
-    id: 'heart', category: 'hearts', label: '❤️',
-    svg: (
-      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><linearGradient id="hrt-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#ff5252"/><stop offset="100%" stopColor="#c62828"/></linearGradient></defs><path d="M24 42C24 42 6 30 6 18 6 12 10 6 16 6c4 0 7 2 8 5 1-3 4-5 8-5 6 0 10 6 10 12 0 12-18 24-18 24z" fill="url(#hrt-g)"/><path d="M15 14c-2 0-4 2.5-4 5" stroke="white" strokeWidth="1.5" strokeLinecap="round" opacity="0.35"/></svg>
-    ),
-    glowColor: 'rgba(255,82,82,0.7)',
+    glowColor: 'rgba(13,202,240,0.7)',
     animationClass: 'emoji-thumbs-up-animate',
   },
   {
-    id: 'kiss', category: 'hearts', label: '💋',
+    id: 'laugh', category: 'reactions', label: 'Смех',
     svg: (
-      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><linearGradient id="ks-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#ff6b8a"/><stop offset="100%" stopColor="#c62828"/></linearGradient></defs><path d="M24 6c-6 0-11 6-11 12 0 4 2 7 5 10l6 8 6-8c3-3 5-6 5-10 0-6-5-12-11-12z" fill="url(#ks-g)"/><path d="M20 22c0-3 4-5 4-2s4 1 4 2" stroke="#ffcdd2" strokeWidth="1.2" fill="none" strokeLinecap="round" opacity="0.6"/></svg>
+      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><radialGradient id="r-laugh" cx="42%" cy="34%"><stop offset="0%" stopColor="#ffe9a3"/><stop offset="100%" stopColor="#ffb22e"/></radialGradient></defs><circle cx="24" cy="24" r="20.5" fill="url(#r-laugh)"/><path d="M13.5 19.5q3.5-4 7 0" stroke="#7a4a12" strokeWidth="2.4" strokeLinecap="round" fill="none"/><path d="M27.5 19.5q3.5-4 7 0" stroke="#7a4a12" strokeWidth="2.4" strokeLinecap="round" fill="none"/><path d="M13 28.5q11 11 22 0z" fill="#7a4a12"/><path d="M14 28.5q10-2.5 20 0" fill="#fff"/><circle cx="24" cy="24" r="20.5" fill="none" stroke={RIM} strokeWidth="0.8" opacity="0.5"/></svg>
     ),
-    glowColor: 'rgba(255,107,138,0.7)',
+    glowColor: 'rgba(255,178,46,0.6)',
+  },
+  {
+    id: 'wow', category: 'reactions', label: 'Вау',
+    svg: (
+      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><radialGradient id="r-wow" cx="42%" cy="34%"><stop offset="0%" stopColor="#ffe9a3"/><stop offset="100%" stopColor="#ffb22e"/></radialGradient></defs><circle cx="24" cy="24" r="20.5" fill="url(#r-wow)"/><circle cx="16.5" cy="20" r="3" fill="#fff"/><circle cx="16.5" cy="20" r="1.7" fill="#5a3a10"/><circle cx="31.5" cy="20" r="3" fill="#fff"/><circle cx="31.5" cy="20" r="1.7" fill="#5a3a10"/><ellipse cx="24" cy="33" rx="4.5" ry="5.5" fill="#7a4a12"/><circle cx="24" cy="24" r="20.5" fill="none" stroke={RIM} strokeWidth="0.8" opacity="0.5"/></svg>
+    ),
+    glowColor: 'rgba(255,178,46,0.6)',
+  },
+  {
+    id: 'hundred', category: 'reactions', label: '100',
+    svg: (
+      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><linearGradient id="r-100" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#ff6b81"/><stop offset="100%" stopColor="#e63956"/></linearGradient></defs><text x="24" y="31" textAnchor="middle" fill="url(#r-100)" fontSize="19" fontWeight="900" fontFamily="Inter,Arial,sans-serif" letterSpacing="-1">100</text><rect x="9" y="35" width="30" height="2.4" rx="1.2" fill="url(#r-100)"/></svg>
+    ),
+    glowColor: 'rgba(230,57,86,0.6)',
   },
 
-  // ═══════ OBJECTS ═══════
+  // ═══════ ЖЕСТЫ ═══════
   {
-    id: 'fire', category: 'objects', label: '🔥',
+    id: 'clap', category: 'gestures', label: 'Аплодисменты',
     svg: (
-      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><linearGradient id="fir-g" x1="50%" y1="100%" x2="50%" y2="0%"><stop offset="0%" stopColor="#e65100"/><stop offset="50%" stopColor="#ff9800"/><stop offset="100%" stopColor="#ffeb3b"/></linearGradient></defs><path d="M24 4c-5 8-12 14-12 23 0 9 5 17 12 17s12-8 12-17c0-9-7-15-12-23z" fill="url(#fir-g)"/><path d="M24 18c-2 5-6 8-6 13 0 5 2 9 6 9s6-4 6-9c0-5-4-8-6-13z" fill="#fff9c4" opacity="0.6"/></svg>
+      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><linearGradient id="r-clap" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#ffd27a"/><stop offset="100%" stopColor="#e89a3c"/></linearGradient></defs><path d="M18 29l-6-10c-.9-1.6 0-3.4 1.8-3.6 1.1-.1 2.2.5 2.7 1.5l3.5 6" fill="url(#r-clap)" stroke="#cf8a32" strokeWidth="0.7"/><path d="M20 23l-4-8c-.8-1.6 0-3.4 1.8-3.6 1.1-.1 2.2.5 2.7 1.5l3.5 8" fill="url(#r-clap)" stroke="#cf8a32" strokeWidth="0.7"/><path d="M24 21l-3-7c-.7-1.6.2-3.3 1.9-3.2 1 .1 1.9.8 2.3 1.7l2.4 5" fill="url(#r-clap)" stroke="#cf8a32" strokeWidth="0.7"/><path d="M28 19l-2-5c-.5-1.6.4-3 1.9-3 1 0 1.9.7 2.1 1.7l.6 5.6" fill="url(#r-clap)" stroke="#cf8a32" strokeWidth="0.7"/><path d="M18 29c-2 4-1 8 2 10.8 2.9 2.8 7.6 3.4 10.9.8 3.3-2.6 4.6-6.4 2.8-15.6" fill="url(#r-clap)" stroke="#cf8a32" strokeWidth="0.7"/><line x1="11" y1="9" x2="13" y2="12.5" stroke="#3dd6e8" strokeWidth="1.4" strokeLinecap="round" opacity="0.65"/><line x1="36" y1="7" x2="34" y2="10.5" stroke="#3dd6e8" strokeWidth="1.4" strokeLinecap="round" opacity="0.65"/></svg>
+    ),
+    glowColor: 'rgba(232,154,60,0.65)',
+  },
+  {
+    id: 'wave', category: 'gestures', label: 'Привет',
+    svg: (
+      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><linearGradient id="r-wave" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#ffd27a"/><stop offset="100%" stopColor="#e8a64c"/></linearGradient></defs><path d="M30 8.5c-.2-1.7 1.6-2.7 3-1.4L36 11M26 9.8c-.2-1.7 1.6-2.7 3-1.4L32 13M22 11.8c-.2-1.7 1.6-2.7 3-1.4L28 15M18.5 15.6c-.2-1.7 1.6-2.7 3-1.4L24 18.5" fill="url(#r-wave)" stroke="#cf8a32" strokeWidth="0.7"/><path d="M14.5 22c-1.8-3.6 0-5.6 1.9-5.6h1.8s-1.8 3.6 0 11.2c1.8 7.4 7.2 11.2 12.8 9.4 5-1.6 5.4-9.2 3.4-14.6l-1.8-9.2" fill="url(#r-wave)" stroke="#cf8a32" strokeWidth="0.7"/><line x1="37" y1="9.5" x2="40" y2="6.5" stroke="#3dd6e8" strokeWidth="1.4" strokeLinecap="round" opacity="0.55"/></svg>
+    ),
+    glowColor: 'rgba(232,166,76,0.6)',
+  },
+  {
+    id: 'raise_hand', category: 'gestures', label: 'Поднять руку',
+    svg: (
+      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><linearGradient id="r-raise" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#ffd27a"/><stop offset="100%" stopColor="#e8a64c"/></linearGradient></defs><path d="M18 26V9c0-1.7 1.3-3 3-3s3 1.3 3 3v15" fill="url(#r-raise)"/><path d="M24 24V7c0-1.7 1.3-3 3-3s3 1.3 3 3v17" fill="url(#r-raise)"/><path d="M30 26v-4c0-1.7 1.3-3 3-3s3 1.3 3 3v8c0 7-5 13-12 13s-11-5-13-11l-2-7c-.5-1.8.6-3.2 2.2-3.4 1.3-.1 2.4.7 2.9 2L19 30" fill="url(#r-raise)" stroke="#cf8a32" strokeWidth="0.7"/><path d="M18 26V9c0-1.7 1.3-3 3-3" stroke="#fff4dd" strokeWidth="1" fill="none" opacity="0.5"/></svg>
+    ),
+    glowColor: 'rgba(232,166,76,0.6)',
+  },
+
+  // ═══════ ПРАЗДНОВАНИЕ ═══════
+  {
+    id: 'fire', category: 'celebrate', label: 'Огонь',
+    svg: (
+      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><linearGradient id="r-fire" x1="50%" y1="100%" x2="50%" y2="0%"><stop offset="0%" stopColor="#ff5722"/><stop offset="55%" stopColor="#ff9800"/><stop offset="100%" stopColor="#ffd740"/></linearGradient></defs><path d="M24 4c-4.5 7.5-11.5 13-11.5 22 0 8.6 5 16.5 11.5 16.5S35.5 34.6 35.5 26C35.5 17 28.5 11.5 24 4z" fill="url(#r-fire)"/><path d="M24 19c-2 4.5-5.5 7.5-5.5 12 0 4.7 2 8.5 5.5 8.5s5.5-3.8 5.5-8.5c0-4.5-3.5-7.5-5.5-12z" fill="#fff3c4" opacity="0.7"/></svg>
     ),
     glowColor: 'rgba(255,152,0,0.7)',
   },
   {
-    id: 'party', category: 'objects', label: '🎉',
+    id: 'party', category: 'celebrate', label: 'Праздник',
     svg: (
-      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><linearGradient id="pty-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#ff6b6b"/><stop offset="50%" stopColor="#ffd93d"/><stop offset="100%" stopColor="#6bcb77"/></linearGradient></defs><path d="M8 42l8-28 20 18z" fill="url(#pty-g)" opacity="0.85"/><path d="M8 42l8-28M8 42l20-10" stroke="#d32f2f" strokeWidth="1.5"/><circle cx="22" cy="8" r="2" fill="#ff5252"/><circle cx="38" cy="12" r="1.5" fill="#42a5f5"/><circle cx="40" cy="24" r="2" fill="#ffd54f"/><rect x="28" y="5" width="3" height="3" rx="0.5" fill="#66bb6a" transform="rotate(30 29 6)"/><rect x="34" y="17" width="2.5" height="2.5" rx="0.5" fill="#ce93d8" transform="rotate(15 35 18)"/></svg>
+      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><linearGradient id="r-party" x1="0" y1="1" x2="1" y2="0"><stop offset="0%" stopColor="#0aa3c2"/><stop offset="100%" stopColor="#3dd6e8"/></linearGradient></defs><path d="M7 42l8.5-27 19.5 17.5z" fill="url(#r-party)"/><path d="M7 42l8.5-27M7 42l19.5-9.5" stroke="#067a92" strokeWidth="1.3" opacity="0.8"/><circle cx="23" cy="8" r="2" fill="#ff6b81"/><circle cx="38" cy="13" r="1.6" fill="#ffd740"/><circle cx="40" cy="25" r="1.9" fill="#3dd6e8"/><rect x="29" y="5" width="3" height="3" rx="0.6" fill="#7ee787" transform="rotate(30 30.5 6.5)"/><rect x="35" y="18" width="2.5" height="2.5" rx="0.6" fill="#ff9800" transform="rotate(15 36 19)"/></svg>
     ),
-    glowColor: 'rgba(255,107,107,0.7)',
+    glowColor: 'rgba(13,202,240,0.6)',
   },
   {
-    id: 'rocket', category: 'objects', label: '🚀',
+    id: 'star', category: 'celebrate', label: 'Звезда',
     svg: (
-      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><linearGradient id="rkt-g" x1="50%" y1="0" x2="50%" y2="1"><stop offset="0%" stopColor="#eceff1"/><stop offset="100%" stopColor="#90a4ae"/></linearGradient></defs><path d="M24 4l-6 14-4 4 2 10 6-4h4l6 4 2-10-4-4z" fill="url(#rkt-g)" stroke="#78909c" strokeWidth="0.8"/><circle cx="24" cy="16" r="3" fill="#42a5f5"/><path d="M20 32l4 12 4-12" fill="#ff9800" opacity="0.85"/><path d="M22 32l2 8 2-8" fill="#ffeb3b" opacity="0.7"/></svg>
+      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><linearGradient id="r-star" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#ffe082"/><stop offset="100%" stopColor="#ffb300"/></linearGradient></defs><path d="M24 4.5l5.6 13.4 14.5 1.1-11 9.4 3.4 14.1L24 38.4 11.5 42.5l3.4-14.1-11-9.4 14.5-1.1z" fill="url(#r-star)"/><path d="M24 11l3.2 7.7 8.3.6-6.3 5.4 1.9 8.1L24 28.7" fill="#fff6d6" opacity="0.35"/></svg>
     ),
-    glowColor: 'rgba(144,164,174,0.6)',
+    glowColor: 'rgba(255,179,0,0.65)',
   },
   {
-    id: 'star', category: 'objects', label: '⭐',
+    id: 'diamond', category: 'celebrate', label: 'Премиум',
     svg: (
-      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><linearGradient id="str-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#ffd54f"/><stop offset="100%" stopColor="#f9a825"/></linearGradient></defs><path d="M24 4l5 14h16l-12 10 4 16-13-9-13 9 4-16L3 18h16z" fill="url(#str-g)"/><path d="M24 10l3 8h8l-6 5 2 9-7-5-7 5 2-9-6-5h8z" fill="#fff9c4" opacity="0.35"/></svg>
+      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><linearGradient id="r-dmd" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#5ee7f5"/><stop offset="50%" stopColor="#0aa3c2"/><stop offset="100%" stopColor="#067a92"/></linearGradient></defs><path d="M11 17l13-12 13 12-13 27z" fill="url(#r-dmd)"/><path d="M11 17l13 8.5 13-8.5" stroke="#bdf3fa" strokeWidth="0.9" fill="none"/><path d="M24 25.5V44" stroke="#bdf3fa" strokeWidth="0.9"/><polygon points="15.5,17 24,5 24,25.5" fill="#bdf3fa" opacity="0.22"/></svg>
     ),
-    glowColor: 'rgba(255,213,79,0.7)',
-  },
-  {
-    id: 'crown', category: 'objects', label: '👑',
-    svg: (
-      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><linearGradient id="crn-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#ffd54f"/><stop offset="100%" stopColor="#f9a825"/></linearGradient></defs><path d="M8 36l4-22 6 10 6-16 6 16 6-10 4 22z" fill="url(#crn-g)"/><circle cx="24" cy="8" r="2.5" fill="#fff9c4"/><circle cx="12" cy="14" r="2" fill="#fff9c4"/><circle cx="36" cy="14" r="2" fill="#fff9c4"/><rect x="10" y="34" width="28" height="3" rx="1.5" fill="#f9a825"/></svg>
-    ),
-    glowColor: 'rgba(255,213,79,0.7)',
-  },
-  {
-    id: 'diamond', category: 'objects', label: '💎',
-    svg: (
-      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><linearGradient id="dmd-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#4dd0e1"/><stop offset="50%" stopColor="#00acc1"/><stop offset="100%" stopColor="#00838f"/></linearGradient></defs><path d="M12 16l12-12 12 12-12 30z" fill="url(#dmd-g)"/><path d="M12 16l12 8 12-8" stroke="#b2ebf2" strokeWidth="0.8" fill="none"/><path d="M24 24v22" stroke="#b2ebf2" strokeWidth="0.8"/><polygon points="16,16 24,4 24,24" fill="#b2ebf2" opacity="0.2"/></svg>
-    ),
-    glowColor: 'rgba(0,172,193,0.6)',
-  },
-  {
-    id: 'lightning', category: 'objects', label: '⚡',
-    svg: (
-      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><linearGradient id="ltn-g" x1="50%" y1="0" x2="50%" y2="1"><stop offset="0%" stopColor="#ffeb3b"/><stop offset="100%" stopColor="#f9a825"/></linearGradient></defs><path d="M28 4l-14 22h8l-2 18 14-22h-8z" fill="url(#ltn-g)" stroke="#f57f17" strokeWidth="0.8"/></svg>
-    ),
-    glowColor: 'rgba(255,235,59,0.7)',
-  },
-  {
-    id: 'money', category: 'objects', label: '💰',
-    svg: (
-      <svg viewBox="0 0 48 48" className="w-full h-full"><circle cx="24" cy="24" r="18" fill="none" stroke="#66bb6a" strokeWidth="1.5" opacity="0.5"/><text x="24" y="31" textAnchor="middle" fill="#66bb6a" fontSize="22" fontWeight="bold" fontFamily="Arial">$</text></svg>
-    ),
-    glowColor: 'rgba(102,187,106,0.6)',
-  },
-  {
-    id: 'peach', category: 'objects', label: '🍑',
-    svg: (
-      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><linearGradient id="pch-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#ffab91"/><stop offset="100%" stopColor="#ff6e40"/></linearGradient></defs><ellipse cx="24" cy="28" rx="14" ry="16" fill="url(#pch-g)"/><ellipse cx="20" cy="28" rx="10" ry="14" fill="#ff8a65" opacity="0.3"/><path d="M24 12q4-4 2-8" stroke="#66bb6a" strokeWidth="2" fill="none" strokeLinecap="round"/><ellipse cx="25" cy="6" rx="3" ry="2" fill="#66bb6a" opacity="0.65"/></svg>
-    ),
-    glowColor: 'rgba(255,110,64,0.6)',
-    animationClass: 'emoji-peach-animate',
-  },
-  {
-    id: 'eggplant', category: 'objects', label: '🍆',
-    svg: (
-      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><linearGradient id="egg-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#ab47bc"/><stop offset="100%" stopColor="#6a1b9a"/></linearGradient></defs><ellipse cx="24" cy="30" rx="11" ry="15" fill="url(#egg-g)" transform="rotate(-15 24 30)"/><ellipse cx="22" cy="28" rx="5" ry="9" fill="#ce93d8" opacity="0.2" transform="rotate(-15 22 28)"/><path d="M24 15l-3-6m3 6l3-6m-3 6v-8" stroke="#66bb6a" strokeWidth="2" strokeLinecap="round"/><circle cx="24" cy="7" r="2.5" fill="#66bb6a"/></svg>
-    ),
-    glowColor: 'rgba(171,71,188,0.6)',
-    animationClass: 'emoji-eggplant-animate',
-  },
-  {
-    id: 'cherry', category: 'objects', label: '🍒',
-    svg: (
-      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><linearGradient id="chr-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#ef5350"/><stop offset="100%" stopColor="#b71c1c"/></linearGradient></defs><circle cx="18" cy="32" r="10" fill="url(#chr-g)"/><circle cx="32" cy="34" r="9" fill="url(#chr-g)"/><ellipse cx="15" cy="28" rx="3.5" ry="4.5" fill="#ff8a80" opacity="0.25"/><path d="M18 22q2-12 10-16M32 25q-2-13-4-19" stroke="#66bb6a" strokeWidth="2" fill="none" strokeLinecap="round"/><ellipse cx="28" cy="6" rx="4" ry="2.5" fill="#66bb6a" opacity="0.7"/></svg>
-    ),
-    glowColor: 'rgba(239,83,80,0.6)',
-  },
-  {
-    id: 'hot_pepper', category: 'objects', label: '🌶️',
-    svg: (
-      <svg viewBox="0 0 48 48" className="w-full h-full"><defs><linearGradient id="ppr-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#f44336"/><stop offset="50%" stopColor="#ff5722"/><stop offset="100%" stopColor="#ff9800"/></linearGradient></defs><path d="M24 8c-6 0-12 6-14 14s-2 16 4 20 10 0 12-4c2-4 4-10 6-16s0-14-8-14z" fill="url(#ppr-g)"/><path d="M24 8q2-4 0-6m0 6q-2-4-4-5" stroke="#66bb6a" strokeWidth="2" fill="none" strokeLinecap="round"/><path d="M16 20c2-2 4 0 6 4" stroke="#ffcc80" strokeWidth="1.2" fill="none" opacity="0.35"/></svg>
-    ),
-    glowColor: 'rgba(255,87,34,0.7)',
+    glowColor: 'rgba(13,202,240,0.6)',
   },
 
-  // ═══════ BRAND ═══════
-  {
-    id: 'oscar', category: 'brand', label: 'OSCAR', wide: true,
-    svg: (
-      <svg viewBox="0 0 80 48" className="w-full h-full"><defs><linearGradient id="osc-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#ffd54f"/><stop offset="50%" stopColor="#fff9c4"/><stop offset="100%" stopColor="#ffd54f"/></linearGradient></defs><text x="40" y="32" textAnchor="middle" fill="url(#osc-g)" fontSize="18" fontWeight="900" fontFamily="Arial Black,sans-serif">OSCAR</text></svg>
-    ),
-    glowColor: 'rgba(255,215,0,0.8)',
-  },
+  // ═══════ БРЕНД ═══════
   {
     id: 'apollo', category: 'brand', label: 'APOLLO', wide: true,
     svg: (
-      <svg viewBox="0 0 120 48" className="w-full h-full"><defs><linearGradient id="apo-g" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stopColor="#ce93d8"/><stop offset="50%" stopColor="#f48fb1"/><stop offset="100%" stopColor="#ce93d8"/></linearGradient></defs><text x="60" y="22" textAnchor="middle" fill="url(#apo-g)" fontSize="12" fontWeight="900" fontFamily="Arial Black,sans-serif">APOLLO</text><text x="60" y="38" textAnchor="middle" fill="url(#apo-g)" fontSize="10" fontWeight="700" fontFamily="Arial,sans-serif">PRODUCTION</text></svg>
+      <svg viewBox="0 0 120 48" className="w-full h-full"><defs><linearGradient id="r-apo" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stopColor="#3dd6e8"/><stop offset="50%" stopColor="#9be8f2"/><stop offset="100%" stopColor="#3dd6e8"/></linearGradient></defs><text x="60" y="22" textAnchor="middle" fill="url(#r-apo)" fontSize="13" fontWeight="900" fontFamily="Inter,Arial,sans-serif" letterSpacing="1">APOLLO</text><text x="60" y="37" textAnchor="middle" fill="url(#r-apo)" fontSize="9" fontWeight="700" fontFamily="Inter,Arial,sans-serif" letterSpacing="3" opacity="0.85">PRODUCTION</text></svg>
     ),
-    glowColor: 'rgba(206,147,216,0.8)',
-  },
-  {
-    id: 'onlyfans_text', category: 'brand', label: 'ONLYFANS', wide: true,
-    svg: (
-      <svg viewBox="0 0 100 48" className="w-full h-full"><defs><linearGradient id="of-g" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stopColor="#4dd0e1"/><stop offset="50%" stopColor="#80deea"/><stop offset="100%" stopColor="#4dd0e1"/></linearGradient></defs><text x="50" y="32" textAnchor="middle" fill="url(#of-g)" fontSize="14" fontWeight="900" fontFamily="Arial Black,sans-serif">ONLYFANS</text></svg>
-    ),
-    glowColor: 'rgba(77,208,225,0.8)',
-  },
-  {
-    id: 'boobs', category: 'brand', label: 'Сиськи',
-    svg: (<img src="/images/emoji-boobs.svg" alt="Boobs" className="w-full h-full object-contain" />),
-    glowColor: 'rgba(255,180,180,0.7)',
-    animationClass: 'emoji-peach-animate',
-  },
-  {
-    id: 'toy', category: 'brand', label: 'Игрушка',
-    svg: (<img src="/images/emoji-toy.svg?v=2" alt="Toy" className="w-full h-full object-contain" style={{ filter: 'invert(1) hue-rotate(180deg)' }} />),
-    glowColor: 'rgba(139,113,187,0.7)',
-    animationClass: 'emoji-eggplant-animate',
+    glowColor: 'rgba(61,214,232,0.75)',
   },
 ];
 
-const CATEGORY_ORDER = ['faces', 'hands', 'hearts', 'objects', 'brand'] as const;
+const CATEGORY_ORDER = ['reactions', 'gestures', 'celebrate', 'brand'] as const;
 const CATEGORY_LABELS: Record<string, string> = {
-  faces: '😊 Лица',
-  hands: '👋 Жесты',
-  hearts: '❤️ Сердца',
-  objects: '✨ Объекты',
-  brand: '🏷️ Бренд',
+  reactions: 'Реакции',
+  gestures: 'Жесты',
+  celebrate: 'Празднование',
+  brand: 'Бренд',
 };
 
 // Recently used storage

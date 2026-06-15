@@ -54,7 +54,17 @@ export const RECOMMENDED_MODELS: Record<string, { openrouter: string; lovable: s
 
 export type AITask = keyof typeof RECOMMENDED_MODELS;
 
-const DEFAULT_CONFIG: AIModelConfig = { provider: 'lovable', model: 'google/gemini-2.5-flash' };
+// Lovable was removed (no LOVABLE_API_KEY in Supabase secrets). OpenRouter is the
+// live provider, so default + any stored 'lovable' choice resolves to OpenRouter.
+const DEFAULT_CONFIG: AIModelConfig = { provider: 'openrouter', model: 'openai/gpt-4o-mini' };
+
+/** Remap retired 'lovable' provider (and its model strings) to the live OpenRouter equivalent. */
+function migrateProvider(cfg: AIModelConfig): AIModelConfig {
+  if (cfg.provider !== 'lovable') return cfg;
+  // Map old lovable default model to OpenRouter default; keep custom models otherwise.
+  const model = cfg.model === 'google/gemini-2.5-flash' ? 'openai/gpt-4o-mini' : cfg.model;
+  return { provider: 'openrouter', model };
+}
 
 export function useAIModelSettings() {
   const { user } = useAuth();
@@ -72,7 +82,7 @@ export function useAIModelSettings() {
         .maybeSingle();
 
       if (data) {
-        setConfig({ provider: (data as any).provider, model: (data as any).model });
+        setConfig(migrateProvider({ provider: (data as any).provider, model: (data as any).model }));
       }
       setLoading(false);
     };

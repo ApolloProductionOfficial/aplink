@@ -205,7 +205,7 @@ const ParticipantsIPPanel = ({ roomId, isOpen, onClose, anchorPosition }: Partic
         'postgres_changes',
         {
           event: '*',
-          schema: 'public',
+          schema: 'aplink',
           table: 'meeting_participants',
           filter: `room_id=eq.${roomId}`,
         },

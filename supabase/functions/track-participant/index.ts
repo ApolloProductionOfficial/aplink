@@ -46,8 +46,9 @@ serve(async (req) => {
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    
+    // APLink tables live in the `aplink` schema, not `public`.
+    const supabase = createClient(supabaseUrl, supabaseKey, { db: { schema: 'aplink' } });
+
     if (action === 'join') {
       // Validate userId is a proper UUID; if missing/invalid, store NULL (guest)
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
