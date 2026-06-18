@@ -25,6 +25,47 @@ interface UseRealtimeCaptionsProps {
 // Docs: https://elevenlabs.io/docs/cookbooks/speech-to-text/streaming
 const SCRIBE_WS_URL = "wss://api.elevenlabs.io/v1/speech-to-text/realtime";
 
+// Detect environments where the browser Web Speech API has NO working backend.
+// Electron (file://), and Chromium builds without Google's speech servers, fire
+// `onstart` but never `onresult`, and surface `error: network` forever. In those
+// cases we must skip Web Speech and go straight to the ElevenLabs/Whisper VAD path,
+// otherwise captions never render (the original "voice detected" stuck-state bug).
+const isWebSpeechUnreliable = (): boolean => {
+  try {
+    if (typeof window === "undefined") return true;
+    // Electron / packaged app served from file://
+    if (window.location?.protocol === "file:") return true;
+    const ua = navigator.userAgent || "";
+    // Electron exposes "Electron/" in UA; also catch obvious headless markers.
+    if (/Electron|HeadlessChrome/i.test(ua)) return true;
+    // Web Speech simply not present.
+    if (!(window.SpeechRecognition || window.webkitSpeechRecognition)) return true;
+    return false;
+  } catch {
+    return true;
+  }
+};
+
+// Best-effort BCP-47 lang for Web Speech recognition based on the chosen target
+// language. We can't know the speaker's language for sure, but defaulting the
+// recognizer to the user's own UI/target language gives far better results than a
+// hardcoded ru-RU for everyone.
+const WEB_SPEECH_LANG_MAP: Record<string, string> = {
+  ru: "ru-RU", en: "en-US", uk: "uk-UA", es: "es-ES", de: "de-DE",
+  fr: "fr-FR", it: "it-IT", pt: "pt-PT", zh: "zh-CN", ja: "ja-JP",
+  ko: "ko-KR", ar: "ar-SA",
+};
+
+const resolveRecognitionLang = (targetLang: string): string => {
+  if (WEB_SPEECH_LANG_MAP[targetLang]) return WEB_SPEECH_LANG_MAP[targetLang];
+  try {
+    const nav = (navigator.language || "en-US");
+    return nav;
+  } catch {
+    return "en-US";
+  }
+};
+
 // Web Speech API types
 interface SpeechRecognitionEvent extends Event {
   resultIndex: number;
@@ -97,7 +138,14 @@ export const useRealtimeCaptions = ({
   
   // Web Speech API refs (PRIMARY - free, instant)
   const webSpeechRef = useRef<SpeechRecognitionType | null>(null);
-  const useWebSpeechRef = useRef(true); // Try Web Speech API first
+  // Only try Web Speech where it actually has a backend. In Electron / headless /
+  // no-Google-backend builds it never produces results, so start disabled there.
+  const useWebSpeechRef = useRef(!isWebSpeechUnreliable());
+  // Track whether Web Speech has produced ANY result this session. If it "starts"
+  // but yields nothing before the no-result deadline, we permanently fall back.
+  const webSpeechGotResultRef = useRef(false);
+  const webSpeechNoResultTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const fellBackToServerRef = useRef(false);
   
   // Credit exhaustion warning tracking
   const creditWarningShownRef = useRef(false);
@@ -334,6 +382,11 @@ export const useRealtimeCaptions = ({
     }
   }, [enabled, getScribeToken, handleWebSocketMessage]);
 
+  // Unified server-STT fallback: tears down Web Speech and starts the
+  // ElevenLabs realtime WS → (if unavailable) the VAD + Whisper/ElevenLabs batch
+  // path. Stored in a ref so onerror callbacks can trigger it without circular deps.
+  const fallbackToServerSTTRef = useRef<(() => Promise<void>) | null>(null);
+
   // Start Web Speech API (PRIMARY - free, instant, works without tokens)
   // Issue 7 & 12: Add VAD logic to only restart recognition when user is actually speaking
   const startWebSpeechCapture = useCallback(() => {
@@ -343,17 +396,35 @@ export const useRealtimeCaptions = ({
       console.log('[Captions] Web Speech API not available');
       return false;
     }
-    
+
     try {
       const recognition = new SpeechRecognitionClass();
       recognition.continuous = true;
       recognition.interimResults = true;
-      recognition.lang = 'ru-RU'; // Default to Russian, can be made dynamic
+      // Dynamic recognition language based on chosen target / browser locale,
+      // instead of a hardcoded ru-RU that broke non-Russian speakers.
+      recognition.lang = resolveRecognitionLang(targetLang);
       recognition.maxAlternatives = 1;
-      
+
+      // Hard "no results" deadline. Web Speech can fire onstart (green "voice
+      // detected") yet never produce a result when the backend is unreachable
+      // (Electron, no Google speech). If nothing arrives in this window, give up
+      // on Web Speech entirely and fall back to server STT so captions render.
+      const armNoResultDeadline = () => {
+        if (webSpeechNoResultTimerRef.current) clearTimeout(webSpeechNoResultTimerRef.current);
+        webSpeechNoResultTimerRef.current = setTimeout(() => {
+          if (!webSpeechGotResultRef.current && !fellBackToServerRef.current) {
+            console.warn('[Captions] Web Speech produced no results in time — falling back to server STT');
+            useWebSpeechRef.current = false;
+            try { recognition.abort(); } catch {}
+            fallbackToServerSTTRef.current?.();
+          }
+        }, 7000);
+      };
+
       // Issue 7: Add watchdog to restart if no results but speaking
       const watchdogRef = { current: null as NodeJS.Timeout | null };
-      
+
       const resetWatchdog = () => {
         if (watchdogRef.current) clearTimeout(watchdogRef.current);
         watchdogRef.current = setTimeout(() => {
@@ -363,18 +434,19 @@ export const useRealtimeCaptions = ({
           }
         }, 8000);
       };
-      
+
       recognition.onstart = () => {
         console.log('[Captions] Web Speech API started');
         setVadActive(true);
         isConnectedRef.current = true;
         resetWatchdog();
+        armNoResultDeadline();
       };
-      
+
       recognition.onresult = async (event: SpeechRecognitionEvent) => {
         let interimTranscript = '';
         let finalTranscript = '';
-        
+
         for (let i = event.resultIndex; i < event.results.length; i++) {
           const result = event.results[i];
           if (result.isFinal) {
@@ -383,7 +455,14 @@ export const useRealtimeCaptions = ({
             interimTranscript += result[0].transcript;
           }
         }
-        
+
+        // We got a real result — Web Speech works here, cancel the fallback deadline.
+        webSpeechGotResultRef.current = true;
+        if (webSpeechNoResultTimerRef.current) {
+          clearTimeout(webSpeechNoResultTimerRef.current);
+          webSpeechNoResultTimerRef.current = null;
+        }
+
         // Show interim results immediately (partial)
         if (interimTranscript) {
           setPartialText(interimTranscript);
@@ -391,7 +470,7 @@ export const useRealtimeCaptions = ({
           addCaption(interimTranscript, interimTranscript + '...', true);
           resetWatchdog(); // Reset watchdog on activity
         }
-        
+
         // Process final results - translate and show
         if (finalTranscript && finalTranscript.length > 2) {
           setPartialText("");
@@ -408,17 +487,33 @@ export const useRealtimeCaptions = ({
           }
         }
       };
-      
+
       recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
         console.warn('[Captions] Web Speech API error:', event.error);
-        // If Web Speech fails, try ElevenLabs as fallback
-        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+        const err = event.error;
+        // Fatal / backend-unavailable errors: STOP retrying Web Speech and switch
+        // to server STT. `network` & `language-not-supported` are the Electron /
+        // no-Google-backend symptoms that previously caused an infinite restart
+        // loop with zero captions.
+        const fatalErrors = [
+          'not-allowed',
+          'service-not-allowed',
+          'network',
+          'language-not-supported',
+          'audio-capture',
+          'bad-grammar',
+        ];
+        if (fatalErrors.includes(err)) {
+          if (fellBackToServerRef.current) return;
           useWebSpeechRef.current = false;
-          startElevenLabsCapture();
-        } else if (event.error !== 'aborted' && event.error !== 'no-speech') {
+          if (watchdogRef.current) clearTimeout(watchdogRef.current);
+          if (webSpeechNoResultTimerRef.current) clearTimeout(webSpeechNoResultTimerRef.current);
+          try { recognition.abort(); } catch {}
+          fallbackToServerSTTRef.current?.();
+        } else if (err !== 'aborted' && err !== 'no-speech') {
           // Auto-restart on transient errors
           setTimeout(() => {
-            if (enabled && webSpeechRef.current) {
+            if (enabled && webSpeechRef.current && useWebSpeechRef.current) {
               try {
                 webSpeechRef.current.start();
               } catch (e) {
@@ -428,13 +523,13 @@ export const useRealtimeCaptions = ({
           }, 500);
         }
       };
-      
+
       recognition.onend = () => {
         console.log('[Captions] Web Speech API ended');
         setVadActive(false);
         if (watchdogRef.current) clearTimeout(watchdogRef.current);
-        // Auto-restart if still enabled
-        if (enabled && useWebSpeechRef.current) {
+        // Auto-restart only if still enabled AND we haven't fallen back to server STT.
+        if (enabled && useWebSpeechRef.current && !fellBackToServerRef.current) {
           setTimeout(() => {
             try {
               recognition.start();
@@ -444,7 +539,7 @@ export const useRealtimeCaptions = ({
           }, 100);
         }
       };
-      
+
       recognition.start();
       webSpeechRef.current = recognition;
       return true;
@@ -452,7 +547,7 @@ export const useRealtimeCaptions = ({
       console.error('[Captions] Failed to start Web Speech API:', error);
       return false;
     }
-  }, [enabled, addCaption, translateText]);
+  }, [enabled, addCaption, translateText, targetLang]);
 
   // Start ElevenLabs capture (FALLBACK - requires token and API)
   // NOTE: This function doesn't call startFallbackVAD directly to avoid circular dependency
@@ -541,13 +636,43 @@ export const useRealtimeCaptions = ({
     // Fall back to ElevenLabs
     console.log('[Captions] Web Speech unavailable, trying ElevenLabs');
     const fallbackStream = await startElevenLabsCapture();
-    
+
     // If ElevenLabs returned a stream, it means WebSocket failed - use VAD fallback
     if (fallbackStream && startFallbackVADRef.current) {
       console.log('[Captions] Starting VAD fallback with stream');
       startFallbackVADRef.current(fallbackStream);
     }
   }, [enabled, startWebSpeechCapture, startElevenLabsCapture]);
+
+  // Wire the server-STT fallback used by Web Speech onerror/no-result handlers.
+  // It tears down any Web Speech recognizer then starts ElevenLabs realtime WS →
+  // VAD + Whisper/ElevenLabs batch so captions actually render even when the
+  // browser STT backend is unreachable (Electron, no Google speech).
+  fallbackToServerSTTRef.current = async () => {
+    if (fellBackToServerRef.current) return;
+    fellBackToServerRef.current = true;
+    useWebSpeechRef.current = false;
+    console.log('[Captions] Falling back to server STT (ElevenLabs/Whisper)');
+
+    if (webSpeechRef.current) {
+      try { webSpeechRef.current.abort(); } catch {}
+      webSpeechRef.current = null;
+    }
+    if (webSpeechNoResultTimerRef.current) {
+      clearTimeout(webSpeechNoResultTimerRef.current);
+      webSpeechNoResultTimerRef.current = null;
+    }
+
+    try {
+      const fallbackStream = await startElevenLabsCapture();
+      if (fallbackStream && startFallbackVADRef.current) {
+        console.log('[Captions] Server STT: starting VAD fallback with stream');
+        startFallbackVADRef.current(fallbackStream);
+      }
+    } catch (err) {
+      console.error('[Captions] Server STT fallback failed:', err);
+    }
+  };
 
   // Fallback VAD-based recording (original implementation)
   const startFallbackVAD = useCallback((stream: MediaStream) => {
@@ -723,6 +848,11 @@ export const useRealtimeCaptions = ({
       webSpeechRef.current = null;
     }
     
+    if (webSpeechNoResultTimerRef.current) {
+      clearTimeout(webSpeechNoResultTimerRef.current);
+      webSpeechNoResultTimerRef.current = null;
+    }
+
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
       reconnectTimeoutRef.current = null;
@@ -802,6 +932,10 @@ export const useRealtimeCaptions = ({
       roomIdentityRef.current = currentRoomIdentity;
       stopCapture();
       useFallbackRef.current = false; // Reset fallback flag
+      // Reset Web-Speech fallback state so a fresh room re-attempts the cheap path.
+      fellBackToServerRef.current = false;
+      webSpeechGotResultRef.current = false;
+      useWebSpeechRef.current = !isWebSpeechUnreliable();
     }
     
     // INSTANT START: Start capture immediately when enabled, no language selection required

@@ -174,19 +174,21 @@ export function CaptionsOverlay({
           </div>
         )}
 
-        {/* Current caption display - always shows ONLY the latest */}
-        <div 
+        {/* Current caption display - always shows ONLY the latest.
+            Fixed minimum height + stable padding so live caption updates fade in
+            place instead of jumping the layout up/down as text appears/changes. */}
+        <div
           className={cn(
-            "w-full rounded-2xl bg-black/60 backdrop-blur-2xl border border-white/[0.08]",
-            "transition-all duration-300 shadow-[0_0_1px_rgba(255,255,255,0.1)]",
-            (latestCaption || partialCaption) ? "p-4" : "p-2"
+            "w-full rounded-2xl bg-black/60 backdrop-blur-2xl border border-white/[0.08] p-4",
+            "transition-[background,border-color] duration-300 shadow-[0_0_1px_rgba(255,255,255,0.1)]",
+            "min-h-[64px] flex items-center"
           )}
         >
           {(latestCaption || partialCaption) ? (
-            <div className="space-y-1">
+            <div className="w-full space-y-1">
               {/* Show latest committed caption */}
               {latestCaption && (
-                <div className="flex flex-col gap-0.5 animate-fade-in text-white">
+                <div className="flex flex-col gap-0.5 text-white">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-medium text-primary/80">{latestCaption.speakerName}</span>
                     {latestCaption.originalText !== latestCaption.translatedText && (
@@ -195,29 +197,37 @@ export function CaptionsOverlay({
                       </span>
                     )}
                   </div>
-                  <p className="text-base font-medium leading-relaxed">{latestCaption.translatedText}</p>
+                  {/* key on translatedText → smooth cross-fade between caption updates */}
+                  <p
+                    key={latestCaption.id}
+                    className="text-base font-medium leading-relaxed animate-fade-in"
+                  >
+                    {latestCaption.translatedText}
+                  </p>
                 </div>
               )}
-              {/* Show partial (typing indicator) below */}
+              {/* Show partial (live typing) below — fades, no pulse-jump */}
               {partialCaption && (
-                <p className="text-sm text-white/50 italic animate-pulse">{partialCaption.translatedText}</p>
+                <p className="text-sm text-white/50 italic transition-opacity duration-150">
+                  {partialCaption.translatedText}
+                </p>
               )}
             </div>
           ) : (
-            <div className="flex items-center justify-center gap-3 text-muted-foreground py-1">
+            <div className="flex items-center justify-center gap-3 text-muted-foreground w-full">
               {/* VAD indicator */}
               <div className="relative">
                 <div className={cn(
                   "w-3 h-3 rounded-full transition-all duration-200",
-                  vadActive 
-                    ? "bg-green-500 shadow-[0_0_12px_rgba(34,197,94,0.8)]" 
+                  vadActive
+                    ? "bg-green-500 shadow-[0_0_12px_rgba(34,197,94,0.8)]"
                     : "bg-gray-600"
                 )} />
                 {vadActive && (
                   <div className="absolute inset-0 w-3 h-3 rounded-full bg-green-500 animate-ping opacity-75" />
                 )}
               </div>
-              
+
               <Subtitles className="w-4 h-4" />
               <span className="text-sm">
                 {vadActive ? 'Голос обнаружен...' : (isProcessing ? 'Обработка...' : 'Ожидание речи...')}

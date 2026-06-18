@@ -5,6 +5,42 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Google Translate (gtx) - free, public, supports auto source detection.
+// Most reliable free endpoint; primary path. Returns { translated, detected }.
+async function translateWithGoogle(
+  text: string,
+  sourceLang: string,
+  targetLang: string,
+): Promise<{ translated: string; detected: string } | null> {
+  try {
+    const sl = sourceLang === 'auto' ? 'auto' : sourceLang;
+    const url =
+      `https://translate.googleapis.com/translate_a/single?client=gtx` +
+      `&sl=${encodeURIComponent(sl)}&tl=${encodeURIComponent(targetLang)}` +
+      `&dt=t&q=${encodeURIComponent(text)}`;
+    const response = await fetch(url, {
+      signal: AbortSignal.timeout(6000),
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    // data[0] = array of [translatedChunk, originalChunk, ...]; data[2] = detected src
+    if (Array.isArray(data) && Array.isArray(data[0])) {
+      const translated = data[0]
+        .map((seg: unknown) => (Array.isArray(seg) ? seg[0] : ''))
+        .join('');
+      const detected = typeof data[2] === 'string' ? data[2] : sl;
+      if (translated && translated.trim()) {
+        console.log('Google gtx OK');
+        return { translated, detected };
+      }
+    }
+  } catch (e) {
+    console.warn('Google gtx failed:', e);
+  }
+  return null;
+}
+
 // Lingva Translate - free Google Translate proxy, unlimited, best quality
 async function translateWithLingva(text: string, sourceLang: string, targetLang: string): Promise<string | null> {
   const instances = [
@@ -12,10 +48,13 @@ async function translateWithLingva(text: string, sourceLang: string, targetLang:
     'lingva.thedaviddelta.com',
     'translate.plausibility.cloud',
   ];
-  
+
+  // Lingva needs an explicit source; map 'auto' to its detection token.
+  const src = sourceLang === 'auto' ? 'auto' : sourceLang;
+
   for (const instance of instances) {
     try {
-      const url = `https://${instance}/api/v1/${sourceLang}/${targetLang}/${encodeURIComponent(text)}`;
+      const url = `https://${instance}/api/v1/${src}/${targetLang}/${encodeURIComponent(text)}`;
       const response = await fetch(url, { signal: AbortSignal.timeout(5000) });
       if (response.ok) {
         const data = await response.json();
@@ -54,13 +93,29 @@ async function translateWithMyMemory(text: string, sourceLang: string, targetLan
   return null;
 }
 
-// Cascading: Lingva (best quality, unlimited) → MyMemory → original
+// Cascading: Google gtx (most reliable, auto-detect) → Lingva → MyMemory → original.
+// Returns the translated string. If the detected source equals the target language,
+// the original text is returned unchanged (no pointless self-translation).
 async function translate(text: string, sourceLang: string, targetLang: string): Promise<string> {
+  // 1) Google gtx — also gives us source detection.
+  const google = await translateWithGoogle(text, sourceLang, targetLang);
+  if (google) {
+    if (google.detected && google.detected === targetLang) {
+      // Speaker already speaks the target language — show original.
+      return text;
+    }
+    return google.translated;
+  }
+
+  // 2) Lingva (handles 'auto').
   const lingva = await translateWithLingva(text, sourceLang, targetLang);
   if (lingva) return lingva;
 
-  const mm = await translateWithMyMemory(text, sourceLang, targetLang);
-  if (mm) return mm;
+  // 3) MyMemory needs an explicit source pair; skip when we only have 'auto'.
+  if (sourceLang && sourceLang !== 'auto') {
+    const mm = await translateWithMyMemory(text, sourceLang, targetLang);
+    if (mm) return mm;
+  }
 
   console.warn("All translation services failed, returning original");
   return text;
@@ -81,9 +136,13 @@ serve(async (req) => {
       );
     }
 
-    const srcLang = sourceLang || 'en';
-    
-    if (srcLang === targetLang) {
+    // When the caller doesn't know the spoken language (Web Speech / live STT
+    // can't reliably report it), use Lingva's "auto" source detection instead of
+    // assuming English. This fixes the common case where a Russian/other speaker's
+    // text was sent as en→target and came back untranslated or garbled.
+    const srcLang = sourceLang || 'auto';
+
+    if (srcLang !== 'auto' && srcLang === targetLang) {
       return new Response(
         JSON.stringify({ corrected: originalText, translated: originalText }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
