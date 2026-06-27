@@ -1,0 +1,13 @@
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="like-g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#5bd0ff"/><stop offset="100%" stop-color="#1c7ef0"/>
+    </linearGradient>
+    <radialGradient id="like-s" cx="35%" cy="28%" r="70%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.55"/><stop offset="60%" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <path d="M20 27v25a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V31a4 4 0 0 1 4-4h8z" fill="url(#like-g)"/>
+  <path d="M20 27l9-18.5c.6-1.2 1.9-1.9 3.2-1.7 2.9.4 4.9 3.1 4.3 6L34.5 23H50a6 6 0 0 1 5.9 7.1l-3.4 18A6 6 0 0 1 46.6 53H24a4 4 0 0 1-4-4V27z" fill="url(#like-g)"/>
+  <path d="M20 27l9-18.5c.6-1.2 1.9-1.9 3.2-1.7 2.9.4 4.9 3.1 4.3 6L34.5 23H50a6 6 0 0 1 5.9 7.1l-3.4 18A6 6 0 0 1 46.6 53H24a4 4 0 0 1-4-4V27z" fill="url(#like-s)"/>
+</svg>
