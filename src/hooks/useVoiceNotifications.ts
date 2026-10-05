@@ -1,4 +1,5 @@
 import { useCallback, useRef, useMemo } from 'react';
+import { ttsResponseToAudioUrl } from '../utils/ttsAudio';
 
 /** Detect iOS devices where autoplay is restricted */
 function detectIsIOS(): boolean {
@@ -50,8 +51,8 @@ export const useVoiceNotifications = () => {
         return;
       }
 
-      const audioBlob = await response.blob();
-      const audioUrl = URL.createObjectURL(audioBlob);
+      const audioUrl = await ttsResponseToAudioUrl(response);
+      if (!audioUrl) return;
       
       // Stop previous audio if playing
       if (audioRef.current) {

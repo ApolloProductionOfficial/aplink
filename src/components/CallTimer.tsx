@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { ttsResponseToAudioUrl } from '../utils/ttsAudio';
 import { createPortal } from 'react-dom';
 import { Room, RoomEvent } from 'livekit-client';
 import { useDataChannelMessage } from '@/hooks/useDataChannel';
@@ -209,11 +210,12 @@ export function CallTimer({ room, isHost = true }: CallTimerProps) {
       );
 
       if (response.ok) {
-        const audioBlob = await response.blob();
-        const audioUrl = URL.createObjectURL(audioBlob);
-        const audio = new Audio(audioUrl);
-        audio.volume = 0.7;
-        await audio.play();
+        const audioUrl = await ttsResponseToAudioUrl(response);
+        if (audioUrl) {
+          const audio = new Audio(audioUrl);
+          audio.volume = 0.7;
+          await audio.play();
+        }
       }
     } catch (err) {
       console.log('[CallTimer] Voice notification failed:', err);

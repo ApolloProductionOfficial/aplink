@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { ttsResponseToAudioUrl } from '../utils/ttsAudio';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -110,8 +111,8 @@ const VoiceSettings = () => {
 
       if (!response.ok) throw new Error('TTS request failed');
 
-      const audioBlob = await response.blob();
-      const audioUrl = URL.createObjectURL(audioBlob);
+      const audioUrl = await ttsResponseToAudioUrl(response);
+      if (!audioUrl) throw new Error('TTS: пустой ответ озвучки');
       const audio = new Audio(audioUrl);
       await audio.play();
       

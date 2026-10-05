@@ -578,7 +578,7 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
         }
       );
 
-      const result = await response.json();
+      const result = await response.json().catch(() => ({} as any));
       
       // Handle 402 - AI credits exhausted, use browser translation fallback
       if (response.status === 402 && result.useBrowserTranslation) {
@@ -601,7 +601,12 @@ export const RealtimeTranslator: React.FC<RealtimeTranslatorProps> = ({
         return;
       }
       
-      if (!response.ok) throw new Error(`Translation failed: ${response.status}`);
+      if (!response.ok) {
+        const msg = String((result as any)?.error || '');
+        const limited = response.status === 429 || /\b429\b/.test(msg);
+        toast.error(limited ? 'Перевод: слишком много запросов, подождите пару секунд' : `Перевод не удался (${response.status})`, { id: 'translate-error', duration: 6000 });
+        return;
+      }
       
       if (result.translatedText && result.translatedText.trim()) {
         // Auto-detect partner's language from our translation target
